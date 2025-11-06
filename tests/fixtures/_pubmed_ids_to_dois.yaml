@@ -1,0 +1,228 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids=39747675%2C38286823%2C38096378&format=json&idtype=pmid&tool=dmptool-match-workflows&versions=no
+  response:
+    body:
+      string: '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+
+        <html><head>
+
+        <title>301 Moved Permanently</title>
+
+        </head><body>
+
+        <h1>Moved Permanently</h1>
+
+        <p>The document has moved <a href="https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39747675%2C38286823%2C38096378&amp;format=json&amp;idtype=pmid&amp;tool=dmptool-match-workflows&amp;versions=no">here</a>.</p>
+
+        </body></html>
+
+        '
+    headers:
+      Connection:
+      - Keep-Alive
+      Content-Length:
+      - '382'
+      Content-Security-Policy:
+      - upgrade-insecure-requests
+      Content-Type:
+      - text/html; charset=iso-8859-1
+      Date:
+      - Tue, 29 Jul 2025 02:42:56 GMT
+      Keep-Alive:
+      - timeout=1, max=10
+      Location:
+      - https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39747675%2C38286823%2C38096378&format=json&idtype=pmid&tool=dmptool-match-workflows&versions=no
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Apache
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+    status:
+      code: 301
+      message: Moved Permanently
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39747675%2C38286823%2C38096378&format=json&idtype=pmid&tool=dmptool-match-workflows&versions=no
+  response:
+    body:
+      string: '{"status":"ok","response-date":"2025-07-28 22:42:57","request":{"warnings":["query
+        param `email` is missing."],"versions":"no","format":"json","idtype":"pmid","ids":["39747675","38286823","38096378"],"tool":"dmptool-match-workflows","echo":"ids=39747675%2C38286823%2C38096378&format=json&idtype=pmid&tool=dmptool-match-workflows&versions=no","showaiid":"no"},"records":[{"doi":"10.1038/s41596-024-01091-y","live":false,"pmcid":"PMC12151780","pmid":39747675,"release-date":"2026-06-01","requested-id":"39747675"},{"doi":"10.1021/jasms.3c00435","pmcid":"PMC10990768","pmid":38286823,"requested-id":"38286823"},{"doi":"10.1021/acs.jproteome.3c00430","pmcid":"PMC10874502","pmid":38096378,"requested-id":"38096378"}]}'
+    headers:
+      Alt-Svc:
+      - clear
+      Content-Encoding:
+      - gzip
+      Date:
+      - Tue, 29 Jul 2025 02:42:57 GMT
+      Server:
+      - istio-envoy
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      Transfer-Encoding:
+      - chunked
+      Via:
+      - 1.1 google
+      X-UA-Compatible:
+      - IE=Edge
+      X-XSS-Protection:
+      - 1; mode=block
+      allow:
+      - GET, HEAD, OPTIONS
+      content-type:
+      - application/json
+      cross-origin-opener-policy:
+      - same-origin
+      referrer-policy:
+      - same-origin
+      set-cookie:
+      - ncbi_sid=14647E7E88834013_0562SID; Domain=.nih.gov; expires=Wed, 29 Jul 2026
+        02:42:57 GMT; Max-Age=31536000; Path=/
+      vary:
+      - Accept,Accept-Encoding
+      x-content-type-options:
+      - nosniff
+      - nosniff
+      x-envoy-upstream-service-time:
+      - '6'
+      x-frame-options:
+      - DENY
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids=10990768%2C10874502%2C10908861&format=json&idtype=pmcid&tool=dmptool-match-workflows&versions=no
+  response:
+    body:
+      string: '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+
+        <html><head>
+
+        <title>301 Moved Permanently</title>
+
+        </head><body>
+
+        <h1>Moved Permanently</h1>
+
+        <p>The document has moved <a href="https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=10990768%2C10874502%2C10908861&amp;format=json&amp;idtype=pmcid&amp;tool=dmptool-match-workflows&amp;versions=no">here</a>.</p>
+
+        </body></html>
+
+        '
+    headers:
+      Connection:
+      - Keep-Alive
+      Content-Length:
+      - '383'
+      Content-Security-Policy:
+      - upgrade-insecure-requests
+      Content-Type:
+      - text/html; charset=iso-8859-1
+      Date:
+      - Tue, 29 Jul 2025 02:42:57 GMT
+      Keep-Alive:
+      - timeout=1, max=10
+      Location:
+      - https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=10990768%2C10874502%2C10908861&format=json&idtype=pmcid&tool=dmptool-match-workflows&versions=no
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Apache
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+    status:
+      code: 301
+      message: Moved Permanently
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=10990768%2C10874502%2C10908861&format=json&idtype=pmcid&tool=dmptool-match-workflows&versions=no
+  response:
+    body:
+      string: '{"status":"ok","response-date":"2025-07-28 22:42:58","request":{"warnings":["query
+        param `email` is missing."],"versions":"no","format":"json","idtype":"pmcid","ids":["10990768","10874502","10908861"],"tool":"dmptool-match-workflows","echo":"ids=10990768%2C10874502%2C10908861&format=json&idtype=pmcid&tool=dmptool-match-workflows&versions=no","showaiid":"no"},"records":[{"doi":"10.1021/jasms.3c00435","pmcid":"PMC10990768","pmid":38286823,"requested-id":"10990768"},{"doi":"10.1021/acs.jproteome.3c00430","pmcid":"PMC10874502","pmid":38096378,"requested-id":"10874502"},{"doi":"10.1038/s41467-024-46240-9","pmcid":"PMC10908861","pmid":38431639,"requested-id":"10908861"}]}'
+    headers:
+      Alt-Svc:
+      - clear
+      Content-Encoding:
+      - gzip
+      Date:
+      - Tue, 29 Jul 2025 02:42:58 GMT
+      Server:
+      - istio-envoy
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      Transfer-Encoding:
+      - chunked
+      Via:
+      - 1.1 google
+      X-UA-Compatible:
+      - IE=Edge
+      X-XSS-Protection:
+      - 1; mode=block
+      allow:
+      - GET, HEAD, OPTIONS
+      content-type:
+      - application/json
+      cross-origin-opener-policy:
+      - same-origin
+      referrer-policy:
+      - same-origin
+      set-cookie:
+      - ncbi_sid=00007D7A8882F683_2085SID; Domain=.nih.gov; expires=Wed, 29 Jul 2026
+        02:42:58 GMT; Max-Age=31536000; Path=/
+      vary:
+      - Accept,Accept-Encoding
+      x-content-type-options:
+      - nosniff
+      - nosniff
+      x-envoy-upstream-service-time:
+      - '7'
+      x-frame-options:
+      - DENY
+    status:
+      code: 200
+      message: OK
+version: 1

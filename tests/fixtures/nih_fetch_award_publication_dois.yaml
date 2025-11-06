@@ -1,0 +1,179 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://reporter.nih.gov/services/Projects/Publications?projectId=10808782
+  response:
+    body:
+      string: "{\"meta\":{\"search_id\":null,\"total\":1,\"offset\":0,\"limit\":0,\"sort_field\":null,\"sort_order\":null,\"sorted_by_relevance\":false,\"properties\":{}},\"results\":[{\"core_project_num\":\"K01DA058152\",\"era_pub_id\":null,\"pm_id\":39458976,\"pmc_id\":11509978,\"pub_title_link\":{\"key\":\"The
+        Interplay of Exogenous Cannabinoid Use on Anandamide and 2-Arachidonoylglycerol
+        in Anxiety: Results from a Quasi-Experimental Ad Libitum Study.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11509978\"},\"pub_title\":\"The
+        Interplay of Exogenous Cannabinoid Use on Anandamide and 2-Arachidonoylglycerol
+        in Anxiety: Results from a Quasi-Experimental Ad Libitum Study.\",\"pub_date\":\"2024
+        Oct 06\",\"journal_title_link\":{\"key\":\"Pharmaceuticals (Basel, Switzerland)\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/39458976\"},\"journal_title\":\"Pharmaceuticals
+        (Basel, Switzerland)\",\"journal_volume\":\"17\",\"journal_issue\":\"10\",\"page_number\":null,\"issn\":\"1424-8247\",\"author_list\":\"Martin-Willett,
+        Ren\xE9e; Skrzynski, Carillon J; Taylor, Ethan M; Sempio, Cristina; Klawitter,
+        Jost; Bidwell, L Cinnamon\",\"language\":\"eng\",\"country\":\"Switzerland\",\"author_affiliation\":\"Department
+        of Psychology & Neuroscience, University of Colorado Boulder, Boulder, CO
+        80309, USA.\",\"pub_year\":2024,\"journal_title_abbr\":\"Pharmaceuticals (Basel)\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2024-10-26T19:23:00\",\"pub_status\":null,\"other_related_grants\":\"F31AA029632;R01DA044131\",\"appl_id\":10808782,\"pmc_release_date\":\"2024-10-06T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39458976&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11509978/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39458976\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11509978/\"},\"relative_citation_ratio\":null}],\"facet_results\":[]}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '2379'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 29 Jul 2025 02:45:40 GMT
+      Server:
+      - ''
+      Set-Cookie:
+      - AWSALB=gv3dWXjoHCSkzxKZGGuMmJQhacnNk2BRSmJlF+gC5ohk5klKkJzuPVVGuy86ZOX4ryF62zEBF5ghjvxBmT3Ol2SYNgyGY41dF6z/y/zpGNpGlPpmlzRLNFex3lmcFnGGHEIcjCr9rlvPuswbBd6DMzEIA1YlY/i7uz0h1LiJEItPbKe0O5dUCMLys6GMTmpZS+Y4jXdiY8n80T5Wwx2POKbjqBYep7uiLHfAWOjOKlm5ND4uDfpLHBv1B5prXfQicM8fMKRz6tBVCSNEIw==;
+        Expires=Tue, 05 Aug 2025 02:45:40 GMT; Path=/
+      - AWSALBCORS=gv3dWXjoHCSkzxKZGGuMmJQhacnNk2BRSmJlF+gC5ohk5klKkJzuPVVGuy86ZOX4ryF62zEBF5ghjvxBmT3Ol2SYNgyGY41dF6z/y/zpGNpGlPpmlzRLNFex3lmcFnGGHEIcjCr9rlvPuswbBd6DMzEIA1YlY/i7uz0h1LiJEItPbKe0O5dUCMLys6GMTmpZS+Y4jXdiY8n80T5Wwx2POKbjqBYep7uiLHfAWOjOKlm5ND4uDfpLHBv1B5prXfQicM8fMKRz6tBVCSNEIw==;
+        Expires=Tue, 05 Aug 2025 02:45:40 GMT; Path=/; SameSite=None; Secure
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Rate-Limit-Limit:
+      - 1m
+      X-Rate-Limit-Remaining:
+      - '199'
+      X-Rate-Limit-Reset:
+      - '2025-07-29T02:46:36.0199013Z'
+      X-XSS-Protection:
+      - 1; mode=block
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids=39458976&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
+  response:
+    body:
+      string: '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+
+        <html><head>
+
+        <title>301 Moved Permanently</title>
+
+        </head><body>
+
+        <h1>Moved Permanently</h1>
+
+        <p>The document has moved <a href="https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39458976&amp;format=json&amp;idtype=pmid&amp;tool=dmptool-workflow&amp;versions=no">here</a>.</p>
+
+        </body></html>
+
+        '
+    headers:
+      Connection:
+      - Keep-Alive
+      Content-Length:
+      - '353'
+      Content-Security-Policy:
+      - upgrade-insecure-requests
+      Content-Type:
+      - text/html; charset=iso-8859-1
+      Date:
+      - Tue, 29 Jul 2025 02:45:41 GMT
+      Keep-Alive:
+      - timeout=1, max=10
+      Location:
+      - https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39458976&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
+      Referrer-Policy:
+      - origin-when-cross-origin
+      Server:
+      - Apache
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+    status:
+      code: 301
+      message: Moved Permanently
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39458976&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
+  response:
+    body:
+      string: '{"status":"ok","response-date":"2025-07-28 22:45:41","request":{"warnings":["query
+        param `email` is missing."],"versions":"no","format":"json","idtype":"pmid","ids":["39458976"],"tool":"dmptool-workflow","echo":"ids=39458976&format=json&idtype=pmid&tool=dmptool-workflow&versions=no","showaiid":"no"},"records":[{"doi":"10.3390/ph17101335","pmcid":"PMC11509978","pmid":39458976,"requested-id":"39458976"}]}'
+    headers:
+      Alt-Svc:
+      - clear
+      Content-Encoding:
+      - gzip
+      Date:
+      - Tue, 29 Jul 2025 02:45:41 GMT
+      Server:
+      - istio-envoy
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      Transfer-Encoding:
+      - chunked
+      Via:
+      - 1.1 google
+      X-UA-Compatible:
+      - IE=Edge
+      X-XSS-Protection:
+      - 1; mode=block
+      allow:
+      - GET, HEAD, OPTIONS
+      content-type:
+      - application/json
+      cross-origin-opener-policy:
+      - same-origin
+      referrer-policy:
+      - same-origin
+      set-cookie:
+      - ncbi_sid=14647E7E88834013_0822SID; Domain=.nih.gov; expires=Wed, 29 Jul 2026
+        02:45:41 GMT; Max-Age=31536000; Path=/
+      vary:
+      - Accept,Accept-Encoding
+      x-content-type-options:
+      - nosniff
+      - nosniff
+      x-envoy-upstream-service-time:
+      - '6'
+      x-frame-options:
+      - DENY
+    status:
+      code: 200
+      message: OK
+version: 1

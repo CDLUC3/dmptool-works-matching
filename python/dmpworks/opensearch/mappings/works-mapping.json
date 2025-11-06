@@ -1,0 +1,194 @@
+{
+  "settings": {
+    "analysis": {
+      "normalizer": {
+        "lowercase": {
+          "type": "custom",
+          "filter": [
+            "lowercase"
+          ]
+        },
+        "name_normalizer": {
+          "type": "custom",
+          "filter": [
+            "lowercase",
+            "icu_normalizer",
+            "asciifolding"
+          ]
+        }
+      },
+      "analyzer": {
+        "icu_analyzer": {
+          "type": "custom",
+          "tokenizer": "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_normalizer",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "doi": {
+        "type": "keyword",
+        "normalizer": "lowercase"
+      },
+      "title": {
+        "type": "text",
+        "analyzer": "icu_analyzer",
+        "term_vector": "with_positions_offsets"
+      },
+      "abstract_text": {
+        "type": "text",
+        "analyzer": "icu_analyzer",
+        "term_vector": "with_positions_offsets"
+      },
+      "work_type": {
+        "type": "keyword",
+        "normalizer": "lowercase"
+      },
+      "publication_date": {
+        "type": "date"
+      },
+      "updated_date": {
+        "type": "date"
+      },
+      "publication_venue": {
+        "type": "keyword",
+        "normalizer": "lowercase"
+      },
+      "institutions": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "ror": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          }
+        }
+      },
+      "authors": {
+        "type": "nested",
+        "properties": {
+          "orcid": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          },
+          "first_initial": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "given_name": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "middle_initials": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "middle_names": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "surname": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "full": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          }
+        }
+      },
+      "funders": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "ror": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          }
+        }
+      },
+      "awards": {
+        "type": "nested",
+        "properties": {
+          "award_id": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          }
+        }
+      },
+      "source": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          },
+          "url": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          }
+        }
+      }
+    }
+  }
+}

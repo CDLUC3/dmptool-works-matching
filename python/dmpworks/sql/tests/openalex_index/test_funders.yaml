@@ -1,0 +1,89 @@
+test_openalex_index_funders:
+  model: openalex_index.funders
+  inputs:
+    ror.index:
+      rows:
+        - ror_id: "01h0zpd94"
+          type: "ror"
+          identifier: "01h0zpd94"
+        - ror_id: "01h0zpd94"
+          type: "fundref"
+          identifier: "10.13039/501100001809"
+
+    openalex_index.works_metadata:
+      rows:
+        - id: "W0000000001"
+          doi: "10.9999/test.0001"
+          is_primary_doi: true
+        - id: "W0000000002"
+          doi: "10.9999/test.0002"
+          is_primary_doi: true
+        - id: "W0000000003"
+          doi: "10.9999/test.0003"
+          is_primary_doi: true
+        - id: "W0000000004" # Dropped as no data associated with it
+          is_primary_doi: true
+        - id: "W0000000005"
+          doi: "10.9999/test.0001"
+          is_primary_doi: false
+
+    openalex.works:
+      rows:
+        - id: "W0000000001"
+          doi: "10.9999/test.0001"
+          grants:
+            - funder_display_name: "National Science Foundation"
+              funder_id: "F4320306076"
+            - funder_display_name: "National Natural Science Foundation of China"
+              funder_id: "F4320321001"
+        - id: "W0000000002"
+          doi: "10.9999/test.0002"
+          grants:
+            - funder_display_name: "National Science Foundation"
+              funder_id: "F4320306076"
+        - id: "W0000000003"
+          doi: "10.9999/test.0003"
+          grants:
+            - funder_display_name: "National Science Foundation"
+              funder_id: null
+        - id: "W0000000004" # Dropped as no data associated with it
+          doi: "10.9999/test.0004"
+          grants: [ ]
+        - id: "W0000000005" # Not included as primary_doi is false
+          doi: "10.9999/test.0001"
+          grants:
+            - funder_display_name: "Hello World"
+              funder_id: "12345"
+    openalex.funders:
+      rows:
+        # National Science Foundation
+        - id: "F4320306076"
+          ids:
+            ror: "021nxhr62"
+            doi: "10.13039/100000001"
+        # National Natural Science Foundation of China
+        - id: "F4320321001"
+          ids:
+            ror: "01h0zpd94"
+            doi: "10.13039/501100001809"
+  outputs:
+    query:
+      rows:
+        # OpenAlex Funder IDs -> ROR IDs
+        - id: "W0000000001"
+          doi: "10.9999/test.0001"
+          funders:
+            - name: "National Science Foundation"
+              ror: "021nxhr62"
+            - name: "National Natural Science Foundation of China"
+              ror: "01h0zpd94"
+        - id: "W0000000002"
+          doi: "10.9999/test.0002"
+          funders:
+            - name: "National Science Foundation"
+              ror: "021nxhr62"
+        - id: "W0000000003"
+          doi: "10.9999/test.0003"
+          funders:
+            - name: "National Science Foundation"
+              ror: null

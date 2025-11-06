@@ -1,0 +1,51 @@
+test_openalex_index_abstracts:
+  model: openalex_index.abstracts
+  inputs:
+    openalex_index.abstract_stats:
+      rows:
+        - id: "W0000000002"
+          doi: "10.9999/test.0001"
+          abstract_length: 10
+        - id: "W0000000004"
+          doi: "10.9999/test.0002"
+          abstract_length: null
+        - id: "W0000000006"
+          doi: "10.9999/test.0003"
+          abstract_length: 14
+    openalex.works:
+      rows:
+        - id: "W0000000002"
+          doi: "10.9999/test.0001"
+          abstract: "Abstract 1"
+        - id: "W0000000004"
+          doi: "10.9999/test.0002"
+          abstract: null
+        - id: "W0000000006"
+          doi: "10.9999/test.0003"
+          abstract: "Abstract Three"
+    crossref_index.works_metadata:
+      rows:
+        - doi: "10.9999/test.0001"
+          abstract_length: 12
+        - doi: "10.9999/test.0002"
+          abstract_length: 10
+        - doi: "10.9999/test.0003"
+          abstract_length: 10
+    crossref_metadata.works:
+      rows:
+        - doi: "10.9999/test.0001"
+          abstract: "Abstract One"
+        - doi: "10.9999/test.0002"
+          abstract: "Abstract 2"
+        - doi: "10.9999/test.0003"
+          abstract: "Abstract 3"
+  outputs:
+    query:
+      rows:
+        - doi: "10.9999/test.0001"
+          abstract: "Abstract One"
+        - doi: "10.9999/test.0002"
+          abstract: "Abstract 2"
+        - doi: "10.9999/test.0003"
+          abstract: "Abstract Three"
+

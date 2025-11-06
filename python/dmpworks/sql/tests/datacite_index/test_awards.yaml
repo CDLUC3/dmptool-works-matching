@@ -1,0 +1,46 @@
+test_datacite_index_awards:
+  model: datacite_index.awards
+  inputs:
+    datacite_index.works:
+      rows:
+        - doi: "10.9999/test.0001"
+          funders:
+            - award_number: "1"
+        - doi: "10.9999/test.0002"
+          funders:
+            - award_number: "2"
+            - award_number: null
+        - doi: "10.9999/test.0003" # This item should be dropped as it has no funders
+          funders: [ ]
+
+    openalex.works:
+      rows:
+        - doi: "10.9999/test.0001"
+          grants:
+            - award_id: "3"
+        - doi: "10.9999/test.0001" # nulls should be filtered out
+          grants:
+            - award_id: null
+        - doi: "10.9999/test.0001" # duplicates should be filtered out
+          grants:
+            - award_id: "1"
+        - doi: "10.9999/test.0002"
+          grants:
+            - award_id: "4"
+        - doi: "10.9999/test.0002" # duplicates should be filtered out
+          grants:
+            - award_id: "2"
+        - doi: "10.9999/test.0003" # should be dropped as has no grants
+          grants: [ ]
+  outputs:
+    query:
+      rows:
+        - doi: "10.9999/test.0001"
+          awards:
+            - award_id: "1"
+            - award_id: "3"
+        - doi: "10.9999/test.0002"
+          awards:
+            - award_id: "2"
+            - award_id: "4"
+

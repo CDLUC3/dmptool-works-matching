@@ -1,0 +1,23 @@
+test_datacite_index_works:
+  model: datacite_index.works
+  inputs:
+    datacite.works:
+      rows:
+        - doi: "10.9999/test.0001"
+          updated_date: "2025-01-01 00:00:00"
+        - doi: "10.9999/test.0002"
+          updated_date: "2018-01-01 00:00:00"
+        - doi: "10.9999/test.0002"
+          updated_date: "2019-01-01 00:00:00"
+        - doi: "10.9999/test.0003"
+          updated_date: null
+  outputs:
+    query:
+      rows:
+        - doi: "10.9999/test.0001"
+          updated_date: "2025-01-01 00:00:00"
+        - doi: "10.9999/test.0002"
+          updated_date: "2019-01-01 00:00:00"
+        - doi: "10.9999/test.0003"
+          updated_date: null
+

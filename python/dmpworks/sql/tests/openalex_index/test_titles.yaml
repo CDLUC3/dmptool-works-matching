@@ -1,0 +1,51 @@
+test_openalex_index_titles:
+  model: openalex_index.titles
+  inputs:
+    openalex_index.title_stats:
+      rows:
+        - id: "W0000000002"
+          doi: "10.9999/test.0001"
+          title_length: 7
+        - id: "W0000000004"
+          doi: "10.9999/test.0002"
+          title_length: null
+        - id: "W0000000006"
+          doi: "10.9999/test.0003"
+          title_length: 11
+    openalex.works:
+      rows:
+        - id: "W0000000002"
+          doi: "10.9999/test.0001"
+          title: "Title 1"
+        - id: "W0000000004"
+          doi: "10.9999/test.0002"
+          title: null
+        - id: "W0000000006"
+          doi: "10.9999/test.0003"
+          title: "Title Three"
+    crossref_index.works_metadata:
+      rows:
+        - doi: "10.9999/test.0001"
+          title_length: 9
+        - doi: "10.9999/test.0002"
+          title_length: 7
+        - doi: "10.9999/test.0003"
+          title_length: 7
+    crossref_metadata.works:
+      rows:
+        - doi: "10.9999/test.0001"
+          title: "Title One"
+        - doi: "10.9999/test.0002"
+          title: "Title 2"
+        - doi: "10.9999/test.0003"
+          title: "Title 3"
+  outputs:
+    query:
+      rows:
+        - doi: "10.9999/test.0001"
+          title: "Title One"
+        - doi: "10.9999/test.0002"
+          title: "Title 2"
+        - doi: "10.9999/test.0003"
+          title: "Title Three"
+

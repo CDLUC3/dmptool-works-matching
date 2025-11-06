@@ -1,0 +1,50 @@
+test_openalex_index_title_stats:
+  model: openalex_index.title_stats
+  inputs:
+    openalex_index.works_metadata:
+      rows:
+        # W0000000002 should be selected from the next three works as it has the longest title
+        - id: "W0000000001"
+          doi: "10.9999/test.0001"
+          title_length: 10
+          is_duplicate: true
+        - id: "W0000000002"
+          doi: "10.9999/test.0001"
+          title_length: 11
+          is_duplicate: true
+        - id: "W0000000003"
+          doi: "10.9999/test.0001"
+          title_length: null
+          is_duplicate: true
+        # One of the next two is included as it is also in Crossref and the Crossref title might be better
+        - id: "W0000000004"
+          doi: "10.9999/test.0002"
+          title_length: null
+          is_duplicate: true
+        - id: "W0000000005"
+          doi: "10.9999/test.0002"
+          title_length: null
+          is_duplicate: true
+        # Select all remaining id, doi pairs
+        - id: "W0000000006"
+          doi: "10.9999/test.0003"
+          title_length: 30
+          is_duplicate: false
+    crossref_index.works_metadata:
+      rows:
+        - doi: "10.9999/test.0001"
+          title_length: 10
+        - doi: "10.9999/test.0002"
+          title_length: 11
+  outputs:
+    query:
+      rows:
+        - id: "W0000000002"
+          doi: "10.9999/test.0001"
+          title_length: 11
+        - id: "W0000000004"
+          doi: "10.9999/test.0002"
+          title_length: null
+        - id: "W0000000006"
+          doi: "10.9999/test.0003"
+          title_length: 30

@@ -1,0 +1,141 @@
+test_openalex_works_metadata:
+  model: openalex_index.works_metadata
+  inputs:
+    # Works with DOIs in datacite.works should be removed from the outputs
+    datacite.works:
+      - doi: "10.9999/test.0005"
+    openalex.works:
+      rows:
+        - id: "W0000000001"
+          doi: "10.9999/test.0001"
+          title: "Title One"
+          abstract: "Abstract One."
+          ids:
+            doi: "10.9999/test.0001"
+            mag: null
+            pmid: null
+            pmcid: null
+          authors:
+            - orcid: "123"
+          grants:
+            - funder_id: "123"
+              award_id: "ABC"
+          institutions:
+            - ror: "123"
+        - id: "W0000000002"
+          doi: "10.9999/test.0002"
+          title: "Title 2"
+          abstract: "Abstract 2"
+          ids:
+            doi: "10.9999/test.0002"
+            mag: null
+            pmid: null
+            pmcid: null
+          authors: []
+          grants: []
+          institutions: []
+        # The following two works have duplicate DOIs, as found in OpenAlex
+        - id: "W0000000003"
+          doi: "10.9999/test.0003"
+          title: "Title Three"
+          abstract: null
+          ids:
+            doi: "10.9999/test.0003"
+            mag: null
+            pmid: null
+            pmcid: null
+          authors: []
+          grants: []
+          institutions: []
+        - id: "W0000000004"
+          doi: "10.9999/test.0003"
+          title: null
+          ids:
+            doi: "10.9999/test.0003"
+            mag: "ABC"
+            pmid: "123"
+            pmcid: "456"
+          abstract: "Abstract Three."
+          authors:
+            - orcid: "123"
+            - orcid: "456"
+          grants:
+            - funder_id: "123"
+              award_id: "ABC"
+            - funder_id: "456"
+              award_id: "DEF"
+          institutions:
+            - ror: "123"
+            - ror: "456"
+        - id: "W0000000005" # Excluded as it is already from DataCite
+          doi: "10.9999/test.0005"
+          title: "Title Five"
+          abstract: "Abstract Five"
+          ids:
+            doi: "10.9999/test.0005"
+            mag: null
+            pmid: null
+            pmcid: null
+          authors: [ ]
+          grants: [ ]
+          institutions: [ ]
+  outputs:
+    query:
+      rows:
+        - id: "W0000000001"
+          doi: "10.9999/test.0001"
+          title_length: 9
+          abstract_length: 13
+          doi_count: 1
+          id_count: 0
+          orcid_count: 1
+          funder_id_count: 1
+          award_id_count: 1
+          inst_id_count: 1
+          total_count: 4
+          doi_rank: 1
+          is_duplicate: false
+          is_primary_doi: true
+        - id: "W0000000002"
+          doi: "10.9999/test.0002"
+          title_length: 7
+          abstract_length: 10
+          doi_count: 1
+          id_count: 0
+          orcid_count: 0
+          funder_id_count: 0
+          award_id_count: 0
+          inst_id_count: 0
+          total_count: 0
+          doi_rank: 1
+          is_duplicate: false
+          is_primary_doi: true
+        - id: "W0000000003"
+          doi: "10.9999/test.0003"
+          title_length: 11
+          abstract_length: null
+          doi_count: 2
+          id_count: 0
+          orcid_count: 0
+          funder_id_count: 0
+          award_id_count: 0
+          inst_id_count: 0
+          total_count: 0
+          doi_rank: 2
+          is_duplicate: true
+          is_primary_doi: false
+        - id: "W0000000004"
+          doi: "10.9999/test.0003"
+          title_length: null
+          abstract_length: 15
+          doi_count: 2
+          id_count: 3
+          orcid_count: 2
+          funder_id_count: 2
+          award_id_count: 2
+          inst_id_count: 2
+          total_count: 11
+          doi_rank: 1
+          is_duplicate: true
+          is_primary_doi: true
+  

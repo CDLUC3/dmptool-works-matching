@@ -1,0 +1,143 @@
+test_datacite_index_datacite_index:
+  model: datacite_index.datacite_index
+  inputs:
+    datacite_index.works:
+      rows:
+        - doi: "10.9999/test.0001"
+          title: "Title 1"
+          abstract: "Abstract 1"
+          publication_date: "2024-01-01"
+          publication_venue: "Zenodo"
+          authors:
+            - first_initial: "I"
+              given_name: "Isaac"
+              middle_initials: null
+              middle_names: null
+              surname: "Newton"
+              full: "Isaac Newton"
+              orcid: "0000-0000-0000-0001"
+        - doi: "10.9999/test.0002"
+          title: "Title 2"
+          abstract: "Abstract 2"
+          publication_date: "2025-01-01"
+          publication_venue: "Zenodo"
+          authors:
+            - first_initial: "A"
+              given_name: "Albert"
+              middle_initials: null
+              middle_names: null
+              surname: "Einstein"
+              full: "Albert Einstein"
+              orcid: "0000-0000-0000-001X"
+        - doi: "10.9999/test.0003"
+          publication_venue: null
+          authors: [ ]
+    datacite_index.types:
+      rows:
+        - doi: "10.9999/test.0001"
+          type: "ARTICLE"
+        - doi: "10.9999/test.0002"
+          type: "DATASET"
+    datacite_index.updated_dates:
+      rows:
+        - doi: "10.9999/test.0001"
+          updated_date: "2024-02-01 00:00:00"
+        - doi: "10.9999/test.0002"
+          updated_date: "2025-02-01 00:00:00"
+    datacite_index.institutions:
+      rows:
+        - doi: "10.9999/test.0001"
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0002"
+          institutions:
+            - name: "Los Alamos National Laboratory"
+              ror: "01e41cf67"
+    datacite_index.awards:
+      rows:
+        - doi: "10.9999/test.0001"
+          awards:
+            - award_id: "1"
+        - doi: "10.9999/test.0002"
+          awards:
+            - award_id: "2"
+    datacite_index.funders:
+      rows:
+        - doi: "10.9999/test.0001"
+          funders:
+            - name: "National Science Foundation"
+              ror: "021nxhr62"
+        - doi: "10.9999/test.0002"
+          funders:
+            - name: "National Science Foundation"
+              ror: "021nxhr62"
+  outputs:
+    query:
+      rows:
+        - doi: "10.9999/test.0001"
+          title: "Title 1"
+          abstract_text: "Abstract 1"
+          work_type: "ARTICLE"
+          publication_date: "2024-01-01"
+          updated_date: "2024-02-01 00:00:00"
+          publication_venue: "Zenodo"
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+          authors:
+            - first_initial: "I"
+              given_name: "Isaac"
+              middle_initials: null
+              middle_names: null
+              surname: "Newton"
+              full: "Isaac Newton"
+              orcid: "0000-0000-0000-0001"
+          funders:
+            - name: "National Science Foundation"
+              ror: "021nxhr62"
+          awards:
+            - award_id: "1"
+          source:
+            name: "DataCite"
+            url: "https://commons.datacite.org/doi.org/10.9999/test.0001"
+        - doi: "10.9999/test.0002"
+          title: "Title 2"
+          abstract_text: "Abstract 2"
+          work_type: "DATASET"
+          publication_date: "2025-01-01"
+          publication_venue: "Zenodo"
+          updated_date: "2025-02-01 00:00:00"
+          institutions:
+            - name: "Los Alamos National Laboratory"
+              ror: "01e41cf67"
+          authors:
+            - first_initial: "A"
+              given_name: "Albert"
+              middle_initials: null
+              middle_names: null
+              surname: "Einstein"
+              full: "Albert Einstein"
+              orcid: "0000-0000-0000-001X"
+          funders:
+            - name: "National Science Foundation"
+              ror: "021nxhr62"
+          awards:
+            - award_id: "2"
+          source:
+            name: "DataCite"
+            url: "https://commons.datacite.org/doi.org/10.9999/test.0002"
+        - doi: "10.9999/test.0003"
+          title: null
+          abstract_text: null
+          work_type: "OTHER"
+          publication_date: null
+          updated_date: null
+          publication_venue: null
+          institutions: [ ]
+          authors: [ ]
+          funders: [ ]
+          awards: [ ]
+          source:
+            name: "DataCite"
+            url: "https://commons.datacite.org/doi.org/10.9999/test.0003"

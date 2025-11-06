@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# IDEs and editors
+.idea/
+.vscode/
+
+# Rust
+*.so
+*.pyc
+target
+*.so
+*.dll
+*.pyd
+
+# SQL Mesh
+logs
+
+.env.*

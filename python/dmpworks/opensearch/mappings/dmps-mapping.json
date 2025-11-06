@@ -1,0 +1,264 @@
+{
+  "settings": {
+    "analysis": {
+      "normalizer": {
+        "lowercase": {
+          "type": "custom",
+          "filter": [
+            "lowercase"
+          ]
+        },
+        "name_normalizer": {
+          "type": "custom",
+          "filter": [
+            "lowercase",
+            "icu_normalizer",
+            "asciifolding"
+          ]
+        }
+      },
+      "analyzer": {
+        "icu_analyzer": {
+          "type": "custom",
+          "tokenizer": "icu_tokenizer",
+          "filter": [
+            "lowercase",
+            "icu_normalizer",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "doi": {
+        "type": "keyword",
+        "normalizer": "lowercase"
+      },
+      "created": {
+        "type": "date"
+      },
+      "registered": {
+        "type": "date"
+      },
+      "modified": {
+        "type": "date"
+      },
+      "title": {
+        "type": "text",
+        "analyzer": "icu_analyzer",
+        "term_vector": "with_positions_offsets"
+      },
+      "abstract": {
+        "type": "text",
+        "analyzer": "icu_analyzer",
+        "term_vector": "with_positions_offsets"
+      },
+      "project_start": {
+        "type": "date"
+      },
+      "project_end": {
+        "type": "date"
+      },
+      "institutions": {
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "ror": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          }
+        }
+      },
+      "authors": {
+        "type": "nested",
+        "properties": {
+          "orcid": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          },
+          "first_initial": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "given_name": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "middle_initials": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "middle_names": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "surname": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          },
+          "full": {
+            "type": "text",
+            "analyzer": "icu_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "normalizer": "name_normalizer"
+              }
+            }
+          }
+        }
+      },
+      "funding": {
+        "type": "nested",
+        "properties": {
+          "funder": {
+            "type": "nested",
+            "properties": {
+              "name": {
+                "type": "text",
+                "analyzer": "icu_analyzer",
+                "fields": {
+                  "keyword": {
+                    "type": "keyword",
+                    "normalizer": "name_normalizer"
+                  }
+                }
+              },
+              "ror": {
+                "type": "keyword",
+                "normalizer": "lowercase"
+              }
+            }
+          },
+          "funding_opportunity_id": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          },
+          "status": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          },
+          "award_id": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          }
+        }
+      },
+      "external_data": {
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "date"
+          },
+          "awards": {
+            "type": "nested",
+            "properties": {
+              "funder": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "text",
+                    "analyzer": "icu_analyzer",
+                    "fields": {
+                      "keyword": {
+                        "type": "keyword",
+                        "normalizer": "name_normalizer"
+                      }
+                    }
+                  },
+                  "ror": {
+                    "type": "keyword",
+                    "normalizer": "lowercase"
+                  }
+                }
+              },
+              "award_id": {
+                "type": "object",
+                "properties": {
+                  "class": {
+                    "type": "keyword"
+                  },
+                  "parts": {
+                    "type": "nested",
+                    "properties": {
+                      "value": {
+                        "type": "keyword"
+                      },
+                      "type": {
+                        "type": "keyword"
+                      }
+                    }
+                  },
+                  "related_awards": {
+                    "type": "nested",
+                    "properties": {
+                      "class": {
+                        "type": "keyword"
+                      },
+                      "parts": {
+                        "type": "nested",
+                        "properties": {
+                          "value": {
+                            "type": "keyword"
+                          },
+                          "type": {
+                            "type": "keyword"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "funded_dois": {
+                "type": "keyword",
+                "normalizer": "lowercase"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

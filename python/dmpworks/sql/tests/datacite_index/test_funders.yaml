@@ -1,0 +1,76 @@
+test_datacite_index_funders:
+  model: datacite_index.funders
+  inputs:
+    ror.index:
+      rows:
+        # NASA
+        - ror_id: "027ka1x80"
+          type: "ror"
+          identifier: "027ka1x80"
+        - ror_id: "027ka1x80"
+          type: "grid"
+          identifier: "grid.238252.c"
+        - ror_id: "027ka1x80"
+          type: "isni"
+          identifier: "0000000449071619"
+        - ror_id: "027ka1x80"
+          type: "fundref"
+          identifier: "10.13039/100000104"
+        - ror_id: "027ka1x80"
+          type: "wikidata"
+          identifier: "Q23548"
+    datacite_index.works:
+      rows:
+        # Convert all Funder IDs from datacite_index.works to ROR IDs with ror.index
+        - doi: "10.9999/test.0001"
+          funders:
+            # Crossref Funder ID
+            - funder_name: "National Aeronautics and Space Administration"
+              funder_identifier: "10.13039/100000104"
+              funder_identifier_type: "Crossref Funder ID"
+        - doi: "10.9999/test.0002"
+          funders:
+            # GRID
+            - funder_name: "National Aeronautics and Space Administration"
+              funder_identifier: "grid.238252.c"
+              funder_identifier_type: "GRID"
+        - doi: "10.9999/test.0003"
+          funders:
+            # ISNI
+            - funder_name: "National Aeronautics and Space Administration"
+              funder_identifier: "0000000449071619"
+              funder_identifier_type: "ISNI"
+        - doi: "10.9999/test.0004"
+          funders:
+            # Wikidata
+            - funder_name: "National Aeronautics and Space Administration"
+              funder_identifier: "Q23548"
+              funder_identifier_type: "Wikidata"
+            # Null funder_identifier but has name
+            - funder_name: "Jet Propulsion Laboratory"
+              funder_identifier: null
+              funder_identifier_type: null
+        - doi: "10.9999/test.0005" # Should be excluded as has no funders
+          funders: [ ]
+
+  outputs:
+    query:
+      rows:
+        - doi: "10.9999/test.0001"
+          funders:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0002"
+          funders:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0003"
+          funders:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0004"
+          funders:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+            - name: "Jet Propulsion Laboratory"
+              ror: null

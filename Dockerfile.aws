@@ -1,0 +1,78 @@
+# -----------------------------------------------------
+# Stage 1: Build Polars and dmpworks wheels using Rust
+# -----------------------------------------------------
+
+FROM amazonlinux:2023 AS builder
+
+# Build arguments
+ARG RUST_TARGET_CPU="x86-64-v3"
+ARG PYTHON_VERSION="3.12"
+ENV RUST_TARGET_CPU=${RUST_TARGET_CPU}
+ENV PYTHON_VERSION=${PYTHON_VERSION}
+
+# Install system dependencies
+RUN dnf -y install \
+    wget \
+    git \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-pip
+RUN dnf group install -y "Development Tools"
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+WORKDIR /app
+
+# Clone Polars dependencies
+RUN git clone --branch fix-load-json-as-string --single-branch https://github.com/jdddog/polars.git
+RUN git clone --branch local-build --single-branch https://github.com/jdddog/pyo3-polars.git
+
+# Build Polars
+WORKDIR /app/polars/py-polars
+RUN python${PYTHON_VERSION} -m pip install -r requirements-dev.txt -r requirements-lint.txt
+RUN RUSTFLAGS="-C target-cpu=${RUST_TARGET_CPU}" maturin build --interpreter python${PYTHON_VERSION} --profile dist-release
+
+# Build dmpworks
+WORKDIR /app/dmsp_api_prototype/queries/dmpworks
+COPY . .
+RUN RUSTFLAGS="-C target-cpu=${RUST_TARGET_CPU}" maturin build --interpreter python${PYTHON_VERSION} --release
+
+# ----------------------------------
+# Stage 2: Final Amazon Linux Image
+# ----------------------------------
+FROM amazonlinux:2023
+
+# Build arguments
+ARG PYTHON_VERSION="3.12"
+ARG S5CMD_VERSION="2.3.0"
+ENV PYTHON_VERSION=${PYTHON_VERSION}
+ENV S5CMD_VERSION=${S5CMD_VERSION}
+
+# Install system dependencies
+RUN dnf -y install \
+    aws-cli \
+    tar \
+    zip \
+    wget \
+    gzip \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-pip
+RUN dnf group install -y "Development Tools"
+
+WORKDIR /app
+
+# Install s5cmd: https://github.com/peak/s5cmd
+RUN wget https://github.com/peak/s5cmd/releases/download/v${S5CMD_VERSION}/s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz && \
+  tar -xzf s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz s5cmd && \
+  chmod +x s5cmd && \
+  mv s5cmd /usr/local/bin/ && \
+  rm s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz
+
+# Copy and install Polars
+COPY --from=builder /app/polars/target/wheels /app/wheels/polars
+RUN python${PYTHON_VERSION} -m pip install /app/wheels/polars/*.whl
+
+# Copy and install dmpworks
+COPY --from=builder /app/dmsp_api_prototype/queries/dmpworks/target/wheels /app/wheels/dmpworks
+RUN python${PYTHON_VERSION} -m pip install /app/wheels/dmpworks/*.whl

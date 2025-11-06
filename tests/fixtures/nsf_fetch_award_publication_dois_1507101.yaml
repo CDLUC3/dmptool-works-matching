@@ -1,0 +1,98 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.3
+    method: GET
+    uri: https://www.research.gov/awardapi-service/v1/awards.json?id=1507101&printFields=publicationResearch
+  response:
+    body:
+      string: '{"response":{"award":[{"publicationResearch":["Surface Science Reports~2018~73~Andersen,
+        T. K. and Fong, D. D. and Marks, L. D.~10.1016/j.surfrep.2018.08.001~213-232~Pauling''s
+        rules for oxide surfaces~2021-12-06 08:27:13.943","The Journal of Chemical
+        Physics~2020~152~Blaha, Peter and Schwarz, Karlheinz and Tran, Fabien and
+        Laskowski, Robert and Madsen, Georg K. H. and Marks, Laurence D.~10.1063/1.5143061~074101~WIEN2k:
+        An APW+lo program for calculating the properties of solids~2021-12-06 08:27:13.966","The
+        Journal of Chemical Physics~2020~152~Blaha, Peter and Schwarz, Karlheinz and
+        Tran, Fabien and Laskowski, Robert and Madsen, Georg K. H. and Marks, Laurence
+        D.~10.1063/1.5143061~WIEN2k: An APW+lo program for calculating the properties
+        of solids~2020-06-04 15:22:13.726","Nat Commun~2015~6~Ciston, J. and Brown,
+        H. G. and D''Alfonso, A. J. and Koirala, P. and Ophus, C. and Lin, Y. and
+        Suzuki, Y. and Inada, H. and Zhu, Y. and Allen, L. J. and Marks, L. D.~10.1038/ncomms8358~7358~Surface
+        determination through atomically resolved secondary-electron imaging~2016-06-08
+        13:13:39.046","Surface Science~2015~633~Kienzle, D. and Koirala, P. and Marks,
+        L. D.~10.1016/j.susc.2014.11.016~60-67~Lanthanum aluminate (110) 3 x 1 surface
+        reconstruction~2016-06-08 13:13:39.063","Surface Science~2016~657~Koirala,
+        P. and Gulec, A. and Marks, L. D.~10.1016/j.susc.2016.11.003~15~Surface heterogeneity
+        in KTaO3~2017-05-17 11:23:31.813","Surface Science~2017~657~Koirala, P. and
+        Gulec, A. and Marks, L. D.~10.1016/j.susc.2016.11.003~15-19~Surface heterogeneity
+        in KTaO3 (001)~2021-12-06 08:27:13.98","Nano Lett~2018~18~Ly, T. and Wen,
+        J. and Marks, L. D.~10.1021/acs.nanolett.8b02123~5186-5191~Kinetic Growth
+        Regimes of Hydrothermally Synthesized Potassium Tantalate Nanoparticles~2021-12-06
+        08:27:13.983","The Journal of Physical Chemistry C~2020~124~Ly, Tiffany and
+        Wen, Jianguo and Marks, Laurence D.~10.1021/acs.jpcc.9b12023~7988-7993~Chemisorption-Driven
+        Roughening of Hydrothermally Grown KTa1xNbxO3 Nanoparticles~2020-06-04 15:22:13.763","The
+        Journal of Physical Chemistry C~2020~124~Ly, Tiffany and Wen, Jianguo and
+        Marks, Laurence D.~10.1021/acs.jpcc.9b12023~7988-7993~Chemisorption-Driven
+        Roughening of Hydrothermally Grown KTa1xNbxO3 Nanoparticles~2021-12-06 08:27:13.993","The
+        Journal of Physical Chemistry C~2020~124~Ly, Tiffany and Wen, Jianguo and
+        Marks, Laurence D.~10.1021/acs.jpcc.0c07517~26012-260~Complex Fluorine Chemical
+        Potential Effects on the Shape and Compositional Heterogeneity of KTa1xNbxO3
+        Nanoparticles~2021-12-06 08:27:13.996","The Journal of Physical Chemistry
+        C~2020~124~Mansley, Zachary R. and Marks, Laurence D.~10.1021/acs.jpcc.0c07316~28038-280~Modified
+        Winterbottom Construction Including Boundaries~2021-12-06 08:27:14.01","Journal
+        of Chemical Theory and Computation~2021~In Pres~Marks, L. D.~10.1021/acs.jctc.1c00630~Predictive
+        Mixing for Density Functional Theory (and other Fixed-Point Problems)~2021-12-06
+        08:27:14.013","Journal of Applied Physics~2021~129~Mizzi, Christopher A. and
+        Marks, Laurence D.~10.1063/5.0048920~224102~The role of surfaces in flexoelectricity~2021-12-06
+        08:27:14.02","Crystals~2019~9~Paull, R. J. and Ly, T. and Mansley, Z. R. and
+        Poeppelmeier, K. R. and Marks, L. D.~10.3390/cryst9040218~218~Controlled Two-Step
+        Formation of Faceted Perovskite Rare-Earth Scandate Nanoparticles~2021-12-06
+        08:27:14.03","Inorg Chem~2018~57~Paull, R. J., Mansley, Z. R., Ly, T., Marks,
+        L. D.,Poeppelmeier, K. R.~10.1021/acs.inorgchem.8b00281~4104~Synthesis of
+        Gadolinium Scandate from a Hydroxide Hydrogel~2019-09-04 05:34:40.76","Crystals~2019~9~Paull,
+        Ryan J., Ly, Tiffany, Mansley, Zachary R., Poeppelmeier, Kenneth R., Marks,
+        Laurence D.~10.3390/cryst9040218~218~Controlled Two-Step Formation of Faceted
+        Perovskite Rare-Earth Scandate Nanoparticles~2019-09-04 05:34:40.766","Inorganic
+        Chemistry~2018~57~Ryan J. Paull, Zachary R. Mansley, Tiffany Ly, Laurence
+        D. Marks, and Kenneth R. Poeppelmeier~10.1021/acs.inorgchem.8b00281~4104~Synthesis
+        of Gadolinium Scandate from a Hydroxide Hydrogel~2018-06-29 11:25:00.963","Surface
+        Science Reports~2018~73~T. K. Andersen, D. D. Fong and L. D. Marks~10.1016/j.surfrep.2018.08.001~213~Pauling''s
+        Rules for Oxide Surfaces~2019-09-04 05:34:40.773","Nano Letters~2018~18~T.
+        Ly, J. Wen and L. D. Marks~10.1021/acs.nanolett.8b02123~5186~Kinetic Growth
+        Regimes of Hydrothermally Synthesized Potassium Tantalate Nanoparticles~2019-09-04
+        05:34:40.776"]}]}}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 29 Jul 2025 02:53:02 GMT
+      Server:
+      - nginx/1.27.5
+      Set-Cookie:
+      - BIGipServer~R.Gov-Prod~web-research.aws-prod.nsf.gov=vi26001f280078081c0000000000009013.47873;
+        path=/; Httponly; Secure
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      - max-age=-436747982; includeSubDomains
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+    status:
+      code: 200
+      message: ''
+version: 1

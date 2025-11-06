@@ -1,0 +1,21 @@
+[package]
+name = "dmpworks-expr-plugin"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "dmpworks_expr_plugin"
+crate-type= ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+pyo3 = { version = "0.24.2", features = ["extension-module", "abi3-py39"] }
+pyo3-polars = { path = "../../../pyo3-polars/pyo3-polars", version = "0.21.0", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0.140"
+polars = { path = "../../../polars/crates/polars", version = "0.48.1", features=["dtype-struct"], default-features = false }
+polars-arrow = { path = "../../../polars/crates/polars-arrow", version = "0.48.1", default-features = false }
+voca_rs = "1.15.2"
+human_name = "2.0.4"
+log = "0.4.27"
+env_logger = "0.11.8"

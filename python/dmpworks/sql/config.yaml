@@ -1,0 +1,42 @@
+gateways:
+  duckdb:
+    connection:
+      # For more information on configuring the connection to your execution engine, visit:
+      # https://sqlmesh.readthedocs.io/en/stable/reference/configuration/#connections
+      # https://sqlmesh.readthedocs.io/en/stable/integrations/engines/duckdb/#connection-options
+      type: duckdb
+      database: /path/to/db.db
+      # concurrent_tasks: 1
+      # register_comments: True
+      # pre_ping: False
+      # pretty_sql: False
+      # catalogs:
+      # extensions:
+      connector_config:
+        threads: 1
+        memory_limit: '200GB'
+        preserve_insertion_order: 'false'
+      # secrets:
+      # token:
+
+variables:
+  crossref_metadata_path: "/path/to/crossref_metadata/parquets"
+  datacite_path: "/path/to/datacite/parquets"
+  openalex_funders_path: "/path/to/openalex_funders/parquets"
+  openalex_works_path: "/path/to/openalex_works/parquets"
+  ror_path: "/path/to/ror/parquets"
+  export_path: "/path/to/export"
+  audit_crossref_metadata_works_threshold: 167008747
+  audit_datacite_works_threshold: 72019576
+  audit_openalex_works_threshold: 264675126
+  default_threads: 32
+  openalex_index_author_names_threads: 32
+  openalex_index_abstracts_threads: 32
+  openalex_index_titles_threads: 32
+  openalex_index_openalex_index_threads: 32
+
+default_gateway: duckdb
+
+model_defaults:
+  dialect: duckdb
+  start: 2025-06-02

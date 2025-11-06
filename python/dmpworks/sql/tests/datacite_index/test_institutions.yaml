@@ -1,0 +1,76 @@
+test_datacite_index_institutions:
+  model: datacite_index.institutions
+  inputs:
+    # What if the ROR ID doesn't map to any of these?
+    ror.index:
+      rows:
+        - ror_id: "027ka1x80"
+          type: "ror"
+          identifier: "027ka1x80"
+        - ror_id: "027ka1x80"
+          type: "grid"
+          identifier: "grid.238252.c"
+        - ror_id: "027ka1x80"
+          type: "isni"
+          identifier: "0000000449071619"
+        - ror_id: "027ka1x80"
+          type: "fundref"
+          identifier: "10.13039/100000104"
+        - ror_id: "027ka1x80"
+          type: "wikidata"
+          identifier: "Q23548"
+    datacite_index.works:
+      rows:
+        - doi: "10.9999/test.0001" # ROR
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              affiliation_identifier: "027ka1x80"
+        - doi: "10.9999/test.0002" # GRID
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              affiliation_identifier: "grid.238252.c"
+        - doi: "10.9999/test.0003" # ISNI
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              affiliation_identifier: "0000000449071619"
+        - doi: "10.9999/test.0004" # Crossref Funder ID
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              affiliation_identifier: "10.13039/100000104"
+        - doi: "10.9999/test.0005" # Wikidata
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              affiliation_identifier: "Q23548"
+        - doi: "10.9999/test.0006" # Null ID but has name
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              affiliation_identifier: null
+        - doi: "10.9999/test.0007" # Should be excluded
+          institutions: [ ]
+  outputs:
+    query:
+      rows:
+        - doi: "10.9999/test.0001"
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0002"
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0003"
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0004"
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0005"
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              ror: "027ka1x80"
+        - doi: "10.9999/test.0006"
+          institutions:
+            - name: "National Aeronautics and Space Administration"
+              ror: null

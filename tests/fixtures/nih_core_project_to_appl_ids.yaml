@@ -1,0 +1,58 @@
+interactions:
+- request:
+    body: '{"criteria": {"fiscal_years": [], "project_nums": ["5P41GM108569-08"]},
+      "include_fields": ["ApplId", "ProjectNum"], "limit": 500}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '129'
+      Content-Type:
+      - application/json
+      User-Agent:
+      - python-requests/2.32.3
+    method: POST
+    uri: https://api.reporter.nih.gov/v2/projects/search
+  response:
+    body:
+      string: '{"meta":{"search_id":"VoUAtyYkoUubfUArxzX0QQ","total":7,"offset":0,"limit":500,"sort_field":null,"sort_order":"ASC","sorted_by_relevance":true,"properties":{"URL":"https:/reporter.nih.gov/search/VoUAtyYkoUubfUArxzX0QQ/projects"}},"results":[{"appl_id":10438551,"project_num":"5P41GM108569-08"},{"appl_id":10438555,"project_num":"5P41GM108569-08"},{"appl_id":10438547,"project_num":"5P41GM108569-08"},{"appl_id":10438553,"project_num":"5P41GM108569-08"},{"appl_id":10438554,"project_num":"5P41GM108569-08"},{"appl_id":10438548,"project_num":"5P41GM108569-08"},{"appl_id":10438552,"project_num":"5P41GM108569-08"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '613'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 29 Jul 2025 02:44:24 GMT
+      Server:
+      - ''
+      Set-Cookie:
+      - AWSALB=Ac0KxvLpm9unn7+73kaWKJdruWE8P+gErwdWXuyJ1aLh05eI2OVGQ2OX6NE6HZK087PrSKcIUcwgW2E4OBK/qhaPXOaO9ZtzKoXcBGNKtRshjtKFnfIKrGOAhUJ/pK04iRN9/5iLrvqpK9zXy4gxpcKxD58jT7BXMkZgJM2cVmJZUdy81nM7zdGj5Befi4NlQO7gn/detAXlCOCrRezPLcMO2uzFr3DJyI5IDf9QDeHtol49hdIOLNR7tBVGAW3h2M7DzSlLoWbZil25KA==;
+        Expires=Tue, 05 Aug 2025 02:44:24 GMT; Path=/
+      - AWSALBCORS=Ac0KxvLpm9unn7+73kaWKJdruWE8P+gErwdWXuyJ1aLh05eI2OVGQ2OX6NE6HZK087PrSKcIUcwgW2E4OBK/qhaPXOaO9ZtzKoXcBGNKtRshjtKFnfIKrGOAhUJ/pK04iRN9/5iLrvqpK9zXy4gxpcKxD58jT7BXMkZgJM2cVmJZUdy81nM7zdGj5Befi4NlQO7gn/detAXlCOCrRezPLcMO2uzFr3DJyI5IDf9QDeHtol49hdIOLNR7tBVGAW3h2M7DzSlLoWbZil25KA==;
+        Expires=Tue, 05 Aug 2025 02:44:24 GMT; Path=/; SameSite=None; Secure
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Rate-Limit-Limit:
+      - 1m
+      X-Rate-Limit-Remaining:
+      - '199'
+      X-Rate-Limit-Reset:
+      - '2025-07-29T02:45:19.8696232Z'
+      X-XSS-Protection:
+      - 1; mode=block
+      api-supported-versions:
+      - '2.0'
+    status:
+      code: 200
+      message: OK
+version: 1
