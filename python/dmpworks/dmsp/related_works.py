@@ -2,7 +2,9 @@ import json
 import logging
 import pathlib
 import tempfile
+from dataclasses import dataclass
 from typing import Annotated, Callable
+
 import pymysql.cursors
 from cyclopts import App, Parameter, validators
 from jsonlines import jsonlines
@@ -10,8 +12,9 @@ from jsonlines import jsonlines
 app = App(name="related-works", help="DMSP related works utilities.")
 
 
-@app.command(name="load")
-def load_related_works_cmd(
+@Parameter(name="*")
+@dataclass
+class MergeRelatedWorksConfig:
     matches_path: Annotated[
         pathlib.Path,
         Parameter(
@@ -21,70 +24,73 @@ def load_related_works_cmd(
                 exists=True,
             )
         ),
-    ],
+    ]
     host: Annotated[
         str,
         Parameter(
             env_var="MYSQL_HOST",
             help="MySQL hostname",
         ),
-    ],
+    ]
     port: Annotated[
         int,
         Parameter(
             env_var="MYSQL_TCP_PORT",
             help="MySQL port",
         ),
-    ],
+    ]
     user: Annotated[
         str,
         Parameter(
             env_var="MYSQL_USER",
             help="MySQL user name",
         ),
-    ],
+    ]
     database: Annotated[
         str,
         Parameter(
             env_var="MYSQL_DATABASE",
             help="MySQL database name",
         ),
-    ],
+    ]
     password: Annotated[
         str,
         Parameter(
             env_var="MYSQL_PWD",
             help="MySQL password",
         ),
-    ],
-    batch_size: int = 1000,
-):
-    """Load related works into DMSP database
+    ]
+    batch_size: int = 1000
+
+
+@app.command(name="merge")
+def merge_related_works_cmd(config: MergeRelatedWorksConfig):
+    """Merge related works into DMSP database
 
     Args:
-        matches_path: the path to the Related Works matches generated from OpenSearch.
-        host: the MYSQL hostname.
-        port: the MYSQL port.
-        user: the MYSQL user.
-        database: the MYSQL database name.
-        password: the MYSQL password.
-        batch_size: the batch size for loading staging tables.
+        config.matches_path: the path to the Related Works matches generated from OpenSearch.
+        config.host: the MYSQL hostname.
+        config.port: the MYSQL port.
+        config.user: the MYSQL user.
+        config.database: the MYSQL database name.
+        config.password: the MYSQL password.
+        config.batch_size: the batch size for loading staging tables.
     """
 
     logging.basicConfig(level=logging.INFO)
 
-    load_related_works(
-        matches_path,
-        host,
-        port,
-        user,
-        database,
-        password,
-        batch_size=batch_size,
+    merge_related_works(
+        config.matches_path,
+        config.host,
+        config.port,
+        config.user,
+        config.database,
+        config.password,
+        batch_size=config.batch_size,
     )
 
 
-def load_related_works(
+def merge_related_works(
     matches_path: pathlib.Path,
     host: str,
     port: int,

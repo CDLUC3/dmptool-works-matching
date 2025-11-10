@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, ContextManager, Generator
 
-from dmpworks.batch.utils import clean_s3_prefix, download_from_s3, local_path, s3_uri, upload_to_s3
+from dmpworks.batch.utils import clean_s3_prefix, download_files_from_s3, local_path, s3_uri, upload_files_to_s3
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def download_source_task(bucket_name: str, dataset: str, task_id: str) -> Genera
     )
     yield ctx
 
-    upload_to_s3(download_dir, target_uri)
+    upload_files_to_s3(download_dir, target_uri)
 
     # Cleanup files as we can't guarantee that we will end up on the same worker
     # again, and we don't want to take disk space that other tasks might use
@@ -52,7 +52,7 @@ def transform_parquets_task(bucket_name: str, dataset: str, task_id: str) -> Gen
 
     clean_s3_prefix(target_uri)
 
-    download_from_s3(f"{s3_uri(bucket_name, dataset, task_id, "download")}*", download_dir)
+    download_files_from_s3(f"{s3_uri(bucket_name, dataset, task_id, "download")}*", download_dir)
     transform_dir.mkdir(parents=True, exist_ok=True)
 
     log.info(f"Transforming {dataset}")
@@ -63,7 +63,7 @@ def transform_parquets_task(bucket_name: str, dataset: str, task_id: str) -> Gen
     )
     yield ctx
 
-    upload_to_s3(transform_dir / "parquets", f"{target_uri}parquets/", "*.parquet")
+    upload_files_to_s3(transform_dir / "parquets", f"{target_uri}parquets/", "*.parquet")
 
     # Cleanup files as we can't guarantee that we will end up on the same worker
     # again, and we don't want to take disk space that other tasks might use

@@ -15,7 +15,7 @@ Data sources:
 ## Installation
 Clone dmsp_api_prototype repo:
 ```bash
-git clone git@github.com:CDLUC3/dmsp_api_prototype.git
+git clone git@github.com:CDLUC3/dmptool-works-matching.git
 ```
 
 Clone Polars:

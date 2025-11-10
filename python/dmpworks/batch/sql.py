@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from cyclopts import App
 
-from dmpworks.batch.utils import download_from_s3, local_path, s3_uri, upload_to_s3
+from dmpworks.batch.utils import download_files_from_s3, local_path, s3_uri, upload_files_to_s3
 from dmpworks.cli_utils import DateString, LogLevel
 from dmpworks.sql.commands import run_plan
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -54,7 +54,7 @@ def plan(
     for dataset, release_date in datasets:
         transform_dir = local_path(dataset, release_date, "transform")
         target_uri = s3_uri(bucket_name, dataset, release_date, "transform")
-        download_from_s3(f"{target_uri}*", transform_dir)
+        download_files_from_s3(f"{target_uri}*", transform_dir)
 
     # Configure SQL Mesh environment
     sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / task_id
@@ -73,7 +73,7 @@ def plan(
 
     # Upload exported Parquet files
     sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{task_id}/"
-    upload_to_s3(sqlmesh_data_dir, sql_mesh_s3_uri, "*")
+    upload_files_to_s3(sqlmesh_data_dir, sql_mesh_s3_uri, "*")
 
 
 if __name__ == "__main__":
