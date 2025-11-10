@@ -51,7 +51,7 @@ Build Polars:
 
 Install dmpworks Python package dependencies:
 ```bash
-(cd dmsp_api_prototype/queries/dmpworks && pip install -e .[dev])
+(cd dmptool-works-matching && pip install -e .[dev])
 ```
 
 Build and install the dmpworks Python package, including its Polars expression 
