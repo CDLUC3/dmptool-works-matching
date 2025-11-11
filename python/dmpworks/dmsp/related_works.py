@@ -25,35 +25,35 @@ class MergeRelatedWorksConfig:
             )
         ),
     ]
-    host: Annotated[
+    mysql_host: Annotated[
         str,
         Parameter(
             env_var="MYSQL_HOST",
             help="MySQL hostname",
         ),
     ]
-    port: Annotated[
+    mysql_tcp_port: Annotated[
         int,
         Parameter(
             env_var="MYSQL_TCP_PORT",
             help="MySQL port",
         ),
     ]
-    user: Annotated[
+    mysql_user: Annotated[
         str,
         Parameter(
             env_var="MYSQL_USER",
             help="MySQL user name",
         ),
     ]
-    database: Annotated[
+    mysql_database: Annotated[
         str,
         Parameter(
             env_var="MYSQL_DATABASE",
             help="MySQL database name",
         ),
     ]
-    password: Annotated[
+    mysql_pwd: Annotated[
         str,
         Parameter(
             env_var="MYSQL_PWD",
@@ -69,11 +69,11 @@ def merge_related_works_cmd(config: MergeRelatedWorksConfig):
 
     Args:
         config.matches_path: the path to the Related Works matches generated from OpenSearch.
-        config.host: the MYSQL hostname.
-        config.port: the MYSQL port.
-        config.user: the MYSQL user.
-        config.database: the MYSQL database name.
-        config.password: the MYSQL password.
+        config.mysql_host: the MYSQL hostname.
+        config.mysql_tcp_port: the MYSQL port.
+        config.mysql_user: the MYSQL user.
+        config.mysql_database: the MYSQL database name.
+        config.mysql_pwd: the MYSQL password.
         config.batch_size: the batch size for loading staging tables.
     """
 
@@ -81,31 +81,31 @@ def merge_related_works_cmd(config: MergeRelatedWorksConfig):
 
     merge_related_works(
         config.matches_path,
-        config.host,
-        config.port,
-        config.user,
-        config.database,
-        config.password,
+        config.mysql_host,
+        config.mysql_tcp_port,
+        config.mysql_user,
+        config.mysql_database,
+        config.mysql_pwd,
         batch_size=config.batch_size,
     )
 
 
 def merge_related_works(
     matches_path: pathlib.Path,
-    host: str,
-    port: int,
-    user: str,
-    database: str,
-    password: str,
+    mysql_host: str,
+    mysql_tcp_port: int,
+    mysql_user: str,
+    mysql_database: str,
+    mysql_pwd: str,
     batch_size: int,
 ):
     # Connect to database
     conn = pymysql.connect(
-        host=host,
-        port=port,
-        user=user,
-        password=password,
-        database=database,
+        host=mysql_host,
+        port=mysql_tcp_port,
+        user=mysql_user,
+        password=mysql_pwd,
+        database=mysql_database,
         cursorclass=pymysql.cursors.DictCursor,
         autocommit=False,
     )

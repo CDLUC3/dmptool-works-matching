@@ -204,11 +204,11 @@ def merge_related_works_cmd(
     # Upsert data
     merge_related_works(
         config.matches_path,
-        config.host,
-        config.port,
-        config.user,
-        config.database,
-        config.password,
+        config.mysql_host,
+        config.mysql_tcp_port,
+        config.mysql_user,
+        config.mysql_database,
+        config.mysql_pwd,
         batch_size=config.batch_size,
     )
 
