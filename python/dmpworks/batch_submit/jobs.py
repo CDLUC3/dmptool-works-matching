@@ -70,14 +70,17 @@ def submit_job(
     if environment is not None:
         container_overrides["environment"] = environment
 
+    if depends_on is None:
+        depends_on = []
+
     # Submit job
     batch_client = boto3.client('batch')
     response = batch_client.submit_job(
-        job_name=f"{job_name}-{format_job_date(job_date)}",
-        job_queue=job_queue,
-        job_definition=job_definition,
-        depends_on=depends_on,
-        container_overrides=container_overrides,
+        jobName=f"{job_name}-{format_job_date(job_date)}",
+        jobQueue=job_queue,
+        jobDefinition=job_definition,
+        dependsOn=depends_on,
+        containerOverrides=container_overrides,
     )
     job_id = response['jobId']
     logging.info(f"Submitted job with ID: {job_id}")
@@ -511,6 +514,8 @@ def submit_dmp_works_search_job(
     *,
     env: str,
     job_date: pendulum.Date,
+    bucket_name: str,
+    export_date: pendulum.Date,
     host: str,
     region: str,
     dmp_index_name: str = "dmps-index",
@@ -529,8 +534,10 @@ def submit_dmp_works_search_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch dmp-works-search $DMP_INDEX_NAME $WORKS_INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE",
+        command="dmpworks aws-batch opensearch dmp-works-search $BUCKET_NAME $EXPORT_DATE $DMP_INDEX_NAME $WORKS_INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE",
         environment=[
+            {"name": "BUCKET_NAME", "value": bucket_name},
+            {"name": "EXPORT_DATE", "value": export_date.format('YYYY-MM-DD')},
             {"name": "DMP_INDEX_NAME", "value": dmp_index_name},
             {"name": "WORKS_INDEX_NAME", "value": works_index_name},
             {"name": "MODE", "value": mode},

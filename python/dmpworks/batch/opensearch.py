@@ -21,7 +21,7 @@ from dmpworks.opensearch.sync_dmps import sync_dmps
 from dmpworks.opensearch.sync_works import sync_works
 from dmpworks.opensearch.utils import Date, make_opensearch_client
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
-from dmsp.related_works import MergeRelatedWorksConfig
+from dmpworks.dmsp.related_works import MergeRelatedWorksConfig
 
 log = logging.getLogger(__name__)
 
@@ -138,10 +138,10 @@ def enrich_dmps_cmd(
 
 @app.command(name="dmp-works-search")
 def dmp_works_search_cmd(
-    dmp_index_name: str,
-    works_index_name: str,
     bucket_name: str,
     export_date: DateString,
+    dmp_index_name: str,
+    works_index_name: str,
     scroll_time: str = "60m",
     batch_size: int = 250,
     max_results: int = 100,
