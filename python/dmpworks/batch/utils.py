@@ -19,7 +19,7 @@ IDENTITY_URL = "http://169.254.169.254/latest/dynamic/instance-identity/document
 
 def s3_uri(bucket_name: str, *parts: str) -> str:
     path = "/".join(parts)
-    return f"s3://{bucket_name}/{path}/" if path else f"s3://{bucket_name}/"
+    return f"s3://{bucket_name}/{path}" if path else f"s3://{bucket_name}"
 
 
 def data_path() -> pathlib.Path:
@@ -56,7 +56,7 @@ def download_files_from_s3(source_uri: str, target_dir: pathlib.Path):
 
 def download_file_from_s3(source_uri: str, target_file: pathlib.Path):
     log.info(f"Downloading from {source_uri} to {target_file}")
-    run_process(["s5cmd", "cp", source_uri, target_file])
+    run_process(["s5cmd", "cp", source_uri, str(target_file)])
 
 
 def parse_s3_uri(s3_uri: str) -> tuple[str, str]:
@@ -85,7 +85,7 @@ def s3_uri_has_files(
             MaxKeys=1,
         )
     except ClientError as err:
-        raise RuntimeError(f"Unable to list {s3_uri}: {err}")
+        raise RuntimeError(f"Unable to list {s3_uri}") from err
 
     return "Contents" in resp
 
@@ -114,9 +114,9 @@ def associate_elastic_ip(
         log.info(f"Successfully associated Elastic IP {allocation_id} with instance {instance_id}.")
         log.info(f"Association ID: {response.get('AssociationId')}")
     except Exception as e:
-        msg = f"Error associating Elastic IP: {e}"
+        msg = f"Error associating Elastic IP"
         log.error(msg)
-        raise Exception(msg)
+        raise Exception(msg) from e
 
     log.info(f"Waiting for IP {current_ip} to change...")
     start_time = time.time()
@@ -162,6 +162,6 @@ def get_ec2_instance_info(token_ttl_seconds: int = 300):
         return instance_id, region
 
     except Exception as e:
-        msg = f"Error retrieving instance metadata: {e}"
+        msg = f"Error retrieving instance metadata"
         log.error(msg)
-        raise Exception(msg)
+        raise Exception(msg) from e

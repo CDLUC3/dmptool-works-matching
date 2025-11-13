@@ -48,6 +48,10 @@ ARG PYTHON_VERSION="3.12"
 ARG S5CMD_VERSION="2.3.0"
 ENV PYTHON_VERSION=${PYTHON_VERSION}
 ENV S5CMD_VERSION=${S5CMD_VERSION}
+ENV TMPDIR=/data/tmp
+
+# Make temp folder
+RUN mkdir -p ${TMPDIR}
 
 # Install system dependencies
 RUN dnf -y install \

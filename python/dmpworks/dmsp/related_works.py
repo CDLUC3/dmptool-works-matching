@@ -153,6 +153,7 @@ def merge_related_works(
             if conn:
                 conn.rollback()
                 logging.error("Transaction rolled back.")
+            raise e
 
         finally:
             if conn:

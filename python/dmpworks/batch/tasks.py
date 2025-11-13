@@ -18,7 +18,7 @@ class DownloadTaskContext:
 
 @contextmanager
 def download_source_task(bucket_name: str, dataset: str, task_id: str) -> Generator[DownloadTaskContext, Any, None]:
-    target_uri = s3_uri(bucket_name, dataset, task_id, "download")
+    target_uri = s3_uri(bucket_name, dataset, task_id, "download/")
     download_dir = local_path(dataset, task_id, "download")
 
     clean_s3_prefix(target_uri)
@@ -48,11 +48,12 @@ class TransformTaskContext:
 def transform_parquets_task(bucket_name: str, dataset: str, task_id: str) -> Generator[TransformTaskContext, Any, None]:
     download_dir = local_path(dataset, task_id, "download")
     transform_dir = local_path(dataset, task_id, "transform")
-    target_uri = s3_uri(bucket_name, dataset, task_id, "transform")
+    target_uri = s3_uri(bucket_name, dataset, task_id, "transform/")
 
     clean_s3_prefix(target_uri)
 
-    download_files_from_s3(f"{s3_uri(bucket_name, dataset, task_id, "download")}*", download_dir)
+    download_uri = s3_uri(bucket_name, dataset, task_id, "download/*")
+    download_files_from_s3(download_uri, download_dir)
     transform_dir.mkdir(parents=True, exist_ok=True)
 
     log.info(f"Transforming {dataset}")

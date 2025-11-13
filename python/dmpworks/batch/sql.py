@@ -53,8 +53,8 @@ def plan(
     ]
     for dataset, release_date in datasets:
         transform_dir = local_path(dataset, release_date, "transform")
-        target_uri = s3_uri(bucket_name, dataset, release_date, "transform")
-        download_files_from_s3(f"{target_uri}*", transform_dir)
+        target_uri = s3_uri(bucket_name, dataset, release_date, "transform/*")
+        download_files_from_s3(target_uri, transform_dir)
 
     # Configure SQL Mesh environment
     sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / task_id

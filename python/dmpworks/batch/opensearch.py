@@ -1,10 +1,10 @@
 import logging
-from typing import Optional
+import shutil
+from typing import Annotated, Optional
 
-from cyclopts import App
+from cyclopts import App, Parameter
 
 from dmpworks.batch.utils import (
-    data_path,
     download_file_from_s3,
     download_files_from_s3,
     local_path,
@@ -21,7 +21,6 @@ from dmpworks.opensearch.sync_dmps import sync_dmps
 from dmpworks.opensearch.sync_works import sync_works
 from dmpworks.opensearch.utils import Date, make_opensearch_client
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
-from dmpworks.dmsp.related_works import MergeRelatedWorksConfig
 
 log = logging.getLogger(__name__)
 
@@ -63,17 +62,20 @@ def sync_works_cmd(
     level = logging.getLevelName(log_level)
     setup_multiprocessing_logging(level)
 
-    # Download Parquet files from S3
     export_dir = local_path(SQLMESH_DIR, export_date, "export")
-    source_uri = s3_uri(bucket_name, SQLMESH_DIR, export_date, "export")
-    download_files_from_s3(f"{source_uri}*", export_dir)
+    try:
+        # Download Parquet files from S3
+        source_uri = s3_uri(bucket_name, SQLMESH_DIR, export_date, "export/*")
+        download_files_from_s3(source_uri, export_dir)
 
-    # Create index (if it doesn't exist already)
-    client = make_opensearch_client(client_config)
-    create_index(client, index_name, WORKS_MAPPING_FILE)
+        # Create index (if it doesn't exist already)
+        client = make_opensearch_client(client_config)
+        create_index(client, index_name, WORKS_MAPPING_FILE)
 
-    # Run process
-    sync_works(index_name, export_dir, client_config, sync_config, level)
+        # Run process
+        sync_works(index_name, export_dir, client_config, sync_config, level)
+    finally:
+        shutil.rmtree(export_dir, ignore_errors=True)
 
 
 @app.command(name="sync-dmps")
@@ -101,17 +103,20 @@ def sync_dmps_cmd(
     level = logging.getLevelName(log_level)
     setup_multiprocessing_logging(level)
 
-    # Download Parquet files from S3
     export_dir = local_path(DMPS_SOURCE_DIR, export_date)
-    source_uri = s3_uri(bucket_name, DMPS_SOURCE_DIR, export_date)
-    download_files_from_s3(f"{source_uri}*", export_dir)
+    try:
+        # Download Parquet files from S3
+        source_uri = s3_uri(bucket_name, DMPS_SOURCE_DIR, f"{export_date}/*")
+        download_files_from_s3(source_uri, export_dir)
 
-    # Create index (if it doesn't exist already)
-    client = make_opensearch_client(client_config)
-    create_index(client, index_name, DMPS_MAPPING_FILE)
+        # Create index (if it doesn't exist already)
+        client = make_opensearch_client(client_config)
+        create_index(client, index_name, DMPS_MAPPING_FILE)
 
-    # Sync dmps
-    sync_dmps(index_name, export_dir, client_config, sync_config, level)
+        # Sync dmps
+        sync_dmps(index_name, export_dir, client_config, sync_config, level)
+    finally:
+        shutil.rmtree(export_dir)
 
 
 @app.command(name="enrich-dmps")
@@ -161,56 +166,97 @@ def dmp_works_search_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    out_file = data_path() / MATCHES_FILE_NAME
-    dmp_works_search(
-        dmp_index_name,
-        works_index_name,
-        out_file,
-        client_config,
-        scroll_time=scroll_time,
-        batch_size=batch_size,
-        max_results=max_results,
-        project_end_buffer_years=project_end_buffer_years,
-        parallel_search=parallel_search,
-        include_named_queries_score=include_named_queries_score,
-        max_concurrent_searches=max_concurrent_searches,
-        max_concurrent_shard_requests=max_concurrent_shard_requests,
-        dmp_inst_name=dmp_inst_name,
-        dmp_inst_ror=dmp_inst_ror,
-        start_date=start_date,
-        end_date=end_date,
-    )
+    out_file = local_path(DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
+    try:
+        dmp_works_search(
+            dmp_index_name,
+            works_index_name,
+            out_file,
+            client_config,
+            scroll_time=scroll_time,
+            batch_size=batch_size,
+            max_results=max_results,
+            project_end_buffer_years=project_end_buffer_years,
+            parallel_search=parallel_search,
+            include_named_queries_score=include_named_queries_score,
+            max_concurrent_searches=max_concurrent_searches,
+            max_concurrent_shard_requests=max_concurrent_shard_requests,
+            dmp_inst_name=dmp_inst_name,
+            dmp_inst_ror=dmp_inst_ror,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
-    # Upload to s3
-    target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
-    upload_file_to_s3(out_file, target_uri)
+        # Upload to s3
+        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
+        upload_file_to_s3(out_file, target_uri)
+    finally:
+        out_file.unlink(missing_ok=True)
 
 
 @app.command(name="merge-related-works")
 def merge_related_works_cmd(
     bucket_name: str,
     export_date: DateString,
-    config: MergeRelatedWorksConfig,
+    mysql_host: Annotated[
+        str,
+        Parameter(
+            env_var="MYSQL_HOST",
+            help="MySQL hostname",
+        ),
+    ],
+    mysql_tcp_port: Annotated[
+        int,
+        Parameter(
+            env_var="MYSQL_TCP_PORT",
+            help="MySQL port",
+        ),
+    ],
+    mysql_user: Annotated[
+        str,
+        Parameter(
+            env_var="MYSQL_USER",
+            help="MySQL user name",
+        ),
+    ],
+    mysql_database: Annotated[
+        str,
+        Parameter(
+            env_var="MYSQL_DATABASE",
+            help="MySQL database name",
+        ),
+    ],
+    mysql_pwd: Annotated[
+        str,
+        Parameter(
+            env_var="MYSQL_PWD",
+            help="MySQL password",
+        ),
+    ],
+    batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
-    # Download data from s3
-    source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
     matches_path = local_path(DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
-    download_file_from_s3(source_uri, matches_path)
+    try:
+        # Download data from s3
+        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
+        download_file_from_s3(source_uri, matches_path)
 
-    # Upsert data
-    merge_related_works(
-        config.matches_path,
-        config.mysql_host,
-        config.mysql_tcp_port,
-        config.mysql_user,
-        config.mysql_database,
-        config.mysql_pwd,
-        batch_size=config.batch_size,
-    )
+        # Upsert data
+        merge_related_works(
+            matches_path,
+            mysql_host,
+            mysql_tcp_port,
+            mysql_user,
+            mysql_database,
+            mysql_pwd,
+            batch_size=batch_size,
+        )
+    finally:
+        matches_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
