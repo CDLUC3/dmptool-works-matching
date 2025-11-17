@@ -28,7 +28,7 @@ class ReleaseDates:
 @app.command(name="plan")
 def plan(
     bucket_name: str,
-    task_id: str,
+    run_id: str,
     release_dates: ReleaseDates,
     log_level: LogLevel = "INFO",
 ):
@@ -36,7 +36,7 @@ def plan(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        task_id: a unique task ID.
+        run_id: a unique ID to represent this run of the job.
         release_dates: the release dates of each dataset.
         log_level: Python log level.
     """
@@ -57,7 +57,7 @@ def plan(
         download_files_from_s3(target_uri, transform_dir)
 
     # Configure SQL Mesh environment
-    sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / task_id
+    sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / run_id
     duckdb_dir = sqlmesh_data_dir / "duckdb" / "db.db"
     export_dir = sqlmesh_data_dir / "export"
     duckdb_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -72,7 +72,7 @@ def plan(
     run_plan()
 
     # Upload exported Parquet files
-    sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{task_id}/"
+    sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{run_id}/"
     upload_files_to_s3(sqlmesh_data_dir, sql_mesh_s3_uri, "*")
 
 

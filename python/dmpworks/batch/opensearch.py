@@ -11,7 +11,7 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_file_to_s3,
 )
-from dmpworks.cli_utils import DateString, LogLevel
+from dmpworks.cli_utils import LogLevel
 from dmpworks.dmsp.related_works import merge_related_works
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.dmp_works import dmp_works_search
@@ -40,7 +40,7 @@ app = App(name="opensearch", help="OpenSearch AWS Batch pipeline.")
 @app.command(name="sync-works")
 def sync_works_cmd(
     bucket_name: str,
-    export_date: DateString,
+    run_id: str,
     index_name: str,
     client_config: Optional[OpenSearchClientConfig] = None,
     sync_config: Optional[OpenSearchSyncConfig] = None,
@@ -50,7 +50,7 @@ def sync_works_cmd(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        export_date: a unique task ID.
+        run_id: a unique ID to represent this run of the job.
         index_name: the OpenSearch index name.
         client_config: the OpenSearch client config settings.
         sync_config: the OpenSearch sync config settings.
@@ -62,10 +62,10 @@ def sync_works_cmd(
     level = logging.getLevelName(log_level)
     setup_multiprocessing_logging(level)
 
-    export_dir = local_path(SQLMESH_DIR, export_date, "export")
+    export_dir = local_path(SQLMESH_DIR, run_id, "export")
     try:
         # Download Parquet files from S3
-        source_uri = s3_uri(bucket_name, SQLMESH_DIR, export_date, "export/*")
+        source_uri = s3_uri(bucket_name, SQLMESH_DIR, run_id, "export/*")
         download_files_from_s3(source_uri, export_dir)
 
         # Create index (if it doesn't exist already)
@@ -81,7 +81,7 @@ def sync_works_cmd(
 @app.command(name="sync-dmps")
 def sync_dmps_cmd(
     bucket_name: str,
-    export_date: DateString,
+    run_id: str,
     index_name: str,
     client_config: Optional[OpenSearchClientConfig] = None,
     sync_config: Optional[OpenSearchSyncConfig] = None,
@@ -91,7 +91,7 @@ def sync_dmps_cmd(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        export_date: a unique task ID.
+        run_id: a unique ID to represent this run of the job.
         index_name: the OpenSearch index name.
         client_config: the OpenSearch client config settings.
         sync_config: the OpenSearch sync config settings.
@@ -103,10 +103,10 @@ def sync_dmps_cmd(
     level = logging.getLevelName(log_level)
     setup_multiprocessing_logging(level)
 
-    export_dir = local_path(DMPS_SOURCE_DIR, export_date)
+    export_dir = local_path(DMPS_SOURCE_DIR, run_id)
     try:
         # Download Parquet files from S3
-        source_uri = s3_uri(bucket_name, DMPS_SOURCE_DIR, f"{export_date}/*")
+        source_uri = s3_uri(bucket_name, DMPS_SOURCE_DIR, f"{run_id}/*")
         download_files_from_s3(source_uri, export_dir)
 
         # Create index (if it doesn't exist already)
@@ -144,8 +144,8 @@ def enrich_dmps_cmd(
 @app.command(name="dmp-works-search")
 def dmp_works_search_cmd(
     bucket_name: str,
-    export_date: DateString,
-    dmp_index_name: str,
+    run_id: str,
+    dmps_index_name: str,
     works_index_name: str,
     scroll_time: str = "60m",
     batch_size: int = 250,
@@ -166,10 +166,10 @@ def dmp_works_search_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    out_file = local_path(DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
+    out_file = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
     try:
         dmp_works_search(
-            dmp_index_name,
+            dmps_index_name,
             works_index_name,
             out_file,
             client_config,
@@ -188,7 +188,7 @@ def dmp_works_search_cmd(
         )
 
         # Upload to s3
-        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
+        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
         upload_file_to_s3(out_file, target_uri)
     finally:
         out_file.unlink(missing_ok=True)
@@ -197,7 +197,7 @@ def dmp_works_search_cmd(
 @app.command(name="merge-related-works")
 def merge_related_works_cmd(
     bucket_name: str,
-    export_date: DateString,
+    run_id: str,
     mysql_host: Annotated[
         str,
         Parameter(
@@ -239,10 +239,10 @@ def merge_related_works_cmd(
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
-    matches_path = local_path(DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
+    matches_path = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
     try:
         # Download data from s3
-        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, export_date, MATCHES_FILE_NAME)
+        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
         download_file_from_s3(source_uri, matches_path)
 
         # Upsert data

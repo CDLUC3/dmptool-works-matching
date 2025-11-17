@@ -146,7 +146,7 @@ def sync_dmps_cmd(
 
 @app.command(name="enrich-dmps")
 def enrich_dmps_cmd(
-    dmp_index_name: str,
+    dmps_index_name: str,
     client_config: Optional[OpenSearchClientConfig] = None,
     log_level: LogLevel = "INFO",
 ):
@@ -154,7 +154,7 @@ def enrich_dmps_cmd(
     found on funder award pages.
 
     Args:
-        dmp_index_name: the name of the DMP index to update.
+        dmps_index_name: the name of the DMP index to update.
         client_config: OpenSearch client settings.
         log_level: Python log level.
     """
@@ -167,14 +167,14 @@ def enrich_dmps_cmd(
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
     enrich_dmps(
-        dmp_index_name,
+        dmps_index_name,
         client_config,
     )
 
 
 @app.command(name="dmp-works-search")
 def dmp_works_search_cmd(
-    dmp_index_name: str,
+    dmps_index_name: str,
     works_index_name: str,
     out_file: Annotated[
         pathlib.Path,
@@ -205,7 +205,7 @@ def dmp_works_search_cmd(
     found on funder award pages.
 
     Args:
-        dmp_index_name: the name of the DMP index in OpenSearch.
+        dmps_index_name: the name of the DMP index in OpenSearch.
         works_index_name: the name of the works index in OpenSearch.
         out_file: the output directory where search results will be saved.
         scroll_time: the length of time the OpenSearch scroll used to iterate
@@ -231,7 +231,7 @@ def dmp_works_search_cmd(
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
     dmp_works_search(
-        dmp_index_name,
+        dmps_index_name,
         works_index_name,
         out_file,
         client_config,

@@ -30,15 +30,20 @@ def normalise_identifier(value: Optional[str]) -> Optional[str]:
     return re.sub(r"(?i)^https?://[^/]+/", "", value.strip()).lower()
 
 
-def keep_record(dataset: Dataset, ror_id: str, institution_name: Optional[str], record: dict) -> bool:
+def normalise_name(name: Optional[str]) -> Optional[str]:
+    if not name:
+        return None
+    cleaned = name.strip().lower()
+    return cleaned or None
+
+
+def keep_record(dataset: Dataset, ror_ids: set[str], institution_names: set[str], record: dict) -> bool:
     if dataset == "openalex-works":
         for authorship in record.get("authorships", []):
             for inst in authorship.get("institutions", []):
                 identifier = inst.get("ror")
-                name = inst.get("display_name")
-                if normalise_identifier(identifier) == ror_id or (
-                    institution_name is not None and name == institution_name
-                ):
+                name = normalise_name(inst.get("display_name"))
+                if normalise_identifier(identifier) in ror_ids or name in institution_names:
                     return True
         return False
 
@@ -46,23 +51,21 @@ def keep_record(dataset: Dataset, ror_id: str, institution_name: Optional[str], 
         for creator in record.get("attributes", {}).get("creators", []):
             for affiliation in normalise_affiliations(creator.get("affiliation", [])):
                 identifier = affiliation.get("affiliationIdentifier")
-                name = affiliation.get("name")
-                if normalise_identifier(identifier) == ror_id or (
-                    institution_name is not None and name == institution_name
-                ):
+                name = normalise_name(affiliation.get("name"))
+                if normalise_identifier(identifier) in ror_ids or name in institution_names:
                     return True
         return False
 
     elif dataset == "crossref-metadata":
         for author in record.get("author", []):
             for affiliation in author.get("affiliation", []):
-                name = affiliation.get("name")
-                if institution_name is not None and name == institution_name:
+                name = normalise_name(affiliation.get("name"))
+                if name in institution_names:
                     return True
 
                 for id_struct in affiliation.get("id", []):
                     identifier = id_struct.get("id")
-                    if normalise_identifier(identifier) == ror_id:
+                    if normalise_identifier(identifier) in ror_ids:
                         return True
         return False
 
@@ -86,7 +89,7 @@ def init_process_logs(level: int):
 
 
 def filter_dataset(
-    dataset: Dataset, ror_id: str, institution_name: Optional[str], file_in: pathlib.Path, out_dir: pathlib
+    dataset: Dataset, ror_ids: set[str], institution_names: set[str], file_in: pathlib.Path, out_dir: pathlib
 ):
     logging.debug(f"start filtering {file_in}")
 
@@ -99,7 +102,7 @@ def filter_dataset(
             for line in f_in:
                 if line.strip():
                     record = orjson.loads(line)
-                    if keep_record(dataset, ror_id, institution_name, record):
+                    if keep_record(dataset, ror_ids, institution_names, record):
                         f_out.write(line.encode("utf-8"))  # line already ends with newline
                         total_filtered += 1
 
@@ -109,12 +112,13 @@ def filter_dataset(
 
 
 @timed
-def create_demo_dataset(
+def create_dataset_subset(
+    *,
     dataset: Dataset,
-    ror_id: str,
-    institution_name: Optional[str],
     in_dir: pathlib.Path,
     out_dir: pathlib.Path,
+    ror_ids: set[str],
+    institution_names: set[str],
     log_level: int,
 ):
     is_empty = next(out_dir.iterdir(), None) is None
@@ -124,13 +128,14 @@ def create_demo_dataset(
     file_glob = get_file_glob(dataset)
     files = list(pathlib.Path(in_dir).glob(file_glob))
     futures = []
+    institution_names = set([val for name in institution_names if (val := normalise_name(name)) is not None])
 
     try:
         with ProcessPoolExecutor(
             max_workers=os.cpu_count(), initializer=init_process_logs, initargs=(log_level,)
         ) as executor:
             for file_in in files:
-                future = executor.submit(filter_dataset, dataset, ror_id, institution_name, file_in, out_dir)
+                future = executor.submit(filter_dataset, dataset, ror_ids, institution_names, file_in, out_dir)
                 futures.append(future)
 
             total_files = len(files)

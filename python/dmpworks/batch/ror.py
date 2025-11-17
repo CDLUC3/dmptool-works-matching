@@ -49,19 +49,19 @@ def gzip_file(in_file: pathlib.Path, out_file: pathlib.Path):
 
 
 @app.command(name="download")
-def download_cmd(bucket_name: str, task_id: str, download_url: str, hash: Optional[str] = None):
+def download_cmd(bucket_name: str, run_id: str, download_url: str, hash: Optional[str] = None):
     """Download ROR from the Zenodo and upload it to the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        task_id: a unique task ID.
+        run_id: a unique ID to represent this run of the job.
         download_url: the Zenodo download URL for a specific ROR ID, e.g. https://zenodo.org/records/15731450/files/v1.67-2025-06-24-ror-data.zip?download=1.
         hash: the MD5 sum of the file.
     """
 
     setup_multiprocessing_logging(logging.INFO)
 
-    with download_source_task(bucket_name, DATASET, task_id) as ctx:
+    with download_source_task(bucket_name, DATASET, run_id) as ctx:
         # Download file
         zip_path = pooch.retrieve(
             url=download_url,
@@ -84,19 +84,19 @@ def download_cmd(bucket_name: str, task_id: str, download_url: str, hash: Option
 
 
 @app.command(name="transform")
-def transform_cmd(bucket_name: str, task_id: str, file_name: str):
+def transform_cmd(bucket_name: str, run_id: str, file_name: str):
     """Download ROR from the DMP Tool S3 bucket, transform it to
     Parquet format, and upload the results to same bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        task_id: a unique task ID.
+        run_id: a unique ID to represent this run of the job.
         file_name: the name of the gzipped ROR V2 JSON file.
     """
 
     setup_multiprocessing_logging(logging.INFO)
 
-    with transform_parquets_task(bucket_name, DATASET, task_id) as ctx:
+    with transform_parquets_task(bucket_name, DATASET, run_id) as ctx:
         json_file = ctx.download_dir / file_name
         if not json_file.is_file():
             msg = f"Could not find file: {json_file}"

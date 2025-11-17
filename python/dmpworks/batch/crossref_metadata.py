@@ -17,20 +17,20 @@ app = App(name="crossref-metadata", help="Crossref Metadata AWS Batch pipeline."
 
 
 @app.command(name="download")
-def download_cmd(bucket_name: str, task_id: str, file_name: str):
+def download_cmd(bucket_name: str, run_id: str, file_name: str):
     """Download Crossref Metadata from the Crossref Metadata requestor pays S3
     bucket and upload it to the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        task_id: a unique task ID.
+        run_id: a unique ID to represent this run of the job.
         file_name: the name of the Crossref Metadata Public Datafile,
         e.g. April_2025_Public_Data_File_from_Crossref.tar.
     """
 
     setup_multiprocessing_logging(logging.INFO)
 
-    with download_source_task(bucket_name, DATASET, task_id) as ctx:
+    with download_source_task(bucket_name, DATASET, run_id) as ctx:
         # Download archive
         run_process(
             [
@@ -58,7 +58,7 @@ def download_cmd(bucket_name: str, task_id: str, file_name: str):
 @app.command(name="transform")
 def transform_cmd(
     bucket_name: str,
-    task_id: str,
+    run_id: str,
     *,
     config: Optional[CrossrefMetadataConfig] = None,
 ):
@@ -67,14 +67,14 @@ def transform_cmd(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        task_id: a unique task ID.
+        run_id: a unique ID to represent this run of the job.
         config: optional configuration parameters.
     """
 
     config = CrossrefMetadataConfig() if config is None else config
     setup_multiprocessing_logging(logging.INFO)
 
-    with transform_parquets_task(bucket_name, DATASET, task_id) as ctx:
+    with transform_parquets_task(bucket_name, DATASET, run_id) as ctx:
         transform_crossref_metadata(
             in_dir=ctx.download_dir,
             out_dir=ctx.transform_dir,

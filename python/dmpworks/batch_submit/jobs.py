@@ -18,8 +18,21 @@ MEDIUM_MEMORY = 28_762
 LARGE_VCPUS = 32
 LARGE_MEMORY = 58_368
 
-VERY_LARGE_VCPU = 32
+VERY_LARGE_VCPUS = 32
 VERY_LARGE_MEMORY = 250_880
+
+TQDM_POSITION = "-1"
+TQDM_MININTERVAL = "120"
+
+
+_aws_batch_client = None
+
+
+def get_aws_batch_client():
+    global _aws_batch_client
+    if _aws_batch_client is None:
+        _aws_batch_client = boto3.client('batch')
+    return _aws_batch_client
 
 
 class EnvVarDict(TypedDict):
@@ -31,8 +44,8 @@ class DependsOnDict(TypedDict):
     jobId: str
 
 
-def format_job_date(job_date: pendulum.Date):
-    return job_date.format("YYYY-MM-DD")
+def format_date(date: pendulum.Date):
+    return date.format("YYYY-MM-DD")
 
 
 def standard_job_definition(env: str) -> str:
@@ -50,7 +63,7 @@ def database_job_definition(env: str) -> str:
 def submit_job(
     *,
     job_name: str,
-    job_date: pendulum.Date,
+    run_id: str,
     job_queue: str,
     job_definition: str,
     vcpus: Optional[int] = None,
@@ -74,9 +87,9 @@ def submit_job(
         depends_on = []
 
     # Submit job
-    batch_client = boto3.client('batch')
+    batch_client = get_aws_batch_client()
     response = batch_client.submit_job(
-        jobName=f"{job_name}-{format_job_date(job_date)}",
+        jobName=f"{job_name}-{run_id}",
         jobQueue=job_queue,
         jobDefinition=job_definition,
         dependsOn=depends_on,
@@ -88,28 +101,50 @@ def submit_job(
     return job_id
 
 
+def make_env(env_vars: dict[str, str]) -> list[EnvVarDict]:
+    return [{"name": k, "value": str(v)} for k, v in env_vars.items()]
+
+
 def ror_download_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
     download_url: str,
     hash: str,
     vcpus: int = NANO_VCPUS,
     memory: int = NANO_MEMORY,
-):
+) -> str:
+    """
+    Submits the ROR data download job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket to download the file to.
+        run_id: a unique ID to represent this run of the job.
+        download_url: the Zenodo download URL for the ROR data file.
+        hash: the expected hash of the data file.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="ror-download",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
-        command="dmpworks aws-batch ror download $BUCKET_NAME $TASK_ID $DOWNLOAD_URL --hash $HASH",
-        environment=[
-            {"name": "TASK_ID", "value": "2025-06-24"},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "DOWNLOAD_URL", "value": download_url},
-            {"name": "HASH", "value": hash},
-        ],
+        command="dmpworks aws-batch ror download $BUCKET_NAME $RUN_ID $DOWNLOAD_URL --hash $HASH",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+                "DOWNLOAD_URL": download_url,
+                "HASH": hash,
+            }
+        ),
         vcpus=vcpus,
         memory=memory,
     )
@@ -118,26 +153,44 @@ def ror_download_job(
 def ror_transform_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
     file_name: str,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
-):
+) -> str:
+    """
+    Submits the ROR data transform job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket containing the data.
+        run_id: a unique ID to represent this run of the job.
+        file_name: the name of the file to be transformed.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="ror-transform",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch ror transform $BUCKET_NAME $TASK_ID $FILE_NAME",
-        environment=[
-            {"name": "TASK_ID", "value": "2025-06-24"},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "FILE_NAME", "value": file_name},
-        ],
+        command="dmpworks aws-batch ror transform $BUCKET_NAME $RUN_ID $FILE_NAME",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+                "FILE_NAME": file_name,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -145,47 +198,80 @@ def ror_transform_job(
 def openalex_funders_download_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
     vcpus: int = NANO_VCPUS,
     memory: int = NANO_MEMORY,
-):
+) -> str:
+    """
+    Submits the OpenAlex funders data download job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket to download the file to.
+        run_id: a unique ID to represent this run of the job.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="openalex-funders-download",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-funders download $BUCKET_NAME $TASK_ID",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-        ],
+        command="dmpworks aws-batch openalex-funders download $BUCKET_NAME $RUN_ID",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+            }
+        ),
     )
 
 
 def openalex_funders_transform_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
     vcpus: int = NANO_VCPUS,
     memory: int = NANO_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
-):
+) -> str:
+    """
+    Submits the OpenAlex funders data transform job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket containing the raw data.
+        run_id: a unique ID to represent this run of the job.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="openalex-funders-transform",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-funders transform $BUCKET_NAME $TASK_ID",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-        ],
+        command="dmpworks aws-batch openalex-funders transform $BUCKET_NAME $RUN_ID",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -193,47 +279,86 @@ def openalex_funders_transform_job(
 def openalex_works_download_job(
     *,
     env: str,
-    job_date: pendulum.Date,
+    bucket_name: str,
+    run_id: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
-    bucket_name: str,
-):
+) -> str:
+    """
+    Submits the OpenAlex works data download job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket to download the files to.
+        run_id: a unique ID to represent this run of the job.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="openalex-works-download",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-works download $BUCKET_NAME $TASK_ID",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-        ],
+        command="dmpworks aws-batch openalex-works download $BUCKET_NAME $RUN_ID",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+            }
+        ),
     )
 
 
 def openalex_works_transform_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
+    max_file_processes: int = 8,
+    batch_size: int = 8,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
-):
+) -> str:
+    """
+    Submits the OpenAlex works data transform job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket containing the raw data.
+        run_id: a unique ID to represent this run of the job.
+        max_file_processes: max number of files to read in parallel.
+        batch_size: number of records to process in a batch.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="openalex-works-transform",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $TASK_ID --max-file-processes=8 --batch-size=8",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-        ],
+        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --max-file-processes=$MAX_FILE_PROCESSES --batch-size=$BATCH_SIZE",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+                "MAX_FILE_PROCESSES": str(max_file_processes),
+                "BATCH_SIZE": str(batch_size),
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -241,49 +366,83 @@ def openalex_works_transform_job(
 def crossref_metadata_download_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
     file_name: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
+    """
+    Submits the Crossref metadata download job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket to download the file to.
+        run_id: a unique ID to represent this run of the job.
+        file_name: the name of the Crossref metadata file to download.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="crossref-metadata-download",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch crossref-metadata download $BUCKET_NAME $TASK_ID $FILE_NAME",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "FILE_NAME", "value": file_name},
-        ],
+        command="dmpworks aws-batch crossref-metadata download $BUCKET_NAME $RUN_ID $FILE_NAME",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+                "FILE_NAME": file_name,
+            }
+        ),
     )
 
 
 def crossref_metadata_transform_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
+    """
+    Submits the Crossref metadata transform job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket containing the raw data.
+        run_id: a unique ID to represent this run of the job.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="crossref-metadata-transform",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch crossref-metadata transform $BUCKET_NAME $TASK_ID",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-        ],
+        command="dmpworks aws-batch crossref-metadata transform $BUCKET_NAME $RUN_ID",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -291,49 +450,83 @@ def crossref_metadata_transform_job(
 def datacite_download_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
     allocation_id: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
+    """
+    Submits the DataCite data download job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket to download the file to.
+        run_id: a unique ID to represent this run of the job.
+        allocation_id: the AWS Elastic IP allocation ID.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="datacite-download",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch datacite download $BUCKET_NAME $TASK_ID $ALLOCATION_ID",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "ALLOCATION_ID", "value": allocation_id},
-        ],
+        command="dmpworks aws-batch datacite download $BUCKET_NAME $RUN_ID $ALLOCATION_ID",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+                "ALLOCATION_ID": allocation_id,
+            }
+        ),
     )
 
 
 def datacite_transform_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
+    run_id: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
+    """
+    Submits the DataCite data transform job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket containing the raw data.
+        run_id: a unique ID to represent this run of the job.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="datacite-transform",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch datacite transform $BUCKET_NAME $TASK_ID",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-        ],
+        command="dmpworks aws-batch datacite transform $BUCKET_NAME $RUN_ID",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -341,41 +534,62 @@ def datacite_transform_job(
 def submit_sqlmesh_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
-    openalex_works_job_date: pendulum.Date,
-    openalex_funders_job_date: pendulum.Date,
-    datacite_job_date: pendulum.Date,
-    crossref_metadata_job_date: pendulum.Date,
-    ror_job_date: pendulum.Date,
-    vcpus: int = VERY_LARGE_VCPU,
+    run_id: str,
+    openalex_works_run_id: str,
+    openalex_funders_run_id: str,
+    datacite_run_id: str,
+    crossref_metadata_run_id: str,
+    ror_run_id: str,
+    vcpus: int = VERY_LARGE_VCPUS,
     memory: int = VERY_LARGE_MEMORY,
     duckdb_threads: int = 32,
     duckdb_memory_limit: str = "200GB",
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
+    """
+    Submits the main SQLMesh transformation job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket for SQLMesh data.
+        run_id: a unique ID to represent this run of the SQLMesh job.
+        openalex_works_run_id: The run_id of the OpenAlex works data to use.
+        openalex_funders_run_id: The run_id of the OpenAlex funders data to use.
+        datacite_run_id: The run_id of the DataCite data to use.
+        crossref_metadata_run_id: The run_id of the Crossref metadata to use.
+        ror_run_id: The run_id of the ROR data to use.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        duckdb_threads: Number of threads for DuckDB to use.
+        duckdb_memory_limit: Memory limit for DuckDB (e.g., "200GB").
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="sqlmesh",
-        job_date=job_date,
+        run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME $TASK_ID --release-dates.openalex-works $OPENALEX_WORKS --release-dates.openalex-funders $OPENALEX_FUNDERS --release-dates.datacite $DATACITE --release-dates.crossref-metadata $CROSSREF_METADATA --release-dates.ror $ROR",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "OPENALEX_WORKS", "value": format_job_date(openalex_works_job_date)},
-            {"name": "OPENALEX_FUNDERS", "value": format_job_date(openalex_funders_job_date)},
-            {"name": "DATACITE", "value": format_job_date(datacite_job_date)},
-            {"name": "CROSSREF_METADATA", "value": format_job_date(crossref_metadata_job_date)},
-            {"name": "ROR", "value": format_job_date(ror_job_date)},
-            {"name": "SQLMESH__GATEWAYS__DUCKDB__CONNECTION__CONNECTOR_CONFIG__THREADS", "value": str(duckdb_threads)},
+        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME $RUN_ID --release-dates.openalex-works $OPENALEX_WORKS_RUN_ID --release-dates.openalex-funders $OPENALEX_FUNDERS_RUN_ID --release-dates.datacite $DATACITE_RUN_ID --release-dates.crossref-metadata $CROSSREF_METADATA_RUN_ID --release-dates.ror $ROR_RUN_ID",
+        environment=make_env(
             {
-                "name": "SQLMESH__GATEWAYS__DUCKDB__CONNECTION__CONNECTOR_CONFIG__MEMORY_LIMIT",
-                "value": duckdb_memory_limit,
-            },
-        ],
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+                "OPENALEX_WORKS_RUN_ID": openalex_works_run_id,
+                "OPENALEX_FUNDERS_RUN_ID": openalex_funders_run_id,
+                "DATACITE_RUN_ID": datacite_run_id,
+                "CROSSREF_METADATA_RUN_ID": crossref_metadata_run_id,
+                "ROR_RUN_ID": ror_run_id,
+                "SQLMESH__GATEWAYS__DUCKDB__CONNECTION__CONNECTOR_CONFIG__THREADS": str(duckdb_threads),
+                "SQLMESH__GATEWAYS__DUCKDB__CONNECTION__CONNECTOR_CONFIG__MEMORY_LIMIT": duckdb_memory_limit,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -383,9 +597,8 @@ def submit_sqlmesh_job(
 def submit_sync_works_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
-    export_date: pendulum.Date,
+    sqlmesh_run_id: str,
     host: str,
     region: str,
     index_name: str = "works-index",
@@ -399,30 +612,55 @@ def submit_sync_works_job(
     memory: int = MEDIUM_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
+    """
+    Submits the OpenSearch works-index sync job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket containing the SQLMesh-transformed data.
+        sqlmesh_run_id: the run_id of the SQLMesh job to sync from.
+        host: the OpenSearch host URL.
+        region: the AWS region of the OpenSearch cluster.
+        index_name: The name of the OpenSearch index to sync to.
+        mode: client connection mode (e.g., "aws").
+        port: OpenSearch connection port.
+        service: OpenSearch service name (e.g., "es").
+        max_processes: max number of processes for the sync job.
+        chunk_size: number of documents per sync chunk.
+        max_retries: max retries for failed chunks.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="opensearch-sync-works",
-        job_date=job_date,
+        run_id=sqlmesh_run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch sync-works $BUCKET_NAME $EXPORT_DATE $INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE --sync-config.max-processes=$MAX_PROCESSES --sync-config.chunk-size=$CHUNK_SIZE --sync-config.max-retries=$MAX_RETRIES",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "EXPORT_DATE", "value": export_date.format('YYYY-MM-DD')},
-            {"name": "INDEX_NAME", "value": index_name},
-            {"name": "MODE", "value": mode},
-            {"name": "HOST", "value": host},
-            {"name": "PORT", "value": str(port)},
-            {"name": "REGION", "value": region},
-            {"name": "SERVICE", "value": service},
-            {"name": "MAX_PROCESSES", "value": str(max_processes)},
-            {"name": "CHUNK_SIZE", "value": str(chunk_size)},
-            {"name": "MAX_RETRIES", "value": str(max_retries)},
-            {"name": "TQDM_POSITION", "value": "-1"},
-            {"name": "TQDM_MININTERVAL", "value": "120"},
-        ],
+        command="dmpworks aws-batch opensearch sync-works $BUCKET_NAME $RUN_ID $INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE --sync-config.max-processes=$MAX_PROCESSES --sync-config.chunk-size=$CHUNK_SIZE --sync-config.max-retries=$MAX_RETRIES",
+        environment=make_env(
+            {
+                "RUN_ID": sqlmesh_run_id,
+                "BUCKET_NAME": bucket_name,
+                "INDEX_NAME": index_name,
+                "MODE": mode,
+                "HOST": host,
+                "PORT": str(port),
+                "REGION": region,
+                "SERVICE": service,
+                "MAX_PROCESSES": str(max_processes),
+                "CHUNK_SIZE": str(chunk_size),
+                "MAX_RETRIES": str(max_retries),
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -430,9 +668,8 @@ def submit_sync_works_job(
 def submit_sync_dmps_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
-    export_date: pendulum.Date,
+    dmps_run_id: str,
     host: str,
     region: str,
     index_name: str = "dmps-index",
@@ -446,30 +683,55 @@ def submit_sync_dmps_job(
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
+    """
+    Submits the OpenSearch dmps-index sync job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket containing the data to sync.
+        dmps_run_id: The run_id of the DMPs data to use.
+        host: The OpenSearch host URL.
+        region: The AWS region of the OpenSearch cluster.
+        index_name: The name of the OpenSearch index to sync to.
+        mode: Client connection mode (e.g., "aws").
+        port: OpenSearch connection port.
+        service: OpenSearch service name (e.g., "es").
+        max_processes: Max number of processes for the sync job.
+        chunk_size: Number of documents per sync chunk.
+        max_retries: Max retries for failed chunks.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="opensearch-sync-dmps",
-        job_date=job_date,
+        run_id=dmps_run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch sync-dmps $BUCKET_NAME $EXPORT_DATE $INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE --sync-config.max-processes=$MAX_PROCESSES --sync-config.chunk-size=$CHUNK_SIZE --sync-config.max-retries=$MAX_RETRIES",
-        environment=[
-            {"name": "TASK_ID", "value": format_job_date(job_date)},
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "EXPORT_DATE", "value": export_date.format('YYYY-MM-DD')},
-            {"name": "INDEX_NAME", "value": index_name},
-            {"name": "MODE", "value": mode},
-            {"name": "HOST", "value": host},
-            {"name": "PORT", "value": str(port)},
-            {"name": "REGION", "value": region},
-            {"name": "SERVICE", "value": service},
-            {"name": "MAX_PROCESSES", "value": str(max_processes)},
-            {"name": "CHUNK_SIZE", "value": str(chunk_size)},
-            {"name": "MAX_RETRIES", "value": str(max_retries)},
-            {"name": "TQDM_POSITION", "value": "-1"},
-            {"name": "TQDM_MININTERVAL", "value": "120"},
-        ],
+        command="dmpworks aws-batch opensearch sync-dmps $BUCKET_NAME $RUN_ID $INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE --sync-config.max-processes=$MAX_PROCESSES --sync-config.chunk-size=$CHUNK_SIZE --sync-config.max-retries=$MAX_RETRIES",
+        environment=make_env(
+            {
+                "RUN_ID": dmps_run_id,
+                "BUCKET_NAME": bucket_name,
+                "INDEX_NAME": index_name,
+                "MODE": mode,
+                "HOST": host,
+                "PORT": str(port),
+                "REGION": region,
+                "SERVICE": service,
+                "MAX_PROCESSES": str(max_processes),
+                "CHUNK_SIZE": str(chunk_size),
+                "MAX_RETRIES": str(max_retries),
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -477,7 +739,7 @@ def submit_sync_dmps_job(
 def submit_enrich_dmps_job(
     *,
     env: str,
-    job_date: pendulum.Date,
+    dmps_run_id: str,
     host: str,
     region: str,
     index_name: str = "dmps-index",
@@ -488,24 +750,46 @@ def submit_enrich_dmps_job(
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
+    """
+    Submits the OpenSearch DMPs enrichment job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        dmps_run_id: The run_id, used for job tracking.
+        host: The OpenSearch host URL.
+        region: The AWS region of the OpenSearch cluster.
+        index_name: The name of the OpenSearch DMPs index to enrich.
+        mode: Client connection mode (e.g., "aws").
+        port: OpenSearch connection port.
+        service: OpenSearch service name (e.g., "es").
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="opensearch-enrich-dmps",
-        job_date=job_date,
+        run_id=dmps_run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
         command="dmpworks aws-batch opensearch enrich-dmps $INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE",
-        environment=[
-            {"name": "INDEX_NAME", "value": index_name},
-            {"name": "MODE", "value": mode},
-            {"name": "HOST", "value": host},
-            {"name": "PORT", "value": str(port)},
-            {"name": "REGION", "value": region},
-            {"name": "SERVICE", "value": service},
-            {"name": "TQDM_POSITION", "value": "-1"},
-            {"name": "TQDM_MININTERVAL", "value": "120"},
-        ],
+        environment=make_env(
+            {
+                "INDEX_NAME": index_name,
+                "MODE": mode,
+                "HOST": host,
+                "PORT": str(port),
+                "REGION": region,
+                "SERVICE": service,
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -513,12 +797,11 @@ def submit_enrich_dmps_job(
 def submit_dmp_works_search_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
-    export_date: pendulum.Date,
+    dmps_run_id: str,
     host: str,
     region: str,
-    dmp_index_name: str = "dmps-index",
+    dmps_index_name: str = "dmps-index",
     works_index_name: str = "works-index",
     mode: str = "aws",
     port: int = 443,
@@ -527,27 +810,51 @@ def submit_dmp_works_search_job(
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
+    """
+    Submits the OpenSearch DMP-to-Works search job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket to output search results to.
+        dmps_run_id: the run_id, used to export related works search results.
+        host: The OpenSearch host URL.
+        region: The AWS region of the OpenSearch cluster.
+        dmps_index_name: The name of the OpenSearch DMPs index.
+        works_index_name: The name of the OpenSearch Works index.
+        mode: Client connection mode (e.g., "aws").
+        port: OpenSearch connection port.
+        service: OpenSearch service name (e.g., "es").
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
     return submit_job(
         job_name="opensearch-dmp-works-search",
-        job_date=job_date,
+        run_id=dmps_run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch dmp-works-search $BUCKET_NAME $EXPORT_DATE $DMP_INDEX_NAME $WORKS_INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE",
-        environment=[
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "EXPORT_DATE", "value": export_date.format('YYYY-MM-DD')},
-            {"name": "DMP_INDEX_NAME", "value": dmp_index_name},
-            {"name": "WORKS_INDEX_NAME", "value": works_index_name},
-            {"name": "MODE", "value": mode},
-            {"name": "HOST", "value": host},
-            {"name": "PORT", "value": str(port)},
-            {"name": "REGION", "value": region},
-            {"name": "SERVICE", "value": service},
-            {"name": "TQDM_POSITION", "value": "-1"},
-            {"name": "TQDM_MININTERVAL", "value": "120"},
-        ],
+        command="dmpworks aws-batch opensearch dmp-works-search $BUCKET_NAME $RUN_ID $DMPS_INDEX_NAME $WORKS_INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE",
+        environment=make_env(
+            {
+                "BUCKET_NAME": bucket_name,
+                "RUN_ID": dmps_run_id,
+                "DMPS_INDEX_NAME": dmps_index_name,
+                "WORKS_INDEX_NAME": works_index_name,
+                "MODE": mode,
+                "HOST": host,
+                "PORT": str(port),
+                "REGION": region,
+                "SERVICE": service,
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
+            }
+        ),
         depends_on=depends_on,
     )
 
@@ -555,41 +862,45 @@ def submit_dmp_works_search_job(
 def submit_merge_related_works_job(
     *,
     env: str,
-    job_date: pendulum.Date,
     bucket_name: str,
-    export_date: pendulum.Date,
+    dmps_run_id: str,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
-):
-    """Creates a job to merge related works.
+) -> str:
+    """
+    Creates a job to merge related works.
 
     The database parameters are set in the job defintion and read by the Cyclopts
     built command line interface as environment variables.
 
-    :param env:
-    :param job_date:
-    :param bucket_name:
-    :param export_date:
-    :param vcpus:
-    :param memory:
-    :param depends_on:
-    :return:
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        dmps_run_id: the run_id of the DMPs data to use.
+        bucket_name: S3 bucket containing search results to merge.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
     """
 
     return submit_job(
         job_name="opensearch-merge-related-works",
-        job_date=job_date,
+        run_id=dmps_run_id,
         job_queue=standard_job_queue(env),
         job_definition=database_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch merge-related-works $BUCKET_NAME $EXPORT_DATE",
-        environment=[
-            {"name": "BUCKET_NAME", "value": bucket_name},
-            {"name": "EXPORT_DATE", "value": format_job_date(export_date)},
-            {"name": "TQDM_POSITION", "value": "-1"},
-            {"name": "TQDM_MININTERVAL", "value": "120"},
-        ],
+        command="dmpworks aws-batch opensearch merge-related-works $BUCKET_NAME $RUN_ID",
+        environment=make_env(
+            {
+                "BUCKET_NAME": bucket_name,
+                "RUN_ID": dmps_run_id,
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
+            }
+        ),
         depends_on=depends_on,
     )

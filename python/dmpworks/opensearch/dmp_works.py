@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 @timed
 def dmp_works_search(
-    dmp_index_name: str,
+    dmps_index_name: str,
     works_index_name: str,
     out_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
@@ -99,7 +99,7 @@ def dmp_works_search(
     with tqdm(total=0, desc="Find DMP work matches with OpenSearch", unit="doc") as pbar:
         with yield_dmps(
             client,
-            dmp_index_name,
+            dmps_index_name,
             query,
             page_size=batch_size,
             scroll_time=scroll_time,

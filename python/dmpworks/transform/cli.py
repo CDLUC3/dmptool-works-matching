@@ -317,29 +317,38 @@ def ror_works_cmd(
     )
 
 
-@app.command(name="demo-dataset")
-def demo_dataset_cmd(
+@app.command(name="dataset-subset")
+def dataset_subset_cmd(
     dataset: Literal["crossref-metadata", "datacite", "openalex-works"],
-    ror_id: str,
     in_dir: Directory,
     out_dir: Directory,
-    institution_name: Optional[str] = None,
+    ror_ids: Annotated[
+        list[str],
+        Parameter(
+            consume_multiple=True,
+            required=True,
+        ),
+    ] = None,
+    institution_names: Annotated[
+        list[str],
+        Parameter(consume_multiple=True),
+    ] = None,
     log_level: LogLevel = "INFO",
 ):
     """Create a demo dataset.
 
     Args:
         dataset: The dataset to filter.
-        ror_id: A ROR ID without a prefix used to filter records.
         in_dir: Path to the dataset directory (e.g. /path/to/openalex_works).
         out_dir: Path to the output directory (e.g. /path/to/demo_dataset/openalex).
-        institution_name: The name of the institution to filter.
+        ror_ids: the ROR IDs of institutions to include, ROR ID should be supplied with without a prefix.
+        institution_names: The name of the institutions to include.
         log_level: Python log level.
     """
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
-    create_demo_dataset(dataset, ror_id, institution_name, in_dir, out_dir, level)
+    create_demo_dataset(dataset, in_dir, out_dir, set(ror_ids), set(institution_names), level)
 
 
 if __name__ == "__main__":
