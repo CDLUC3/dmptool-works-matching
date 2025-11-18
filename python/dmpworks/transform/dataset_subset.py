@@ -37,13 +37,13 @@ def normalise_name(name: Optional[str]) -> Optional[str]:
     return cleaned or None
 
 
-def keep_record(dataset: Dataset, ror_ids: set[str], institution_names: set[str], record: dict) -> bool:
+def keep_record(dataset: Dataset, institution_rors: set[str], institution_names: set[str], record: dict) -> bool:
     if dataset == "openalex-works":
         for authorship in record.get("authorships", []):
             for inst in authorship.get("institutions", []):
                 identifier = inst.get("ror")
                 name = normalise_name(inst.get("display_name"))
-                if normalise_identifier(identifier) in ror_ids or name in institution_names:
+                if normalise_identifier(identifier) in institution_rors or name in institution_names:
                     return True
         return False
 
@@ -52,7 +52,7 @@ def keep_record(dataset: Dataset, ror_ids: set[str], institution_names: set[str]
             for affiliation in normalise_affiliations(creator.get("affiliation", [])):
                 identifier = affiliation.get("affiliationIdentifier")
                 name = normalise_name(affiliation.get("name"))
-                if normalise_identifier(identifier) in ror_ids or name in institution_names:
+                if normalise_identifier(identifier) in institution_rors or name in institution_names:
                     return True
         return False
 
@@ -65,7 +65,7 @@ def keep_record(dataset: Dataset, ror_ids: set[str], institution_names: set[str]
 
                 for id_struct in affiliation.get("id", []):
                     identifier = id_struct.get("id")
-                    if normalise_identifier(identifier) in ror_ids:
+                    if normalise_identifier(identifier) in institution_rors:
                         return True
         return False
 
@@ -89,7 +89,7 @@ def init_process_logs(level: int):
 
 
 def filter_dataset(
-    dataset: Dataset, ror_ids: set[str], institution_names: set[str], file_in: pathlib.Path, out_dir: pathlib
+    dataset: Dataset, institution_rors: set[str], institution_names: set[str], file_in: pathlib.Path, out_dir: pathlib
 ):
     logging.debug(f"start filtering {file_in}")
 
@@ -102,7 +102,7 @@ def filter_dataset(
             for line in f_in:
                 if line.strip():
                     record = orjson.loads(line)
-                    if keep_record(dataset, ror_ids, institution_names, record):
+                    if keep_record(dataset, institution_rors, institution_names, record):
                         f_out.write(line.encode("utf-8"))  # line already ends with newline
                         total_filtered += 1
 
@@ -117,7 +117,7 @@ def create_dataset_subset(
     dataset: Dataset,
     in_dir: pathlib.Path,
     out_dir: pathlib.Path,
-    ror_ids: set[str],
+    institution_rors: set[str],
     institution_names: set[str],
     log_level: int,
 ):
@@ -135,7 +135,7 @@ def create_dataset_subset(
             max_workers=os.cpu_count(), initializer=init_process_logs, initargs=(log_level,)
         ) as executor:
             for file_in in files:
-                future = executor.submit(filter_dataset, dataset, ror_ids, institution_names, file_in, out_dir)
+                future = executor.submit(filter_dataset, dataset, institution_rors, institution_names, file_in, out_dir)
                 futures.append(future)
 
             total_files = len(files)

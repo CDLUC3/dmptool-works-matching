@@ -1,9 +1,12 @@
+import json
 import logging
 from typing import Optional, TypedDict
 
 import boto3
 import pendulum
 
+from opensearch.dmp_works import DMPInstitution
+from transform.dataset_subset import Dataset
 
 # CPU and memory groups
 NANO_VCPUS = 1
@@ -103,6 +106,54 @@ def submit_job(
 
 def make_env(env_vars: dict[str, str]) -> list[EnvVarDict]:
     return [{"name": k, "value": str(v)} for k, v in env_vars.items()]
+
+
+def dataset_subset_job(
+    *,
+    env: str,
+    bucket_name: str,
+    run_id: str,
+    dataset: Dataset,
+    institution_rors: list[str],
+    institution_names: list[str],
+    vcpus: int = LARGE_VCPUS,
+    memory: int = LARGE_MEMORY,
+) -> str:
+    """
+    Submits the create dataset subset job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket to download the file to.
+        run_id: a unique ID to represent this run of the job.
+        dataset: the dataset to create the subset for.
+        institution_rors: a list of the ROR IDs (without a prefix) of the institutions to include.
+        institution_names: a list of the names of the institutions to include.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
+    return submit_job(
+        job_name=f"{dataset}-dataset-subset",
+        run_id=run_id,
+        job_queue=standard_job_queue(env),
+        job_definition=standard_job_definition(env),
+        command=f"dmpworks aws-batch $DATASET dataset-subset $BUCKET_NAME $RUN_ID --institution-rors $INSTITUTION_RORS --institution-names $INSTITUTION_NAMES",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+                "DATASET": dataset,
+                "INSTITUTION_RORS": " ".join(institution_rors),
+                "INSTITUTION_NAMES": " ".join([f'"{name}"' for name in institution_names]),
+            }
+        ),
+        vcpus=vcpus,
+        memory=memory,
+    )
 
 
 def ror_download_job(
@@ -320,6 +371,7 @@ def openalex_works_transform_job(
     env: str,
     bucket_name: str,
     run_id: str,
+    use_subset: bool = False,
     max_file_processes: int = 8,
     batch_size: int = 8,
     vcpus: int = LARGE_VCPUS,
@@ -333,6 +385,7 @@ def openalex_works_transform_job(
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket containing the raw data.
         run_id: a unique ID to represent this run of the job.
+        use_subset: whether to use a subset of the dataset or the full dataset.
         max_file_processes: max number of files to read in parallel.
         batch_size: number of records to process in a batch.
         vcpus: number of vCPUs for the job.
@@ -350,11 +403,12 @@ def openalex_works_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --max-file-processes=$MAX_FILE_PROCESSES --batch-size=$BATCH_SIZE",
+        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --max-file-processes=$MAX_FILE_PROCESSES --batch-size=$BATCH_SIZE --use-subset $USE_SUBSET",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
+                "USE_SUBSET": use_subset,
                 "MAX_FILE_PROCESSES": str(max_file_processes),
                 "BATCH_SIZE": str(batch_size),
             }
@@ -410,6 +464,7 @@ def crossref_metadata_transform_job(
     env: str,
     bucket_name: str,
     run_id: str,
+    use_subset: bool = False,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
@@ -421,6 +476,7 @@ def crossref_metadata_transform_job(
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket containing the raw data.
         run_id: a unique ID to represent this run of the job.
+        use_subset: whether to use a subset of the dataset or the full dataset.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -436,11 +492,12 @@ def crossref_metadata_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch crossref-metadata transform $BUCKET_NAME $RUN_ID",
+        command="dmpworks aws-batch crossref-metadata transform $BUCKET_NAME $RUN_ID --use-subset $USE_SUBSET",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
+                "USE_SUBSET": use_subset,
             }
         ),
         depends_on=depends_on,
@@ -494,6 +551,7 @@ def datacite_transform_job(
     env: str,
     bucket_name: str,
     run_id: str,
+    use_subset: bool = False,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
@@ -505,6 +563,7 @@ def datacite_transform_job(
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket containing the raw data.
         run_id: a unique ID to represent this run of the job.
+        use_subset: whether to use a subset of the dataset or the full dataset.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -520,11 +579,12 @@ def datacite_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch datacite transform $BUCKET_NAME $RUN_ID",
+        command="dmpworks aws-batch datacite transform $BUCKET_NAME $RUN_ID --use-subset $USE_SUBSET",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
+                "USE_SUBSET": use_subset,
             }
         ),
         depends_on=depends_on,
@@ -806,6 +866,7 @@ def submit_dmp_works_search_job(
     mode: str = "aws",
     port: int = 443,
     service: str = "es",
+    institutions: list[DMPInstitution],
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
@@ -824,6 +885,7 @@ def submit_dmp_works_search_job(
         mode: Client connection mode (e.g., "aws").
         port: OpenSearch connection port.
         service: OpenSearch service name (e.g., "es").
+        institutions: .
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -839,7 +901,7 @@ def submit_dmp_works_search_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch dmp-works-search $BUCKET_NAME $RUN_ID $DMPS_INDEX_NAME $WORKS_INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE",
+        command="dmpworks aws-batch opensearch dmp-works-search $BUCKET_NAME $RUN_ID $DMPS_INDEX_NAME $WORKS_INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE --institutions='$INSTITUTIONS'",
         environment=make_env(
             {
                 "BUCKET_NAME": bucket_name,
@@ -851,6 +913,7 @@ def submit_dmp_works_search_job(
                 "PORT": str(port),
                 "REGION": region,
                 "SERVICE": service,
+                "INSTITUTIONS": json.dumps([inst.to_dict() for inst in institutions], separators=(",", ":")),
                 "TQDM_POSITION": TQDM_POSITION,
                 "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }

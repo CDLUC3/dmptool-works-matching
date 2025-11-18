@@ -2,6 +2,7 @@ import json
 import logging
 import math
 import pathlib
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 import jsonlines
@@ -18,6 +19,15 @@ from dmpworks.utils import timed
 log = logging.getLogger(__name__)
 
 
+@dataclass
+class DMPInstitution:
+    name: str
+    ror: str
+
+    def to_dict(self) -> dict:
+        return {"name": self.name, "ror": self.ror}
+
+
 @timed
 def dmp_works_search(
     dmps_index_name: str,
@@ -32,19 +42,18 @@ def dmp_works_search(
     include_named_queries_score: bool = False,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    dmp_inst_name: Optional[str] = None,
-    dmp_inst_ror: Optional[str] = None,
+    institutions: list[DMPInstitution] = None,
     start_date: Optional[pendulum.Date] = None,
     end_date: Optional[pendulum.Date] = None,
 ):
     client = make_opensearch_client(client_config)
-    institutions = None
-    if dmp_inst_name or dmp_inst_ror:
-        institutions = build_entity_query(
+    institutions_query = None
+    if institutions:
+        institutions_query = build_entity_query(
             "institutions",
             "institutions.ror",
             "institutions.name",
-            [{"name": dmp_inst_name, "ror": dmp_inst_ror}],
+            [inst.to_dict() for inst in institutions],
             lambda inst: inst.get("ror"),
             lambda inst: inst.get("name"),
         )
@@ -69,8 +78,8 @@ def dmp_works_search(
     query = {"query": {}}
     bool_components = {}
 
-    if institutions is not None:
-        bool_components["must"] = [institutions]
+    if institutions_query is not None:
+        bool_components["must"] = [institutions_query]
 
     if filters:
         bool_components["filter"] = filters

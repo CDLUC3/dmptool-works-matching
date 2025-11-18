@@ -1,12 +1,13 @@
 import logging
 import pathlib
-from typing import Optional
+from typing import Annotated, Optional
 
-from cyclopts import App
+from cyclopts import App, Parameter
 
-from dmpworks.batch.tasks import download_source_task, transform_parquets_task
+from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
 from dmpworks.transform.cli import CrossrefMetadataConfig
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
+from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
 from dmpworks.utils import copy_dict, run_process
 
@@ -55,10 +56,52 @@ def download_cmd(bucket_name: str, run_id: str, file_name: str):
         archive_path.unlink(missing_ok=True)
 
 
+@app.command(name="dataset-subset")
+def dataset_subset(
+    bucket_name: str,
+    run_id: str,
+    institution_rors: Annotated[
+        list[str],
+        Parameter(
+            required=True,
+            consume_multiple=True,
+            help="A list of the ROR IDs (without a prefix) of the institutions to include.",
+        ),
+    ] = None,
+    institution_names: Annotated[
+        list[str],
+        Parameter(
+            consume_multiple=True,
+            help="A list of the names of the institutions to include.",
+        ),
+    ] = None,
+):
+    """Create a subset of Crossref Metadata.
+
+    Args:
+        bucket_name: the name of the S3 bucket for JOB I/O.
+        run_id: a unique ID to represent this run of the job.
+        institution_rors: a list of the ROR IDs (without a prefix) of the institutions to include.
+        institution_names: a list of the names of the institutions to include.
+    """
+
+    setup_multiprocessing_logging(logging.INFO)
+
+    with dataset_subset_task(bucket_name, DATASET, run_id) as ctx:
+        create_dataset_subset(
+            dataset="crossref-metadata",
+            in_dir=ctx.download_dir,
+            subset_run_id=ctx.subset_dir,
+            institution_rors=set(institution_rors) if institution_rors is not None else set(),
+            institution_names=set(institution_names) if institution_names is not None else set(),
+        )
+
+
 @app.command(name="transform")
 def transform_cmd(
     bucket_name: str,
     run_id: str,
+    use_subset: bool,
     *,
     config: Optional[CrossrefMetadataConfig] = None,
 ):
@@ -68,13 +111,14 @@ def transform_cmd(
     Args:
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
+        use_subset: whether to use a subset of the dataset or the full dataset.
         config: optional configuration parameters.
     """
 
     config = CrossrefMetadataConfig() if config is None else config
     setup_multiprocessing_logging(logging.INFO)
 
-    with transform_parquets_task(bucket_name, DATASET, run_id) as ctx:
+    with transform_parquets_task(bucket_name, DATASET, run_id, use_subset=use_subset) as ctx:
         transform_crossref_metadata(
             in_dir=ctx.download_dir,
             out_dir=ctx.transform_dir,

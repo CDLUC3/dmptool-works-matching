@@ -11,6 +11,7 @@ from dmpworks.batch_submit.jobs import (
     crossref_metadata_transform_job,
     datacite_download_job,
     datacite_transform_job,
+    dataset_subset_job,
     openalex_funders_download_job,
     openalex_funders_transform_job,
     openalex_works_download_job,
@@ -24,7 +25,7 @@ from dmpworks.batch_submit.jobs import (
     submit_sync_dmps_job,
     submit_sync_works_job,
 )
-from dmpworks.transform.dataset_subset import create_dataset_subset
+from opensearch.dmp_works import DMPInstitution
 
 app = App(name="batch-submit", help="Commands to submit AWS Batch jobs.")
 
@@ -40,19 +41,20 @@ class DatasetSubset:
             help="Whether or not to create a subset of this dataset based on a list of ROR IDs and institution names.",
         ),
     ] = False
-
     institution_rors: Annotated[
         list[str],
         Parameter(
             env_var="DATASET_SUBSET_INSTITUTION_RORS",
+            required=True,
+            consume_multiple=True,
             help="A list of the ROR IDs (without a prefix) of the institutions to include.",
         ),
     ] = field(default_factory=list)
-
     institution_names: Annotated[
         list[str],
         Parameter(
             env_var="DATASET_SUBSET_INSTITUTION_NAMES",
+            consume_multiple=True,
             help="A list of the names of the institutions to include.",
         ),
     ] = field(default_factory=list)
@@ -109,7 +111,7 @@ def ror_cmd(
     run_id: Annotated[
         str,
         Parameter(
-            env_var="RUN_ID",
+            env_var="ROR_RUN_ID",
             help="A unique ID to represent this run of the job.",
         ),
     ],
@@ -176,7 +178,7 @@ def ror_cmd(
     )
 
 
-CROSSREF_METADATA_JOBS: tuple[str, ...] = ("download", "filter", "transform")
+CROSSREF_METADATA_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
 
 
 @app.command(name="crossref-metadata")
@@ -191,7 +193,7 @@ def crossref_metadata_cmd(
     run_id: Annotated[
         str,
         Parameter(
-            env_var="RUN_ID",
+            env_var="CROSSREF_METADATA_RUN_ID",
             help="A unique ID to represent this run of the job.",
         ),
     ],
@@ -219,10 +221,7 @@ def crossref_metadata_cmd(
     ] = CROSSREF_METADATA_JOBS[0],
 ):
     logging.basicConfig(level=logging.INFO)
-
-    # Add filter task
-    if dataset_subset is not None and dataset_subset.enable:
-
+    use_subset = dataset_subset is not None and dataset_subset.enable
 
     task_definitions = {
         "download": partial(
@@ -232,30 +231,39 @@ def crossref_metadata_cmd(
             run_id=run_id,
             file_name=file_name,
         ),
-        "filter": partial(
-            create_dataset_subset,
-
-            # env=env,
-            # bucket_name=bucket_name,
-            # run_id=run_id,
-            # file_name=file_name,
-        ),
         "transform": partial(
             crossref_metadata_transform_job,
             env=env,
             bucket_name=bucket_name,
             run_id=run_id,
+            use_subset=use_subset,
         ),
     }
 
+    # Add dataset subset task
+    task_id = "dataset-subset"
+    task_order = list(CROSSREF_METADATA_JOBS)
+    if use_subset:
+        task_definitions[task_id] = partial(
+            dataset_subset_job,
+            env=env,
+            bucket_name=bucket_name,
+            run_id=run_id,
+            dataset="crossref-metadata",
+            institution_rors=dataset_subset.institution_rors,
+            institution_names=dataset_subset.institution_names,
+        )
+    else:
+        task_order.remove(task_id)
+
     run_job_pipeline(
         task_definitions=task_definitions,
-        task_order=list(CROSSREF_METADATA_JOBS),
+        task_order=task_order,
         start_task_name=start_job,
     )
 
 
-DATACITE_JOBS: tuple[str, ...] = ("download", "filter", "transform")
+DATACITE_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
 
 
 def datacite_cmd(
@@ -269,7 +277,7 @@ def datacite_cmd(
     run_id: Annotated[
         str,
         Parameter(
-            env_var="RUN_ID",
+            env_var="DATACITE_RUN_ID",
             help="A unique ID to represent this run of the job.",
         ),
     ],
@@ -287,6 +295,7 @@ def datacite_cmd(
             help="The DataCite allocation ID for the download.",
         ),
     ],
+    dataset_subset: DatasetSubset = None,
     start_job: Annotated[
         Literal[*DATACITE_JOBS],
         Parameter(
@@ -296,6 +305,7 @@ def datacite_cmd(
     ] = DATACITE_JOBS[0],
 ):
     logging.basicConfig(level=logging.INFO)
+    use_subset = dataset_subset is not None and dataset_subset.enable
 
     task_definitions = {
         "download": partial(
@@ -310,17 +320,34 @@ def datacite_cmd(
             env=env,
             bucket_name=bucket_name,
             run_id=run_id,
+            use_subset=use_subset,
         ),
     }
 
+    # Add dataset subset task
+    task_id = "dataset-subset"
+    task_order = list(DATACITE_JOBS)
+    if use_subset:
+        task_definitions[task_id] = partial(
+            dataset_subset_job,
+            env=env,
+            bucket_name=bucket_name,
+            run_id=run_id,
+            dataset="datacite",
+            institution_rors=dataset_subset.institution_rors,
+            institution_names=dataset_subset.institution_names,
+        )
+    else:
+        task_order.remove(task_id)
+
     run_job_pipeline(
         task_definitions=task_definitions,
-        task_order=list(DATACITE_JOBS),
+        task_order=task_order,
         start_task_name=start_job,
     )
 
 
-OPENALEX_WORKS_JOBS: tuple[str, ...] = ("download", "filter", "transform")
+OPENALEX_WORKS_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
 
 
 def openalex_works_cmd(
@@ -334,7 +361,7 @@ def openalex_works_cmd(
     run_id: Annotated[
         str,
         Parameter(
-            env_var="RUN_ID",
+            env_var="OPENALEX_WORKS_RUN_ID",
             help="A unique ID to represent this run of the job.",
         ),
     ],
@@ -359,6 +386,7 @@ def openalex_works_cmd(
             help="Number of records to process in a batch.",
         ),
     ] = 8,
+    dataset_subset: DatasetSubset = None,
     start_job: Annotated[
         Literal[*OPENALEX_WORKS_JOBS],
         Parameter(
@@ -368,6 +396,7 @@ def openalex_works_cmd(
     ] = OPENALEX_WORKS_JOBS[0],
 ):
     logging.basicConfig(level=logging.INFO)
+    use_subset = dataset_subset is not None and dataset_subset.enable
 
     task_definitions = {
         "download": partial(
@@ -383,12 +412,28 @@ def openalex_works_cmd(
             run_id=run_id,
             max_file_processes=max_file_processes,
             batch_size=batch_size,
+            use_subset=use_subset,
         ),
     }
+    # Add dataset subset task
+    task_id = "dataset-subset"
+    task_order = list(OPENALEX_WORKS_JOBS)
+    if use_subset:
+        task_definitions[task_id] = partial(
+            dataset_subset_job,
+            env=env,
+            bucket_name=bucket_name,
+            run_id=run_id,
+            dataset="openalex-works",
+            institution_rors=dataset_subset.institution_rors,
+            institution_names=dataset_subset.institution_names,
+        )
+    else:
+        task_order.remove(task_id)
 
     run_job_pipeline(
         task_definitions=task_definitions,
-        task_order=list(OPENALEX_WORKS_JOBS),
+        task_order=task_order,
         start_task_name=start_job,
     )
 
@@ -407,7 +452,7 @@ def openalex_funders_cmd(
     run_id: Annotated[
         str,
         Parameter(
-            env_var="RUN_ID",
+            env_var="OPENALEX_FUNDERS_RUN_ID",
             help="A unique ID to represent this run of the job.",
         ),
     ],
@@ -465,7 +510,7 @@ def process_works_cmd(
     run_id: Annotated[
         str,
         Parameter(
-            env_var="RUN_ID",
+            env_var="PROCESS_WORKS_RUN_ID",
             help="A unique ID for this SQLMesh run.",
         ),
     ],
@@ -646,7 +691,7 @@ def process_dmps_cmd(
     run_id: Annotated[
         str,
         Parameter(
-            env_var="RUN_ID",
+            env_var="PROCESS_DMPS_RUN_ID",
             help="A unique ID for this DMPs run.",
         ),
     ],
@@ -714,6 +759,14 @@ def process_dmps_cmd(
             help="Max retries for failed chunks for the sync-dmps job.",
         ),
     ] = 3,
+    institutions: Annotated[
+        list[DMPInstitution],
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_INSTITUTIONS",
+            consume_multiple=True,
+            help="When supplied only includes DMPs which have an institution in this list.",
+        ),
+    ] = None,
     start_job: Annotated[
         Literal[*PROCESS_DMPS_JOBS],
         Parameter(
@@ -763,6 +816,7 @@ def process_dmps_cmd(
             mode=opensearch_mode,
             port=opensearch_port,
             service=opensearch_service,
+            institutions=institutions,
         ),
         "merge-related-works": partial(
             submit_merge_related_works_job,

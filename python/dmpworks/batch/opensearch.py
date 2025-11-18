@@ -14,7 +14,7 @@ from dmpworks.batch.utils import (
 from dmpworks.cli_utils import LogLevel
 from dmpworks.dmsp.related_works import merge_related_works
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
-from dmpworks.opensearch.dmp_works import dmp_works_search
+from dmpworks.opensearch.dmp_works import dmp_works_search, DMPInstitution
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.sync_dmps import sync_dmps
@@ -156,12 +156,39 @@ def dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: Optional[OpenSearchClientConfig] = None,
-    dmp_inst_name: Optional[str] = None,
-    dmp_inst_ror: Optional[str] = None,
+    institutions: Annotated[
+        list[DMPInstitution],
+        Parameter(consume_multiple=True),
+    ] = None,
     start_date: Date = None,
     end_date: Date = None,
     log_level: LogLevel = "INFO",
 ):
+    """DMP Works Search.
+
+    Args:
+        bucket_name: DMP Tool S3 bucket name.
+        run_id: a unique ID to represent this run of the job.
+        dmps_index_name: the name of the DMP index in OpenSearch.
+        works_index_name: the name of the works index in OpenSearch.
+        scroll_time: the length of time the OpenSearch scroll used to iterate
+        through DMPs will stay active. Set it to a value greater than the length
+        of this process.
+        batch_size: the number of searches run in parallel when include_scores=False.
+        max_results: the maximum number of matches per DMP.
+        project_end_buffer_years: the number of years to add to the end of the
+        project end date when searching for works.
+        parallel_search: whether to run parallel search or not.
+        include_named_queries_score: whether to include scores for subqueries.
+        max_concurrent_searches: the maximum number of concurrent searches.
+        max_concurrent_shard_requests: the maximum number of shards searched per node.
+        client_config: OpenSearch client settings.
+        institutions: when supplied only includes DMPs which have an institution in this list.
+        start_date: return DMPs with project start dates on or after this date.
+        end_date: return DMPs with project start dates on before this date.
+        log_level: Python log level.
+    """
+
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
@@ -181,8 +208,7 @@ def dmp_works_search_cmd(
             include_named_queries_score=include_named_queries_score,
             max_concurrent_searches=max_concurrent_searches,
             max_concurrent_shard_requests=max_concurrent_shard_requests,
-            dmp_inst_name=dmp_inst_name,
-            dmp_inst_ror=dmp_inst_ror,
+            institutions=institutions,
             start_date=start_date,
             end_date=end_date,
         )
