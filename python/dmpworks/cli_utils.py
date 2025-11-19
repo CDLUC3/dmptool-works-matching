@@ -1,4 +1,6 @@
+import json
 import pathlib
+from dataclasses import dataclass, field
 from typing import Annotated, Literal
 
 import pendulum
@@ -28,3 +30,35 @@ LogLevel = Annotated[
     Parameter(help="Python log level"),
 ]
 DateString = Annotated[str, Parameter(validator=validate_date_str)]
+
+
+@dataclass
+class DatasetSubsetInstitution:
+    name: str
+    ror: str
+
+
+def validate_institutions_str(type_, value):
+    data = json.loads(value)
+    if not isinstance(data, list):
+        raise ValueError("JSON must be a list of objects")
+
+
+@dataclass
+class DatasetSubset:
+    enable: Annotated[
+        bool,
+        Parameter(
+            env_var="DATASET_SUBSET_ENABLE",
+            help="Whether or not to create a subset of this dataset based on a list of ROR IDs and institution names.",
+        ),
+    ] = False
+    institutions: Annotated[
+        str,
+        Parameter(
+            env_var="DATASET_SUBSET_INSTITUTIONS",
+            required=True,
+            validator=validate_date_str,
+            help="A list of the institutions to include in JSON Format.",
+        ),
+    ] = field(default_factory=list)

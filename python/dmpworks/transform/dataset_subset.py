@@ -10,6 +10,7 @@ from typing import Literal, Optional
 import orjson
 from tqdm import tqdm
 
+from dmpworks.cli_utils import DatasetSubsetInstitution
 from dmpworks.utils import timed
 
 Dataset = Literal["crossref-metadata", "datacite", "openalex-works"]
@@ -117,8 +118,7 @@ def create_dataset_subset(
     dataset: Dataset,
     in_dir: pathlib.Path,
     out_dir: pathlib.Path,
-    institution_rors: set[str],
-    institution_names: set[str],
+    institutions: list[DatasetSubsetInstitution],
     log_level: int,
 ):
     is_empty = next(out_dir.iterdir(), None) is None
@@ -128,7 +128,8 @@ def create_dataset_subset(
     file_glob = get_file_glob(dataset)
     files = list(pathlib.Path(in_dir).glob(file_glob))
     futures = []
-    institution_names = set([val for name in institution_names if (val := normalise_name(name)) is not None])
+    institution_rors = set([inst.name for inst in institutions])
+    institution_names = set([val for inst in institutions if (val := normalise_name(inst.name)) is not None])
 
     try:
         with ProcessPoolExecutor(

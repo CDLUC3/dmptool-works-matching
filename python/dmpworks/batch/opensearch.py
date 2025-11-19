@@ -11,10 +11,10 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_file_to_s3,
 )
-from dmpworks.cli_utils import LogLevel
+from dmpworks.cli_utils import DatasetSubsetInstitution, LogLevel, parse_institutions
 from dmpworks.dmsp.related_works import merge_related_works
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
-from dmpworks.opensearch.dmp_works import dmp_works_search, DMPInstitution
+from dmpworks.opensearch.dmp_works import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.sync_dmps import sync_dmps
@@ -157,8 +157,11 @@ def dmp_works_search_cmd(
     max_concurrent_shard_requests: int = 12,
     client_config: Optional[OpenSearchClientConfig] = None,
     institutions: Annotated[
-        list[DMPInstitution],
-        Parameter(consume_multiple=True),
+        list[DatasetSubsetInstitution],
+        Parameter(
+            converter=parse_institutions,
+            help="A list of the institutions to include in JSON Format.",
+        ),
     ] = None,
     start_date: Date = None,
     end_date: Date = None,

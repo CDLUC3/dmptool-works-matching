@@ -9,7 +9,6 @@ from cyclopts import App, Parameter, validators
 from dmpworks.cli_utils import Directory, LogLevel
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 from dmpworks.transform.datacite import transform_datacite
-from dmpworks.transform.demo_dataset import create_demo_dataset
 from dmpworks.transform.dmps import transform_dmps
 from dmpworks.transform.openalex_funders import transform_openalex_funders
 from dmpworks.transform.openalex_works import transform_openalex_works

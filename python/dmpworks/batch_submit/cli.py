@@ -1,6 +1,5 @@
 import inspect
 import logging
-from dataclasses import dataclass, field
 from functools import partial
 from typing import Annotated, Callable, Dict, Literal
 
@@ -25,39 +24,11 @@ from dmpworks.batch_submit.jobs import (
     submit_sync_dmps_job,
     submit_sync_works_job,
 )
-from opensearch.dmp_works import DMPInstitution
+from dmpworks.cli_utils import DatasetSubset
 
 app = App(name="batch-submit", help="Commands to submit AWS Batch jobs.")
 
 EnvTypes = Literal["dev", "stage", "prod"]
-
-
-@dataclass
-class DatasetSubset:
-    enable: Annotated[
-        bool,
-        Parameter(
-            env_var="DATASET_SUBSET_ENABLE",
-            help="Whether or not to create a subset of this dataset based on a list of ROR IDs and institution names.",
-        ),
-    ] = False
-    institution_rors: Annotated[
-        list[str],
-        Parameter(
-            env_var="DATASET_SUBSET_INSTITUTION_RORS",
-            required=True,
-            consume_multiple=True,
-            help="A list of the ROR IDs (without a prefix) of the institutions to include.",
-        ),
-    ] = field(default_factory=list)
-    institution_names: Annotated[
-        list[str],
-        Parameter(
-            env_var="DATASET_SUBSET_INSTITUTION_NAMES",
-            consume_multiple=True,
-            help="A list of the names of the institutions to include.",
-        ),
-    ] = field(default_factory=list)
 
 
 def run_job_pipeline(
@@ -266,6 +237,7 @@ def crossref_metadata_cmd(
 DATACITE_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
 
 
+@app.command(name="datacite")
 def datacite_cmd(
     env: Annotated[
         EnvTypes,
@@ -334,8 +306,7 @@ def datacite_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             dataset="datacite",
-            institution_rors=dataset_subset.institution_rors,
-            institution_names=dataset_subset.institution_names,
+            institutions=dataset_subset.institutions,
         )
     else:
         task_order.remove(task_id)
@@ -350,6 +321,7 @@ def datacite_cmd(
 OPENALEX_WORKS_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
 
 
+@app.command(name="openalex-works")
 def openalex_works_cmd(
     env: Annotated[
         EnvTypes,
@@ -425,8 +397,7 @@ def openalex_works_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             dataset="openalex-works",
-            institution_rors=dataset_subset.institution_rors,
-            institution_names=dataset_subset.institution_names,
+            institutions=dataset_subset.institutions,
         )
     else:
         task_order.remove(task_id)
@@ -441,6 +412,7 @@ def openalex_works_cmd(
 OPENALEX_FUNDERS_JOBS: tuple[str, ...] = ("download", "transform")
 
 
+@app.command(name="openalex-funders")
 def openalex_funders_cmd(
     env: Annotated[
         EnvTypes,
@@ -498,6 +470,7 @@ def openalex_funders_cmd(
 PROCESS_WORKS_JOBS: tuple[str, ...] = ("sqlmesh-transform", "sync-works")
 
 
+@app.command(name="process-works")
 def process_works_cmd(
     env: Annotated[
         EnvTypes,
@@ -679,6 +652,7 @@ PROCESS_DMPS_JOBS: tuple[str, ...] = (
 )
 
 
+@app.command(name="process-dmps")
 def process_dmps_cmd(
     env: Annotated[
         EnvTypes,
@@ -688,11 +662,11 @@ def process_dmps_cmd(
         str,
         Parameter(env_var="BUCKET_NAME", help="S3 bucket name for job I/O."),
     ],
-    run_id: Annotated[
+    dmps_run_id: Annotated[
         str,
         Parameter(
-            env_var="PROCESS_DMPS_RUN_ID",
-            help="A unique ID for this DMPs run.",
+            env_var="DMPS_RUN_ID",
+            help="A unique ID of the run containing the DMPs file.",
         ),
     ],
     opensearch_host: Annotated[
@@ -759,14 +733,7 @@ def process_dmps_cmd(
             help="Max retries for failed chunks for the sync-dmps job.",
         ),
     ] = 3,
-    institutions: Annotated[
-        list[DMPInstitution],
-        Parameter(
-            env_var="DMP_WORKS_SEARCH_INSTITUTIONS",
-            consume_multiple=True,
-            help="When supplied only includes DMPs which have an institution in this list.",
-        ),
-    ] = None,
+    dataset_subset: DatasetSubset = None,
     start_job: Annotated[
         Literal[*PROCESS_DMPS_JOBS],
         Parameter(
@@ -782,7 +749,7 @@ def process_dmps_cmd(
             submit_sync_dmps_job,
             env=env,
             bucket_name=bucket_name,
-            dmps_run_id=run_id,
+            dmps_run_id=dmps_run_id,
             host=opensearch_host,
             region=opensearch_region,
             index_name=opensearch_dmps_index_name,
@@ -796,7 +763,7 @@ def process_dmps_cmd(
         "enrich-dmps": partial(
             submit_enrich_dmps_job,
             env=env,
-            dmps_run_id=run_id,
+            dmps_run_id=dmps_run_id,
             host=opensearch_host,
             region=opensearch_region,
             index_name=opensearch_dmps_index_name,
@@ -808,7 +775,7 @@ def process_dmps_cmd(
             submit_dmp_works_search_job,
             env=env,
             bucket_name=bucket_name,
-            dmps_run_id=run_id,
+            dmps_run_id=dmps_run_id,
             host=opensearch_host,
             region=opensearch_region,
             dmps_index_name=opensearch_dmps_index_name,
@@ -816,13 +783,13 @@ def process_dmps_cmd(
             mode=opensearch_mode,
             port=opensearch_port,
             service=opensearch_service,
-            institutions=institutions,
+            institutions=dataset_subset.institutions if dataset_subset is not None and dataset_subset.enable else None,
         ),
         "merge-related-works": partial(
             submit_merge_related_works_job,
             env=env,
             bucket_name=bucket_name,
-            dmps_run_id=run_id,
+            dmps_run_id=dmps_run_id,
         ),
     }
 
@@ -831,3 +798,7 @@ def process_dmps_cmd(
         task_order=list(PROCESS_DMPS_JOBS),
         start_task_name=start_job,
     )
+
+
+if __name__ == "__main__":
+    app()

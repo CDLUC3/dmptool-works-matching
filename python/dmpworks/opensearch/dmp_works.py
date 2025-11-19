@@ -2,14 +2,15 @@ import json
 import logging
 import math
 import pathlib
-from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Annotated, Callable, Optional
 
 import jsonlines
 import pendulum
+from cyclopts import Parameter
 from opensearchpy import OpenSearch
 from tqdm import tqdm
 
+from dmpworks.cli_utils import DatasetSubsetInstitution, parse_institutions
 from dmpworks.model.dmp_model import Award, DMPModel
 from dmpworks.model.related_work_model import ContentMatch, DoiMatch, DoiMatchSource, ItemMatch, RelatedWork
 from dmpworks.model.work_model import WorkModel
@@ -17,15 +18,6 @@ from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientCo
 from dmpworks.utils import timed
 
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class DMPInstitution:
-    name: str
-    ror: str
-
-    def to_dict(self) -> dict:
-        return {"name": self.name, "ror": self.ror}
 
 
 @timed
@@ -42,7 +34,13 @@ def dmp_works_search(
     include_named_queries_score: bool = False,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    institutions: list[DMPInstitution] = None,
+    institutions: Annotated[
+        list[DatasetSubsetInstitution],
+        Parameter(
+            converter=parse_institutions,
+            help="A list of the institutions to include in JSON Format.",
+        ),
+    ] = None,
     start_date: Optional[pendulum.Date] = None,
     end_date: Optional[pendulum.Date] = None,
 ):

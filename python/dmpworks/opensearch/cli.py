@@ -4,8 +4,8 @@ from typing import Annotated, Optional
 
 from cyclopts import App, Parameter, validators
 
-from dmpworks.cli_utils import Directory, LogLevel
-from dmpworks.opensearch.dmp_works import dmp_works_search, DMPInstitution
+from dmpworks.cli_utils import DatasetSubsetInstitution, Directory, LogLevel, parse_institutions
+from dmpworks.opensearch.dmp_works import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index, update_mapping
 from dmpworks.opensearch.sync_dmps import sync_dmps
@@ -196,8 +196,11 @@ def dmp_works_search_cmd(
     max_concurrent_shard_requests: int = 12,
     client_config: Optional[OpenSearchClientConfig] = None,
     institutions: Annotated[
-        list[DMPInstitution],
-        Parameter(consume_multiple=True),
+        list[DatasetSubsetInstitution],
+        Parameter(
+            converter=parse_institutions,
+            help="A list of the institutions to include in JSON Format.",
+        ),
     ] = None,
     start_date: Date = None,
     end_date: Date = None,

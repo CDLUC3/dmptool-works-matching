@@ -1,12 +1,11 @@
-import json
 import logging
 from typing import Optional, TypedDict
 
 import boto3
 import pendulum
 
-from opensearch.dmp_works import DMPInstitution
-from transform.dataset_subset import Dataset
+from dmpworks.cli_utils import DatasetSubsetInstitution
+from dmpworks.transform.dataset_subset import Dataset
 
 # CPU and memory groups
 NANO_VCPUS = 1
@@ -91,15 +90,16 @@ def submit_job(
 
     # Submit job
     batch_client = get_aws_batch_client()
+    full_job_name = f"{job_name}-{run_id}"
     response = batch_client.submit_job(
-        jobName=f"{job_name}-{run_id}",
+        jobName=full_job_name,
         jobQueue=job_queue,
         jobDefinition=job_definition,
         dependsOn=depends_on,
         containerOverrides=container_overrides,
     )
     job_id = response['jobId']
-    logging.info(f"Submitted job with ID: {job_id}")
+    logging.info(f"Submitted job {full_job_name} with ID: {job_id}")
 
     return job_id
 
@@ -114,8 +114,7 @@ def dataset_subset_job(
     bucket_name: str,
     run_id: str,
     dataset: Dataset,
-    institution_rors: list[str],
-    institution_names: list[str],
+    institutions: list[DatasetSubsetInstitution],
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
@@ -127,8 +126,7 @@ def dataset_subset_job(
         bucket_name: S3 bucket to download the file to.
         run_id: a unique ID to represent this run of the job.
         dataset: the dataset to create the subset for.
-        institution_rors: a list of the ROR IDs (without a prefix) of the institutions to include.
-        institution_names: a list of the names of the institutions to include.
+        institutions: a list of the institutions to include.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
 
@@ -136,19 +134,21 @@ def dataset_subset_job(
         str: the job ID of the submitted AWS Batch job.
     """
 
+    logging.info("Creating dataset subset")
+    logging.info(f"institutions: {institutions}, len: {len(institutions)}")
+
     return submit_job(
         job_name=f"{dataset}-dataset-subset",
         run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
-        command=f"dmpworks aws-batch $DATASET dataset-subset $BUCKET_NAME $RUN_ID --institution-rors $INSTITUTION_RORS --institution-names $INSTITUTION_NAMES",
+        command=f"dmpworks aws-batch $DATASET dataset-subset $BUCKET_NAME $RUN_ID --institutions '$INSTITUTIONS'",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "DATASET": dataset,
-                "INSTITUTION_RORS": " ".join(institution_rors),
-                "INSTITUTION_NAMES": " ".join([f'"{name}"' for name in institution_names]),
+                "INSTITUTIONS": DatasetSubsetInstitution.institutions_to_json(institutions),
             }
         ),
         vcpus=vcpus,
@@ -866,7 +866,7 @@ def submit_dmp_works_search_job(
     mode: str = "aws",
     port: int = 443,
     service: str = "es",
-    institutions: list[DMPInstitution],
+    institutions: list[DatasetSubsetInstitution],
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
@@ -885,7 +885,7 @@ def submit_dmp_works_search_job(
         mode: Client connection mode (e.g., "aws").
         port: OpenSearch connection port.
         service: OpenSearch service name (e.g., "es").
-        institutions: .
+        institutions: a list of institutions to include.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -913,7 +913,7 @@ def submit_dmp_works_search_job(
                 "PORT": str(port),
                 "REGION": region,
                 "SERVICE": service,
-                "INSTITUTIONS": json.dumps([inst.to_dict() for inst in institutions], separators=(",", ":")),
+                "INSTITUTIONS": DatasetSubsetInstitution.institutions_to_json(institutions),
                 "TQDM_POSITION": TQDM_POSITION,
                 "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }

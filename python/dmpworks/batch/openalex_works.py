@@ -4,6 +4,7 @@ from typing import Annotated, Optional
 from cyclopts import App, Parameter
 
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
+from dmpworks.cli_utils import DatasetSubsetInstitution, parse_institutions
 from dmpworks.transform.cli import OpenAlexWorksConfig
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.openalex_works import transform_openalex_works
@@ -44,19 +45,11 @@ def download_cmd(bucket_name: str, run_id: str):
 def dataset_subset(
     bucket_name: str,
     run_id: str,
-    institution_rors: Annotated[
-        list[str],
+    institutions: Annotated[
+        list[DatasetSubsetInstitution],
         Parameter(
-            required=True,
-            consume_multiple=True,
-            help="A list of the ROR IDs (without a prefix) of the institutions to include.",
-        ),
-    ] = None,
-    institution_names: Annotated[
-        list[str],
-        Parameter(
-            consume_multiple=True,
-            help="A list of the names of the institutions to include.",
+            converter=parse_institutions,
+            help="A list of the institutions to include in JSON Format.",
         ),
     ] = None,
 ):
@@ -65,8 +58,7 @@ def dataset_subset(
     Args:
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
-        institution_rors: a list of the ROR IDs (without a prefix) of the institutions to include.
-        institution_names: a list of the names of the institutions to include.
+        institutions: a list of the institutions to include.
     """
 
     setup_multiprocessing_logging(logging.INFO)
@@ -76,8 +68,7 @@ def dataset_subset(
             dataset="openalex-works",
             in_dir=ctx.download_dir,
             subset_run_id=ctx.subset_dir,
-            ror_ids=set(institution_rors) if institution_rors is not None else set(),
-            institution_names=set(institution_names) if institution_names is not None else set(),
+            institutions=institutions if institutions is not None else [],
         )
 
 

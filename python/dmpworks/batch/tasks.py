@@ -3,7 +3,7 @@ import pathlib
 import shutil
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, ContextManager, Generator
+from typing import Any, Generator
 
 from dmpworks.batch.utils import clean_s3_prefix, download_files_from_s3, local_path, s3_uri, upload_files_to_s3
 
