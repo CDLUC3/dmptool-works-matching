@@ -4,7 +4,7 @@ from typing import Optional, TypedDict
 import boto3
 import pendulum
 
-from dmpworks.cli_utils import DatasetSubsetInstitution
+from dmpworks.cli_utils import DatasetSubset
 from dmpworks.transform.dataset_subset import Dataset
 
 # CPU and memory groups
@@ -114,9 +114,10 @@ def dataset_subset_job(
     bucket_name: str,
     run_id: str,
     dataset: Dataset,
-    institutions: list[DatasetSubsetInstitution],
+    institutions: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
+    depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
     """
     Submits the create dataset subset job to AWS Batch.
@@ -129,30 +130,32 @@ def dataset_subset_job(
         institutions: a list of the institutions to include.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
 
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
 
     logging.info("Creating dataset subset")
-    logging.info(f"institutions: {institutions}, len: {len(institutions)}")
+    logging.info(f"institutions: {institutions}")
 
     return submit_job(
         job_name=f"{dataset}-dataset-subset",
         run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
-        command=f"dmpworks aws-batch $DATASET dataset-subset $BUCKET_NAME $RUN_ID --institutions '$INSTITUTIONS'",
+        command=f'dmpworks aws-batch $DATASET dataset-subset $BUCKET_NAME $RUN_ID',
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "DATASET": dataset,
-                "INSTITUTIONS": DatasetSubsetInstitution.institutions_to_json(institutions),
+                "DATASET_SUBSET_INSTITUTIONS": institutions,
             }
         ),
         vcpus=vcpus,
         memory=memory,
+        depends_on=depends_on,
     )
 
 
@@ -403,12 +406,12 @@ def openalex_works_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --max-file-processes=$MAX_FILE_PROCESSES --batch-size=$BATCH_SIZE --use-subset $USE_SUBSET",
+        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --max-file-processes=$MAX_FILE_PROCESSES --batch-size=$BATCH_SIZE --use-subset=$USE_SUBSET",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
-                "USE_SUBSET": use_subset,
+                "USE_SUBSET": str(use_subset).lower(),
                 "MAX_FILE_PROCESSES": str(max_file_processes),
                 "BATCH_SIZE": str(batch_size),
             }
@@ -492,12 +495,12 @@ def crossref_metadata_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch crossref-metadata transform $BUCKET_NAME $RUN_ID --use-subset $USE_SUBSET",
+        command="dmpworks aws-batch crossref-metadata transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
-                "USE_SUBSET": use_subset,
+                "USE_SUBSET": str(use_subset).lower(),
             }
         ),
         depends_on=depends_on,
@@ -579,12 +582,12 @@ def datacite_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch datacite transform $BUCKET_NAME $RUN_ID --use-subset $USE_SUBSET",
+        command="dmpworks aws-batch datacite transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
-                "USE_SUBSET": use_subset,
+                "USE_SUBSET": str(use_subset).lower(),
             }
         ),
         depends_on=depends_on,
@@ -866,7 +869,7 @@ def submit_dmp_works_search_job(
     mode: str = "aws",
     port: int = 443,
     service: str = "es",
-    institutions: list[DatasetSubsetInstitution],
+    dataset_subset: DatasetSubset,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
@@ -885,7 +888,7 @@ def submit_dmp_works_search_job(
         mode: Client connection mode (e.g., "aws").
         port: OpenSearch connection port.
         service: OpenSearch service name (e.g., "es").
-        institutions: a list of institutions to include.
+        dataset_subset: whether to filter the DMPs to a subset of institutions.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -894,6 +897,24 @@ def submit_dmp_works_search_job(
         str: the job ID of the submitted AWS Batch job.
     """
 
+    environment = {
+        "BUCKET_NAME": bucket_name,
+        "RUN_ID": dmps_run_id,
+        "DMPS_INDEX_NAME": dmps_index_name,
+        "WORKS_INDEX_NAME": works_index_name,
+        "MODE": mode,
+        "HOST": host,
+        "PORT": str(port),
+        "REGION": region,
+        "SERVICE": service,
+        "TQDM_POSITION": TQDM_POSITION,
+        "TQDM_MININTERVAL": TQDM_MININTERVAL,
+    }
+
+    if dataset_subset is not None:
+        environment["DATASET_SUBSET_ENABLE"] = dataset_subset.enable
+        environment["DATASET_SUBSET_INSTITUTIONS"] = dataset_subset.institutions
+
     return submit_job(
         job_name="opensearch-dmp-works-search",
         run_id=dmps_run_id,
@@ -901,23 +922,8 @@ def submit_dmp_works_search_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch dmp-works-search $BUCKET_NAME $RUN_ID $DMPS_INDEX_NAME $WORKS_INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE --institutions='$INSTITUTIONS'",
-        environment=make_env(
-            {
-                "BUCKET_NAME": bucket_name,
-                "RUN_ID": dmps_run_id,
-                "DMPS_INDEX_NAME": dmps_index_name,
-                "WORKS_INDEX_NAME": works_index_name,
-                "MODE": mode,
-                "HOST": host,
-                "PORT": str(port),
-                "REGION": region,
-                "SERVICE": service,
-                "INSTITUTIONS": DatasetSubsetInstitution.institutions_to_json(institutions),
-                "TQDM_POSITION": TQDM_POSITION,
-                "TQDM_MININTERVAL": TQDM_MININTERVAL,
-            }
-        ),
+        command="dmpworks aws-batch opensearch dmp-works-search $BUCKET_NAME $RUN_ID $DMPS_INDEX_NAME $WORKS_INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE",
+        environment=make_env(environment),
         depends_on=depends_on,
     )
 

@@ -11,7 +11,7 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_file_to_s3,
 )
-from dmpworks.cli_utils import DatasetSubsetInstitution, LogLevel, parse_institutions
+from dmpworks.cli_utils import DatasetSubset, DatasetSubsetInstitution, LogLevel
 from dmpworks.dmsp.related_works import merge_related_works
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.dmp_works import dmp_works_search
@@ -156,13 +156,7 @@ def dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: Optional[OpenSearchClientConfig] = None,
-    institutions: Annotated[
-        list[DatasetSubsetInstitution],
-        Parameter(
-            converter=parse_institutions,
-            help="A list of the institutions to include in JSON Format.",
-        ),
-    ] = None,
+    dataset_subset: DatasetSubset = None,
     start_date: Date = None,
     end_date: Date = None,
     log_level: LogLevel = "INFO",
@@ -186,7 +180,7 @@ def dmp_works_search_cmd(
         max_concurrent_searches: the maximum number of concurrent searches.
         max_concurrent_shard_requests: the maximum number of shards searched per node.
         client_config: OpenSearch client settings.
-        institutions: when supplied only includes DMPs which have an institution in this list.
+        dataset_subset: only includes DMPs which have an institution in this list.
         start_date: return DMPs with project start dates on or after this date.
         end_date: return DMPs with project start dates on before this date.
         log_level: Python log level.
@@ -196,6 +190,7 @@ def dmp_works_search_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
+    use_subset = dataset_subset is not None and dataset_subset.enable
     out_file = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
     try:
         dmp_works_search(
@@ -211,7 +206,7 @@ def dmp_works_search_cmd(
             include_named_queries_score=include_named_queries_score,
             max_concurrent_searches=max_concurrent_searches,
             max_concurrent_shard_requests=max_concurrent_shard_requests,
-            institutions=institutions,
+            institutions=DatasetSubsetInstitution.parse(dataset_subset.institutions) if use_subset else None,
             start_date=start_date,
             end_date=end_date,
         )

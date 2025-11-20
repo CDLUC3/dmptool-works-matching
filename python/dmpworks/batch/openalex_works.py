@@ -1,10 +1,10 @@
 import logging
-from typing import Annotated, Optional
+from typing import Optional
 
-from cyclopts import App, Parameter
+from cyclopts import App
 
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
-from dmpworks.cli_utils import DatasetSubsetInstitution, parse_institutions
+from dmpworks.cli_utils import DatasetSubsetInstitution, Institutions
 from dmpworks.transform.cli import OpenAlexWorksConfig
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.openalex_works import transform_openalex_works
@@ -45,13 +45,7 @@ def download_cmd(bucket_name: str, run_id: str):
 def dataset_subset(
     bucket_name: str,
     run_id: str,
-    institutions: Annotated[
-        list[DatasetSubsetInstitution],
-        Parameter(
-            converter=parse_institutions,
-            help="A list of the institutions to include in JSON Format.",
-        ),
-    ] = None,
+    institutions: Institutions = None,
 ):
     """Create a subset of DataCite.
 
@@ -67,8 +61,8 @@ def dataset_subset(
         create_dataset_subset(
             dataset="openalex-works",
             in_dir=ctx.download_dir,
-            subset_run_id=ctx.subset_dir,
-            institutions=institutions if institutions is not None else [],
+            out_dir=ctx.subset_dir,
+            institutions=DatasetSubsetInstitution.parse(institutions),
         )
 
 
@@ -76,7 +70,7 @@ def dataset_subset(
 def transform_cmd(
     bucket_name: str,
     run_id: str,
-    use_subset: bool,
+    use_subset: bool = False,
     *,
     config: Optional[OpenAlexWorksConfig] = None,
 ):

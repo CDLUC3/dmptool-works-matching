@@ -221,8 +221,7 @@ def crossref_metadata_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             dataset="crossref-metadata",
-            institution_rors=dataset_subset.institution_rors,
-            institution_names=dataset_subset.institution_names,
+            institutions=dataset_subset.institutions,
         )
     else:
         task_order.remove(task_id)
@@ -783,7 +782,7 @@ def process_dmps_cmd(
             mode=opensearch_mode,
             port=opensearch_port,
             service=opensearch_service,
-            institutions=dataset_subset.institutions if dataset_subset is not None and dataset_subset.enable else None,
+            dataset_subset=dataset_subset,
         ),
         "merge-related-works": partial(
             submit_merge_related_works_job,

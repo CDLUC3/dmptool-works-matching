@@ -119,7 +119,7 @@ def create_dataset_subset(
     in_dir: pathlib.Path,
     out_dir: pathlib.Path,
     institutions: list[DatasetSubsetInstitution],
-    log_level: int,
+    log_level: int = logging.INFO,
 ):
     is_empty = next(out_dir.iterdir(), None) is None
     if not is_empty:
@@ -128,8 +128,12 @@ def create_dataset_subset(
     file_glob = get_file_glob(dataset)
     files = list(pathlib.Path(in_dir).glob(file_glob))
     futures = []
-    institution_rors = set([inst.name for inst in institutions])
+    institution_rors = set([inst.ror for inst in institutions if inst.ror is not None])
     institution_names = set([val for inst in institutions if (val := normalise_name(inst.name)) is not None])
+
+    logging.info(f"institutions: {institutions}")
+    logging.info(f"institution_rors: {institution_rors}")
+    logging.info(f"institution_names: {institution_names}")
 
     try:
         with ProcessPoolExecutor(
