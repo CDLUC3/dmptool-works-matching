@@ -68,6 +68,11 @@ def plan(
         os.environ[f"SQLMESH__VARIABLES__{dataset.upper()}_PATH"] = str(parquet_path)
     os.environ["SQLMESH__VARIABLES__EXPORT_PATH"] = str(export_dir)
 
+    # TODO: only set if in dev environment
+    os.environ["SQLMESH__VARIABLES__AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD"] = "1"
+    os.environ["SQLMESH__VARIABLES__AUDIT_DATACITE_WORKS_THRESHOLD"] = "1"
+    os.environ["SQLMESH__VARIABLES__AUDIT_OPENALEX_WORKS_THRESHOLD"] = "1"
+
     # Run SQL Mesh
     run_plan()
 
