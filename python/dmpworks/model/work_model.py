@@ -21,7 +21,7 @@ class WorkModel(BaseModel):
     abstract_text: Optional[str] = None
     work_type: str
     publication_date: pendulum.Date
-    updated_date: pendulum.DateTime
+    updated_date: Optional[pendulum.DateTime]
     publication_venue: Optional[str] = None
     institutions: list[Institution]
     authors: list[Author]
@@ -70,9 +70,15 @@ class WorkModel(BaseModel):
         return v
 
     @field_serializer("publication_date")
-    def serialize_pendulum_date(self, v: pendulum.Date):
+    def serialize_pendulum_date(self, v: Optional[pendulum.Date]):
+        if v is None:
+            return None
+
         return v.to_date_string()
 
     @field_serializer("updated_date")
-    def serialize_pendulum_datetime(self, v: pendulum.DateTime):
+    def serialize_pendulum_datetime(self, v: Optional[pendulum.DateTime]):
+        if v is None:
+            return None
+
         return v.to_iso8601_string()

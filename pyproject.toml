@@ -14,7 +14,7 @@ dependencies = [
     "tqdm>=4,<5",
     "opensearch-py>=2.8.0,<3",
     "pyarrow>=19,<21",
-    "sqlmesh>=0.188.1,<1",
+    "sqlmesh==0.227.1",
     "cyclopts>=3,<4",
     "pooch>=1,<2",
     "boto3>=1,<2",
@@ -25,7 +25,7 @@ dependencies = [
     "pydantic>=2,<3",
     "jsonlines>=4,<5",
     "duckdb>=1.4.0,<2",
-    "pymysql>=1.1.2,<2"
+    "pymysql[rsa]>=1.1.2,<2"
 ]
 
 [project.optional-dependencies]

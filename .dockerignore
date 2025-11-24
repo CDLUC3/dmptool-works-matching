@@ -2,7 +2,7 @@
 target
 .git
 .env
-.env.demo
+.env.*
 .ipynb_checkpoints
 Dockerfile
 Dockerfile.aws

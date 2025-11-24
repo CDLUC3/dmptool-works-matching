@@ -9,6 +9,7 @@ import pendulum
 from opensearchpy import OpenSearch
 from tqdm import tqdm
 
+from dmpworks.cli_utils import DatasetSubsetInstitution
 from dmpworks.model.dmp_model import Award, DMPModel
 from dmpworks.model.related_work_model import ContentMatch, DoiMatch, DoiMatchSource, ItemMatch, RelatedWork
 from dmpworks.model.work_model import WorkModel
@@ -20,7 +21,7 @@ log = logging.getLogger(__name__)
 
 @timed
 def dmp_works_search(
-    dmp_index_name: str,
+    dmps_index_name: str,
     works_index_name: str,
     out_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
@@ -32,19 +33,18 @@ def dmp_works_search(
     include_named_queries_score: bool = False,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    dmp_inst_name: Optional[str] = None,
-    dmp_inst_ror: Optional[str] = None,
+    institutions: list[DatasetSubsetInstitution] = None,
     start_date: Optional[pendulum.Date] = None,
     end_date: Optional[pendulum.Date] = None,
 ):
     client = make_opensearch_client(client_config)
-    institutions = None
-    if dmp_inst_name or dmp_inst_ror:
-        institutions = build_entity_query(
+    institutions_query = None
+    if institutions:
+        institutions_query = build_entity_query(
             "institutions",
             "institutions.ror",
             "institutions.name",
-            [{"name": dmp_inst_name, "ror": dmp_inst_ror}],
+            [inst.to_dict() for inst in institutions],
             lambda inst: inst.get("ror"),
             lambda inst: inst.get("name"),
         )
@@ -69,8 +69,8 @@ def dmp_works_search(
     query = {"query": {}}
     bool_components = {}
 
-    if institutions is not None:
-        bool_components["must"] = [institutions]
+    if institutions_query is not None:
+        bool_components["must"] = [institutions_query]
 
     if filters:
         bool_components["filter"] = filters
@@ -99,7 +99,7 @@ def dmp_works_search(
     with tqdm(total=0, desc="Find DMP work matches with OpenSearch", unit="doc") as pbar:
         with yield_dmps(
             client,
-            dmp_index_name,
+            dmps_index_name,
             query,
             page_size=batch_size,
             scroll_time=scroll_time,

@@ -36,8 +36,8 @@ cp -r "${SOURCE_DIR}/openalex/openalex-snapshot/data/funders/." "${DEMO_DIR}/sou
 echo "Copying ROR"
 cp "${SOURCE_DIR}/ror/v1.63-2025-04-03-ror-data/v1.63-2025-04-03-ror-data_schema_v2.json" "${DEMO_DIR}/sources/ror/v1.63-2025-04-03-ror-data_schema_v2.json"
 
-dmpworks transform demo-dataset crossref-metadata "${ROR_ID}" "${SOURCE_DIR}/crossref_metadata/March 2025 Public Data File from Crossref" "${DEMO_DIR}/sources/crossref_metadata" --institution-name="${INSTITUTION_NAME}"
-dmpworks transform demo-dataset datacite "${ROR_ID}" "${SOURCE_DIR}/datacite/DataCite_Public_Data_File_2024/dois" "${DEMO_DIR}/sources/datacite" --institution-name="${INSTITUTION_NAME}"
-dmpworks transform demo-dataset openalex-works "${ROR_ID}" "${SOURCE_DIR}/openalex/openalex-snapshot/data/works" "${DEMO_DIR}/sources/openalex_works"
+dmpworks transform dataset-subset crossref-metadata "${ROR_ID}" "${SOURCE_DIR}/crossref_metadata/March 2025 Public Data File from Crossref" "${DEMO_DIR}/sources/crossref_metadata" --institution-name="${INSTITUTION_NAME}"
+dmpworks transform dataset-subset datacite "${ROR_ID}" "${SOURCE_DIR}/datacite/DataCite_Public_Data_File_2024/dois" "${DEMO_DIR}/sources/datacite" --institution-name="${INSTITUTION_NAME}"
+dmpworks transform dataset-subset openalex-works "${ROR_ID}" "${SOURCE_DIR}/openalex/openalex-snapshot/data/works" "${DEMO_DIR}/sources/openalex_works"
 
 

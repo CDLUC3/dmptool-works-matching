@@ -19,12 +19,12 @@ def mock_download_source_task():
     data = {}
 
     @contextmanager
-    def _mocked(bucket_name: str, dataset: str, task_id: str):
+    def _mocked(bucket_name: str, dataset: str, run_id: str):
         with tempfile.TemporaryDirectory() as tmp_dir:
             data["temp_path"] = pathlib.Path(tmp_dir)
             ctx = DownloadTaskContext(
-                download_dir=pathlib.Path(tmp_dir) / dataset / task_id / "download",
-                target_uri=f"s3://{bucket_name}/{dataset}/{task_id}/download/",
+                download_dir=pathlib.Path(tmp_dir) / dataset / run_id / "download",
+                target_uri=f"s3://{bucket_name}/{dataset}/{run_id}/download/",
             )
             yield ctx
 
@@ -42,7 +42,7 @@ def mock_run_process(mocker):
 def test_crossref_metadata_download(mock_download_source_task, mock_run_process):
     bucket = "my-bucket"
     dataset = "crossref_metadata"
-    task_id = "2025-01-01"
+    run_id = "2025-01-01"
     archive_name = "April_2025_Public_Data_File_from_Crossref.tar"
     cli(
         [
@@ -50,7 +50,7 @@ def test_crossref_metadata_download(mock_download_source_task, mock_run_process)
             "crossref-metadata",
             "download",
             bucket,
-            task_id,
+            run_id,
             archive_name,
         ]
     )
@@ -63,7 +63,7 @@ def test_crossref_metadata_download(mock_download_source_task, mock_run_process)
     )
 
     temp_path = mock_download_source_task.get("data", {}).get("temp_path")
-    download_dir = temp_path / dataset / task_id / "download"
+    download_dir = temp_path / dataset / run_id / "download"
     archive_path: pathlib.Path = download_dir / archive_name
 
     mock_run_process.assert_has_calls(

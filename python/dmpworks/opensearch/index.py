@@ -3,6 +3,7 @@ import logging
 from importlib.resources import files
 from typing import Any
 
+import opensearchpy
 from opensearchpy import OpenSearch
 
 MAPPINGS_PACKAGE = "dmpworks.opensearch.mappings"
@@ -22,8 +23,14 @@ def load_mapping(mapping_filename: str) -> dict[str, Any]:
 
 def create_index(client: OpenSearch, index_name: str, mapping_filename: str):
     mapping = load_mapping(mapping_filename)
-    response = client.indices.create(index=index_name, body=mapping)
-    logging.info(response)
+    try:
+        response = client.indices.create(index=index_name, body=mapping)
+        logging.info(response)
+    except opensearchpy.exceptions.RequestError as e:
+        if e.status_code == 400 and e.error == "resource_already_exists_exception":
+            logging.warning(f"Index already exists: {index_name}")
+        else:
+            raise e
 
 
 def update_mapping(client: OpenSearch, index_name: str, mapping_filename: str):

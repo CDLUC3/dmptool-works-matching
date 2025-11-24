@@ -24,7 +24,7 @@ SELECT @end_ds AS export_date;
 
 -- Export data
 @IF(
-  @runtime_stage = 'evaluating', -- https://sqlmesh.readthedocs.io/en/stable/concepts/macros/macro_variables/#runtime-variables
+  @runtime_stage = 'creating', -- https://sqlmesh.readthedocs.io/en/stable/concepts/macros/macro_variables/#runtime-variables
   COPY (
     SELECT
       *

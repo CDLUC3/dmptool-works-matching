@@ -17,12 +17,17 @@ TOKEN_URL = "http://169.254.169.254/latest/api/token"
 IDENTITY_URL = "http://169.254.169.254/latest/dynamic/instance-identity/document"
 
 
-def s3_uri(bucket_name: str, dataset: str, task_id: str, stage: str) -> str:
-    return f"s3://{bucket_name}/{dataset}/{task_id}/{stage}/"
+def s3_uri(bucket_name: str, *parts: str) -> str:
+    path = "/".join(parts)
+    return f"s3://{bucket_name}/{path}" if path else f"s3://{bucket_name}"
 
 
-def local_path(dataset: str, task_id: str, stage: str) -> pathlib.Path:
-    return pathlib.Path("/") / "data" / dataset / task_id / stage
+def data_path() -> pathlib.Path:
+    return pathlib.Path("/") / "data"
+
+
+def local_path(*parts: str) -> pathlib.Path:
+    return pathlib.Path(data_path(), *parts)
 
 
 def clean_s3_prefix(s3_uri: str):
@@ -34,14 +39,24 @@ def clean_s3_prefix(s3_uri: str):
         log.info(f"No objects found at {s3_uri}")
 
 
-def upload_to_s3(local_dir: pathlib.Path, s3_uri: str, glob_pattern: str = "*"):
+def upload_files_to_s3(local_dir: pathlib.Path, s3_uri: str, glob_pattern: str = "*"):
     log.info(f"Uploading from {local_dir}/{glob_pattern} to {s3_uri}")
     run_process(["s5cmd", "cp", f"{local_dir}/{glob_pattern}", s3_uri])
 
 
-def download_from_s3(source_uri: str, target_dir: pathlib.Path):
+def upload_file_to_s3(file: pathlib.Path, s3_uri: str):
+    log.info(f"Uploading {file} to {s3_uri}")
+    run_process(["s5cmd", "cp", f"{file}", s3_uri])
+
+
+def download_files_from_s3(source_uri: str, target_dir: pathlib.Path):
     log.info(f"Downloading from {source_uri} to {target_dir}")
     run_process(["s5cmd", "cp", source_uri, f"{target_dir}/"])
+
+
+def download_file_from_s3(source_uri: str, target_file: pathlib.Path):
+    log.info(f"Downloading from {source_uri} to {target_file}")
+    run_process(["s5cmd", "cp", source_uri, str(target_file)])
 
 
 def parse_s3_uri(s3_uri: str) -> tuple[str, str]:
@@ -70,7 +85,7 @@ def s3_uri_has_files(
             MaxKeys=1,
         )
     except ClientError as err:
-        raise RuntimeError(f"Unable to list {s3_uri}: {err}")
+        raise RuntimeError(f"Unable to list {s3_uri}") from err
 
     return "Contents" in resp
 
@@ -99,9 +114,9 @@ def associate_elastic_ip(
         log.info(f"Successfully associated Elastic IP {allocation_id} with instance {instance_id}.")
         log.info(f"Association ID: {response.get('AssociationId')}")
     except Exception as e:
-        msg = f"Error associating Elastic IP: {e}"
+        msg = f"Error associating Elastic IP"
         log.error(msg)
-        raise Exception(msg)
+        raise Exception(msg) from e
 
     log.info(f"Waiting for IP {current_ip} to change...")
     start_time = time.time()
@@ -147,6 +162,6 @@ def get_ec2_instance_info(token_ttl_seconds: int = 300):
         return instance_id, region
 
     except Exception as e:
-        msg = f"Error retrieving instance metadata: {e}"
+        msg = f"Error retrieving instance metadata"
         log.error(msg)
-        raise Exception(msg)
+        raise Exception(msg) from e

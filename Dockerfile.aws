@@ -34,7 +34,7 @@ RUN python${PYTHON_VERSION} -m pip install -r requirements-dev.txt -r requiremen
 RUN RUSTFLAGS="-C target-cpu=${RUST_TARGET_CPU}" maturin build --interpreter python${PYTHON_VERSION} --profile dist-release
 
 # Build dmpworks
-WORKDIR /app/dmsp_api_prototype/queries/dmpworks
+WORKDIR /app/dmptool-works-matching
 COPY . .
 RUN RUSTFLAGS="-C target-cpu=${RUST_TARGET_CPU}" maturin build --interpreter python${PYTHON_VERSION} --release
 
@@ -48,6 +48,10 @@ ARG PYTHON_VERSION="3.12"
 ARG S5CMD_VERSION="2.3.0"
 ENV PYTHON_VERSION=${PYTHON_VERSION}
 ENV S5CMD_VERSION=${S5CMD_VERSION}
+ENV TMPDIR=/data/tmp
+
+# Make temp folder
+RUN mkdir -p ${TMPDIR}
 
 # Install system dependencies
 RUN dnf -y install \
@@ -74,5 +78,5 @@ COPY --from=builder /app/polars/target/wheels /app/wheels/polars
 RUN python${PYTHON_VERSION} -m pip install /app/wheels/polars/*.whl
 
 # Copy and install dmpworks
-COPY --from=builder /app/dmsp_api_prototype/queries/dmpworks/target/wheels /app/wheels/dmpworks
+COPY --from=builder /app/dmptool-works-matching/target/wheels /app/wheels/dmpworks
 RUN python${PYTHON_VERSION} -m pip install /app/wheels/dmpworks/*.whl

@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 from cyclopts import App, Parameter, validators
 
-from dmpworks.cli_utils import Directory, LogLevel
+from dmpworks.cli_utils import DatasetSubset, DatasetSubsetInstitution, Directory, LogLevel
 from dmpworks.opensearch.dmp_works import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index, update_mapping
@@ -146,7 +146,7 @@ def sync_dmps_cmd(
 
 @app.command(name="enrich-dmps")
 def enrich_dmps_cmd(
-    dmp_index_name: str,
+    dmps_index_name: str,
     client_config: Optional[OpenSearchClientConfig] = None,
     log_level: LogLevel = "INFO",
 ):
@@ -154,7 +154,7 @@ def enrich_dmps_cmd(
     found on funder award pages.
 
     Args:
-        dmp_index_name: the name of the DMP index to update.
+        dmps_index_name: the name of the DMP index to update.
         client_config: OpenSearch client settings.
         log_level: Python log level.
     """
@@ -167,14 +167,14 @@ def enrich_dmps_cmd(
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
     enrich_dmps(
-        dmp_index_name,
+        dmps_index_name,
         client_config,
     )
 
 
 @app.command(name="dmp-works-search")
 def dmp_works_search_cmd(
-    dmp_index_name: str,
+    dmps_index_name: str,
     works_index_name: str,
     out_file: Annotated[
         pathlib.Path,
@@ -195,17 +195,15 @@ def dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: Optional[OpenSearchClientConfig] = None,
-    dmp_inst_name: Optional[str] = None,
-    dmp_inst_ror: Optional[str] = None,
+    dataset_subset: DatasetSubset = None,
     start_date: Date = None,
     end_date: Date = None,
     log_level: LogLevel = "INFO",
 ):
-    """Enrich DMPs in OpenSearch, including fetching publications that can be
-    found on funder award pages.
+    """DMP Works search.
 
     Args:
-        dmp_index_name: the name of the DMP index in OpenSearch.
+        dmps_index_name: the name of the DMP index in OpenSearch.
         works_index_name: the name of the works index in OpenSearch.
         out_file: the output directory where search results will be saved.
         scroll_time: the length of time the OpenSearch scroll used to iterate
@@ -220,6 +218,9 @@ def dmp_works_search_cmd(
         max_concurrent_searches: the maximum number of concurrent searches.
         max_concurrent_shard_requests: the maximum number of shards searched per node.
         client_config: OpenSearch client settings.
+        dataset_subset: when supplied only includes DMPs which have an institution in this list.
+        start_date: return DMPs with project start dates on or after this date.
+        end_date: return DMPs with project start dates on before this date.
         log_level: Python log level.
     """
 
@@ -230,8 +231,9 @@ def dmp_works_search_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
+    use_subset = dataset_subset is not None and dataset_subset.enable
     dmp_works_search(
-        dmp_index_name,
+        dmps_index_name,
         works_index_name,
         out_file,
         client_config,
@@ -243,8 +245,7 @@ def dmp_works_search_cmd(
         include_named_queries_score=include_named_queries_score,
         max_concurrent_searches=max_concurrent_searches,
         max_concurrent_shard_requests=max_concurrent_shard_requests,
-        dmp_inst_name=dmp_inst_name,
-        dmp_inst_ror=dmp_inst_ror,
+        institutions=DatasetSubsetInstitution.parse(dataset_subset.institutions) if use_subset else None,
         start_date=start_date,
         end_date=end_date,
     )

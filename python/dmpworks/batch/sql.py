@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from cyclopts import App
 
-from dmpworks.batch.utils import download_from_s3, local_path, s3_uri, upload_to_s3
+from dmpworks.batch.utils import download_files_from_s3, local_path, s3_uri, upload_files_to_s3
 from dmpworks.cli_utils import DateString, LogLevel
 from dmpworks.sql.commands import run_plan
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -28,7 +28,7 @@ class ReleaseDates:
 @app.command(name="plan")
 def plan(
     bucket_name: str,
-    task_id: str,
+    run_id: str,
     release_dates: ReleaseDates,
     log_level: LogLevel = "INFO",
 ):
@@ -36,7 +36,7 @@ def plan(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        task_id: a unique task ID.
+        run_id: a unique ID to represent this run of the job.
         release_dates: the release dates of each dataset.
         log_level: Python log level.
     """
@@ -53,11 +53,11 @@ def plan(
     ]
     for dataset, release_date in datasets:
         transform_dir = local_path(dataset, release_date, "transform")
-        target_uri = s3_uri(bucket_name, dataset, release_date, "transform")
-        download_from_s3(f"{target_uri}*", transform_dir)
+        target_uri = s3_uri(bucket_name, dataset, release_date, "transform/*")
+        download_files_from_s3(target_uri, transform_dir)
 
     # Configure SQL Mesh environment
-    sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / task_id
+    sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / run_id
     duckdb_dir = sqlmesh_data_dir / "duckdb" / "db.db"
     export_dir = sqlmesh_data_dir / "export"
     duckdb_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -68,12 +68,17 @@ def plan(
         os.environ[f"SQLMESH__VARIABLES__{dataset.upper()}_PATH"] = str(parquet_path)
     os.environ["SQLMESH__VARIABLES__EXPORT_PATH"] = str(export_dir)
 
+    # TODO: only set if in dev environment
+    os.environ["SQLMESH__VARIABLES__AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD"] = "1"
+    os.environ["SQLMESH__VARIABLES__AUDIT_DATACITE_WORKS_THRESHOLD"] = "1"
+    os.environ["SQLMESH__VARIABLES__AUDIT_OPENALEX_WORKS_THRESHOLD"] = "1"
+
     # Run SQL Mesh
     run_plan()
 
     # Upload exported Parquet files
-    sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{task_id}/"
-    upload_to_s3(sqlmesh_data_dir, sql_mesh_s3_uri, "*")
+    sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{run_id}/"
+    upload_files_to_s3(sqlmesh_data_dir, sql_mesh_s3_uri, "*")
 
 
 if __name__ == "__main__":

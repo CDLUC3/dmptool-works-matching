@@ -228,10 +228,10 @@ def merge_error_maps(
         merged_summary = merged_errors[status]
         merged_summary["count"] += error_summary["count"]
 
-        for doc_id in error_summary["samples"]:
+        for sample in error_summary["samples"]:
             if len(merged_summary["samples"]) >= max_error_samples:
                 break
-            merged_summary["samples"].append(doc_id)
+            merged_summary["samples"].append(sample)
 
 
 def measure_chunks(
