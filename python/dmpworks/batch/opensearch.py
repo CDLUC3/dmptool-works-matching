@@ -192,6 +192,7 @@ def dmp_works_search_cmd(
 
     use_subset = dataset_subset is not None and dataset_subset.enable
     out_file = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     try:
         dmp_works_search(
             dmps_index_name,

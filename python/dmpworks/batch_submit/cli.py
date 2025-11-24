@@ -646,7 +646,7 @@ def process_works_cmd(
 PROCESS_DMPS_JOBS: tuple[str, ...] = (
     "sync-dmps",
     "enrich-dmps",
-    "dmps-work-search",
+    "dmp-works-search",
     "merge-related-works",
 )
 
@@ -770,7 +770,7 @@ def process_dmps_cmd(
             port=opensearch_port,
             service=opensearch_service,
         ),
-        "dmps-work-search": partial(
+        "dmp-works-search": partial(
             submit_dmp_works_search_job,
             env=env,
             bucket_name=bucket_name,

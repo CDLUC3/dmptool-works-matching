@@ -28,7 +28,8 @@
           ]
         }
       }
-    }
+    },
+    "index.mapping.nested_objects.limit": 20000
   },
   "mappings": {
     "properties": {
