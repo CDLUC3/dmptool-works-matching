@@ -4,6 +4,7 @@ from typing import Annotated, Optional
 
 from cyclopts import App, Parameter
 
+from dmpworks.batch.dataset_subset import load_dois, load_institutions
 from dmpworks.batch.utils import (
     download_file_from_s3,
     download_files_from_s3,
@@ -11,7 +12,7 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_file_to_s3,
 )
-from dmpworks.cli_utils import DatasetSubset, DatasetSubsetInstitution, LogLevel
+from dmpworks.cli_utils import DMPSubset, LogLevel
 from dmpworks.dmsp.related_works import merge_related_works
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.dmp_works import dmp_works_search
@@ -156,7 +157,7 @@ def dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: Optional[OpenSearchClientConfig] = None,
-    dataset_subset: DatasetSubset = None,
+    dmp_subset: DMPSubset = None,
     start_date: Date = None,
     end_date: Date = None,
     log_level: LogLevel = "INFO",
@@ -180,7 +181,7 @@ def dmp_works_search_cmd(
         max_concurrent_searches: the maximum number of concurrent searches.
         max_concurrent_shard_requests: the maximum number of shards searched per node.
         client_config: OpenSearch client settings.
-        dataset_subset: only includes DMPs which have an institution in this list.
+        dmp_subset: only includes DMPs which have an institution or DOI in this list.
         start_date: return DMPs with project start dates on or after this date.
         end_date: return DMPs with project start dates on before this date.
         log_level: Python log level.
@@ -190,9 +191,34 @@ def dmp_works_search_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    use_subset = dataset_subset is not None and dataset_subset.enable
     out_file = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
     out_file.parent.mkdir(parents=True, exist_ok=True)
+
+    meta_dir = local_path(DMP_WORKS_SEARCH_PATH, run_id, "meta")
+    meta_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load subset
+    use_subset = dmp_subset is not None and dmp_subset.enable
+    logging.info(f"use_subset: {use_subset}")
+
+    # Download institutions
+    institutions = None
+    if use_subset and dmp_subset.institutions_s3_path is not None:
+        institutions_uri = s3_uri(bucket_name, dmp_subset.institutions_s3_path)
+        institutions_path = meta_dir / "institutions.json"
+        download_file_from_s3(institutions_uri, institutions_path)
+        institutions = load_institutions(institutions_path)
+        logging.info(f"institutions: {institutions}")
+
+    # Download DOIs
+    dois = None
+    if use_subset and dmp_subset.dois_s3_path is not None:
+        dois_uri = s3_uri(bucket_name, dmp_subset.dois_s3_path)
+        dois_path = meta_dir / "dois.json"
+        download_file_from_s3(dois_uri, dois_path)
+        dois = load_dois(dois_path)
+        logging.info(f"dois: {dois}")
+
     try:
         dmp_works_search(
             dmps_index_name,
@@ -207,7 +233,8 @@ def dmp_works_search_cmd(
             include_named_queries_score=include_named_queries_score,
             max_concurrent_searches=max_concurrent_searches,
             max_concurrent_shard_requests=max_concurrent_shard_requests,
-            institutions=DatasetSubsetInstitution.parse(dataset_subset.institutions) if use_subset else None,
+            institutions=institutions,
+            dois=dois,
             start_date=start_date,
             end_date=end_date,
         )

@@ -221,7 +221,7 @@ def crossref_metadata_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             dataset="crossref-metadata",
-            institutions=dataset_subset.institutions,
+            dataset_subset=dataset_subset,
         )
     else:
         task_order.remove(task_id)
@@ -305,7 +305,7 @@ def datacite_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             dataset="datacite",
-            institutions=dataset_subset.institutions,
+            dataset_subset=dataset_subset,
         )
     else:
         task_order.remove(task_id)
@@ -396,7 +396,7 @@ def openalex_works_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             dataset="openalex-works",
-            institutions=dataset_subset.institutions,
+            dataset_subset=dataset_subset,
         )
     else:
         task_order.remove(task_id)

@@ -4,7 +4,7 @@ from typing import Optional, TypedDict
 import boto3
 import pendulum
 
-from dmpworks.cli_utils import DatasetSubset
+from dmpworks.cli_utils import DatasetSubset, DMPSubset
 from dmpworks.transform.dataset_subset import Dataset
 
 # CPU and memory groups
@@ -104,8 +104,8 @@ def submit_job(
     return job_id
 
 
-def make_env(env_vars: dict[str, str]) -> list[EnvVarDict]:
-    return [{"name": k, "value": str(v)} for k, v in env_vars.items()]
+def make_env(env_vars: dict[str, str | None]) -> list[EnvVarDict]:
+    return [{"name": k, "value": str(v)} for k, v in env_vars.items() if v is not None]
 
 
 def dataset_subset_job(
@@ -114,7 +114,7 @@ def dataset_subset_job(
     bucket_name: str,
     run_id: str,
     dataset: Dataset,
-    institutions: str,
+    dataset_subset: DatasetSubset,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
@@ -127,7 +127,7 @@ def dataset_subset_job(
         bucket_name: S3 bucket to download the file to.
         run_id: a unique ID to represent this run of the job.
         dataset: the dataset to create the subset for.
-        institutions: a list of the institutions to include.
+        dataset_subset: settings used to filter the dataset into a subset.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -137,7 +137,7 @@ def dataset_subset_job(
     """
 
     logging.info("Creating dataset subset")
-    logging.info(f"institutions: {institutions}")
+    logging.info(f"dataset_subset: {dataset_subset}")
 
     return submit_job(
         job_name=f"{dataset}-dataset-subset",
@@ -150,7 +150,9 @@ def dataset_subset_job(
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "DATASET": dataset,
-                "DATASET_SUBSET_INSTITUTIONS": institutions,
+                "DATASET_SUBSET_ENABLE": str(dataset_subset.enable).lower(),
+                "DATASET_SUBSET_INSTITUTIONS_S3_PATH": dataset_subset.institutions_s3_path,
+                "DATASET_SUBSET_DOIS_S3_PATH": dataset_subset.dois_s3_path,
             }
         ),
         vcpus=vcpus,
@@ -869,7 +871,7 @@ def submit_dmp_works_search_job(
     mode: str = "aws",
     port: int = 443,
     service: str = "es",
-    dataset_subset: DatasetSubset,
+    dmp_subset: DMPSubset,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
@@ -888,7 +890,7 @@ def submit_dmp_works_search_job(
         mode: Client connection mode (e.g., "aws").
         port: OpenSearch connection port.
         service: OpenSearch service name (e.g., "es").
-        dataset_subset: whether to filter the DMPs to a subset of institutions.
+        dmp_subset: whether to filter the DMPs to a subset of institutions or DOIs.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -911,9 +913,10 @@ def submit_dmp_works_search_job(
         "TQDM_MININTERVAL": TQDM_MININTERVAL,
     }
 
-    if dataset_subset is not None:
-        environment["DATASET_SUBSET_ENABLE"] = dataset_subset.enable
-        environment["DATASET_SUBSET_INSTITUTIONS"] = dataset_subset.institutions
+    if dmp_subset is not None:
+        environment["DMP_SUBSET_ENABLE"] = dmp_subset.enable
+        environment["DMP_SUBSET_INSTITUTIONS_S3_PATH"] = dmp_subset.institutions_s3_path
+        environment["DMP_SUBSET_DOIS_S3_PATH"] = dmp_subset.dois_s3_path
 
     return submit_job(
         job_name="opensearch-dmp-works-search",

@@ -4,7 +4,8 @@ from typing import Annotated, Optional
 
 from cyclopts import App, Parameter, validators
 
-from dmpworks.cli_utils import DatasetSubset, DatasetSubsetInstitution, Directory, LogLevel
+from dmpworks.batch.dataset_subset import load_dois, load_institutions
+from dmpworks.cli_utils import Directory, LogLevel
 from dmpworks.opensearch.dmp_works import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index, update_mapping
@@ -195,7 +196,26 @@ def dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: Optional[OpenSearchClientConfig] = None,
-    dataset_subset: DatasetSubset = None,
+    institutions_file: Annotated[
+        Optional[pathlib.Path],
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+    ] = None,
+    dois_file: Annotated[
+        Optional[pathlib.Path],
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+    ] = None,
     start_date: Date = None,
     end_date: Date = None,
     log_level: LogLevel = "INFO",
@@ -218,7 +238,8 @@ def dmp_works_search_cmd(
         max_concurrent_searches: the maximum number of concurrent searches.
         max_concurrent_shard_requests: the maximum number of shards searched per node.
         client_config: OpenSearch client settings.
-        dataset_subset: when supplied only includes DMPs which have an institution in this list.
+        institutions_file: when supplied only includes DMPs which have an institution in this list.
+        dois_file: when supplied only includes DMPs which have a DOI in this list.
         start_date: return DMPs with project start dates on or after this date.
         end_date: return DMPs with project start dates on before this date.
         log_level: Python log level.
@@ -231,7 +252,14 @@ def dmp_works_search_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    use_subset = dataset_subset is not None and dataset_subset.enable
+    # Load institutions and dois subset
+    institutions = None
+    if institutions_file:
+        institutions = load_institutions(institutions_file)
+    dois = None
+    if dois_file:
+        dois = load_dois(dois_file)
+
     dmp_works_search(
         dmps_index_name,
         works_index_name,
@@ -245,7 +273,8 @@ def dmp_works_search_cmd(
         include_named_queries_score=include_named_queries_score,
         max_concurrent_searches=max_concurrent_searches,
         max_concurrent_shard_requests=max_concurrent_shard_requests,
-        institutions=DatasetSubsetInstitution.parse(dataset_subset.institutions) if use_subset else None,
+        institutions=institutions,
+        dois=dois,
         start_date=start_date,
         end_date=end_date,
     )

@@ -5,7 +5,7 @@ from typing import Optional
 from cyclopts import App
 
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
-from dmpworks.cli_utils import DatasetSubsetInstitution, Institutions
+from dmpworks.cli_utils import DatasetSubset
 from dmpworks.transform.cli import CrossrefMetadataConfig
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 from dmpworks.transform.dataset_subset import create_dataset_subset
@@ -58,27 +58,33 @@ def download_cmd(bucket_name: str, run_id: str, file_name: str):
 
 
 @app.command(name="dataset-subset")
-def dataset_subset(
+def dataset_subset_cmd(
     bucket_name: str,
     run_id: str,
-    institutions: Institutions = None,
+    dataset_subset: DatasetSubset = None,
 ):
     """Create a subset of Crossref Metadata.
 
     Args:
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
-        institutions: a list of institutions to include.
+        dataset_subset: settings for creating the subset of institutions
     """
 
     setup_multiprocessing_logging(logging.INFO)
 
-    with dataset_subset_task(bucket_name, DATASET, run_id) as ctx:
+    with dataset_subset_task(
+        bucket_name=bucket_name,
+        dataset=DATASET,
+        run_id=run_id,
+        dataset_subset=dataset_subset,
+    ) as ctx:
         create_dataset_subset(
             dataset="crossref-metadata",
             in_dir=ctx.download_dir,
             out_dir=ctx.subset_dir,
-            institutions=DatasetSubsetInstitution.parse(institutions),
+            institutions=ctx.institutions,
+            dois=ctx.dois,
         )
 
 

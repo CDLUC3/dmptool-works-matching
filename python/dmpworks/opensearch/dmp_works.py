@@ -9,7 +9,7 @@ import pendulum
 from opensearchpy import OpenSearch
 from tqdm import tqdm
 
-from dmpworks.cli_utils import DatasetSubsetInstitution
+from dmpworks.model.common import Institution
 from dmpworks.model.dmp_model import Award, DMPModel
 from dmpworks.model.related_work_model import ContentMatch, DoiMatch, DoiMatchSource, ItemMatch, RelatedWork
 from dmpworks.model.work_model import WorkModel
@@ -33,14 +33,25 @@ def dmp_works_search(
     include_named_queries_score: bool = False,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    institutions: list[DatasetSubsetInstitution] = None,
+    institutions: list[Institution] = None,
+    dois: list[str] = None,
     start_date: Optional[pendulum.Date] = None,
     end_date: Optional[pendulum.Date] = None,
 ):
     client = make_opensearch_client(client_config)
-    institutions_query = None
+    should = []
+
+    # Filter by DOIs
+    if dois:
+        should.append(
+            {
+                "ids": {"values": dois},
+            }
+        )
+
+    # Filter by institutions
     if institutions:
-        institutions_query = build_entity_query(
+        query = build_entity_query(
             "institutions",
             "institutions.ror",
             "institutions.name",
@@ -48,6 +59,7 @@ def dmp_works_search(
             lambda inst: inst.get("ror"),
             lambda inst: inst.get("name"),
         )
+        should.append(query)
 
     filters = []
     project_start_dict = {}
@@ -69,8 +81,9 @@ def dmp_works_search(
     query = {"query": {}}
     bool_components = {}
 
-    if institutions_query is not None:
-        bool_components["must"] = [institutions_query]
+    if should:
+        bool_components["should"] = should
+        bool_components["minimum_should_match"] = 1
 
     if filters:
         bool_components["filter"] = filters
