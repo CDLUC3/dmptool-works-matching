@@ -40,12 +40,12 @@
       "title": {
         "type": "text",
         "analyzer": "icu_analyzer",
-        "term_vector": "with_positions_offsets"
+        "term_vector": "yes"
       },
       "abstract_text": {
         "type": "text",
         "analyzer": "icu_analyzer",
-        "term_vector": "with_positions_offsets"
+        "term_vector": "yes"
       },
       "work_type": {
         "type": "keyword",

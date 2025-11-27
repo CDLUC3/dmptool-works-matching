@@ -434,15 +434,16 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) 
             "require_field_match": True,
             "fields": {
                 "title": {
-                    "type": "fvh",
+                    "type": "unified",
                     "number_of_fragments": 0,
                     "fragment_size": 0,
                 },
                 "abstract_text": {
-                    "type": "fvh",
+                    "type": "unified",
                     "fragment_size": 160,
                     "number_of_fragments": 2,
                     "no_match_size": 160,
+                    "boundary_scanner": "word",
                 },
             },
             "highlight_query": {
