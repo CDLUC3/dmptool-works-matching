@@ -63,7 +63,7 @@ def dataset_subset_cmd(
     Args:
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
-        dataset_subset: settings for creating the subset of institutions
+        dataset_subset: settings for creating the subset of works
     """
 
     setup_multiprocessing_logging(logging.INFO)

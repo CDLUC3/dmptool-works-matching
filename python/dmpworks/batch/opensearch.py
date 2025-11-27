@@ -181,7 +181,7 @@ def dmp_works_search_cmd(
         max_concurrent_searches: the maximum number of concurrent searches.
         max_concurrent_shard_requests: the maximum number of shards searched per node.
         client_config: OpenSearch client settings.
-        dmp_subset: only includes DMPs which have an institution or DOI in this list.
+        dmp_subset: settings for including a subset of DMPs.
         start_date: return DMPs with project start dates on or after this date.
         end_date: return DMPs with project start dates on before this date.
         log_level: Python log level.

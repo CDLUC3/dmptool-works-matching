@@ -890,7 +890,7 @@ def submit_dmp_works_search_job(
         mode: Client connection mode (e.g., "aws").
         port: OpenSearch connection port.
         service: OpenSearch service name (e.g., "es").
-        dmp_subset: whether to filter the DMPs to a subset of institutions or DOIs.
+        dmp_subset: settings for including a subset of DMPs.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
