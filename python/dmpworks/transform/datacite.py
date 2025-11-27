@@ -3,10 +3,12 @@ import os
 import pathlib
 
 import dmpworks.polars_expr_plugin as pe
+
 import polars as pl
 from dmpworks.transform.pipeline import process_files_parallel
 from dmpworks.transform.transforms import (
     extract_orcid,
+    normalise_datacite_doi,
     normalise_identifier,
     remove_markup,
     replace_with_null,
@@ -161,7 +163,7 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
     lz_cached = lz.cache()
 
     works = lz_cached.select(
-        doi=pl.col("id"),
+        doi=normalise_datacite_doi(pl.col("id")),
         title=remove_markup(
             pl.col("attributes").struct.field("titles").list.eval(pl.element().struct.field("title")).list.join(" ")
         ),
@@ -249,7 +251,9 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
     )
 
     institutions = (
-        lz_cached.select(work_doi=pl.col("id"), creators=pl.col("attributes").struct.field("creators"))
+        lz_cached.select(
+            work_doi=normalise_datacite_doi(pl.col("id")), creators=pl.col("attributes").struct.field("creators")
+        )
         .explode("creators")
         .unnest("creators")
         .select(
@@ -297,7 +301,8 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
     # Build relations
     works_relations = (
         lz_cached.select(
-            work_doi=pl.col("id"), relatedIdentifiers=pl.col("attributes").struct.field("relatedIdentifiers")
+            work_doi=normalise_datacite_doi(pl.col("id")),
+            relatedIdentifiers=pl.col("attributes").struct.field("relatedIdentifiers"),
         )
         .explode("relatedIdentifiers")
         .unnest("relatedIdentifiers")

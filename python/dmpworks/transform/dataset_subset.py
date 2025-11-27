@@ -29,7 +29,7 @@ def normalise_affiliations(affiliations) -> Optional[list[dict]]:
 def normalise_identifier(value: Optional[str]) -> Optional[str]:
     if value is None:
         return None
-    return re.sub(r"(?i)^https?://[^/]+/", "", value.strip()).lower()
+    return re.sub(r"(?i)https?://[^/]+/", "", value).strip().lower()
 
 
 def normalise_name(name: Optional[str]) -> Optional[str]:

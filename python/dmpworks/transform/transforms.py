@@ -16,12 +16,30 @@ def remove_markup(expr: pl.Expr) -> pl.Expr:
     )
 
 
-def normalise_identifier(expr: pl.Expr) -> pl.Expr:
-    return (
+def normalise_crossref_doi(expr: pl.Expr) -> pl.Expr:
+    return pl.when(expr.is_not_null()).then(expr.cast(pl.String).str.to_lowercase().str.strip_chars()).otherwise(None)
+
+
+def normalise_datacite_doi(expr: pl.Expr) -> pl.Expr:
+    return pl.when(expr.is_not_null()).then(expr.cast(pl.String).str.to_lowercase().str.strip_chars()).otherwise(None)
+
+
+def normalise_openalex_doi(expr: pl.Expr) -> pl.Expr:
+    doi = (
         pl.when(expr.is_not_null())
-        .then(expr.cast(pl.String).str.to_lowercase().str.strip_chars().str.replace_all(r"^https?://[^/]+/", ""))
+        .then(expr.cast(pl.String).str.to_lowercase().str.replace_all(r"https?://[^/]+/", "").str.strip_chars())
         .otherwise(None)
     )
+    return clean_string(doi)
+
+
+def normalise_identifier(expr: pl.Expr) -> pl.Expr:
+    identifier = (
+        pl.when(expr.is_not_null())
+        .then(expr.cast(pl.String).str.to_lowercase().str.replace_all(r"https?://[^/]+/", "").str.strip_chars())
+        .otherwise(None)
+    )
+    return clean_string(identifier)
 
 
 def normalise_isni(expr: pl.Expr) -> pl.Expr:
