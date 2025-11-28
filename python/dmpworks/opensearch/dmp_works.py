@@ -25,7 +25,7 @@ def dmp_works_search(
     works_index_name: str,
     out_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,
     project_end_buffer_years: int = 3,
@@ -55,9 +55,9 @@ def dmp_works_search(
             "institutions",
             "institutions.ror",
             "institutions.name",
-            [inst.to_dict() for inst in institutions],
-            lambda inst: inst.get("ror"),
-            lambda inst: inst.get("name"),
+            institutions,
+            lambda inst: getattr(inst, "ror"),
+            lambda inst: getattr(inst, "name"),
         )
         should.append(query)
 

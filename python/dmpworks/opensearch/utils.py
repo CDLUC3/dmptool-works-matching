@@ -131,7 +131,7 @@ def yield_dmps(
     index_name: str,
     query: dict,
     page_size: int = 500,
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
 ) -> Generator[ScrollDmps, None, None]:
     scroll_id: Optional[str] = None
 

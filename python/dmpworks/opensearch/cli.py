@@ -187,7 +187,7 @@ def dmp_works_search_cmd(
             )
         ),
     ],
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
     batch_size: int = 250,
     max_results: int = 100,
     project_end_buffer_years: int = 3,

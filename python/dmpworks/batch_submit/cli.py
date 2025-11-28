@@ -24,7 +24,7 @@ from dmpworks.batch_submit.jobs import (
     submit_sync_dmps_job,
     submit_sync_works_job,
 )
-from dmpworks.cli_utils import DatasetSubset
+from dmpworks.cli_utils import DatasetSubset, DMPSubset
 
 app = App(name="batch-submit", help="Commands to submit AWS Batch jobs.")
 
@@ -732,7 +732,7 @@ def process_dmps_cmd(
             help="Max retries for failed chunks for the sync-dmps job.",
         ),
     ] = 3,
-    dataset_subset: DatasetSubset = None,
+    dmp_subset: DMPSubset = None,
     start_job: Annotated[
         Literal[*PROCESS_DMPS_JOBS],
         Parameter(
@@ -782,7 +782,7 @@ def process_dmps_cmd(
             mode=opensearch_mode,
             port=opensearch_port,
             service=opensearch_service,
-            dataset_subset=dataset_subset,
+            dmp_subset=dmp_subset,
         ),
         "merge-related-works": partial(
             submit_merge_related_works_job,

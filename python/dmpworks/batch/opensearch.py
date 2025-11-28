@@ -1,8 +1,9 @@
 import logging
 import shutil
-from typing import Annotated, Optional
+from typing import Optional
 
-from cyclopts import App, Parameter
+import pymysql.cursors
+from cyclopts import App
 
 from dmpworks.batch.dataset_subset import load_dois, load_institutions
 from dmpworks.batch.utils import (
@@ -13,7 +14,7 @@ from dmpworks.batch.utils import (
     upload_file_to_s3,
 )
 from dmpworks.cli_utils import DMPSubset, LogLevel
-from dmpworks.dmsp.related_works import merge_related_works
+from dmpworks.dmsp.related_works import merge_related_works, MySQLConfig
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.dmp_works import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
@@ -148,7 +149,7 @@ def dmp_works_search_cmd(
     run_id: str,
     dmps_index_name: str,
     works_index_name: str,
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
     batch_size: int = 250,
     max_results: int = 100,
     project_end_buffer_years: int = 3,
@@ -250,41 +251,7 @@ def dmp_works_search_cmd(
 def merge_related_works_cmd(
     bucket_name: str,
     run_id: str,
-    mysql_host: Annotated[
-        str,
-        Parameter(
-            env_var="MYSQL_HOST",
-            help="MySQL hostname",
-        ),
-    ],
-    mysql_tcp_port: Annotated[
-        int,
-        Parameter(
-            env_var="MYSQL_TCP_PORT",
-            help="MySQL port",
-        ),
-    ],
-    mysql_user: Annotated[
-        str,
-        Parameter(
-            env_var="MYSQL_USER",
-            help="MySQL user name",
-        ),
-    ],
-    mysql_database: Annotated[
-        str,
-        Parameter(
-            env_var="MYSQL_DATABASE",
-            help="MySQL database name",
-        ),
-    ],
-    mysql_pwd: Annotated[
-        str,
-        Parameter(
-            env_var="MYSQL_PWD",
-            help="MySQL password",
-        ),
-    ],
+    mysql_config: MySQLConfig,
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
@@ -298,13 +265,17 @@ def merge_related_works_cmd(
         download_file_from_s3(source_uri, matches_path)
 
         # Upsert data
+        conn = pymysql.connect(
+            host=mysql_config.mysql_host,
+            port=mysql_config.mysql_tcp_port,
+            user=mysql_config.mysql_user,
+            password=mysql_config.mysql_pwd,
+            database=mysql_config.mysql_database,
+            cursorclass=pymysql.cursors.DictCursor,
+        )
         merge_related_works(
             matches_path,
-            mysql_host,
-            mysql_tcp_port,
-            mysql_user,
-            mysql_database,
-            mysql_pwd,
+            conn,
             batch_size=batch_size,
         )
     finally:
