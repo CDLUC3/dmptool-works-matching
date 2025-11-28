@@ -15,7 +15,7 @@ def enrich_dmps(
     index_name: str,
     client_config: OpenSearchClientConfig,
     page_size: int = 500,
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
     email: Optional[str] = None,
 ):
     client = make_opensearch_client(client_config)

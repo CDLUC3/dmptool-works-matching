@@ -10,7 +10,8 @@ from typing import Literal, Optional
 import orjson
 from tqdm import tqdm
 
-from dmpworks.cli_utils import DatasetSubsetInstitution
+from dmpworks.model.common import Institution
+from dmpworks.transforms import clean_string, extract_doi
 from dmpworks.utils import timed
 
 Dataset = Literal["crossref-metadata", "datacite", "openalex-works"]
@@ -28,7 +29,7 @@ def normalise_affiliations(affiliations) -> Optional[list[dict]]:
 def normalise_identifier(value: Optional[str]) -> Optional[str]:
     if value is None:
         return None
-    return re.sub(r"(?i)^https?://[^/]+/", "", value.strip()).lower()
+    return re.sub(r"(?i)https?://[^/]+/", "", value).strip().lower()
 
 
 def normalise_name(name: Optional[str]) -> Optional[str]:
@@ -38,8 +39,16 @@ def normalise_name(name: Optional[str]) -> Optional[str]:
     return cleaned or None
 
 
-def keep_record(dataset: Dataset, institution_rors: set[str], institution_names: set[str], record: dict) -> bool:
+def keep_record(
+    dataset: Dataset, institution_rors: set[str], institution_names: set[str], dois: set[str], record: dict
+) -> bool:
     if dataset == "openalex-works":
+        # Check DOI
+        doi = extract_doi(record.get("doi"))
+        if doi in dois:
+            return True
+
+        # Check institutions
         for authorship in record.get("authorships", []):
             for inst in authorship.get("institutions", []):
                 identifier = inst.get("ror")
@@ -49,6 +58,12 @@ def keep_record(dataset: Dataset, institution_rors: set[str], institution_names:
         return False
 
     elif dataset == "datacite":
+        # Check DOI
+        doi = record.get("id")
+        if doi in dois:
+            return True
+
+        # Check institutions
         for creator in record.get("attributes", {}).get("creators", []):
             for affiliation in normalise_affiliations(creator.get("affiliation", [])):
                 identifier = affiliation.get("affiliationIdentifier")
@@ -58,6 +73,12 @@ def keep_record(dataset: Dataset, institution_rors: set[str], institution_names:
         return False
 
     elif dataset == "crossref-metadata":
+        # Check DOI
+        doi = record.get("DOI")
+        if doi in dois:
+            return True
+
+        # Check institutions
         for author in record.get("author", []):
             for affiliation in author.get("affiliation", []):
                 name = normalise_name(affiliation.get("name"))
@@ -90,7 +111,12 @@ def init_process_logs(level: int):
 
 
 def filter_dataset(
-    dataset: Dataset, institution_rors: set[str], institution_names: set[str], file_in: pathlib.Path, out_dir: pathlib
+    dataset: Dataset,
+    institution_rors: set[str],
+    institution_names: set[str],
+    dois: set[str],
+    file_in: pathlib.Path,
+    out_dir: pathlib,
 ):
     logging.debug(f"start filtering {file_in}")
 
@@ -103,7 +129,7 @@ def filter_dataset(
             for line in f_in:
                 if line.strip():
                     record = orjson.loads(line)
-                    if keep_record(dataset, institution_rors, institution_names, record):
+                    if keep_record(dataset, institution_rors, institution_names, dois, record):
                         f_out.write(line.encode("utf-8"))  # line already ends with newline
                         total_filtered += 1
 
@@ -118,7 +144,8 @@ def create_dataset_subset(
     dataset: Dataset,
     in_dir: pathlib.Path,
     out_dir: pathlib.Path,
-    institutions: list[DatasetSubsetInstitution],
+    institutions: list[Institution],
+    dois: list[str],
     log_level: int = logging.INFO,
 ):
     is_empty = next(out_dir.iterdir(), None) is None
@@ -130,8 +157,10 @@ def create_dataset_subset(
     futures = []
     institution_rors = set([inst.ror for inst in institutions if inst.ror is not None])
     institution_names = set([val for inst in institutions if (val := normalise_name(inst.name)) is not None])
+    dois_set = set([clean_string(doi) for doi in dois])
 
     logging.info(f"institutions: {institutions}")
+    logging.info(f"dois: {dois_set}")
     logging.info(f"institution_rors: {institution_rors}")
     logging.info(f"institution_names: {institution_names}")
 
@@ -140,7 +169,9 @@ def create_dataset_subset(
             max_workers=os.cpu_count(), initializer=init_process_logs, initargs=(log_level,)
         ) as executor:
             for file_in in files:
-                future = executor.submit(filter_dataset, dataset, institution_rors, institution_names, file_in, out_dir)
+                future = executor.submit(
+                    filter_dataset, dataset, institution_rors, institution_names, dois_set, file_in, out_dir
+                )
                 futures.append(future)
 
             total_files = len(files)

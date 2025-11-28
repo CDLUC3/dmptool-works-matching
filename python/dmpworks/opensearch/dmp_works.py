@@ -9,7 +9,7 @@ import pendulum
 from opensearchpy import OpenSearch
 from tqdm import tqdm
 
-from dmpworks.cli_utils import DatasetSubsetInstitution
+from dmpworks.model.common import Institution
 from dmpworks.model.dmp_model import Award, DMPModel
 from dmpworks.model.related_work_model import ContentMatch, DoiMatch, DoiMatchSource, ItemMatch, RelatedWork
 from dmpworks.model.work_model import WorkModel
@@ -25,7 +25,7 @@ def dmp_works_search(
     works_index_name: str,
     out_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,
     project_end_buffer_years: int = 3,
@@ -33,21 +33,33 @@ def dmp_works_search(
     include_named_queries_score: bool = False,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    institutions: list[DatasetSubsetInstitution] = None,
+    institutions: list[Institution] = None,
+    dois: list[str] = None,
     start_date: Optional[pendulum.Date] = None,
     end_date: Optional[pendulum.Date] = None,
 ):
     client = make_opensearch_client(client_config)
-    institutions_query = None
+    should = []
+
+    # Filter by DOIs
+    if dois:
+        should.append(
+            {
+                "ids": {"values": dois},
+            }
+        )
+
+    # Filter by institutions
     if institutions:
-        institutions_query = build_entity_query(
+        query = build_entity_query(
             "institutions",
             "institutions.ror",
             "institutions.name",
-            [inst.to_dict() for inst in institutions],
-            lambda inst: inst.get("ror"),
-            lambda inst: inst.get("name"),
+            institutions,
+            lambda inst: getattr(inst, "ror"),
+            lambda inst: getattr(inst, "name"),
         )
+        should.append(query)
 
     filters = []
     project_start_dict = {}
@@ -69,8 +81,9 @@ def dmp_works_search(
     query = {"query": {}}
     bool_components = {}
 
-    if institutions_query is not None:
-        bool_components["must"] = [institutions_query]
+    if should:
+        bool_components["should"] = should
+        bool_components["minimum_should_match"] = 1
 
     if filters:
         bool_components["filter"] = filters
@@ -421,15 +434,16 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) 
             "require_field_match": True,
             "fields": {
                 "title": {
-                    "type": "fvh",
+                    "type": "unified",
                     "number_of_fragments": 0,
                     "fragment_size": 0,
                 },
                 "abstract_text": {
-                    "type": "fvh",
+                    "type": "unified",
                     "fragment_size": 160,
                     "number_of_fragments": 2,
                     "no_match_size": 160,
+                    "boundary_scanner": "word",
                 },
             },
             "highlight_query": {

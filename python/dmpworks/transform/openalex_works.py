@@ -5,7 +5,7 @@ import pathlib
 import dmpworks.polars_expr_plugin as pe
 import polars as pl
 from dmpworks.transform.pipeline import process_files_parallel
-from dmpworks.transform.transforms import clean_string, normalise_identifier
+from dmpworks.transform.transforms import clean_string, normalise_identifier, normalise_openalex_doi
 from dmpworks.transform.utils_file import read_jsonls
 from polars._typing import SchemaDefinition
 
@@ -84,7 +84,7 @@ def transform_works(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
 
     works = lz_cached.select(
         id=normalise_identifier(pl.col("id")),
-        doi=normalise_identifier(pl.col("doi")),
+        doi=normalise_openalex_doi(pl.col("doi")),
         ids=normalise_ids(pl.col("ids"), ["doi", "mag", "openalex", "pmid", "pmcid"]),
         title=clean_string(pl.col("title")),
         abstract=clean_string(pe.revert_inverted_index(pl.col("abstract_inverted_index"))),
