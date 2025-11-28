@@ -11,8 +11,10 @@ from cyclopts import App, Parameter, validators
 from jsonlines import jsonlines
 from opensearchpy import exceptions, OpenSearch
 
+from dmpworks.cli_utils import LogLevel
 from dmpworks.model.work_model import WorkModel
 from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
+from dmpworks.transforms import extract_doi
 
 app = App(name="related-works", help="DMSP related works utilities.")
 
@@ -31,7 +33,11 @@ def load_migration_related_works(
     mysql_config: MySQLConfig,
     opensearch_config: OpenSearchClientConfig,
     batch_size: int = 1000,
+    log_level: LogLevel = "INFO",
 ):
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+
     conn = pymysql.connect(
         host=mysql_config.mysql_host,
         port=mysql_config.mysql_tcp_port,
@@ -53,7 +59,11 @@ def load_ground_truth_related_works(
     mysql_config: MySQLConfig,
     opensearch_config: OpenSearchClientConfig,
     batch_size: int = 1000,
+    log_level: LogLevel = "INFO",
 ):
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+
     conn = pymysql.connect(
         host=mysql_config.mysql_host,
         port=mysql_config.mysql_tcp_port,
@@ -74,7 +84,11 @@ def merge_related_works_cmd(
     ],
     mysql_config: MySQLConfig,
     batch_size: int = 1000,
+    log_level: LogLevel = "INFO",
 ):
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+
     conn = pymysql.connect(
         host=mysql_config.mysql_host,
         port=mysql_config.mysql_tcp_port,
@@ -142,6 +156,9 @@ class RelatedWorksLoader:
     def __init__(self, conn):
         self.conn = conn
 
+    def __enter__(self):
+        return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.conn:
             if exc_type:
@@ -167,7 +184,7 @@ class RelatedWorksLoader:
 
     def insert_related_works(self, rows_iterator: Iterable[List[Any]], batch_size: int = 1000):
         logging.info("Loading Related Works...")
-        sql = "INSERT INTO stagingRelatedWorks (planId,dmpDoi,workDoi,hash,sourceType,score,status,scoreMax,doiMatch,contentMatch,authorMatches,institutionMatches,funderMatches,awardMatches) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        sql = "INSERT INTO stagingRelatedWorks (planId,dmpDoi,workDoi,hash,sourceType,score,scoreMax,status,doiMatch,contentMatch,authorMatches,institutionMatches,funderMatches,awardMatches) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         self._batch_insert(sql, rows_iterator, batch_size)
 
         with self.conn.cursor() as cursor:
@@ -214,7 +231,7 @@ def fetch_opensearch_work(client: OpenSearch, doi: str, works_index: str = "work
 def fetch_migration_related_works(conn) -> list[RelatedWorkReference]:
     """Returns valid related works from migration table."""
     sql = """
-    SELECT p.id AS plan_id, p.dmpId AS dmp_id, rw.value AS work_doi
+    SELECT DISTINCT p.id AS plan_id, TRIM(REPLACE(LOWER(p.dmpId), 'https://doi.org/', '')) AS dmp_id, LOWER(TRIM(rw.value)) AS work_doi
     FROM migration.related_works rw
     JOIN migration.plans p ON rw.plan_id = p.old_plan_id
     WHERE rw.is_valid = 1
@@ -241,19 +258,21 @@ def load_related_works(conn, os_client: OpenSearch, records: List[RelatedWorkRef
     related_works = []
 
     for record in records:
-        work = fetch_opensearch_work(os_client, record.work_doi)
+        # Extract the DOI in case of dirty data
+        work_doi = extract_doi(record.work_doi)
+        work = fetch_opensearch_work(os_client, work_doi)
         if not work:
             logging.warning(
-                f"Skipping plan_id={record.plan_id}, dmp_id={record.dmp_id}, work_doi={record.work_doi} as work could not be found in OpenSearch"
+                f"Skipping plan_id={record.plan_id}, dmp_id={record.dmp_id}, work_doi={work_doi} as work could not be found in OpenSearch"
             )
             continue
 
         # Add work version
-        if record.work_doi not in seen:
+        if work_doi not in seen:
             work_dict = work.model_dump(by_alias=True)
             work_version_dict = json_work_to_work_version(work_dict)
             work_versions.append(to_sql_work_version_row(work_version_dict))
-            seen.add(record.work_doi)
+            seen.add(work_doi)
 
         # Add related work
         related_work = {
@@ -267,6 +286,9 @@ def load_related_works(conn, os_client: OpenSearch, records: List[RelatedWorkRef
             "scoreMax": 1,
         }
         related_works.append(to_sql_related_work_row(related_work))
+
+    logging.info(f"Loading {len(work_versions)}")
+    logging.info(f"Loading {len(related_works)}")
 
     with RelatedWorksLoader(conn) as loader:
         loader.prepare_staging_tables()
@@ -321,10 +343,10 @@ def to_sql_related_work_row(row: dict) -> list:
         row_hash,
         row["sourceType"],
         row.get("score", 1),
-        row["status"],
         row.get("scoreMax", 1),
-        serialise_json(row.get("doiMatch", [])),
-        serialise_json(row.get("contentMatch", [])),
+        row["status"],
+        serialise_json(row.get("doiMatch", {})),
+        serialise_json(row.get("contentMatch", {})),
         serialise_json(row.get("authorMatches", [])),
         serialise_json(row.get("institutionMatches", [])),
         serialise_json(row.get("funderMatches", [])),
