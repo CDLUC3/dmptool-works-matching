@@ -25,7 +25,8 @@ dependencies = [
     "pydantic>=2,<3",
     "jsonlines>=4,<5",
     "duckdb>=1.4.0,<2",
-    "pymysql[rsa]>=1.1.2,<2"
+    "pymysql[rsa]>=1.1.2,<2",
+    "ranx>=0.3.21,<0.4"
 ]
 
 [project.optional-dependencies]

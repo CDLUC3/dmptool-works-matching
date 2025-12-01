@@ -126,7 +126,7 @@ def merge_related_works(matches_path: pathlib.Path, conn, batch_size: int = 1000
                 yield_jsonlines(related_works_path, to_sql_related_work_row, extra_fields={"status": "PENDING"}),
                 batch_size=batch_size,
             )
-            loader.run_update_procedure(cleanup=True)
+            loader.run_update_procedure(system_matched=True)
 
 
 def read_related_works_csv(file_path: pathlib.Path) -> List[RelatedWorkReference]:

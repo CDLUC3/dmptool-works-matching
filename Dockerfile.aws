@@ -61,7 +61,8 @@ RUN dnf -y install \
     wget \
     gzip \
     python${PYTHON_VERSION} \
-    python${PYTHON_VERSION}-pip
+    python${PYTHON_VERSION}-pip \
+    nano
 RUN dnf group install -y "Development Tools"
 
 WORKDIR /app
