@@ -3,9 +3,9 @@ import os
 
 import vcr
 
-from dmpworks.dmp.enrichment import fetch_funded_dois
 from dmpworks.funders.nih_award_id import NIHAwardID, parse_nih_award_id
-from queries.dmpworks.tests.utils import get_fixtures_path
+from dmpworks.funders.parser import fetch_funded_dois
+from tests.utils import get_fixtures_path
 
 FIXTURES_FOLDER = get_fixtures_path()
 

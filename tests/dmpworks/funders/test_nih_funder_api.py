@@ -9,7 +9,7 @@ from dmpworks.funders.nih_funder_api import (
     nih_fetch_award_publication_dois,
     pubmed_ids_to_dois,
 )
-from queries.dmpworks.tests.utils import get_fixtures_path
+from tests.utils import get_fixtures_path
 
 FIXTURES_FOLDER = get_fixtures_path()
 

@@ -226,37 +226,19 @@ def parse_reference(reference: str) -> dict:
 
 
 def nsf_fetch_org_id(award_id: str):
-    base_url = "https://www.nsf.gov/awardsearch/showAward"
-    params = {"AWD_ID": award_id}
+    base_url = "https://www.research.gov/awardapi-service/v1/awards.json"
+    params = {"id": award_id}
     org_id = None
     try:
-        # Fetch page
-        response = retry_session(raise_on_status=False).get(base_url, params=params)
-
-        # Currently returning 500 error if the Award ID doesn't exist (instead
-        # of 404).
-        if response.status_code == 500:
-            return None
-
-        response.raise_for_status()
-
-        # Parse page
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        # Find the table row containing "NSF Org:"
-        nsf_org_row = soup.find("td", text="NSF Org:")
-
-        if nsf_org_row:
-            # Find the next sibling <td> that contains the actual NSF Org ID
-            nsf_org_td = nsf_org_row.find_next_sibling("td")
-
-            if nsf_org_td:
-                # Extract the NSF Org ID from the <a> tag or direct text
-                nsf_org_id = nsf_org_td.find("a").text if nsf_org_td.find("a") else nsf_org_td.text
-                org_id = nsf_org_id.strip().upper()
-                log.info(f"nsf_fetch_org_id: found NSF Org ID {org_id} for Award ID {award_id}")
-            else:
-                log.info(f"nsf_fetch_org_id: no NSF Org ID found for Award ID {award_id}")
+        response = retry_session().get(base_url, params=params)
+        data = response.json()
+        awards = data.get("response", {}).get("award", [])
+        for award in awards:
+            # TODO: what if one of these lacked leading zeros?
+            if award.get("id") == award_id:
+                div_abbr = award.get("divAbbr", "").strip()
+                org_id = div_abbr if div_abbr != "" else None
+                break
 
     except requests.exceptions.RequestException as e:
         log.error(f"nsf_fetch_org_id: an error occurred while fetching data: {e}")

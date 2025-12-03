@@ -1,6 +1,7 @@
 import pendulum
 
-from dmpworks.dmp.model import DMPModel, Funder, FundingItem
+from dmpworks.model.common import Funder
+from dmpworks.model.dmp_model import DMPModel, FundingItem
 
 
 def test_parse_dmp():
