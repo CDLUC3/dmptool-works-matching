@@ -12,6 +12,7 @@ from jsonlines import jsonlines
 from opensearchpy import exceptions, OpenSearch
 
 from dmpworks.cli_utils import LogLevel
+from dmpworks.dmsp.rank_metrics import related_works_calculate_metrics
 from dmpworks.model.work_model import WorkModel
 from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
 from dmpworks.transforms import extract_doi
@@ -98,6 +99,21 @@ def merge_related_works_cmd(
         cursorclass=pymysql.cursors.DictCursor,
     )
     merge_related_works(matches_path, conn, batch_size=batch_size)
+
+
+@app.command(name="metrics")
+def related_works_calc_metrics(
+    search_results_file: Annotated[
+        pathlib.Path, Parameter(validator=validators.Path(dir_okay=False, file_okay=True, exists=True))
+    ],
+    ground_truth_file: Annotated[
+        pathlib.Path, Parameter(validator=validators.Path(dir_okay=False, file_okay=True, exists=True))
+    ],
+    log_level: LogLevel = "INFO",
+):
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+    related_works_calculate_metrics(search_results_file, ground_truth_file)
 
 
 @dataclass

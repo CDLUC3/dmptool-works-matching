@@ -1,4 +1,5 @@
 import csv
+import logging
 import pathlib
 from collections import defaultdict
 
@@ -42,25 +43,21 @@ def fetch_dmp_dois(qrels_dict: dict) -> set[str]:
     return set(qrels_dict.keys())
 
 
-def main(
+def related_works_calculate_metrics(
     search_results_file: pathlib.Path,
     ground_truth_file: pathlib.Path,
 ):
-    print("Loading data")
+    logging.basicConfig()
+    logging.info("Loading data")
     qrels_dict = load_qrels_dict(ground_truth_file)
     dmp_dois = fetch_dmp_dois(qrels_dict)
     run_dict = load_run_dict(search_results_file, dmp_dois)
-    print("Building Qrel object")
+    logging.info("Building Qrel object")
     qrels = Qrels.from_dict(qrels_dict)
-    print("Building Run object")
+    logging.info("Building Run object")
     run = Run.from_dict(run_dict)
-    print("Evaluating")
-    print(evaluate(qrels, run, ["map@10", "ndcg@10"]))
-    print(evaluate(qrels, run, ["map@100", "ndcg@100"]))
-
-
-if __name__ == "__main__":
-    main(
-        pathlib.Path("/path/to/search-results-2025-12-02.jsonl"),
-        pathlib.Path("/path/to/ground-truth-2025-12-02.csv"),
-    )
+    logging.info("Evaluating")
+    logging.info(evaluate(qrels, run, ["map@5", "ndcg@5"]))
+    logging.info(evaluate(qrels, run, ["map@10", "ndcg@10"]))
+    logging.info(evaluate(qrels, run, ["map@20", "ndcg@20"]))
+    logging.info(evaluate(qrels, run, ["map@100", "ndcg@100"]))
