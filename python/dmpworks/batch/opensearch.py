@@ -5,7 +5,7 @@ from typing import Optional
 import pymysql.cursors
 from cyclopts import App
 
-from dmpworks.batch.dataset_subset import load_dois, load_institutions
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.batch.utils import (
     download_file_from_s3,
     download_files_from_s3,

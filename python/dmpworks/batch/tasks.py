@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Generator
 
-from dmpworks.batch.dataset_subset import load_dois, load_institutions
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.batch.utils import (
     clean_s3_prefix,
     download_file_from_s3,

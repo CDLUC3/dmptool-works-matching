@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 from cyclopts import App, Parameter, validators
 
-from dmpworks.batch.dataset_subset import load_dois, load_institutions
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.cli_utils import Directory, LogLevel
 from dmpworks.opensearch.dmp_works import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
