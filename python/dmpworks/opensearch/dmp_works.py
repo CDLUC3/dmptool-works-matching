@@ -96,7 +96,7 @@ def dmp_works_search(
     else:
         query["query"]["match_all"] = {}
 
-    print(json.dumps(query))
+    # print(json.dumps(query))
 
     if parallel_search and include_named_queries_score:
         log.warning("Unable to use include_named_queries_score with msearch, query scores will not be returned.")
@@ -471,7 +471,7 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int, 
             },
         }
 
-    print(json.dumps(query))
+    # print(json.dumps(query))
 
     return query
 
