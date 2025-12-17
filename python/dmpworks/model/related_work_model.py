@@ -73,3 +73,31 @@ class RelatedWork(BaseModel):
     institution_matches: List[ItemMatch] = []
     funder_matches: List[ItemMatch] = []
     award_matches: List[ItemMatch] = []
+
+
+class RelatedWorkJudgement(BaseModel):
+    model_config = {
+        "alias_generator": to_camel,
+        "arbitrary_types_allowed": True,
+        "populate_by_name": True,
+    }
+
+    # Metadata
+    dmp_doi: str
+    work_doi: str
+    # Features
+    mlt_content: float
+    funded_doi_matched: float
+    dmp_award_count: float
+    award_match_count: float
+    dmp_author_count: float
+    author_orcid_match_count: float
+    author_surname_match_count: float
+    dmp_institution_count: float
+    institution_ror_match_count: float
+    institution_name_match_count: float
+    dmp_funder_count: float
+    funder_ror_match_count: float
+    funder_name_match_count: float
+    # Whether the match is valid or not
+    label: Optional[int] = None

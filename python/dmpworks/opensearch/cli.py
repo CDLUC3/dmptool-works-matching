@@ -6,7 +6,7 @@ from cyclopts import App, Parameter, validators
 
 from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.cli_utils import Directory, LogLevel
-from dmpworks.opensearch.dmp_works import dmp_works_search
+from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index, update_mapping
 from dmpworks.opensearch.sync_dmps import sync_dmps
