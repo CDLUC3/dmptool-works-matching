@@ -3,9 +3,9 @@ import os
 
 import vcr
 
-from dmpworks.dmp.enrichment import fetch_funded_dois
 from dmpworks.funders.nsf_award_id import NSFAwardID, parse_nsf_award_id
-from queries.dmpworks.tests.utils import get_fixtures_path
+from dmpworks.funders.parser import fetch_funded_dois
+from tests.utils import get_fixtures_path
 
 FIXTURES_FOLDER = get_fixtures_path()
 
@@ -46,6 +46,7 @@ def test_nsf_award_id_e2e():
     with vcr.use_cassette(os.path.join(FIXTURES_FOLDER, "nsf_award_id_e2e.yaml")):
         nsf = parse_nsf_award_id("2132549")
         nsf.fetch_additional_metadata()
+        assert nsf.org_id == "OAC"
         nsf_dict = nsf.to_dict()
         nsf_rehydrated = NSFAwardID.from_dict(nsf_dict)
         assert nsf == nsf_rehydrated

@@ -8,7 +8,8 @@ import boto3
 import pendulum
 import pyarrow.dataset as ds
 from cyclopts import Parameter, Token
-from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
+from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection, Transport
+from opensearchpy.exceptions import TransportError
 
 from dmpworks.model.dmp_model import DMPModel
 
@@ -64,6 +65,18 @@ class OpenSearchSyncConfig:
     staggered_start: bool = False
 
 
+class DebugTransport(Transport):
+    """Enables us to log the request body sent to OpenSearch that failed"""
+
+    def perform_request(self, method, url, params=None, body=None, timeout=None, ignore=(), headers=None):
+        try:
+            return super().perform_request(method, url, params, body, timeout, ignore, headers)
+        except TransportError as e:
+            log.error(f"Transport error, logging request...")
+            log.error(body)
+            raise e
+
+
 def make_opensearch_client(config: OpenSearchClientConfig) -> OpenSearch:
     if config.mode == "aws":
         credentials = boto3.Session().get_credentials()
@@ -71,9 +84,11 @@ def make_opensearch_client(config: OpenSearchClientConfig) -> OpenSearch:
         client = OpenSearch(
             hosts=[{'host': config.host, 'port': config.port}],
             http_auth=auth,
+            http_compress=True,
             use_ssl=True,
             verify_certs=True,
             connection_class=RequestsHttpConnection,
+            transport_class=DebugTransport,
             pool_maxsize=20,
             timeout=5 * 60,
         )
@@ -85,6 +100,7 @@ def make_opensearch_client(config: OpenSearchClientConfig) -> OpenSearch:
             verify_certs=False,
             ssl_assert_hostname=False,
             ssl_show_warn=False,
+            transport_class=DebugTransport,
             pool_maxsize=20,
             timeout=5 * 60,
         )
@@ -115,7 +131,7 @@ def yield_dmps(
     index_name: str,
     query: dict,
     page_size: int = 500,
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
 ) -> Generator[ScrollDmps, None, None]:
     scroll_id: Optional[str] = None
 

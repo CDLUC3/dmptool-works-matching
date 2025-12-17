@@ -1,9 +1,11 @@
 import logging
 import shutil
-from typing import Annotated, Optional
+from typing import Optional
 
-from cyclopts import App, Parameter
+import pymysql.cursors
+from cyclopts import App
 
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.batch.utils import (
     download_file_from_s3,
     download_files_from_s3,
@@ -11,8 +13,8 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_file_to_s3,
 )
-from dmpworks.cli_utils import DatasetSubset, DatasetSubsetInstitution, LogLevel
-from dmpworks.dmsp.related_works import merge_related_works
+from dmpworks.cli_utils import DMPSubset, LogLevel
+from dmpworks.dmsp.related_works import merge_related_works, MySQLConfig
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.dmp_works import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
@@ -147,7 +149,7 @@ def dmp_works_search_cmd(
     run_id: str,
     dmps_index_name: str,
     works_index_name: str,
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
     batch_size: int = 250,
     max_results: int = 100,
     project_end_buffer_years: int = 3,
@@ -156,7 +158,7 @@ def dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: Optional[OpenSearchClientConfig] = None,
-    dataset_subset: DatasetSubset = None,
+    dmp_subset: DMPSubset = None,
     start_date: Date = None,
     end_date: Date = None,
     log_level: LogLevel = "INFO",
@@ -180,7 +182,7 @@ def dmp_works_search_cmd(
         max_concurrent_searches: the maximum number of concurrent searches.
         max_concurrent_shard_requests: the maximum number of shards searched per node.
         client_config: OpenSearch client settings.
-        dataset_subset: only includes DMPs which have an institution in this list.
+        dmp_subset: settings for including a subset of DMPs.
         start_date: return DMPs with project start dates on or after this date.
         end_date: return DMPs with project start dates on before this date.
         log_level: Python log level.
@@ -190,9 +192,34 @@ def dmp_works_search_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    use_subset = dataset_subset is not None and dataset_subset.enable
     out_file = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
     out_file.parent.mkdir(parents=True, exist_ok=True)
+
+    meta_dir = local_path(DMP_WORKS_SEARCH_PATH, run_id, "meta")
+    meta_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load subset
+    use_subset = dmp_subset is not None and dmp_subset.enable
+    logging.info(f"use_subset: {use_subset}")
+
+    # Download institutions
+    institutions = None
+    if use_subset and dmp_subset.institutions_s3_path is not None:
+        institutions_uri = s3_uri(bucket_name, dmp_subset.institutions_s3_path)
+        institutions_path = meta_dir / "institutions.json"
+        download_file_from_s3(institutions_uri, institutions_path)
+        institutions = load_institutions(institutions_path)
+        logging.info(f"institutions: {institutions}")
+
+    # Download DOIs
+    dois = None
+    if use_subset and dmp_subset.dois_s3_path is not None:
+        dois_uri = s3_uri(bucket_name, dmp_subset.dois_s3_path)
+        dois_path = meta_dir / "dois.json"
+        download_file_from_s3(dois_uri, dois_path)
+        dois = load_dois(dois_path)
+        logging.info(f"dois: {dois}")
+
     try:
         dmp_works_search(
             dmps_index_name,
@@ -207,7 +234,8 @@ def dmp_works_search_cmd(
             include_named_queries_score=include_named_queries_score,
             max_concurrent_searches=max_concurrent_searches,
             max_concurrent_shard_requests=max_concurrent_shard_requests,
-            institutions=DatasetSubsetInstitution.parse(dataset_subset.institutions) if use_subset else None,
+            institutions=institutions,
+            dois=dois,
             start_date=start_date,
             end_date=end_date,
         )
@@ -223,41 +251,7 @@ def dmp_works_search_cmd(
 def merge_related_works_cmd(
     bucket_name: str,
     run_id: str,
-    mysql_host: Annotated[
-        str,
-        Parameter(
-            env_var="MYSQL_HOST",
-            help="MySQL hostname",
-        ),
-    ],
-    mysql_tcp_port: Annotated[
-        int,
-        Parameter(
-            env_var="MYSQL_TCP_PORT",
-            help="MySQL port",
-        ),
-    ],
-    mysql_user: Annotated[
-        str,
-        Parameter(
-            env_var="MYSQL_USER",
-            help="MySQL user name",
-        ),
-    ],
-    mysql_database: Annotated[
-        str,
-        Parameter(
-            env_var="MYSQL_DATABASE",
-            help="MySQL database name",
-        ),
-    ],
-    mysql_pwd: Annotated[
-        str,
-        Parameter(
-            env_var="MYSQL_PWD",
-            help="MySQL password",
-        ),
-    ],
+    mysql_config: MySQLConfig,
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
@@ -271,13 +265,17 @@ def merge_related_works_cmd(
         download_file_from_s3(source_uri, matches_path)
 
         # Upsert data
+        conn = pymysql.connect(
+            host=mysql_config.mysql_host,
+            port=mysql_config.mysql_tcp_port,
+            user=mysql_config.mysql_user,
+            password=mysql_config.mysql_pwd,
+            database=mysql_config.mysql_database,
+            cursorclass=pymysql.cursors.DictCursor,
+        )
         merge_related_works(
             matches_path,
-            mysql_host,
-            mysql_tcp_port,
-            mysql_user,
-            mysql_database,
-            mysql_pwd,
+            conn,
             batch_size=batch_size,
         )
     finally:

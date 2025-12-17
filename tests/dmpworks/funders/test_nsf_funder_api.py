@@ -10,7 +10,7 @@ from dmpworks.funders.nsf_funder_api import (
     nsf_fetch_org_id,
     parse_reference,
 )
-from queries.dmpworks.tests.utils import get_fixtures_path
+from tests.utils import get_fixtures_path
 
 FIXTURES_FOLDER = get_fixtures_path()
 

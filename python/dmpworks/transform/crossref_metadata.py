@@ -4,7 +4,12 @@ import pathlib
 
 import polars as pl
 from dmpworks.transform.pipeline import process_files_parallel
-from dmpworks.transform.transforms import date_parts_to_date, normalise_identifier, remove_markup
+from dmpworks.transform.transforms import (
+    date_parts_to_date,
+    normalise_crossref_doi,
+    normalise_identifier,
+    remove_markup,
+)
 from dmpworks.transform.utils_file import extract_gzip, read_jsonls
 from polars._typing import SchemaDefinition
 
@@ -113,7 +118,7 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
     lz_cached = lz.cache()
 
     works = lz_cached.select(
-        doi=pl.col("DOI"),
+        doi=normalise_crossref_doi(pl.col("DOI")),
         title=remove_markup(pl.col("title").list.join(" ")),
         abstract=remove_markup(pl.col("abstract")),
         type=pl.col("type"),
@@ -130,7 +135,9 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
     )
 
     exploded_authors = (
-        lz_cached.select(work_doi=pl.col("DOI"), author=pl.col("author")).explode("author").unnest("author")
+        lz_cached.select(work_doi=normalise_crossref_doi(pl.col("DOI")), author=pl.col("author"))
+        .explode("author")
+        .unnest("author")
     )
 
     works_authors = exploded_authors.select(
@@ -160,16 +167,21 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
     )
 
     works_funders = (
-        lz_cached.select(work_doi=pl.col("DOI"), funder=pl.col("funder"))
+        lz_cached.select(work_doi=normalise_crossref_doi(pl.col("DOI")), funder=pl.col("funder"))
         .explode("funder")
         .unnest("funder")
-        .select(pl.col("work_doi"), name=pl.col("name"), funder_doi=pl.col("DOI"), award=pl.col("award"))
+        .select(
+            pl.col("work_doi"),
+            name=pl.col("name"),
+            funder_doi=normalise_crossref_doi(pl.col("DOI")),
+            award=pl.col("award"),
+        )
         .explode("award")  # Creates a new row for each element in the award list
         .unique()
     )
 
     works_relations = (
-        lz_cached.select(work_doi=pl.col("DOI"), relation=pl.col("relation"))
+        lz_cached.select(work_doi=normalise_crossref_doi(pl.col("DOI")), relation=pl.col("relation"))
         .unnest("relation")
         .unpivot(
             index="work_doi",

@@ -9,7 +9,7 @@ import pendulum
 from opensearchpy import OpenSearch
 from tqdm import tqdm
 
-from dmpworks.cli_utils import DatasetSubsetInstitution
+from dmpworks.model.common import Institution
 from dmpworks.model.dmp_model import Award, DMPModel
 from dmpworks.model.related_work_model import ContentMatch, DoiMatch, DoiMatchSource, ItemMatch, RelatedWork
 from dmpworks.model.work_model import WorkModel
@@ -25,7 +25,7 @@ def dmp_works_search(
     works_index_name: str,
     out_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
-    scroll_time: str = "60m",
+    scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,
     project_end_buffer_years: int = 3,
@@ -33,21 +33,36 @@ def dmp_works_search(
     include_named_queries_score: bool = False,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    institutions: list[DatasetSubsetInstitution] = None,
+    institutions: list[Institution] = None,
+    dois: list[str] = None,
     start_date: Optional[pendulum.Date] = None,
     end_date: Optional[pendulum.Date] = None,
+    inner_hits_size: int = 50,
 ):
     client = make_opensearch_client(client_config)
-    institutions_query = None
+    should = []
+
+    # Filter by DOIs
+    if dois:
+        should.append(
+            {
+                "ids": {"values": dois},
+            }
+        )
+
+    # Filter by institutions
     if institutions:
-        institutions_query = build_entity_query(
+        query = build_entity_query(
             "institutions",
             "institutions.ror",
             "institutions.name",
-            [inst.to_dict() for inst in institutions],
-            lambda inst: inst.get("ror"),
-            lambda inst: inst.get("name"),
+            institutions,
+            lambda inst: getattr(inst, "ror"),
+            lambda inst: getattr(inst, "name"),
+            inner_hits_size=inner_hits_size,
+            name_slop=3,
         )
+        should.append(query)
 
     filters = []
     project_start_dict = {}
@@ -69,8 +84,9 @@ def dmp_works_search(
     query = {"query": {}}
     bool_components = {}
 
-    if institutions_query is not None:
-        bool_components["must"] = [institutions_query]
+    if should:
+        bool_components["should"] = should
+        bool_components["minimum_should_match"] = 1
 
     if filters:
         bool_components["filter"] = filters
@@ -80,7 +96,7 @@ def dmp_works_search(
     else:
         query["query"]["match_all"] = {}
 
-    print(json.dumps(query))
+    # print(json.dumps(query))
 
     if parallel_search and include_named_queries_score:
         log.warning("Unable to use include_named_queries_score with msearch, query scores will not be returned.")
@@ -117,6 +133,7 @@ def dmp_works_search(
                             max_results=max_results,
                             project_end_buffer_years=project_end_buffer_years,
                             include_named_queries_score=include_named_queries_score,
+                            inner_hits_size=inner_hits_size,
                         )
                         write_works(works, 1)
                     else:
@@ -130,6 +147,7 @@ def dmp_works_search(
                                 project_end_buffer_years=project_end_buffer_years,
                                 max_concurrent_searches=max_concurrent_searches,
                                 max_concurrent_shard_requests=max_concurrent_shard_requests,
+                                inner_hits_size=inner_hits_size,
                             )
                             write_works(works, len(batch))
                             batch = []
@@ -143,6 +161,7 @@ def dmp_works_search(
                         project_end_buffer_years=project_end_buffer_years,
                         max_concurrent_searches=max_concurrent_searches,
                         max_concurrent_shard_requests=max_concurrent_shard_requests,
+                        inner_hits_size=inner_hits_size,
                     )
                     write_works(works, len(batch))
 
@@ -155,12 +174,13 @@ def msearch_dmp_works(
     project_end_buffer_years: int = 3,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
+    inner_hits_size: int = 50,
 ) -> list[RelatedWork]:
     # Execute searches
     body = []
     for dmp in dmps:
         body.append({})
-        body.append(build_query(dmp, max_results, project_end_buffer_years))
+        body.append(build_query(dmp, max_results, project_end_buffer_years, inner_hits_size))
 
     responses = client.msearch(
         body=body,
@@ -187,8 +207,9 @@ def search_dmp_works(
     max_results: int = 100,
     project_end_buffer_years: int = 3,
     include_named_queries_score: bool = False,
+    inner_hits_size: int = 50,
 ) -> list[RelatedWork]:
-    body = build_query(dmp, max_results, project_end_buffer_years)
+    body = build_query(dmp, max_results, project_end_buffer_years, inner_hits_size)
     response = client.search(
         body=body,
         index=index_name,
@@ -280,7 +301,8 @@ def to_item_matches(inner_hits: dict, hit_name: str) -> list[ItemMatch]:
         offset = hit.get("_nested", {}).get("offset")
         score = hit.get("_score")
         matched_queries = parse_matched_queries(hit.get("matched_queries", []))
-        fields = [field.replace(f"{hit_name}.", "") for field in matched_queries.keys()]
+        fields = [field for field in matched_queries.keys()]
+        fields.sort()  # Sort A-Z
         matches.append(
             ItemMatch(
                 index=offset,
@@ -291,7 +313,7 @@ def to_item_matches(inner_hits: dict, hit_name: str) -> list[ItemMatch]:
     return matches
 
 
-def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) -> dict:
+def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int, inner_hits_size: int) -> dict:
     must = []
     should = []
 
@@ -317,6 +339,8 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) 
         dmp.authors,
         lambda author: author.orcid,
         lambda author: author.surname,
+        inner_hits_size=inner_hits_size,
+        name_slop=None,
     )
     if authors is not None:
         must.append(authors)
@@ -329,6 +353,8 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) 
         dmp.institutions,
         lambda inst: inst.ror,
         lambda inst: inst.name,
+        inner_hits_size=inner_hits_size,
+        name_slop=3,
     )
     if institutions is not None:
         should.append(institutions)
@@ -341,6 +367,8 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) 
         dmp.funding,
         lambda fund: fund.funder.ror,
         lambda fund: fund.funder.name,
+        inner_hits_size=inner_hits_size,
+        name_slop=3,
     )
     if funders is not None:
         should.append(funders)
@@ -349,6 +377,7 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) 
     awards = build_awards_query(
         "awards",
         dmp.external_data.awards,
+        inner_hits_size=inner_hits_size,
     )
     if awards is not None:
         must.append(awards)
@@ -424,6 +453,7 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) 
                     "type": "fvh",
                     "number_of_fragments": 0,
                     "fragment_size": 0,
+                    "no_match_size": 500,
                 },
                 "abstract_text": {
                     "type": "fvh",
@@ -441,6 +471,8 @@ def build_query(dmp: DMPModel, max_results: int, project_end_buffer_years: int) 
             },
         }
 
+    # print(json.dumps(query))
+
     return query
 
 
@@ -451,6 +483,8 @@ def build_entity_query(
     items: list,
     id_accessor: Callable,
     name_accessor: Callable,
+    inner_hits_size: int = 50,
+    name_slop: Optional[int] = None,
 ) -> Optional[dict]:
     should_queries = []
 
@@ -463,7 +497,7 @@ def build_entity_query(
             entity_queries.append(
                 {
                     "constant_score": {
-                        "_name": id_field,
+                        "_name": f"{id_field}.{entity_id}",
                         "filter": {"term": {id_field: entity_id}},
                         "boost": 2,
                     }
@@ -471,15 +505,16 @@ def build_entity_query(
             )
 
         if entity_name is not None:
-            entity_queries.append(
-                {
-                    "constant_score": {
-                        "_name": name_field,
-                        "filter": {"match_phrase": {name_field: {"query": entity_name, "slop": 3}}},
-                        "boost": 1,
-                    }
+            name_query = {
+                "constant_score": {
+                    "_name": f"{name_field}.{entity_name}",
+                    "filter": {"match_phrase": {name_field: {"query": entity_name}}},
+                    "boost": 1,
                 }
-            )
+            }
+            if name_slop is not None:
+                name_query["constant_score"]["filter"]["match_phrase"][name_field]["slop"] = name_slop
+            entity_queries.append(name_query)
 
         if len(entity_queries) > 1:
             should_queries.append(
@@ -503,7 +538,10 @@ def build_entity_query(
                         "should": should_queries,
                     }
                 },
-                "inner_hits": {"name": path},
+                "inner_hits": {
+                    "name": path,
+                    "size": inner_hits_size,
+                },
             },
         }
 
@@ -513,6 +551,7 @@ def build_entity_query(
 def build_awards_query(
     path: str,
     awards: list[Award],
+    inner_hits_size: int = 50,
 ) -> Optional[dict]:
     """The dis_max ensures that all the variants of a single award only contribute
     a maximum score of 10."""
@@ -524,7 +563,7 @@ def build_awards_query(
             queries.append(
                 {
                     "constant_score": {
-                        "_name": "awards.award_id",
+                        "_name": f"awards.award_id.{award_id}",
                         "filter": {"term": {"awards.award_id": award_id}},
                         "boost": 10,
                     }
@@ -549,7 +588,10 @@ def build_awards_query(
                         "should": award_queries,
                     }
                 },
-                "inner_hits": {"name": path},
+                "inner_hits": {
+                    "name": path,
+                    "size": inner_hits_size,
+                },
             },
         }
 
