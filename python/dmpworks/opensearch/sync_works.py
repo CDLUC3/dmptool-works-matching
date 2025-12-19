@@ -8,6 +8,7 @@ import pyarrow.compute as pc
 from dmpworks.opensearch.sync import sync_docs
 from dmpworks.opensearch.utils import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.utils import timed
+from dmpworks.model.work_model import WorkModel
 
 log = logging.getLogger(__name__)
 
@@ -46,10 +47,14 @@ def batch_to_work_actions(
     # Create actions
     for i in range(batch.num_rows):
         doc = {name: batch[name][i].as_py() for name in batch.schema.names}
+        work = WorkModel.model_validate(doc, by_name=True, by_alias=False)
+        doc["authors_names_text"] = work.authors_names_text
+        doc["funders_names_text"] = work.funders_names_text
+        doc["institutions_names_text"] = work.institutions_names_text
         yield {
             "_op_type": "update",
             "_index": index_name,
-            "_id": doc["doi"],
+            "_id": work.doi,
             "doc": doc,
             "doc_as_upsert": True,
         }

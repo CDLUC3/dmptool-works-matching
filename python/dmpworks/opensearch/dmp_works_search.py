@@ -1,7 +1,7 @@
 import logging
 import math
 import pathlib
-from typing import Optional
+from typing import Callable, Optional
 
 import jsonlines
 import pendulum
@@ -15,7 +15,7 @@ from dmpworks.model.work_model import WorkModel
 from dmpworks.opensearch.dmp_search import fetch_dmps
 from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
 from dmpworks.utils import timed
-from opensearch.query_builder import build_dmp_works_search_query
+from dmpworks.opensearch.query_builder import build_dmp_works_search_query_v1
 
 log = logging.getLogger(__name__)
 
@@ -78,6 +78,7 @@ def dmp_works_search(
                             client,
                             works_index_name,
                             dmp,
+                            build_dmp_works_search_query_v1,
                             max_results=max_results,
                             project_end_buffer_years=project_end_buffer_years,
                             include_named_queries_score=include_named_queries_score,
@@ -128,7 +129,7 @@ def msearch_dmp_works(
     body = []
     for dmp in dmps:
         body.append({})
-        body.append(build_dmp_works_search_query(dmp, max_results, project_end_buffer_years, inner_hits_size))
+        body.append(build_dmp_works_search_query_v1(dmp, max_results, project_end_buffer_years, inner_hits_size))
 
     responses = client.msearch(
         body=body,
@@ -152,12 +153,13 @@ def search_dmp_works(
     client: OpenSearch,
     index_name: str,
     dmp: DMPModel,
+    query_builder: Callable[[DMPModel, int, int, int], dict],
     max_results: int = 100,
     project_end_buffer_years: int = 3,
     include_named_queries_score: bool = False,
     inner_hits_size: int = 50,
 ) -> list[RelatedWork]:
-    body = build_dmp_works_search_query(dmp, max_results, project_end_buffer_years, inner_hits_size)
+    body = query_builder(dmp, max_results, project_end_buffer_years, inner_hits_size)
     response = client.search(
         body=body,
         index=index_name,

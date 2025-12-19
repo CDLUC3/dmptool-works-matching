@@ -1,14 +1,16 @@
 import logging
 import pathlib
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 from cyclopts import App, Parameter, validators
 
-from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.cli_utils import Directory, LogLevel
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index, update_mapping
+from dmpworks.opensearch.learning_to_rank import generate_training_dataset
+from dmpworks.opensearch.rank_metrics import related_works_calculate_metrics
 from dmpworks.opensearch.sync_dmps import sync_dmps
 from dmpworks.opensearch.sync_works import sync_works
 from dmpworks.opensearch.utils import (
@@ -277,6 +279,125 @@ def dmp_works_search_cmd(
         dois=dois,
         start_date=start_date,
         end_date=end_date,
+    )
+
+
+@app.command(name="rank-metrics")
+def rank_metrics_cmd(
+    ground_truth_file: Annotated[
+        pathlib.Path,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+    ],
+    dmps_index_name: str,
+    works_index_name: str,
+    output_file: Annotated[
+        pathlib.Path,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=False,
+            )
+        ),
+    ],
+    query_builder_name: Literal[
+        "build_dmp_works_search_query_v1", "build_dmp_works_search_query_v2"
+    ] = "build_dmp_works_search_query_v1",
+    client_config: Optional[OpenSearchClientConfig] = None,
+    scroll_time: str = "360m",
+    batch_size: int = 100,
+    max_results: int = 100,
+    project_end_buffer_years: int = 3,
+    include_named_queries_score: bool = True,
+    inner_hits_size: int = 50,
+    ks: Annotated[Optional[list[int]], Parameter(consume_multiple=True)] = None,
+    log_level: LogLevel = "INFO",
+):
+    if client_config is None:
+        client_config = OpenSearchClientConfig()
+
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+    logging.getLogger("opensearch").setLevel(logging.WARNING)
+
+    related_works_calculate_metrics(
+        ground_truth_file,
+        dmps_index_name,
+        works_index_name,
+        output_file,
+        client_config,
+        query_builder_name=query_builder_name,
+        scroll_time=scroll_time,
+        project_end_buffer_years=project_end_buffer_years,
+        include_named_queries_score=include_named_queries_score,
+        inner_hits_size=inner_hits_size,
+        batch_size=batch_size,
+        max_results=max_results,
+        ks=ks,
+    )
+
+
+@app.command(name="generate-training-dataset")
+def generate_training_dataset_cmd(
+    ground_truth_file: Annotated[
+        pathlib.Path,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+    ],
+    dmps_index_name: str,
+    works_index_name: str,
+    output_file: Annotated[
+        pathlib.Path,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=False,
+            )
+        ),
+    ],
+    client_config: Optional[OpenSearchClientConfig] = None,
+    featureset_name: str = "dmpworks",
+    scroll_time: str = "360m",
+    batch_size: int = 100,
+    max_results: int = 100,
+    project_end_buffer_years: int = 3,
+    include_named_queries_score: bool = True,
+    inner_hits_size: int = 50,
+    log_level: LogLevel = "INFO",
+):
+
+    if client_config is None:
+        client_config = OpenSearchClientConfig()
+
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+    logging.getLogger("opensearch").setLevel(logging.WARNING)
+
+    generate_training_dataset(
+        ground_truth_file,
+        dmps_index_name,
+        works_index_name,
+        featureset_name,
+        output_file,
+        client_config,
+        scroll_time=scroll_time,
+        project_end_buffer_years=project_end_buffer_years,
+        include_named_queries_score=include_named_queries_score,
+        inner_hits_size=inner_hits_size,
+        batch_size=batch_size,
+        max_results=max_results,
     )
 
 

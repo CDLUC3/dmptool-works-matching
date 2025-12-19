@@ -75,7 +75,7 @@ class RelatedWork(BaseModel):
     award_matches: List[ItemMatch] = []
 
 
-class RelatedWorkJudgement(BaseModel):
+class RelatedWorkTrainingRow(BaseModel):
     model_config = {
         "alias_generator": to_camel,
         "arbitrary_types_allowed": True,
@@ -85,6 +85,7 @@ class RelatedWorkJudgement(BaseModel):
     # Metadata
     dmp_doi: str
     work_doi: str
+    work_title: Optional[str]
     # Features
     mlt_content: float
     funded_doi_matched: float
@@ -100,4 +101,32 @@ class RelatedWorkJudgement(BaseModel):
     funder_ror_match_count: float
     funder_name_match_count: float
     # Whether the match is valid or not
-    label: Optional[int] = None
+    judgement: Optional[int] = None
+
+    def to_ranklib(self) -> str:
+        judgement = [str(self.judgement), f"qid:{self.dmp_doi}"]
+        features = [
+            f"{i}:{feature}"
+            for i, feature in enumerate(
+                [
+                    self.mlt_content,
+                    self.funded_doi_matched,
+                    self.dmp_award_count,
+                    self.award_match_count,
+                    self.dmp_author_count,
+                    self.author_orcid_match_count,
+                    self.author_surname_match_count,
+                    self.dmp_institution_count,
+                    self.institution_ror_match_count,
+                    self.institution_name_match_count,
+                    self.dmp_funder_count,
+                    self.funder_ror_match_count,
+                    self.funder_name_match_count,
+                ]
+            )
+        ]
+        comments = [f"# {self.work_doi}"]
+        if self.work_title is not None:
+            comments.append(f" {self.work_title}")
+        combined = judgement + features + comments
+        return " ".join(combined)

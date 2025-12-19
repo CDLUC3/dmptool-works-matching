@@ -6,7 +6,8 @@ from tqdm import tqdm
 
 from dmpworks.funders.parser import fetch_funded_dois, parse_award_text
 from dmpworks.model.dmp_model import Award, ExternalData
-from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig, yield_dmps
+from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
+from dmpworks.opensearch.dmp_search import yield_dmps
 
 log = logging.getLogger(__name__)
 
