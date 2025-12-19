@@ -9,7 +9,7 @@ from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index, update_mapping
-from dmpworks.opensearch.learning_to_rank import generate_training_dataset
+from dmpworks.opensearch.learning_to_rank import build_featureset, generate_training_dataset
 from dmpworks.opensearch.rank_metrics import related_works_calculate_metrics
 from dmpworks.opensearch.sync_dmps import sync_dmps
 from dmpworks.opensearch.sync_works import sync_works
@@ -343,6 +343,31 @@ def rank_metrics_cmd(
     )
 
 
+@app.command(name="create-featureset")
+def create_featureset_cmd(
+    featureset_name: str = "dmpworks",
+    client_config: Optional[OpenSearchClientConfig] = None,
+    log_level: LogLevel = "INFO",
+):
+    if client_config is None:
+        client_config = OpenSearchClientConfig()
+
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+    logging.getLogger("opensearch").setLevel(logging.WARNING)
+
+    logging.info(f"Creating featureset: {featureset_name}")
+
+    client = make_opensearch_client(client_config)
+    featureset = build_featureset()
+    response = client.transport.perform_request(
+        method="POST",
+        url=f"/_ltr/_featureset/{featureset_name}",
+        body=featureset,
+    )
+    logging.info(response)
+
+
 @app.command(name="generate-training-dataset")
 def generate_training_dataset_cmd(
     ground_truth_file: Annotated[
@@ -367,8 +392,8 @@ def generate_training_dataset_cmd(
             )
         ),
     ],
-    client_config: Optional[OpenSearchClientConfig] = None,
     featureset_name: str = "dmpworks",
+    client_config: Optional[OpenSearchClientConfig] = None,
     scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,

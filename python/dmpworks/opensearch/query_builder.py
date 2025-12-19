@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, Optional
+from typing import Callable, Optional
 
 import pendulum
 
@@ -615,25 +615,27 @@ def build_sltr_query(dmp: DMPModel, work_ids: list[str], featureset_name: str, m
 
 
 def build_sltr_awards_query(awards: list[Award]) -> list[dict]:
+    if len(awards) == 0:
+        return [{"match_none": {}}]
+
     queries = []
     for award in awards:
         query = {
-            "filter": {
-                "nested": {
-                    "path": "awards",
-                    "query": {
-                        "terms": {"awards.award_id": award.award_id.all_variants},
-                    },
-                }
-            },
-            "weight": 1,
+            "constant_score": {
+                "boost": 1,
+                "filter": {
+                    "nested": {"path": "awards", "query": {"terms": {"awards.award_id": award.award_id.all_variants}}}
+                },
+            }
         }
-
         queries.append(query)
     return queries
 
 
-def build_sltr_name_queries(name_field: str, names: Iterable[str], name_slop: Optional[int] = None) -> list[dict]:
+def build_sltr_name_queries(name_field: str, names: set[str], name_slop: Optional[int] = None) -> list[dict]:
+    if len(names) == 0:
+        return [{"match_none": {}}]
+
     queries = []
     for name in names:
         query = {

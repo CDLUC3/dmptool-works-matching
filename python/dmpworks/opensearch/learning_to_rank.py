@@ -57,14 +57,7 @@ def build_featureset() -> dict:
                     "params": ["award_groups"],
                     "template_language": "mustache",
                     "template": template_str(
-                        {
-                            "function_score": {
-                                "query": {"match_all": {}},
-                                "boost_mode": "replace",
-                                "score_mode": "sum",
-                                "functions": TO_JSON_SECTION_NAME,
-                            }
-                        },
+                        {"bool": {"should": TO_JSON_SECTION_NAME, "minimum_should_match": 1}},
                         "{{#toJson}}award_groups{{/toJson}}",
                     ),
                 },
@@ -184,8 +177,6 @@ def fetch_candidate_features(
                 feature_names.append(feature_name)
                 source[feature_name] = feature.get("value")
             rw_features.append(RelatedWorkTrainingRow.model_validate(source, by_name=True, by_alias=False))
-            logging.info(f"Features: {', '.join(feature_names)}")
-
     return rw_features
 
 
@@ -243,18 +234,3 @@ def generate_training_dataset(
                 for row in training_rows:
                     row.judgement = qrels_dict_all.get(row.dmp_doi, {}).get(row.work_doi, 0)
                     f_out.write(row.to_ranklib() + "\n")
-
-
-#
-# if __name__ == "__main__":
-#     # print(json.dumps(build_featureset()))
-#     logging.basicConfig(level=logging.INFO)
-#     logging.getLogger("opensearch").setLevel(logging.WARNING)
-#     generate_training_dataset(
-#         pathlib.Path("/home/jamie-workstation/workspace/cdl/data/demo/evaluation/ground-truth-2025-12-04.csv"),
-#         "dmps-index",
-#         "works-index",
-#         "dmpworks",
-#         pathlib.Path("/home/jamie-workstation/workspace/cdl/data/demo/evaluation/train.txt"),
-#         OpenSearchClientConfig(),
-#     )
