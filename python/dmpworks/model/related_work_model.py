@@ -88,18 +88,18 @@ class RelatedWorkTrainingRow(BaseModel):
     work_title: Optional[str]
     # Features
     mlt_content: float
-    funded_doi_matched: float
-    dmp_award_count: float
-    award_match_count: float
-    dmp_author_count: float
-    author_orcid_match_count: float
-    author_surname_match_count: float
-    dmp_institution_count: float
-    institution_ror_match_count: float
-    institution_name_match_count: float
-    dmp_funder_count: float
-    funder_ror_match_count: float
-    funder_name_match_count: float
+    funded_doi_matched: int
+    dmp_award_count: int
+    award_match_count: int
+    dmp_author_count: int
+    author_orcid_match_count: int
+    author_surname_match_count: int
+    dmp_institution_count: int
+    institution_ror_match_count: int
+    institution_name_match_count: int
+    dmp_funder_count: int
+    funder_ror_match_count: int
+    funder_name_match_count: int
     # Whether the match is valid or not
     judgement: Optional[int] = None
 
