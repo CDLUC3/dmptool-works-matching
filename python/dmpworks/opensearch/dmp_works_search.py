@@ -13,9 +13,9 @@ from dmpworks.model.dmp_model import DMPModel
 from dmpworks.model.related_work_model import ContentMatch, DoiMatch, DoiMatchSource, ItemMatch, RelatedWork
 from dmpworks.model.work_model import WorkModel
 from dmpworks.opensearch.dmp_search import fetch_dmps
-from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
+from dmpworks.opensearch.query_builder import build_dmp_works_search_rerank_query, get_query_builder
+from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig, QueryBuilder
 from dmpworks.utils import timed
-from dmpworks.opensearch.query_builder import build_dmp_works_search_query_v1
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +26,8 @@ def dmp_works_search(
     works_index_name: str,
     out_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
+    query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
+    rerank_model_name: Optional[str] = None,
     scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,
@@ -44,6 +46,8 @@ def dmp_works_search(
 
     if parallel_search and include_named_queries_score:
         log.warning("Unable to use include_named_queries_score with msearch, query scores will not be returned.")
+
+    query_builder = get_query_builder(query_builder_name)
 
     def write_works(works: list[RelatedWork], count: int):
         for work in works:
@@ -78,7 +82,8 @@ def dmp_works_search(
                             client,
                             works_index_name,
                             dmp,
-                            build_dmp_works_search_query_v1,
+                            query_builder,
+                            rerank_model_name=rerank_model_name,
                             max_results=max_results,
                             project_end_buffer_years=project_end_buffer_years,
                             include_named_queries_score=include_named_queries_score,
@@ -92,6 +97,8 @@ def dmp_works_search(
                                 client,
                                 works_index_name,
                                 batch,
+                                query_builder,
+                                rerank_model_name=rerank_model_name,
                                 max_results=max_results,
                                 project_end_buffer_years=project_end_buffer_years,
                                 max_concurrent_searches=max_concurrent_searches,
@@ -106,6 +113,8 @@ def dmp_works_search(
                         client,
                         works_index_name,
                         batch,
+                        query_builder,
+                        rerank_model_name=rerank_model_name,
                         max_results=max_results,
                         project_end_buffer_years=project_end_buffer_years,
                         max_concurrent_searches=max_concurrent_searches,
@@ -119,6 +128,8 @@ def msearch_dmp_works(
     client: OpenSearch,
     index_name: str,
     dmps: list[DMPModel],
+    query_builder: Callable[[DMPModel, int, int, int], dict],
+    rerank_model_name: Optional[str] = None,
     max_results: int = 100,
     project_end_buffer_years: int = 3,
     max_concurrent_searches: int = 125,
@@ -128,8 +139,14 @@ def msearch_dmp_works(
     # Execute searches
     body = []
     for dmp in dmps:
+        # Header
         body.append({})
-        body.append(build_dmp_works_search_query_v1(dmp, max_results, project_end_buffer_years, inner_hits_size))
+
+        # Body
+        query = query_builder(dmp, max_results, project_end_buffer_years, inner_hits_size)
+        if rerank_model_name is not None:
+            query = build_dmp_works_search_rerank_query(dmp, query, max_results, rerank_model_name)
+        body.append(query)
 
     responses = client.msearch(
         body=body,
@@ -154,14 +171,18 @@ def search_dmp_works(
     index_name: str,
     dmp: DMPModel,
     query_builder: Callable[[DMPModel, int, int, int], dict],
+    rerank_model_name: Optional[str] = None,
     max_results: int = 100,
     project_end_buffer_years: int = 3,
     include_named_queries_score: bool = False,
     inner_hits_size: int = 50,
 ) -> list[RelatedWork]:
-    body = query_builder(dmp, max_results, project_end_buffer_years, inner_hits_size)
+    query = query_builder(dmp, max_results, project_end_buffer_years, inner_hits_size)
+    if rerank_model_name is not None:
+        query = build_dmp_works_search_rerank_query(dmp, query, max_results, rerank_model_name)
+
     response = client.search(
-        body=body,
+        body=query,
         index=index_name,
         include_named_queries_score=include_named_queries_score,
     )

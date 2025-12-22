@@ -10,8 +10,8 @@ from ranx import evaluate, Qrels, Run
 from dmpworks.model.related_work_model import RelatedWork
 from dmpworks.opensearch.dmp_search import fetch_dmps
 from dmpworks.opensearch.dmp_works_search import search_dmp_works
-from dmpworks.opensearch.query_builder import build_dmp_works_search_query_v1, build_dmp_works_search_query_v2
-from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
+from dmpworks.opensearch.query_builder import get_query_builder
+from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig, QueryBuilder
 
 
 def load_qrels_dict(file_path: pathlib.Path) -> dict:
@@ -51,7 +51,8 @@ def related_works_calculate_metrics(
     works_index_name: str,
     output_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
-    query_builder_name: str = "build_dmp_works_search_query_v1",
+    query_builder_name: QueryBuilder = "build_dmp_works_search_query_v1",
+    rerank_model_name: Optional[str] = None,
     scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,
@@ -72,14 +73,7 @@ def related_works_calculate_metrics(
     # Load ground truth file and get DMP DOIs
     qrels_dict_all = load_qrels_dict(ground_truth_file)
     dmp_dois = list(get_dmp_dois(qrels_dict_all))
-
-    query_builders = {
-        "build_dmp_works_search_query_v1": build_dmp_works_search_query_v1,
-        "build_dmp_works_search_query_v2": build_dmp_works_search_query_v2,
-    }
-    if query_builder_name not in query_builders:
-        raise ValueError(f"Unknown query builder name: {query_builder_name}")
-    query_builder = query_builders[query_builder_name]
+    query_builder = get_query_builder(query_builder_name)
 
     with fetch_dmps(
         client=client,
@@ -97,6 +91,7 @@ def related_works_calculate_metrics(
                 works_index_name,
                 dmp,
                 query_builder,
+                rerank_model_name=rerank_model_name,
                 max_results=max_results,
                 project_end_buffer_years=project_end_buffer_years,
                 include_named_queries_score=include_named_queries_score,

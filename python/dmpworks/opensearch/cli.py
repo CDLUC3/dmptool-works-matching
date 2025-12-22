@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Optional
 
 from cyclopts import App, Parameter, validators
 
@@ -9,7 +9,11 @@ from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index, update_mapping
-from dmpworks.opensearch.learning_to_rank import build_featureset, generate_training_dataset
+from dmpworks.opensearch.learning_to_rank import (
+    create_featureset,
+    generate_training_dataset,
+    upload_ranklib_model,
+)
 from dmpworks.opensearch.rank_metrics import related_works_calculate_metrics
 from dmpworks.opensearch.sync_dmps import sync_dmps
 from dmpworks.opensearch.sync_works import sync_works
@@ -18,6 +22,7 @@ from dmpworks.opensearch.utils import (
     make_opensearch_client,
     OpenSearchClientConfig,
     OpenSearchSyncConfig,
+    QueryBuilder,
 )
 
 app = App(name="opensearch", help="OpenSearch utilities.")
@@ -189,6 +194,8 @@ def dmp_works_search_cmd(
             )
         ),
     ],
+    query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
+    rerank_model_name: Optional[str] = None,
     scroll_time: str = "360m",
     batch_size: int = 250,
     max_results: int = 100,
@@ -228,6 +235,9 @@ def dmp_works_search_cmd(
         dmps_index_name: the name of the DMP index in OpenSearch.
         works_index_name: the name of the works index in OpenSearch.
         out_file: the output directory where search results will be saved.
+        query_builder_name: the name of the query builder to use.
+        rerank_model_name: the name of the re-ranking model to use. If nothing
+        is supplied then no re-ranking will occur.
         scroll_time: the length of time the OpenSearch scroll used to iterate
         through DMPs will stay active. Set it to a value greater than the length
         of this process.
@@ -267,6 +277,8 @@ def dmp_works_search_cmd(
         works_index_name,
         out_file,
         client_config,
+        query_builder_name=query_builder_name,
+        rerank_model_name=rerank_model_name,
         scroll_time=scroll_time,
         batch_size=batch_size,
         max_results=max_results,
@@ -306,9 +318,8 @@ def rank_metrics_cmd(
             )
         ),
     ],
-    query_builder_name: Literal[
-        "build_dmp_works_search_query_v1", "build_dmp_works_search_query_v2"
-    ] = "build_dmp_works_search_query_v1",
+    query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
+    rerank_model_name: Optional[str] = None,
     client_config: Optional[OpenSearchClientConfig] = None,
     scroll_time: str = "360m",
     batch_size: int = 100,
@@ -333,6 +344,7 @@ def rank_metrics_cmd(
         output_file,
         client_config,
         query_builder_name=query_builder_name,
+        rerank_model_name=rerank_model_name,
         scroll_time=scroll_time,
         project_end_buffer_years=project_end_buffer_years,
         include_named_queries_score=include_named_queries_score,
@@ -345,7 +357,7 @@ def rank_metrics_cmd(
 
 @app.command(name="create-featureset")
 def create_featureset_cmd(
-    featureset_name: str = "dmpworks",
+    featureset_name: str,
     client_config: Optional[OpenSearchClientConfig] = None,
     log_level: LogLevel = "INFO",
 ):
@@ -356,16 +368,36 @@ def create_featureset_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    logging.info(f"Creating featureset: {featureset_name}")
+    client = make_opensearch_client(client_config)
+    create_featureset(client, featureset_name)
+
+
+@app.command(name="upload-ranklib-model")
+def upload_ranklib_model_cmd(
+    featureset_name: str,
+    model_name: str,
+    ranklib_file: Annotated[
+        pathlib.Path,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+    ],
+    client_config: Optional[OpenSearchClientConfig] = None,
+    log_level: LogLevel = "INFO",
+):
+    if client_config is None:
+        client_config = OpenSearchClientConfig()
+
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+    logging.getLogger("opensearch").setLevel(logging.WARNING)
 
     client = make_opensearch_client(client_config)
-    featureset = build_featureset()
-    response = client.transport.perform_request(
-        method="POST",
-        url=f"/_ltr/_featureset/{featureset_name}",
-        body=featureset,
-    )
-    logging.info(response)
+    upload_ranklib_model(client, featureset_name, model_name, ranklib_file)
 
 
 @app.command(name="generate-training-dataset")
@@ -392,7 +424,8 @@ def generate_training_dataset_cmd(
             )
         ),
     ],
-    featureset_name: str = "dmpworks",
+    featureset_name: str,
+    query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
     client_config: Optional[OpenSearchClientConfig] = None,
     scroll_time: str = "360m",
     batch_size: int = 100,
@@ -417,6 +450,7 @@ def generate_training_dataset_cmd(
         featureset_name,
         output_file,
         client_config,
+        query_builder_name=query_builder_name,
         scroll_time=scroll_time,
         project_end_buffer_years=project_end_buffer_years,
         include_named_queries_score=include_named_queries_score,

@@ -9,12 +9,12 @@ from dmpworks.model.dmp_model import DMPModel
 from dmpworks.model.related_work_model import RelatedWorkTrainingRow
 from dmpworks.opensearch.dmp_search import fetch_dmps
 from dmpworks.opensearch.dmp_works_search import search_dmp_works
-from dmpworks.opensearch.query_builder import build_dmp_works_search_query_v2, build_sltr_query
+from dmpworks.opensearch.query_builder import build_sltr_query, get_query_builder
 from dmpworks.opensearch.rank_metrics import (
     get_dmp_dois,
     load_qrels_dict,
 )
-from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
+from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig, QueryBuilder
 
 TO_JSON_SECTION_NAME = "TO_JSON_SECTION"
 
@@ -187,6 +187,7 @@ def generate_training_dataset(
     featureset_name: str,
     output_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
+    query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
     scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,
@@ -200,6 +201,7 @@ def generate_training_dataset(
     # Load ground truth file and get DMP DOIs
     qrels_dict_all = load_qrels_dict(ground_truth_file)
     dmp_dois = list(get_dmp_dois(qrels_dict_all))
+    query_builder = get_query_builder(query_builder_name)
 
     # For each DMP, perform candidate search
     with fetch_dmps(
@@ -219,7 +221,7 @@ def generate_training_dataset(
                     client,
                     works_index_name,
                     dmp,
-                    build_dmp_works_search_query_v2,
+                    query_builder,
                     max_results=max_results,
                     project_end_buffer_years=project_end_buffer_years,
                     include_named_queries_score=include_named_queries_score,
@@ -234,3 +236,47 @@ def generate_training_dataset(
                 for row in training_rows:
                     row.judgement = qrels_dict_all.get(row.dmp_doi, {}).get(row.work_doi, 0)
                     f_out.write(row.to_ranklib() + "\n")
+
+
+def create_featureset(
+    client: OpenSearch,
+    featureset_name: str,
+):
+    logging.info(f"Creating featureset: {featureset_name}")
+
+    featureset = build_featureset()
+    response = client.transport.perform_request(
+        method="POST",
+        url=f"/_ltr/_featureset/{featureset_name}",
+        body=featureset,
+    )
+    logging.info(response)
+
+
+def upload_ranklib_model(
+    client: OpenSearch,
+    featureset_name: str,
+    model_name: str,
+    ranklib_file: pathlib.Path,
+):
+    logging.info(f"Uploading RankLib model for featureset={featureset_name} with model_name={model_name}")
+
+    with open(ranklib_file, mode="r", encoding="utf-8") as f_in:
+        ranklib_definition = f_in.read()
+
+    body = {
+        "model": {
+            "name": model_name,
+            "model": {
+                "type": "model/ranklib",
+                "definition": ranklib_definition,
+            },
+        }
+    }
+
+    response = client.transport.perform_request(
+        "POST",
+        url=f"/_ltr/_featureset/{featureset_name}/_createmodel",
+        body=body,
+    )
+    logging.info(response)

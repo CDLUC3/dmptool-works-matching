@@ -106,7 +106,7 @@ class RelatedWorkTrainingRow(BaseModel):
     def to_ranklib(self) -> str:
         judgement = [str(self.judgement), f"qid:{self.dmp_doi}"]
         features = [
-            f"{i}:{feature}"
+            f"{i + 1}:{feature}"
             for i, feature in enumerate(
                 [
                     self.mlt_content,
@@ -127,6 +127,12 @@ class RelatedWorkTrainingRow(BaseModel):
         ]
         comments = [f"# {self.work_doi}"]
         if self.work_title is not None:
-            comments.append(f" {self.work_title}")
+            comments.append(f" {remove_newlines(self.work_title)}")
         combined = judgement + features + comments
         return " ".join(combined)
+
+
+def remove_newlines(s: str, replacement: str = "") -> Optional[str]:
+    if s is None:
+        return None
+    return s.replace("\r\n", "\n").replace("\r", "\n").replace("\n", replacement)

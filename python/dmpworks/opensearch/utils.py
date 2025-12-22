@@ -37,6 +37,7 @@ def parse_date(type_, tokens: Sequence[Token]) -> pendulum.Date:
 Mode = Literal["local", "aws"]
 ChunkSize = Annotated[int, Parameter(validator=validate_chunk_size)]
 Date = Annotated[Optional[pendulum.Date], Parameter(converter=parse_date)]
+QueryBuilder = Literal["build_dmp_works_search_baseline_query", "build_dmp_works_search_candidate_query"]
 
 
 @dataclass

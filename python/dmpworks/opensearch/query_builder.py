@@ -1,9 +1,20 @@
+import copy
 from typing import Callable, Optional
 
 import pendulum
 
 from dmpworks.model.common import Institution
 from dmpworks.model.dmp_model import Award, DMPModel
+
+
+def get_query_builder(name: str) -> Callable[[DMPModel, int, int, int], dict]:
+    query_builders = {
+        "build_dmp_works_search_baseline_query": build_dmp_works_search_baseline_query,
+        "build_dmp_works_search_candidate_query": build_dmp_works_search_candidate_query,
+    }
+    if name not in query_builders:
+        raise ValueError(f"Unknown query builder name: {name}")
+    return query_builders[name]
 
 
 def build_dmps_query(
@@ -81,9 +92,11 @@ def make_content(dmp: DMPModel) -> Optional[str]:
     return None
 
 
-def build_dmp_works_search_query_v1(
+def build_dmp_works_search_baseline_query(
     dmp: DMPModel, max_results: int, project_end_buffer_years: int, inner_hits_size: int
 ) -> dict:
+    """Baseline DMP works search query using manually tuned weights"""
+
     must = []
     should = []
 
@@ -245,10 +258,9 @@ def build_dmp_works_search_query_v1(
     return query
 
 
-def build_dmp_works_search_query_v2(
+def build_dmp_works_search_candidate_query(
     dmp: DMPModel, max_results: int, project_end_buffer_years: int, inner_hits_size: int
 ) -> dict:
-    must = []
     should = []
 
     #
@@ -374,22 +386,6 @@ def build_dmp_works_search_query_v2(
         "size": max_results,
         "query": {
             "bool": {
-                # "must": [
-                #     {
-                #         "bool": {
-                #             "should": must,
-                #             "minimum_should_match": 1,
-                #         }
-                #     }
-                # ],
-                # "must": [
-                #     {
-                #         "bool": {
-                #             "should": should,
-                #             "minimum_should_match": 1,
-                #         }
-                #     }
-                # ],
                 "should": should,
                 "filter": filters,
             },
@@ -552,8 +548,8 @@ def build_entity_query(
     return None
 
 
-def build_sltr_query(dmp: DMPModel, work_ids: list[str], featureset_name: str, max_results: int = 100):
-    params = {
+def build_ltr_features(dmp: DMPModel):
+    return {
         "content": [make_content(dmp)],
         "funded_dois": dmp.funded_dois,
         # Awards
@@ -585,6 +581,10 @@ def build_sltr_query(dmp: DMPModel, work_ids: list[str], featureset_name: str, m
             name_slop=3,
         ),
     }
+
+
+def build_sltr_query(dmp: DMPModel, work_ids: list[str], featureset_name: str, max_results: int = 100):
+    params = build_ltr_features(dmp)
 
     return {
         "size": max_results,
@@ -654,3 +654,27 @@ def build_sltr_name_queries(name_field: str, names: set[str], name_slop: Optiona
             query["constant_score"]["filter"]["match_phrase"][name_field]["slop"] = name_slop
         queries.append(query)
     return queries
+
+
+def build_dmp_works_search_rerank_query(
+    dmp: DMPModel,
+    base_query: dict,
+    max_results: int,
+    model_name: str,
+) -> dict:
+    ltr_query = copy.deepcopy(base_query)
+    ltr_features = build_ltr_features(dmp)
+    ltr_query["rescore"] = {
+        "window_size": max_results,
+        "query": {
+            "rescore_query": {
+                "sltr": {
+                    "model": model_name,
+                    "params": ltr_features,
+                }
+            },
+            "query_weight": 0.001,
+            "rescore_query_weight": 1.0,
+        },
+    }
+    return ltr_query
