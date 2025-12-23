@@ -376,7 +376,27 @@ def create_featureset_cmd(
 def upload_ranklib_model_cmd(
     featureset_name: str,
     model_name: str,
-    ranklib_file: Annotated[
+    ranklib_model_file: Annotated[
+        pathlib.Path,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+    ],
+    ranklib_features_file: Annotated[
+        pathlib.Path,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+    ],
+    training_dataset_file: Annotated[
         pathlib.Path,
         Parameter(
             validator=validators.Path(
@@ -389,6 +409,20 @@ def upload_ranklib_model_cmd(
     client_config: Optional[OpenSearchClientConfig] = None,
     log_level: LogLevel = "INFO",
 ):
+    """Upload a RankLib model to OpenSearch.
+
+    Args:
+        featureset_name: the name of the featureset.
+        model_name: the name to give the model.
+        ranklib_model_file: the RankLib model file to upload.
+        ranklib_features_file: the RankLib features file to determine what features
+        to add normalisers for.
+        training_dataset_file: the training dataset used to train the RankLib model.
+        Used to calculate the mean and standard deviation to supply normalisation data.
+        client_config: the OpenSearch client config.
+        log_level: the log level.
+    """
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -397,7 +431,14 @@ def upload_ranklib_model_cmd(
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
     client = make_opensearch_client(client_config)
-    upload_ranklib_model(client, featureset_name, model_name, ranklib_file)
+    upload_ranklib_model(
+        client,
+        featureset_name,
+        model_name,
+        ranklib_model_file,
+        ranklib_features_file,
+        training_dataset_file,
+    )
 
 
 @app.command(name="generate-training-dataset")

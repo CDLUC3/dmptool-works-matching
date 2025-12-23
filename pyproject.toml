@@ -26,7 +26,9 @@ dependencies = [
     "jsonlines>=4,<5",
     "duckdb>=1.4.0,<2",
     "pymysql[rsa]>=1.1.2,<2",
-    "ranx>=0.3.21,<0.4"
+    "ranx>=0.3.21,<0.4",
+    "numpy>=2.4.0,<3",
+    "scipy>=1.16.3,<2"
 ]
 
 [project.optional-dependencies]

@@ -3,7 +3,9 @@ import logging
 import pathlib
 from typing import Any, Optional
 
+import numpy as np
 from opensearchpy import OpenSearch
+from scipy.sparse import csr_matrix
 
 from dmpworks.model.dmp_model import DMPModel
 from dmpworks.model.related_work_model import RelatedWorkTrainingRow
@@ -257,12 +259,21 @@ def upload_ranklib_model(
     client: OpenSearch,
     featureset_name: str,
     model_name: str,
-    ranklib_file: pathlib.Path,
+    ranklib_model_file: pathlib.Path,
+    ranklib_features_file: pathlib.Path,
+    training_dataset_file: pathlib.Path,
 ):
     logging.info(f"Uploading RankLib model for featureset={featureset_name} with model_name={model_name}")
 
-    with open(ranklib_file, mode="r", encoding="utf-8") as f_in:
+    with open(ranklib_model_file, mode="r", encoding="utf-8") as f_in:
         ranklib_definition = f_in.read()
+
+    feature_normalizers = build_feature_normalizers(
+        client,
+        featureset_name,
+        ranklib_features_file,
+        training_dataset_file,
+    )
 
     body = {
         "model": {
@@ -270,6 +281,7 @@ def upload_ranklib_model(
             "model": {
                 "type": "model/ranklib",
                 "definition": ranklib_definition,
+                "feature_normalizers": feature_normalizers,
             },
         }
     }
@@ -280,3 +292,76 @@ def upload_ranklib_model(
         body=body,
     )
     logging.info(response)
+
+
+def load_ranklib_training_file(ranklib_training_file: pathlib.Path) -> tuple[np.array, np.array, list[str]]:
+    qids = []
+    labels = []
+    rows, cols, vals = [], [], []
+    current_row = 0
+    max_col = 0
+
+    with open(ranklib_training_file, mode="r", encoding="utf-8") as f_in:
+        for line in f_in:
+            # Remove comments from line
+            line = line.split("#")[0].strip()
+            if not line:
+                continue
+
+            # Parse the training data
+            parts = line.split(" ")
+            label = int(parts[0])
+            labels.append(label)
+            qid = parts[1].split(":")[1]
+            qids.append(qid)
+            for feature in parts[2:]:
+                feature_id, feature_val = feature.split(":")
+                feature_id = int(feature_id) - 1
+                feature_val = float(feature_val)
+                rows.append(current_row)
+                cols.append(feature_id)
+                vals.append(feature_val)
+                if feature_id > max_col:
+                    max_col = feature_id
+            current_row += 1
+
+    X = csr_matrix((vals, (rows, cols)), shape=(current_row, max_col + 1)).toarray()
+    y = np.array(labels)
+
+    return X, y, qids
+
+
+def build_feature_normalizers(
+    client: OpenSearch, featureset_name: str, ranklib_features_file: pathlib.Path, ranklib_training_file: pathlib.Path
+) -> dict:
+    # Load features
+    feature_ids = set()
+    with open(ranklib_features_file, mode="r", encoding="utf-8") as f_in:
+        for feature_id in f_in:
+            feature_ids.add(int(feature_id))
+
+    # Get features
+    response = client.transport.perform_request("GET", f"/_ltr/_featureset/{featureset_name}")
+    features = response.get("_source", {}).get("featureset", {}).get("features", [])
+    idx_to_name = {i + 1: feature["name"] for i, feature in enumerate(features)}
+
+    # Create feature normalizers
+    feature_normalizers = {}
+    X, y, qids = load_ranklib_training_file(ranklib_training_file)
+    means = np.mean(X, axis=0)
+    stds = np.std(X, axis=0)
+
+    for i, (mean, std_dev) in enumerate(zip(means, stds)):
+        feature_id = i + 1
+        if feature_id in feature_ids:
+            # Convert feature_id to feature name
+            feature_name = idx_to_name[feature_id]
+            feature_normalizers[feature_name] = {
+                "standard": {
+                    "mean": round(float(mean), 7),
+                    "standard_deviation": round(float(np.maximum(np.mean(std_dev), 1e-7)), 7),
+                }
+            }
+            logging.info(f"Feature {feature_id}: mean={mean:.4f}, std={std_dev:.4f}")
+
+    return feature_normalizers

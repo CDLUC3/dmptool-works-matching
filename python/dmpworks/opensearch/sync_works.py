@@ -48,9 +48,9 @@ def batch_to_work_actions(
     for i in range(batch.num_rows):
         doc = {name: batch[name][i].as_py() for name in batch.schema.names}
         work = WorkModel.model_validate(doc, by_name=True, by_alias=False)
-        doc["authors_names_text"] = work.authors_names_text
-        doc["funders_names_text"] = work.funders_names_text
-        doc["institutions_names_text"] = work.institutions_names_text
+        # doc["authors_names_text"] = work.authors_names_text
+        # doc["funders_names_text"] = work.funders_names_text
+        # doc["institutions_names_text"] = work.institutions_names_text
         yield {
             "_op_type": "update",
             "_index": index_name,
