@@ -51,7 +51,7 @@ def related_works_calculate_metrics(
     works_index_name: str,
     output_file: pathlib.Path,
     client_config: OpenSearchClientConfig,
-    query_builder_name: QueryBuilder = "build_dmp_works_search_query_v1",
+    query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
     rerank_model_name: Optional[str] = None,
     scroll_time: str = "360m",
     batch_size: int = 100,
