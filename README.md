@@ -223,17 +223,127 @@ dmpworks opensearch sync-works works-demo ${DATA}/export
 Go to OpenSearch Dashboards to view the works index: http://localhost:5601.
 
 ## Learning to Rank
-OpenSearch Learning to Rank is used to re-rank search results using a machine
+OpenSearch Learning to Rank (LTR) is used to re-rank search results using a machine
 learning model trained on a ground truth dataset of DMP-to-published-work
 matches.
 
-See here for an in-depth guide to Learning to Rank in the AWS OpenSearch Service:
+See here for an in-depth guide to LTR in the AWS OpenSearch Service:
 https://docs.aws.amazon.com/opensearch-service/latest/developerguide/learning-to-rank.html
 
-### Pre-requisites
-The following steps must be completed before working with Learning to Rank.
+### Search Process
+This diagram shows how search results are reranked using a trained LTR model.
 
-In the OpenSearch console, initialise the Learning to Rank plugin:
+A DMP query is first used to retrieve an initial list of candidate works using 
+a baseline search. For each candidate, a predefined feature set is applied to 
+compute feature values that describe the relationship between the DMP and the 
+candidate works. These feature values, together with the trained LTR model, 
+are then used to rescore the candidates. The output is the same set of candidate 
+works, reordered according to their predicted relevance.
+
+```mermaid
+flowchart LR
+  %% Artifacts (data)
+  DMPQ[DMP query]
+  CAND[Candidate work list]
+  FVALS[Feature values]
+  OUT[Rescored works]
+
+  %% Configuration / models
+  FSET[Feature set]
+  MODEL[LTR model]
+
+  %% Processes
+  P1(Retrieve candidates)
+  P2(Compute features)
+  P3(Rescore)
+
+  DMPQ --> P1 --> CAND
+  CAND --> P2
+  FSET --> P2
+  P2 --> FVALS
+  FVALS --> P3
+  MODEL --> P3
+  P3 --> OUT
+
+  %% Styling
+  classDef artifact fill:#fff,stroke:#333;
+  classDef process fill:#eef,stroke:#334;
+  classDef config fill:#f7f7f7,stroke:#666,stroke-dasharray: 4 2;
+
+  class DMPQ,CAND,FVALS,OUT artifact;
+  class P1,P2,P3 process;
+  class FSET,MODEL config;
+```
+
+### Training Process
+This diagram shows how training data is prepared for training the LTR model.
+
+A baseline query is run for each DMP to retrieve a set of candidate works.
+The same feature set used at search time is applied to compute feature values
+for these candidates. The computed feature values are then combined with ground
+truth relevance judgments to produce a RankLib-formatted training file. 
+This training file is used to train the LTR model that is later applied during 
+search reranking.
+
+```mermaid
+flowchart LR
+  %% Artifacts (data)
+  DMPB[DMP baseline query]
+  WORKS[Works]
+  FVALS[Feature values]
+  GT[Ground truth]
+  RL[RankLib training file]
+
+  %% Configuration
+  FSET[Feature set]
+
+  %% Processes
+  P1(Retrieve baseline works)
+  P2(Compute features)
+  P3(Combine)
+
+  DMPB --> P1 --> WORKS
+  WORKS --> P2
+  FSET --> P2
+  P2 --> FVALS
+  FVALS --> P3
+  GT --> P3
+  P3 --> RL
+
+  %% Styling
+  classDef artifact fill:#fff,stroke:#333;
+  classDef process fill:#eef,stroke:#334;
+  classDef config fill:#f7f7f7,stroke:#666,stroke-dasharray: 4 2;
+
+  class DMPB,WORKS,FVALS,GT,RL artifact;
+  class P1,P2,P3 process;
+  class FSET config;
+```
+
+### Feature Set
+The following is a summary of the LTR feature set used for training:
+
+1. **mlt_content**: the [More Like This](https://docs.opensearch.org/latest/query-dsl/specialized/more-like-this/) score calculated between the titles and abstracts of the DMP and the work.
+1. **funded_doi_matched**: whether a known funded DOI matched.
+1. **dmp_award_count**: the number of awards that the DMP has.
+1. **award_match_count**: the number of DMP awards that matched with the work.
+1. **dmp_author_count**: the number of DMP authors.
+1. **author_orcid_match_count**: the number of DMP ORCID IDs that matched with the work.
+1. **author_surname_match_count**: the number of DMP author surnames that matched with the work.
+1. **dmp_institution_count**: the number of DMP institutions.
+1. **institution_ror_match_count**: the number of DMP ROR IDs that matched with the work.
+1. **institution_name_match_count**: the number of DMP institution names that matched with the work.
+1. **dmp_funder_count**: the number of DMP funders.
+1. **funder_ror_match_count**: the number of DMP funder ROR IDs that matched with the work.
+1. **funder_name_match_count**: the number of DMP funder names that matched with the work.
+
+The feature set is defined in the `build_featureset` function in:<br>
+[learning_to_rank.py](python/dmpworks/opensearch/learning_to_rank.py).
+
+### Pre-requisites
+The following steps must be completed before working with LTR.
+
+In the OpenSearch console, initialise the LTR plugin:
 ```bash
 PUT _ltr
 ```
@@ -265,26 +375,6 @@ feature set to use for training:
 13
 ```
 
-### Feature Set
-The following is a summary of the Learning to Rank feature set used for training:
-
-1. **mlt_content**: the [More Like This](https://docs.opensearch.org/latest/query-dsl/specialized/more-like-this/) score calculated between the titles and abstracts of the DMP and the work.
-1. **funded_doi_matched**: whether a known funded DOI matched.
-1. **dmp_award_count**: the number of awards that the DMP has.
-1. **award_match_count**: the number of DMP awards that matched with the work.
-1. **dmp_author_count**: the number of DMP authors.
-1. **author_orcid_match_count**: the number of DMP ORCID IDs that matched with the work.
-1. **author_surname_match_count**: the number of DMP author surnames that matched with the work.
-1. **dmp_institution_count**: the number of DMP institutions.
-1. **institution_ror_match_count**: the number of DMP ROR IDs that matched with the work.
-1. **institution_name_match_count**: the number of DMP institution names that matched with the work.
-1. **dmp_funder_count**: the number of DMP funders.
-1. **funder_ror_match_count**: the number of DMP funder ROR IDs that matched with the work.
-1. **funder_name_match_count**: the number of DMP funder names that matched with the work.
-
-The feature set is defined in the `build_featureset` function in:<br>
-[learning_to_rank.py](python/dmpworks/opensearch/learning_to_rank.py).
-
 ### Commands
 Create the feature set in OpenSearch:
 ```bash
@@ -294,7 +384,7 @@ dmpworks opensearch create-featureset \
 ```
 
 Args:
-* `dmpworks`: the OpenSearch Learning to Rank feature set name.
+* `dmpworks`: the OpenSearch LTR feature set name.
 
 Generate the training dataset and save in RankLib format:
 ```bash
@@ -319,7 +409,7 @@ Options:
 * `--query-builder-name=build_dmp_works_search_baseline_query`: which query builder to use.
 * `--max-results=1000 `: the maximum number of works to include for each DMP.
 
-Train a Learning to Rank model:
+Train a LTR model:
 ```bash
 java -jar RankLib-2.18.jar \
           -train train-2025-12-22.txt \
@@ -340,7 +430,7 @@ Options:
 * `-reg 0.01`: regularization parameter.
 * `-save model-coordinate-ascent-2025-12-22.txt`: the path to the file where the model will be saved.
 
-Upload the Learning to Rank model to OpenSearch. At this step, the mean and standard 
+Upload the LTR model to OpenSearch. At this step, the mean and standard 
 deviation are computed for each feature (to match Z-score model normalisation) 
 and supplied as feature normalisation data in the uploaded OpenSearch Learning 
 to Rank model.
