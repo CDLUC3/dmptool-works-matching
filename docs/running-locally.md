@@ -304,6 +304,25 @@ dmpworks opensearch rank-metrics \
                     --ks=10 20 100 1000
 ```
 
+The ranking metrics are saved as a CSV file contains metrics computed for an 
+aggregate of all DMPs and for each individual DMP.
+
+Metrics are reported at one or more cutoff values `k`, which are user-specified 
+at runtime (for example: `--ks=10 20 100 1000`). Each metric column is generated 
+dynamically based on the chosen `k` values.
+
+See the table below for a description of each column in the dataset.
+
+| Column name   | Description                                                                                                                                                          |
+|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `dmp_doi`     | The DOI of the DMP. The value `all` represents an aggregate over all evaluated DMPs.                                                                                 |
+| `dmp_title`   | The title of the DMP.                                                                                                                                                |
+| `n_outputs`   | Number of outputs for a given DMP in the ground-truth dataset.                                                                                                       |
+| `map@k`       | Mean Average Precision at cutoff `k`. Measures how well relevant outputs are ranked near the top of the results list, averaged across queries.                       |
+| `ndcg@k`      | Normalized Discounted Cumulative Gain at cutoff `k`. Rewards highly placing relevant outputs earlier in the ranking, with logarithmic discounting by rank position.  |
+| `precision@k` | Precision at cutoff `k`. Proportion of the top-`k` ranked outputs that are relevant.                                                                                 |
+| `recall@k`    | Recall at cutoff `k`. Proportion of all relevant outputs that appear within the top-`k` ranked results.                                                              |
+
 ### 7.7. DMP Search
 To re-run the DMP works search with LTR re-ranking add the `rerank-model-name` 
 parameter:
