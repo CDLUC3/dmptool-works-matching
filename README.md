@@ -15,5 +15,5 @@ DMP Tool Python package that matches DMPs to their published outputs.
 ## Documentation
 See the below pages for in depth documentaion.
 
-* [Architecture](docs/architecture.md).
-* [Running Locally with Dataset Subset](docs/running-locally.md).
+* [Architecture](docs/architecture.md)
+* [Running Locally with Dataset Subset](docs/running-locally.md)
