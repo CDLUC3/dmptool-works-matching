@@ -42,25 +42,117 @@ QueryBuilder = Literal["build_dmp_works_search_baseline_query", "build_dmp_works
 
 @dataclass
 class OpenSearchClientConfig:
-    mode: Mode = "local"
-    host: str = "localhost"
-    port: int = 9200
-    region: Optional[str] = None
-    service: Optional[str] = None
+    mode: Annotated[
+        Mode,
+        Parameter(
+            help=(
+                "OpenSearch connection mode. "
+                "`local` uses an unauthenticated local client; "
+                "`aws` uses AWS SigV4-signed requests."
+            ),
+        ),
+    ] = "local"
+
+    host: Annotated[
+        str,
+        Parameter(
+            help="OpenSearch hostname or IP address.",
+        ),
+    ] = "localhost"
+
+    port: Annotated[
+        int,
+        Parameter(
+            help="OpenSearch HTTP port.",
+        ),
+    ] = 9200
+
+    region: Annotated[
+        Optional[str],
+        Parameter(
+            help="AWS region (required when mode=aws).",
+        ),
+    ] = None
+
+    service: Annotated[
+        Optional[str],
+        Parameter(
+            help="AWS service name for SigV4 signing (usually `es`).",
+        ),
+    ] = None
 
 
 @dataclass
 class OpenSearchSyncConfig:
-    max_processes: int = MAX_PROCESSES
-    chunk_size: int = CHUNK_SIZE
-    max_chunk_bytes: int = MAX_CHUNK_BYTES
-    max_retries: int = MAX_RETRIES
-    initial_backoff: int = INITIAL_BACKOFF
-    max_backoff: int = MAX_BACKOFF
-    dry_run: bool = False
-    measure_chunk_size: bool = False
-    max_error_samples: int = MAX_ERROR_SAMPLES
-    staggered_start: bool = False
+    max_processes: Annotated[
+        int,
+        Parameter(
+            help="Maximum number of worker processes to run in parallel.",
+        ),
+    ] = MAX_PROCESSES
+
+    chunk_size: Annotated[
+        int,
+        Parameter(
+            help="Number of records to process per batch.",
+        ),
+    ] = CHUNK_SIZE
+
+    max_chunk_bytes: Annotated[
+        int,
+        Parameter(
+            help="Maximum serialized batch size in bytes.",
+        ),
+    ] = MAX_CHUNK_BYTES
+
+    max_retries: Annotated[
+        int,
+        Parameter(
+            help="Maximum number of retry attempts per batch.",
+        ),
+    ] = MAX_RETRIES
+
+    initial_backoff: Annotated[
+        int,
+        Parameter(
+            help="Initial retry backoff in seconds.",
+        ),
+    ] = INITIAL_BACKOFF
+
+    max_backoff: Annotated[
+        int,
+        Parameter(
+            help="Maximum retry backoff in seconds.",
+        ),
+    ] = MAX_BACKOFF
+
+    dry_run: Annotated[
+        bool,
+        Parameter(
+            help="Run the sync without writing any data to OpenSearch.",
+        ),
+    ] = False
+
+    measure_chunk_size: Annotated[
+        bool,
+        Parameter(
+            help="Measure serialized batch size before sending to OpenSearch.",
+        ),
+    ] = False
+
+    max_error_samples: Annotated[
+        int,
+        Parameter(
+            help="Maximum number of error examples to retain for reporting.",
+        ),
+    ] = MAX_ERROR_SAMPLES
+
+    staggered_start: Annotated[
+        bool,
+        Parameter(
+            help="Stagger worker startup to reduce initial load spikes.",
+        ),
+    ] = False
 
 
 class DebugTransport(Transport):

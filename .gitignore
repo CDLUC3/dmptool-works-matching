@@ -29,4 +29,9 @@ target
 logs
 
 .env.*
+!.env.example
+!.env.*.example
 data
+demo
+
+*.jar

@@ -6,9 +6,11 @@ from typing import Annotated, Literal, Optional
 
 from cyclopts import App, Parameter, validators
 
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.cli_utils import Directory, LogLevel
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 from dmpworks.transform.datacite import transform_datacite
+from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.dmps import transform_dmps
 from dmpworks.transform.openalex_funders import transform_openalex_funders
 from dmpworks.transform.openalex_works import transform_openalex_works
@@ -321,16 +323,32 @@ def dataset_subset_cmd(
     dataset: Literal["crossref-metadata", "datacite", "openalex-works"],
     in_dir: Directory,
     out_dir: Directory,
-    ror_ids: Annotated[
-        list[str],
+    institutions_path: Annotated[
+        pathlib.Path,
         Parameter(
-            consume_multiple=True,
-            required=True,
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
         ),
-    ] = None,
-    institution_names: Annotated[
-        list[str],
-        Parameter(consume_multiple=True),
+        Parameter(
+            env_var="DATASET_SUBSET_INSTITUTIONS_PATH",
+            help="Path to a list of ROR IDs and institution names. Works authored by researchers from these institutions will be included.",
+        ),
+    ],
+    dois_path: Annotated[
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+        Parameter(
+            env_var="DATASET_SUBSET_DOIS_PATH",
+            help="Path to a specific list of Work DOIs to include in the subset.",
+        ),
     ] = None,
     log_level: LogLevel = "INFO",
 ):
@@ -340,14 +358,24 @@ def dataset_subset_cmd(
         dataset: The dataset to filter.
         in_dir: Path to the dataset directory (e.g. /path/to/openalex_works).
         out_dir: Path to the output directory (e.g. /path/to/demo_dataset/openalex).
-        ror_ids: the ROR IDs of institutions to include, ROR ID should be supplied with without a prefix.
-        institution_names: The name of the institutions to include.
+        institutions_path: Path to a JSON file containing a list of ROR IDs and institution names, e.g. `[{"name": "University of California, San Diego", "ror": "0168r3w48"}]`. Works authored by researchers from these institutions will be included.
+        dois_path: Path to a JSON file with specific list of Work DOIs to include in the subset, e.g. `["10.0000/abc", "10.0000/123"]`.
         log_level: Python log level.
     """
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
-    create_demo_dataset(dataset, in_dir, out_dir, set(ror_ids), set(institution_names), level)
+    institutions = load_institutions(institutions_path)
+    dois = load_dois(dois_path) if dois_path is not None else []
+
+    create_dataset_subset(
+        dataset=dataset,
+        in_dir=in_dir,
+        out_dir=out_dir,
+        institutions=institutions,
+        dois=dois,
+        log_level=level,
+    )
 
 
 if __name__ == "__main__":

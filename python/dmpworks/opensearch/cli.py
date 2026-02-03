@@ -38,10 +38,10 @@ def create_index_cmd(
     """Create an OpenSearch index.
 
     Args:
-        index_name: The name of the OpenSearch index to create (e.g., works).
-        mapping_filename: The name of the OpenSearch mapping in the dmpworks.opensearch.mappings resource package (e.g., works-mapping.json).
+        index_name: Name of the OpenSearch index to create (e.g., works).
+        mapping_filename: Name of the OpenSearch mapping in the dmpworks.opensearch.mappings resource package (e.g., works-mapping.json).
         client_config: OpenSearch client settings.
-        log_level: Python log level.
+        log_level: Python log level (e.g., INFO).
     """
 
     if client_config is None:
@@ -63,10 +63,10 @@ def update_mapping_cmd(
     """Update an OpenSearch index mapping.
 
     Args:
-        index_name: The name of the OpenSearch index to update (e.g., works).
-        mapping_filename: The name of the OpenSearch mapping in the dmpworks.opensearch.mappings resource package (e.g., works-mapping.json).
+        index_name: Name of the OpenSearch index to update (e.g., works).
+        mapping_filename: Name of the OpenSearch mapping in the dmpworks.opensearch.mappings resource package (e.g., works-mapping.json).
         client_config: OpenSearch client settings.
-        log_level: Python log level.
+        log_level: Python log level (e.g., INFO).
     """
 
     if client_config is None:
@@ -89,11 +89,11 @@ def sync_works_cmd(
     """Sync the DMP Tool Works Index Table with OpenSearch.
 
     Args:
-        index_name: The name of the OpenSearch index to sync to (e.g., works).
+        index_name: Name of the OpenSearch index to sync to (e.g., works).
         in_dir: Path to the DMP Tool Works index table export directory (e.g., /path/to/export).
         client_config: OpenSearch client settings.
         sync_config: OpenSearch sync settings.
-        log_level: Python log level.
+        log_level: Python log level (e.g., INFO).
     """
 
     if client_config is None:
@@ -126,11 +126,11 @@ def sync_dmps_cmd(
     """Sync the DMP Tool DMP Table with OpenSearch.
 
     Args:
-        index_name: The name of the OpenSearch index to sync to (e.g., dmps).
+        index_name: Name of the OpenSearch index to sync to (e.g., dmps).
         in_dir: Path to the DMP Tool DMPs export directory (e.g., /path/to/export).
         client_config: OpenSearch client settings.
         sync_config: OpenSearch sync settings.
-        log_level: Python log level.
+        log_level: Python log level (e.g., INFO).
     """
 
     if client_config is None:
@@ -162,9 +162,9 @@ def enrich_dmps_cmd(
     found on funder award pages.
 
     Args:
-        dmps_index_name: the name of the DMP index to update.
+        dmps_index_name: Name of the DMP index to update.
         client_config: OpenSearch client settings.
-        log_level: Python log level.
+        log_level: Python log level (e.g., INFO).
     """
 
     if client_config is None:
@@ -229,32 +229,28 @@ def dmp_works_search_cmd(
     end_date: Date = None,
     log_level: LogLevel = "INFO",
 ):
-    """DMP Works search.
+    """Run the DMP works search, returning candidate matches for each DMP.
 
     Args:
-        dmps_index_name: the name of the DMP index in OpenSearch.
-        works_index_name: the name of the works index in OpenSearch.
-        out_file: the output directory where search results will be saved.
-        query_builder_name: the name of the query builder to use.
-        rerank_model_name: the name of the re-ranking model to use. If nothing
-        is supplied then no re-ranking will occur.
-        scroll_time: the length of time the OpenSearch scroll used to iterate
-        through DMPs will stay active. Set it to a value greater than the length
-        of this process.
-        batch_size: the number of searches run in parallel when include_scores=False.
-        max_results: the maximum number of matches per DMP.
-        project_end_buffer_years: the number of years to add to the end of the
-        project end date when searching for works.
-        parallel_search: whether to run parallel search or not.
-        include_named_queries_score: whether to include scores for subqueries.
-        max_concurrent_searches: the maximum number of concurrent searches.
-        max_concurrent_shard_requests: the maximum number of shards searched per node.
+        dmps_index_name: Name of the DMP index in OpenSearch.
+        works_index_name: Name of the works index in OpenSearch.
+        out_file: The output directory where search results will be saved.
+        query_builder_name: Name of the query builder to use.
+        rerank_model_name: Name of the re-ranking model to use. If nothing is supplied then no re-ranking will occur.
+        scroll_time: The length of time the OpenSearch scroll used to iterate through DMPs will stay active. Set it to a value greater than the length of this process.
+        batch_size: The number of searches run in parallel when include_scores is False.
+        max_results: The maximum number of matches per DMP.
+        project_end_buffer_years: The number of years to add to the end of the project end date when searching for works.
+        parallel_search: Whether to run parallel search or not.
+        include_named_queries_score: Whether to include scores for subqueries.
+        max_concurrent_searches: The maximum number of concurrent searches.
+        max_concurrent_shard_requests: The maximum number of shards searched per node.
         client_config: OpenSearch client settings.
-        institutions_file: when supplied only includes DMPs which have an institution in this list.
-        dois_file: when supplied only includes DMPs which have a DOI in this list.
-        start_date: return DMPs with project start dates on or after this date.
-        end_date: return DMPs with project start dates on before this date.
-        log_level: Python log level.
+        institutions_file: When supplied only includes DMPs which have an institution in this list.
+        dois_file: When supplied only includes DMPs which have a DOI in this list.
+        start_date: Return DMPs with project start dates on or after this date.
+        end_date: Return DMPs with project start dates on before this date.
+        log_level: Python log level (e.g., INFO).
     """
 
     if client_config is None:
@@ -330,6 +326,26 @@ def rank_metrics_cmd(
     ks: Annotated[Optional[list[int]], Parameter(consume_multiple=True)] = None,
     log_level: LogLevel = "INFO",
 ):
+    """Compute ranking metrics for baseline or re-ranked search results.
+
+    Args:
+        ground_truth_file: Path to the ground truth CSV file containing DMP to work judgement labels.
+        dmps_index_name: The DMPs index name.
+        works_index_name: The works index name.
+        output_file: Path to the file where the computed metrics will be saved.
+        query_builder_name: Name of the baseline query to use.
+        rerank_model_name: Name of the model to use for re-ranking. Omit to test baseline search.
+        client_config: OpenSearch client settings.
+        scroll_time: Length of time the OpenSearch scroll context remains active while iterating over DMPs.
+        batch_size: Number of DMPs processed per batch when executing searches.
+        max_results: The maximum number of works to return for each DMP.
+        project_end_buffer_years: Number of years added to the project end date when searching for works.
+        include_named_queries_score: Whether to include named query scores in the search response.
+        inner_hits_size: Maximum number of inner hits returned for each matched work.
+        ks: The top K breakpoints to compute for each metric.
+        log_level: Python log level (e.g., INFO).
+    """
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -361,6 +377,14 @@ def create_featureset_cmd(
     client_config: Optional[OpenSearchClientConfig] = None,
     log_level: LogLevel = "INFO",
 ):
+    """Create an OpenSearch Learning to Rank feature set.
+
+    Args:
+        featureset_name: The OpenSearch LTR feature set name.
+        client_config: OpenSearch client settings.
+        log_level: Python log level (e.g., INFO).
+    """
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -412,15 +436,13 @@ def upload_ranklib_model_cmd(
     """Upload a RankLib model to OpenSearch.
 
     Args:
-        featureset_name: the name of the featureset.
-        model_name: the name to give the model.
-        ranklib_model_file: the RankLib model file to upload.
-        ranklib_features_file: the RankLib features file to determine what features
-        to add normalisers for.
-        training_dataset_file: the training dataset used to train the RankLib model.
-        Used to calculate the mean and standard deviation to supply normalisation data.
-        client_config: the OpenSearch client config.
-        log_level: the log level.
+        featureset_name: Name of the featureset.
+        model_name: The name to give the model.
+        ranklib_model_file: Path to the RankLib model file to upload.
+        ranklib_features_file: Path to the RankLib features file to determine what features to add normalisers for.
+        training_dataset_file: Path to the training dataset used to train the RankLib model. Used to calculate the mean and standard deviation to supply normalisation data.
+        client_config: The OpenSearch client config.
+        log_level: The Python log level (e.g., INFO).
     """
 
     if client_config is None:
@@ -476,6 +498,25 @@ def generate_training_dataset_cmd(
     inner_hits_size: int = 50,
     log_level: LogLevel = "INFO",
 ):
+    """Generates a RankLib training dataset based on a baseline DMP works search,
+    a featureset and a ground truth file.
+
+    Args:
+        ground_truth_file: Path to the ground truth data file
+        dmps_index_name: The OpenSearch DMP index name.
+        works_index_name: The OpenSearch works index name.
+        output_file: Path to the output file where the generated RankLib training dataset will be written.
+        featureset_name: The featureset name.
+        query_builder_name: Name of the query builder to use.
+        client_config: OpenSearch client settings.
+        scroll_time: Length of time the OpenSearch scroll context remains active while iterating over DMPs.
+        batch_size: Number of DMPs processed per batch when executing searches.
+        max_results: The maximum number of works to include for each DMP.
+        project_end_buffer_years: Number of years added to the project end date when searching for works.
+        include_named_queries_score: Whether to include named query scores in the search response.
+        inner_hits_size: Maximum number of inner hits returned for each matched work.
+        log_level: Python log level (e.g., INFO).
+    """
 
     if client_config is None:
         client_config = OpenSearchClientConfig()
