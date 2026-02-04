@@ -32,7 +32,7 @@ def plan(
     release_dates: ReleaseDates,
     log_level: LogLevel = "INFO",
 ):
-    """
+    """Run the SQLMesh plan.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.

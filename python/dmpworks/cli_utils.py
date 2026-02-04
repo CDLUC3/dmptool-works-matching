@@ -46,14 +46,14 @@ class DatasetSubset:
         Optional[str],
         Parameter(
             env_var="DATASET_SUBSET_INSTITUTIONS_S3_PATH",
-            help="S3 path to a list of ROR IDs and institution names. Works authored by researchers from these institutions will be included.",
+            help="S3 path (excluding bucket URI) to a list of ROR IDs and institution names. Works authored by researchers from these institutions will be included.",
         ),
     ] = None
     dois_s3_path: Annotated[
         Optional[str],
         Parameter(
             env_var="DATASET_SUBSET_DOIS_S3_PATH",
-            help="S3 path to a specific list of Work DOIs to include in the subset.",
+            help="S3 path (excluding bucket URI) to a specific list of Work DOIs to include in the subset.",
         ),
     ] = None
 
@@ -71,13 +71,13 @@ class DMPSubset:
         Optional[str],
         Parameter(
             env_var="DMP_SUBSET_INSTITUTIONS_S3_PATH",
-            help="S3 path to a list of ROR IDs and institution names. DMPs created by researchers from these institutions will be included.",
+            help="S3 path (excluding bucket URI) to a list of ROR IDs and institution names. DMPs created by researchers from these institutions will be included.",
         ),
     ] = None
     dois_s3_path: Annotated[
         Optional[str],
         Parameter(
             env_var="DMP_SUBSET_DOIS_S3_PATH",
-            help="S3 path to a specific list of DMP DOIs to include in the subset.",
+            help="S3 path (excluding bucket URI) to a specific list of DMP DOIs to include in the subset.",
         ),
     ] = None

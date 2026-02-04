@@ -17,3 +17,4 @@ See the below pages for in depth documentaion.
 
 * [Architecture](docs/architecture.md)
 * [Running Locally with Dataset Subset](docs/running-locally.md)
+* [Submitting AWS Batch Jobs](docs/aws-batch.md)

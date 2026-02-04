@@ -11,6 +11,7 @@ from dmpworks.batch_submit.jobs import (
     datacite_download_job,
     datacite_transform_job,
     dataset_subset_job,
+    dmps_transform_job,
     openalex_funders_download_job,
     openalex_funders_transform_job,
     openalex_works_download_job,
@@ -65,6 +66,58 @@ def run_job_pipeline(
         job_id = task_func(**kwargs)
         if job_id is not None:
             job_ids.append({"jobId": str(job_id)})
+
+
+DMPS_JOBS: tuple[str, ...] = ("transform",)
+
+
+@app.command(name="dmps")
+def dmps_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(
+            env_var="ENV",
+            help="Environment (e.g., dev, stage, prod)",
+        ),
+    ],
+    run_id: Annotated[
+        str,
+        Parameter(
+            env_var="DMPS_RUN_ID",
+            help="A unique ID to represent this run of the job.",
+        ),
+    ],
+    bucket_name: Annotated[
+        str,
+        Parameter(
+            env_var="BUCKET_NAME",
+            help="S3 bucket name for job I/O.",
+        ),
+    ],
+    start_job: Annotated[
+        Literal[*DMPS_JOBS],
+        Parameter(
+            env_var="DMPS_START_JOB",
+            help="The first job to run in the sequence.",
+        ),
+    ] = DMPS_JOBS[0],
+):
+    logging.basicConfig(level=logging.INFO)
+
+    task_definitions = {
+        "transform": partial(
+            dmps_transform_job,
+            env=env,
+            bucket_name=bucket_name,
+            run_id=run_id,
+        ),
+    }
+
+    run_job_pipeline(
+        task_definitions=task_definitions,
+        task_order=list(CROSSREF_METADATA_JOBS),
+        start_task_name=start_job,
+    )
 
 
 ROR_JOBS: tuple[str, ...] = ("download", "transform")
@@ -182,6 +235,13 @@ def crossref_metadata_cmd(
             help="The name of the Crossref metadata file to download.",
         ),
     ],
+    crossref_bucket_name: Annotated[
+        str,
+        Parameter(
+            env_var="CROSSREF_METADATA_BUCKET",
+            help="Name of the Crossref AWS S3 bucket.",
+        ),
+    ],
     dataset_subset: DatasetSubset = None,
     start_job: Annotated[
         Literal[*CROSSREF_METADATA_JOBS],
@@ -201,6 +261,7 @@ def crossref_metadata_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             file_name=file_name,
+            crossref_bucket_name=crossref_bucket_name,
         ),
         "transform": partial(
             crossref_metadata_transform_job,
@@ -266,6 +327,13 @@ def datacite_cmd(
             help="The DataCite allocation ID for the download.",
         ),
     ],
+    datacite_bucket_name: Annotated[
+        str,
+        Parameter(
+            env_var="DATACITE_BUCKET_NAME",
+            help="Name of the DataCite AWS S3 bucket.",
+        ),
+    ],
     dataset_subset: DatasetSubset = None,
     start_job: Annotated[
         Literal[*DATACITE_JOBS],
@@ -285,6 +353,7 @@ def datacite_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             allocation_id=allocation_id,
+            datacite_bucket_name=datacite_bucket_name,
         ),
         "transform": partial(
             datacite_transform_job,
@@ -343,6 +412,13 @@ def openalex_works_cmd(
             help="S3 bucket name.",
         ),
     ],
+    openalex_bucket_name: Annotated[
+        str,
+        Parameter(
+            env_var="OPENALEX_BUCKET_NAME",
+            help="Name of the OpenAlex AWS S3 bucket.",
+        ),
+    ],
     max_file_processes: Annotated[
         int,
         Parameter(
@@ -375,6 +451,7 @@ def openalex_works_cmd(
             env=env,
             bucket_name=bucket_name,
             run_id=run_id,
+            openalex_bucket_name=openalex_bucket_name,
         ),
         "transform": partial(
             openalex_works_transform_job,
@@ -434,6 +511,13 @@ def openalex_funders_cmd(
             help="S3 bucket name for job I/O.",
         ),
     ],
+    openalex_bucket_name: Annotated[
+        str,
+        Parameter(
+            env_var="OPENALEX_BUCKET_NAME",
+            help="Name of the OpenAlex AWS S3 bucket.",
+        ),
+    ],
     start_job: Annotated[
         Literal[*OPENALEX_FUNDERS_JOBS],
         Parameter(
@@ -450,6 +534,7 @@ def openalex_funders_cmd(
             env=env,
             bucket_name=bucket_name,
             run_id=run_id,
+            openalex_bucket_name=openalex_bucket_name,
         ),
         "transform": partial(
             openalex_funders_transform_job,

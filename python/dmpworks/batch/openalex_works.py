@@ -3,6 +3,7 @@ from typing import Optional
 
 from cyclopts import App
 
+from dmpworks.batch.utils import s3_uri
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
 from dmpworks.cli_utils import DatasetSubset
 from dmpworks.transform.cli import OpenAlexWorksConfig
@@ -18,13 +19,14 @@ app = App(name="openalex-works", help="OpenAlex Works AWS Batch pipeline.")
 
 
 @app.command(name="download")
-def download_cmd(bucket_name: str, run_id: str):
+def download_cmd(bucket_name: str, run_id: str, openalex_bucket_name: str):
     """Download OpenAlex Works from the OpenAlex S3 bucket and upload it to
     the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
+        openalex_bucket_name: the name of the OpenAlex AWS S3 bucket.
     """
 
     setup_multiprocessing_logging(logging.INFO)
@@ -35,7 +37,7 @@ def download_cmd(bucket_name: str, run_id: str):
                 "s5cmd",
                 "--no-sign-request",
                 "cp",
-                "s3://openalex/data/works/*",
+                s3_uri(openalex_bucket_name, "data/works/*"),
                 f"{ctx.download_dir}/",
             ],
         )

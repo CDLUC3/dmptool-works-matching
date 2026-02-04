@@ -25,13 +25,13 @@ def extract_ror(file_path: pathlib.Path) -> pathlib.Path:
         json_file_name = None
         for name in file.namelist():
             log.info(name)
-            if name.lower().endswith("schema_v2.json"):
-                log.info(f"Found ROR v2 JSON file: {name}")
+            if name.lower().endswith(".json"):
+                log.info(f"Found ROR JSON file: {name}")
                 json_file_name = name
                 break
 
         if json_file_name is None:
-            msg = f"Could not find ROR V2 JSON file: {name}"
+            msg = f"Could not find ROR JSON file"
             log.error(msg)
             raise FileNotFoundError(msg)
 

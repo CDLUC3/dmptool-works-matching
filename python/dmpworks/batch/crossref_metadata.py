@@ -4,6 +4,7 @@ from typing import Optional
 
 from cyclopts import App
 
+from dmpworks.batch.utils import s3_uri
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
 from dmpworks.cli_utils import DatasetSubset
 from dmpworks.transform.cli import CrossrefMetadataConfig
@@ -19,15 +20,15 @@ app = App(name="crossref-metadata", help="Crossref Metadata AWS Batch pipeline."
 
 
 @app.command(name="download")
-def download_cmd(bucket_name: str, run_id: str, file_name: str):
+def download_cmd(bucket_name: str, run_id: str, file_name: str, crossref_bucket_name: str):
     """Download Crossref Metadata from the Crossref Metadata requestor pays S3
     bucket and upload it to the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        run_id: a unique ID to represent this run of the job.
-        file_name: the name of the Crossref Metadata Public Datafile,
-        e.g. April_2025_Public_Data_File_from_Crossref.tar.
+        run_id: Unique ID to represent this run of the job.
+        file_name: Name of the Crossref Metadata Public Datafile, e.g. April_2025_Public_Data_File_from_Crossref.tar.
+        crossref_bucket_name: Name of the Crossref AWS S3 bucket.
     """
 
     setup_multiprocessing_logging(logging.INFO)
@@ -40,7 +41,7 @@ def download_cmd(bucket_name: str, run_id: str, file_name: str):
                 "--request-payer",
                 "requester",
                 "cp",
-                f"s3://api-snapshots-reqpays-crossref/{file_name}",
+                s3_uri(crossref_bucket_name, file_name),
                 f"{ctx.download_dir}/",
             ],
         )
