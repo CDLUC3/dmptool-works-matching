@@ -47,6 +47,10 @@
         "analyzer": "icu_analyzer",
         "term_vector": "with_positions_offsets"
       },
+      "hash": {
+        "type": "keyword",
+        "normalizer": "lowercase"
+      },
       "work_type": {
         "type": "keyword",
         "normalizer": "lowercase"

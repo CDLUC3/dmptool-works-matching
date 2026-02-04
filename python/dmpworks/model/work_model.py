@@ -20,7 +20,7 @@ class WorkModel(BaseModel):
     title: Optional[str] = None
     abstract_text: Optional[str] = None
     work_type: str
-    publication_date: pendulum.Date
+    publication_date: Optional[pendulum.Date]
     updated_date: Optional[pendulum.DateTime]
     publication_venue: Optional[str] = None
     institutions: list[Institution]
@@ -46,6 +46,18 @@ class WorkModel(BaseModel):
         # No whitespace: separators=(",", ":")
         payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
         return hashlib.md5(payload.encode("utf-8")).hexdigest()
+
+    @computed_field
+    def institutions_names_text(self) -> str:
+        return ", ".join(dict.fromkeys(inst.name for inst in self.institutions))
+
+    @computed_field
+    def authors_names_text(self) -> str:
+        return ", ".join(dict.fromkeys(author.full for author in self.authors))
+
+    @computed_field
+    def funders_names_text(self) -> str:
+        return ", ".join(dict.fromkeys(funder.name for funder in self.funders))
 
     @cached_property
     def funder_ids_set(self) -> frozenset[str]:

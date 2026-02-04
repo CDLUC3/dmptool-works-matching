@@ -16,7 +16,7 @@ from dmpworks.batch.utils import (
 from dmpworks.cli_utils import DMPSubset, LogLevel
 from dmpworks.dmsp.related_works import merge_related_works, MySQLConfig
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
-from dmpworks.opensearch.dmp_works import dmp_works_search
+from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
 from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.sync_dmps import sync_dmps

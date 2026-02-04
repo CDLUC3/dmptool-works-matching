@@ -23,7 +23,13 @@ def run_plan() -> Plan:
         paths=[sqlmesh_dir()],
         load=True,
     )
-    plan = ctx.plan(environment="prod", no_prompts=True, auto_apply=True)
+    plan = ctx.plan(
+        environment="prod",
+        run=True,
+        ignore_cron=True,
+        auto_apply=True,
+        no_prompts=True,
+    )
     return plan
 
 

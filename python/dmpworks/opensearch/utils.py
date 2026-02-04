@@ -1,8 +1,7 @@
 import logging
 import pathlib
-from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Annotated, Generator, Iterator, Literal, Optional, Sequence
+from typing import Annotated, Literal, Optional, Sequence
 
 import boto3
 import pendulum
@@ -10,8 +9,6 @@ import pyarrow.dataset as ds
 from cyclopts import Parameter, Token
 from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection, Transport
 from opensearchpy.exceptions import TransportError
-
-from dmpworks.model.dmp_model import DMPModel
 
 log = logging.getLogger(__name__)
 
@@ -40,29 +37,122 @@ def parse_date(type_, tokens: Sequence[Token]) -> pendulum.Date:
 Mode = Literal["local", "aws"]
 ChunkSize = Annotated[int, Parameter(validator=validate_chunk_size)]
 Date = Annotated[Optional[pendulum.Date], Parameter(converter=parse_date)]
+QueryBuilder = Literal["build_dmp_works_search_baseline_query", "build_dmp_works_search_candidate_query"]
 
 
 @dataclass
 class OpenSearchClientConfig:
-    mode: Mode = "local"
-    host: str = "localhost"
-    port: int = 9200
-    region: Optional[str] = None
-    service: Optional[str] = None
+    mode: Annotated[
+        Mode,
+        Parameter(
+            help=(
+                "OpenSearch connection mode. "
+                "`local` uses an unauthenticated local client; "
+                "`aws` uses AWS SigV4-signed requests."
+            ),
+        ),
+    ] = "local"
+
+    host: Annotated[
+        str,
+        Parameter(
+            help="OpenSearch hostname or IP address.",
+        ),
+    ] = "localhost"
+
+    port: Annotated[
+        int,
+        Parameter(
+            help="OpenSearch HTTP port.",
+        ),
+    ] = 9200
+
+    region: Annotated[
+        Optional[str],
+        Parameter(
+            help="AWS region (required when mode=aws).",
+        ),
+    ] = None
+
+    service: Annotated[
+        Optional[str],
+        Parameter(
+            help="AWS service name for SigV4 signing (usually `es`).",
+        ),
+    ] = None
 
 
 @dataclass
 class OpenSearchSyncConfig:
-    max_processes: int = MAX_PROCESSES
-    chunk_size: int = CHUNK_SIZE
-    max_chunk_bytes: int = MAX_CHUNK_BYTES
-    max_retries: int = MAX_RETRIES
-    initial_backoff: int = INITIAL_BACKOFF
-    max_backoff: int = MAX_BACKOFF
-    dry_run: bool = False
-    measure_chunk_size: bool = False
-    max_error_samples: int = MAX_ERROR_SAMPLES
-    staggered_start: bool = False
+    max_processes: Annotated[
+        int,
+        Parameter(
+            help="Maximum number of worker processes to run in parallel.",
+        ),
+    ] = MAX_PROCESSES
+
+    chunk_size: Annotated[
+        int,
+        Parameter(
+            help="Number of records to process per batch.",
+        ),
+    ] = CHUNK_SIZE
+
+    max_chunk_bytes: Annotated[
+        int,
+        Parameter(
+            help="Maximum serialized batch size in bytes.",
+        ),
+    ] = MAX_CHUNK_BYTES
+
+    max_retries: Annotated[
+        int,
+        Parameter(
+            help="Maximum number of retry attempts per batch.",
+        ),
+    ] = MAX_RETRIES
+
+    initial_backoff: Annotated[
+        int,
+        Parameter(
+            help="Initial retry backoff in seconds.",
+        ),
+    ] = INITIAL_BACKOFF
+
+    max_backoff: Annotated[
+        int,
+        Parameter(
+            help="Maximum retry backoff in seconds.",
+        ),
+    ] = MAX_BACKOFF
+
+    dry_run: Annotated[
+        bool,
+        Parameter(
+            help="Run the sync without writing any data to OpenSearch.",
+        ),
+    ] = False
+
+    measure_chunk_size: Annotated[
+        bool,
+        Parameter(
+            help="Measure serialized batch size before sending to OpenSearch.",
+        ),
+    ] = False
+
+    max_error_samples: Annotated[
+        int,
+        Parameter(
+            help="Maximum number of error examples to retain for reporting.",
+        ),
+    ] = MAX_ERROR_SAMPLES
+
+    staggered_start: Annotated[
+        bool,
+        Parameter(
+            help="Stagger worker startup to reduce initial load spikes.",
+        ),
+    ] = False
 
 
 class DebugTransport(Transport):
@@ -117,50 +207,3 @@ def count_records(in_dir: pathlib.Path) -> int:
     log.info(f"Counting records: {in_dir}")
     dataset = load_dataset(in_dir)
     return dataset.count_rows()
-
-
-@dataclass(kw_only=True)
-class ScrollDmps:
-    total_dmps: str
-    dmps: Iterator[DMPModel]
-
-
-@contextmanager
-def yield_dmps(
-    client: OpenSearch,
-    index_name: str,
-    query: dict,
-    page_size: int = 500,
-    scroll_time: str = "360m",
-) -> Generator[ScrollDmps, None, None]:
-    scroll_id: Optional[str] = None
-
-    try:
-        response = client.search(
-            index=index_name,
-            body=query,
-            scroll=scroll_time,
-            size=page_size,
-            track_total_hits=True,
-        )
-        scroll_id = response["_scroll_id"]
-        total_hits = response.get("hits", {}).get("total", {}).get("value", 0)
-        hits = response.get("hits", {}).get("hits", [])
-
-        def dmp_generator():
-            nonlocal scroll_id, hits, response
-
-            while hits:
-                for doc in hits:
-                    source = doc['_source']
-                    yield DMPModel.model_validate(source)
-
-                # Get next batch
-                response = client.scroll(scroll_id=scroll_id, scroll=scroll_time)
-                scroll_id = response["_scroll_id"]
-                hits = response.get("hits", {}).get("hits", [])
-
-        yield ScrollDmps(total_dmps=total_hits, dmps=dmp_generator())
-    finally:
-        if scroll_id is not None:
-            client.clear_scroll(scroll_id=scroll_id)
