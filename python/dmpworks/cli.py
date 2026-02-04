@@ -20,7 +20,7 @@ cli.command(batch_submit_app)
 
 
 def main() -> None:
-    env = load_dotenv(dotenv_path='.env.batch-submit', override=True)
+    env = load_dotenv(dotenv_path='.env.aws-batch', override=True)
     cli()
 
 

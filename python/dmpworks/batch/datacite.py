@@ -4,7 +4,7 @@ from typing import Optional
 from cyclopts import App
 
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
-from dmpworks.batch.utils import associate_elastic_ip, get_ec2_instance_info
+from dmpworks.batch.utils import associate_elastic_ip, get_ec2_instance_info, s3_uri
 from dmpworks.cli_utils import DatasetSubset
 from dmpworks.transform.cli import DataCiteConfig
 from dmpworks.transform.datacite import transform_datacite
@@ -19,7 +19,7 @@ app = App(name="datacite", help="DataCite AWS Batch pipeline.")
 
 
 @app.command(name="download")
-def download_cmd(bucket_name: str, run_id: str, allocation_id: str):
+def download_cmd(bucket_name: str, run_id: str, allocation_id: str, datacite_bucket_name: str):
     """Download DataCite from the DataCite S3 bucket and upload it to
     the DMP Tool S3 bucket.
 
@@ -27,6 +27,7 @@ def download_cmd(bucket_name: str, run_id: str, allocation_id: str):
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
         allocation_id: the Elastic IP allocation ID.
+        datacite_bucket_name: the name of the DataCite AWS S3 bucket.
     """
 
     setup_multiprocessing_logging(logging.INFO)
@@ -46,7 +47,7 @@ def download_cmd(bucket_name: str, run_id: str, allocation_id: str):
                 "s5cmd",
                 "--no-sign-request",
                 "cp",
-                "s3://datafile-beta/dois/*",
+                s3_uri(datacite_bucket_name, "dois/*"),
                 f"{ctx.download_dir}/",
             ],
         )

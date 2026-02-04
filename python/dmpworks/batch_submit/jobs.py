@@ -161,6 +161,48 @@ def dataset_subset_job(
     )
 
 
+def dmps_transform_job(
+    *,
+    env: str,
+    bucket_name: str,
+    run_id: str,
+    vcpus: int = NANO_VCPUS,
+    memory: int = NANO_MEMORY,
+    depends_on: Optional[list[DependsOnDict]] = None,
+) -> str:
+    """
+    Submits the DMPs transform job to AWS Batch.
+
+    Args:
+        env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket containing the raw data.
+        run_id: a unique ID to represent this run of the job.
+        vcpus: number of vCPUs for the job.
+        memory: memory (in MiB) for the job.
+        depends_on: optional list of job dependencies.
+
+    Returns:
+        str: the job ID of the submitted AWS Batch job.
+    """
+
+    return submit_job(
+        job_name="dmps-transform",
+        run_id=run_id,
+        job_queue=standard_job_queue(env),
+        job_definition=standard_job_definition(env),
+        vcpus=vcpus,
+        memory=memory,
+        command="dmpworks aws-batch dmps transform $BUCKET_NAME $RUN_ID",
+        environment=make_env(
+            {
+                "RUN_ID": run_id,
+                "BUCKET_NAME": bucket_name,
+            }
+        ),
+        depends_on=depends_on,
+    )
+
+
 def ror_download_job(
     *,
     env: str,
@@ -256,6 +298,7 @@ def openalex_funders_download_job(
     env: str,
     bucket_name: str,
     run_id: str,
+    openalex_bucket_name: str,
     vcpus: int = NANO_VCPUS,
     memory: int = NANO_MEMORY,
 ) -> str:
@@ -266,6 +309,7 @@ def openalex_funders_download_job(
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket to download the file to.
         run_id: a unique ID to represent this run of the job.
+        openalex_bucket_name: Name of the OpenAlex AWS S3 bucket.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
 
@@ -280,11 +324,12 @@ def openalex_funders_download_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-funders download $BUCKET_NAME $RUN_ID",
+        command="dmpworks aws-batch openalex-funders download $BUCKET_NAME $RUN_ID $OPENALEX_BUCKET_NAME",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
+                "OPENALEX_BUCKET_NAME": openalex_bucket_name,
             }
         ),
     )
@@ -337,6 +382,7 @@ def openalex_works_download_job(
     env: str,
     bucket_name: str,
     run_id: str,
+    openalex_bucket_name: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
@@ -347,6 +393,7 @@ def openalex_works_download_job(
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket to download the files to.
         run_id: a unique ID to represent this run of the job.
+        openalex_bucket_name: Name of the OpenAlex AWS S3 bucket.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
 
@@ -361,11 +408,12 @@ def openalex_works_download_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-works download $BUCKET_NAME $RUN_ID",
+        command="dmpworks aws-batch openalex-works download $BUCKET_NAME $RUN_ID $OPENALEX_BUCKET_NAME",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
+                "OPENALEX_BUCKET_NAME": openalex_bucket_name,
             }
         ),
     )
@@ -428,6 +476,7 @@ def crossref_metadata_download_job(
     bucket_name: str,
     run_id: str,
     file_name: str,
+    crossref_bucket_name: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
@@ -439,6 +488,7 @@ def crossref_metadata_download_job(
         bucket_name: S3 bucket to download the file to.
         run_id: a unique ID to represent this run of the job.
         file_name: the name of the Crossref metadata file to download.
+        crossref_bucket_name: Name of the Crossref AWS S3 bucket.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
 
@@ -453,12 +503,13 @@ def crossref_metadata_download_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch crossref-metadata download $BUCKET_NAME $RUN_ID $FILE_NAME",
+        command="dmpworks aws-batch crossref-metadata download $BUCKET_NAME $RUN_ID $FILE_NAME $CROSSREF_BUCKET",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "FILE_NAME": file_name,
+                "CROSSREF_BUCKET": crossref_bucket_name,
             }
         ),
     )
@@ -515,6 +566,7 @@ def datacite_download_job(
     bucket_name: str,
     run_id: str,
     allocation_id: str,
+    datacite_bucket_name: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
@@ -526,6 +578,7 @@ def datacite_download_job(
         bucket_name: S3 bucket to download the file to.
         run_id: a unique ID to represent this run of the job.
         allocation_id: the AWS Elastic IP allocation ID.
+        datacite_bucket_name: Name of the DataCite AWS S3 bucket.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
 
@@ -540,12 +593,13 @@ def datacite_download_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch datacite download $BUCKET_NAME $RUN_ID $ALLOCATION_ID",
+        command="dmpworks aws-batch datacite download $BUCKET_NAME $RUN_ID $ALLOCATION_ID $DATACITE_BUCKET_NAME",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "ALLOCATION_ID": allocation_id,
+                "DATACITE_BUCKET_NAME": datacite_bucket_name,
             }
         ),
     )

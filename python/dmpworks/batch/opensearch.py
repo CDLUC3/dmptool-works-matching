@@ -108,7 +108,7 @@ def sync_dmps_cmd(
     export_dir = local_path(DMPS_SOURCE_DIR, run_id)
     try:
         # Download Parquet files from S3
-        source_uri = s3_uri(bucket_name, DMPS_SOURCE_DIR, f"{run_id}/*")
+        source_uri = s3_uri(bucket_name, DMPS_SOURCE_DIR, f"{run_id}/transform/parquets/*")
         download_files_from_s3(source_uri, export_dir)
 
         # Create index (if it doesn't exist already)
@@ -170,9 +170,7 @@ def dmp_works_search_cmd(
         run_id: a unique ID to represent this run of the job.
         dmps_index_name: the name of the DMP index in OpenSearch.
         works_index_name: the name of the works index in OpenSearch.
-        scroll_time: the length of time the OpenSearch scroll used to iterate
-        through DMPs will stay active. Set it to a value greater than the length
-        of this process.
+        scroll_time: the length of time the OpenSearch scroll used to iterate through DMPs will stay active. Set it to a value greater than the length of this process.
         batch_size: the number of searches run in parallel when include_scores=False.
         max_results: the maximum number of matches per DMP.
         project_end_buffer_years: the number of years to add to the end of the
