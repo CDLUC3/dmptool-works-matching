@@ -20,20 +20,20 @@ test_openalex_index_awards:
     openalex.works:
       rows:
         - id: "W0000000001"
-          grants:
-            - award_id: "3"
+          awards:
+            - funder_award_id: "3"
         - id: "W0000000001"  # nulls should be filtered out
-          grants:
-            - award_id: null
+          awards:
+            - funder_award_id: null
         - id: "W0000000001"  # duplicates should be filtered out
-          grants:
-            - award_id: "1"
+          awards:
+            - funder_award_id: "1"
         - id: "W0000000002"
-          grants:
-            - award_id: "4"
+          awards:
+            - funder_award_id: "4"
         - id: "W0000000002" # duplicates should be filtered out
-          grants:
-            - award_id: "2"
+          awards:
+            - funder_award_id: "2"
   outputs:
     query:
       rows:

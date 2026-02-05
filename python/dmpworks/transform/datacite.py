@@ -7,6 +7,7 @@ import dmpworks.polars_expr_plugin as pe
 import polars as pl
 from dmpworks.transform.pipeline import process_files_parallel
 from dmpworks.transform.transforms import (
+    clean_string,
     extract_orcid,
     normalise_datacite_doi,
     normalise_identifier,
@@ -217,37 +218,54 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
             )
         )
         .list.drop_nulls(),
-        funders=pl.col("attributes")
-        .struct.field("fundingReferences")
-        .list.eval(
-            pl.struct(
-                funder_identifier=normalise_identifier(pl.element().struct.field("funderIdentifier")),
-                funder_identifier_type=pl.element().struct.field("funderIdentifierType"),
-                funder_name=pl.element().struct.field("funderName"),
-                award_number=pl.element().struct.field("awardNumber"),
-                award_uri=pl.element().struct.field("awardUri"),
-            )
-        )
-        .list.eval(
-            pl.element().filter(
-                pl.any_horizontal(
-                    [
-                        pl.element().struct.field(col).is_not_null()
-                        for col in [
-                            "funder_identifier",
-                            "funder_identifier_type",
-                            "funder_name",
-                            "award_number",
-                            "award_uri",
-                        ]
-                    ]
-                )
-            )
-        )
-        .list.drop_nulls(),
     ).with_columns(
         title=replace_with_null(pl.col("title"), [""]),
         abstract=replace_with_null(pl.col("abstract"), ["", ":unav", "Cover title."]),
+    )
+
+    funders_by_work = (
+        lz_cached.select(
+            work_doi=normalise_datacite_doi(pl.col("id")),
+            funding_references=pl.col("attributes").struct.field("fundingReferences"),
+        )
+        .explode("funding_references")
+        .unnest("funding_references")
+        .with_columns(award_number=pl.col("awardNumber").str.split(",").list.eval(pl.element().str.strip_chars()))
+        .explode("award_number")
+        .select(
+            work_doi=pl.col("work_doi"),
+            funder_identifier=normalise_identifier(pl.col("funderIdentifier")),
+            funder_identifier_type=pl.col("funderIdentifierType"),
+            funder_name=pl.col("funderName"),
+            award_number=clean_string(pl.col("award_number")),
+            award_uri=pl.col("awardUri"),
+        )
+        .filter(
+            pl.any_horizontal(
+                [
+                    pl.col(field).is_not_null()
+                    for field in [
+                        "funder_identifier",
+                        "funder_identifier_type",
+                        "funder_name",
+                        "award_number",
+                        "award_uri",
+                    ]
+                ]
+            )
+        )
+        .group_by("work_doi")
+        .agg(
+            pl.struct(
+                [
+                    "funder_identifier",
+                    "funder_identifier_type",
+                    "funder_name",
+                    "award_number",
+                    "award_uri",
+                ]
+            ).alias("funders")
+        )
     )
 
     institutions = (
@@ -294,8 +312,24 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
         .agg(institutions=pl.col("inst").unique(maintain_order=True))
     )
     inst_dtype = institutions_by_work.collect_schema()["institutions"]
-    datacite_works = works.join(institutions_by_work, left_on="doi", right_on="work_doi", how="left").with_columns(
-        institutions=pl.col("institutions").fill_null(pl.lit([]).cast(inst_dtype))
+    funder_dtype = funders_by_work.collect_schema()["funders"]
+    datacite_works = (
+        works.join(
+            institutions_by_work,
+            left_on="doi",
+            right_on="work_doi",
+            how="left",
+        )
+        .join(
+            funders_by_work,
+            left_on="doi",
+            right_on="work_doi",
+            how="left",
+        )
+        .with_columns(
+            institutions=pl.col("institutions").fill_null(pl.lit([]).cast(inst_dtype)),
+            funders=pl.col("funders").fill_null(pl.lit([]).cast(funder_dtype)),
+        )
     )
 
     # Build relations
