@@ -52,12 +52,24 @@ WORKS_SCHEMA: SchemaDefinition = {
             }
         )
     ),
-    "grants": pl.List(  # https://docs.openalex.org/api-entities/works/work-object#grants
+    "awards": pl.List(  # https://docs.openalex.org/api-entities/works/work-object#awards
         pl.Struct(
             {
-                "funder": pl.String,
+                "id": pl.String,
+                "display_name": pl.String,
+                "funder_award_id": pl.String,
+                "funder_id": pl.String,
                 "funder_display_name": pl.String,
-                "award_id": pl.String,
+                "doi": pl.String,
+            }
+        )
+    ),
+    "funders": pl.List(  # https://docs.openalex.org/api-entities/works/work-object#funders
+        pl.Struct(
+            {
+                "id": pl.String,
+                "display_name": pl.String,
+                "ror": pl.String,
             }
         )
     ),
@@ -121,37 +133,79 @@ def transform_works(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
             )
         )
         .list.drop_nulls(),
+        funders=pl.col("funders")
+        .list.eval(
+            pl.struct(
+                id=normalise_identifier(pl.element().struct.field("id")),
+                display_name=clean_string(pl.element().struct.field("display_name")),
+                ror=normalise_identifier(pl.element().struct.field("ror")),
+            )
+        )
+        .list.eval(
+            pl.element().filter(
+                pl.any_horizontal(
+                    [
+                        pl.element().struct.field(col).is_not_null()
+                        for col in [
+                            "id",
+                            "display_name",
+                            "ror",
+                        ]
+                    ]
+                )
+            )
+        )
+        .list.drop_nulls(),
     )
 
-    grants_by_work = (
+    awards_by_work = (
         lz_cached.select(
             work_id=normalise_identifier(pl.col("id")),
-            grants=pl.col("grants"),
+            awards=pl.col("awards"),
         )
-        .explode("grants")
-        .unnest("grants")
-        .with_columns(award_id=pl.col("award_id").str.split(",").list.eval(pl.element().str.strip_chars()))
-        .explode("award_id")
+        .explode("awards")
+        .unnest("awards")
+        .with_columns(
+            funder_award_id=pl.col("funder_award_id").str.split(",").list.eval(pl.element().str.strip_chars())
+        )
+        .explode("funder_award_id")
         .select(
             work_id=pl.col("work_id"),
-            funder_id=normalise_identifier(pl.col("funder")),
+            id=normalise_identifier(normalise_identifier(pl.col("id"))),
+            display_name=pl.col("display_name"),
+            funder_award_id=clean_string(pl.col("funder_award_id")),
+            funder_id=normalise_identifier(pl.col("funder_id")),
             funder_display_name=clean_string(pl.col("funder_display_name")),
-            award_id=clean_string(pl.col("award_id")),
+            doi=normalise_openalex_doi(pl.col("doi")),
         )
         .filter(
             pl.any_horizontal(
                 [
                     pl.col(field).is_not_null()
                     for field in [
+                        "id",
+                        "display_name",
+                        "funder_award_id",
                         "funder_id",
                         "funder_display_name",
-                        "award_id",
+                        "doi",
                     ]
                 ]
             )
         )
         .group_by("work_id")
-        .agg(pl.struct(["funder_id", "funder_display_name", "award_id"]).alias("grants"))
+        .agg(
+            pl.struct(
+                [
+                    "id",
+                    "display_name",
+                    "funder_award_id",
+                    "funder_id",
+                    "funder_display_name",
+                    "doi",
+                ]
+            ).alias("awards")
+        )
     )
 
     institutions = (
@@ -184,7 +238,7 @@ def transform_works(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
 
     # Build final dataframe
     inst_dtype = institutions_by_work.collect_schema()["institutions"]
-    grant_dtype = grants_by_work.collect_schema()["grants"]
+    award_dtype = awards_by_work.collect_schema()["awards"]
     openalex_works = (
         works.join(
             institutions_by_work,
@@ -193,14 +247,14 @@ def transform_works(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
             how="left",
         )
         .join(
-            grants_by_work,
+            awards_by_work,
             left_on="id",
             right_on="work_id",
             how="left",
         )
         .with_columns(
             institutions=pl.col("institutions").fill_null(pl.lit([]).cast(inst_dtype)),
-            grants=pl.col("grants").fill_null(pl.lit([]).cast(grant_dtype)),
+            awards=pl.col("awards").fill_null(pl.lit([]).cast(award_dtype)),
         )
     )
 

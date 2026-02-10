@@ -30,10 +30,10 @@ WITH award_ids AS (
     UNION ALL
 
     -- OpenAlex
-    SELECT dw.doi, fund.award_id
+    SELECT dw.doi, award.funder_award_id AS award_id
     FROM datacite_index.works dw
-    INNER JOIN openalex.works ow ON dw.doi = ow.doi, UNNEST(ow.grants) AS item(fund)
-    WHERE fund.award_id IS NOT NULL
+    INNER JOIN openalex.works ow ON dw.doi = ow.doi, UNNEST(ow.awards) AS item(award)
+    WHERE award.funder_award_id IS NOT NULL
   )
   GROUP BY doi
 )

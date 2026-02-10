@@ -23,12 +23,11 @@ SELECT
   owm.doi,
   array_agg(
     {
-      'name': grnt.funder_display_name,
-      'ror': funders.ids.ror
+      'name': funder.display_name,
+      'ror': funder.ror
     } ORDER BY pos
   ) AS funders
 FROM openalex_index.works_metadata AS owm
-LEFT JOIN openalex.works works ON owm.id = works.id, UNNEST(works.grants) WITH ORDINALITY AS item(grnt, pos)
-LEFT JOIN openalex.funders funders ON grnt.funder_id = funders.id
+LEFT JOIN openalex.works works ON owm.id = works.id, UNNEST(works.funders) WITH ORDINALITY AS item(funder, pos)
 WHERE owm.is_primary_doi = TRUE
 GROUP BY owm.id, owm.doi

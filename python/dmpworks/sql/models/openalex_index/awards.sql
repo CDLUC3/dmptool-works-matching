@@ -25,10 +25,10 @@ WITH award_ids AS (
     @array_agg_distinct(award_id) AS award_ids
   FROM (
     -- OpenAlex
-    SELECT owm.id, owm.doi, grnt.award_id
+    SELECT owm.id, owm.doi, award.funder_award_id AS award_id
     FROM openalex_index.works_metadata AS owm
-    INNER JOIN openalex.works works ON owm.id = works.id, UNNEST(works.grants) AS item(grnt)
-    WHERE grnt.award_id IS NOT NULL
+    INNER JOIN openalex.works works ON owm.id = works.id, UNNEST(works.awards) AS item(award)
+    WHERE award.funder_award_id IS NOT NULL
 
     UNION ALL
 

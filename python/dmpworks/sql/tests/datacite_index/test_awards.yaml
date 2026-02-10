@@ -16,22 +16,22 @@ test_datacite_index_awards:
     openalex.works:
       rows:
         - doi: "10.9999/test.0001"
-          grants:
-            - award_id: "3"
+          awards:
+            - funder_award_id: "3"
         - doi: "10.9999/test.0001" # nulls should be filtered out
-          grants:
-            - award_id: null
+          awards:
+            - funder_award_id: null
         - doi: "10.9999/test.0001" # duplicates should be filtered out
-          grants:
-            - award_id: "1"
+          awards:
+            - funder_award_id: "1"
         - doi: "10.9999/test.0002"
-          grants:
-            - award_id: "4"
+          awards:
+            - funder_award_id: "4"
         - doi: "10.9999/test.0002" # duplicates should be filtered out
-          grants:
-            - award_id: "2"
+          awards:
+            - funder_award_id: "2"
         - doi: "10.9999/test.0003" # should be dropped as has no grants
-          grants: [ ]
+          awards: [ ]
   outputs:
     query:
       rows:

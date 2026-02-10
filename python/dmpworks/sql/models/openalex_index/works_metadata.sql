@@ -42,14 +42,23 @@ orcid_counts AS (
   GROUP BY base.id
 ),
 
--- Count how many unique Award IDs and funder IDs per work
-grant_counts AS (
+-- Count how many unique Award IDs
+award_counts AS (
   SELECT
     base.id,
-    COUNT(DISTINCT grnt.funder_id) AS funder_id_count,
-    COUNT(DISTINCT grnt.award_id) AS award_id_count
+    COUNT(DISTINCT award.funder_award_id) AS award_id_count
   FROM base
-  LEFT JOIN openalex.works ow ON base.id = ow.id, UNNEST(ow.grants) AS item(grnt)
+  LEFT JOIN openalex.works ow ON base.id = ow.id, UNNEST(ow.awards) AS item(award)
+  GROUP BY base.id
+),
+
+-- Count how many unique funder IDs per work
+funder_counts AS (
+  SELECT
+    base.id,
+    COUNT(DISTINCT funder.id) AS funder_id_count
+  FROM base
+  LEFT JOIN openalex.works ow ON base.id = ow.id, UNNEST(ow.funders) AS item(funder)
   GROUP BY base.id
 ),
 
@@ -80,14 +89,15 @@ counts AS (
     dc.doi_count,
     ((CASE WHEN ow.ids.mag IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN ow.ids.pmid IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN ow.ids.pmcid IS NOT NULL THEN 1 ELSE 0 END)) AS id_count,
     COALESCE(oc.orcid_count, 0) AS orcid_count,
-    COALESCE(gc.funder_id_count, 0) AS funder_id_count,
-    COALESCE(gc.award_id_count, 0) AS award_id_count,
+    COALESCE(fc.funder_id_count, 0) AS funder_id_count,
+    COALESCE(ac.award_id_count, 0) AS award_id_count,
     COALESCE(ic.inst_id_count, 0) AS inst_id_count
   FROM base
   LEFT JOIN doi_counts dc ON base.doi = dc.doi
   LEFT JOIN openalex.works ow ON base.id = ow.id
   LEFT JOIN orcid_counts AS oc ON ow.id = oc.id
-  LEFT JOIN grant_counts AS gc ON ow.id = gc.id
+  LEFT JOIN award_counts AS ac ON ow.id = ac.id
+  LEFT JOIN funder_counts AS fc ON ow.id = fc.id
   LEFT JOIN inst_id_counts AS ic ON ow.id = ic.id
 ),
 

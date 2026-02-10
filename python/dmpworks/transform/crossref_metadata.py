@@ -9,6 +9,7 @@ from dmpworks.transform.transforms import (
     normalise_crossref_doi,
     normalise_identifier,
     remove_markup,
+    clean_string,
 )
 from dmpworks.transform.utils_file import extract_gzip, read_jsonls
 from polars._typing import SchemaDefinition
@@ -167,7 +168,10 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
     )
 
     works_funders = (
-        lz_cached.select(work_doi=normalise_crossref_doi(pl.col("DOI")), funder=pl.col("funder"))
+        lz_cached.select(
+            work_doi=normalise_crossref_doi(pl.col("DOI")),
+            funder=pl.col("funder"),
+        )
         .explode("funder")
         .unnest("funder")
         .select(
@@ -176,8 +180,22 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
             funder_doi=normalise_crossref_doi(pl.col("DOI")),
             award=pl.col("award"),
         )
-        .explode("award")  # Creates a new row for each element in the award list
-        .unique()
+        .explode("award")
+        .with_columns(award=pl.col("award").str.split(",").list.eval(pl.element().str.strip_chars()))
+        .explode("award")
+        .with_columns(award=clean_string(pl.col("award")))
+        .filter(
+            pl.any_horizontal(
+                [
+                    pl.col(field).is_not_null()
+                    for field in [
+                        "name",
+                        "funder_doi",
+                        "award",
+                    ]
+                ]
+            )
+        )
     )
 
     works_relations = (
