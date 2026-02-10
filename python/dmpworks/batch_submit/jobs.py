@@ -201,6 +201,8 @@ def dmps_transform_job(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
         ),
         depends_on=depends_on,
@@ -291,6 +293,8 @@ def ror_transform_job(
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "FILE_NAME": file_name,
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
         ),
         depends_on=depends_on,
@@ -375,6 +379,8 @@ def openalex_funders_transform_job(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
         ),
         depends_on=depends_on,
@@ -468,6 +474,8 @@ def openalex_works_transform_job(
                 "USE_SUBSET": str(use_subset).lower(),
                 "MAX_FILE_PROCESSES": str(max_file_processes),
                 "BATCH_SIZE": str(batch_size),
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
         ),
         depends_on=depends_on,
@@ -558,6 +566,8 @@ def crossref_metadata_transform_job(
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "USE_SUBSET": str(use_subset).lower(),
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
         ),
         depends_on=depends_on,
@@ -645,6 +655,8 @@ def datacite_transform_job(
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "USE_SUBSET": str(use_subset).lower(),
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
         ),
         depends_on=depends_on,
