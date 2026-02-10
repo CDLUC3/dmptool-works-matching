@@ -54,6 +54,10 @@ def standard_job_definition(env: str) -> str:
     return f"dmp-tool-{env}-batch-dmpworks-job"
 
 
+def datacite_download_job_definition(env: str) -> str:
+    return f"dmp-tool-{env}-batch-dmpworks-datacite-download-job"
+
+
 def standard_job_queue(env: str) -> str:
     return f"dmp-tool-{env}-batch-job-queue"
 
@@ -565,7 +569,6 @@ def datacite_download_job(
     env: str,
     bucket_name: str,
     run_id: str,
-    allocation_id: str,
     datacite_bucket_name: str,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
@@ -577,7 +580,6 @@ def datacite_download_job(
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket to download the file to.
         run_id: a unique ID to represent this run of the job.
-        allocation_id: the AWS Elastic IP allocation ID.
         datacite_bucket_name: Name of the DataCite AWS S3 bucket.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
@@ -590,7 +592,7 @@ def datacite_download_job(
         job_name="datacite-download",
         run_id=run_id,
         job_queue=standard_job_queue(env),
-        job_definition=standard_job_definition(env),
+        job_definition=datacite_download_job_definition(env),
         vcpus=vcpus,
         memory=memory,
         command="dmpworks aws-batch datacite download $BUCKET_NAME $RUN_ID $ALLOCATION_ID $DATACITE_BUCKET_NAME",
@@ -598,7 +600,6 @@ def datacite_download_job(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
-                "ALLOCATION_ID": allocation_id,
                 "DATACITE_BUCKET_NAME": datacite_bucket_name,
             }
         ),

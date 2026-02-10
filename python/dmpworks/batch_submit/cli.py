@@ -320,13 +320,6 @@ def datacite_cmd(
             help="S3 bucket name for job I/O.",
         ),
     ],
-    allocation_id: Annotated[
-        str,
-        Parameter(
-            env_var="DATACITE_ALLOCATION_ID",
-            help="The DataCite allocation ID for the download.",
-        ),
-    ],
     datacite_bucket_name: Annotated[
         str,
         Parameter(
@@ -352,7 +345,6 @@ def datacite_cmd(
             env=env,
             bucket_name=bucket_name,
             run_id=run_id,
-            allocation_id=allocation_id,
             datacite_bucket_name=datacite_bucket_name,
         ),
         "transform": partial(
