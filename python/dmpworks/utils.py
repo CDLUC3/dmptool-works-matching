@@ -1,9 +1,11 @@
+import importlib
 import logging
+import os
 import shlex
 import subprocess
 from functools import wraps
-from typing import Generator, TypeVar
-import importlib
+from typing import Generator, Mapping, Optional, TypeVar
+
 import pendulum
 import requests
 from requests.adapters import HTTPAdapter
@@ -28,7 +30,10 @@ def timed(func):
     return wrapper
 
 
-def run_process(args):
+def run_process(
+    args,
+    env: Optional[Mapping[str, str]] = None,
+):
     """Run a shell script"""
 
     log.info(f"run_process command: `{shlex.join(args)}`")
@@ -39,6 +44,7 @@ def run_process(args):
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1,
+        env=env,
     ) as proc:
         for line in proc.stdout:
             log.info(line)
@@ -96,3 +102,31 @@ def import_from_path(path: str):
     module_path, attr_name = path.rsplit(".", 1)
     module = importlib.import_module(module_path)
     return getattr(module, attr_name)
+
+
+def fetch_datacite_aws_credentials() -> tuple[str, str, str]:
+    """Fetches DataCite AWS credentials"""
+
+    account_id = os.getenv("DATACITE_ACCOUNT_ID")
+    password = os.getenv("DATACITE_PASSWORD")
+
+    if not account_id or not password:
+        raise RuntimeError("DATACITE_ACCOUNT_ID and DATACITE_PASSWORD must be set in environment variables.")
+
+    url = "https://api.datacite.org/credentials/datafile"
+
+    try:
+        response = requests.get(url, auth=(account_id, password), timeout=30)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        raise RuntimeError(f"Failed to fetch DataCite credentials: {e}") from e
+
+    try:
+        data = response.json()
+        access_key_id = data["access_key_id"]
+        secret_access_key = data["secret_access_key"]
+        session_token = data["session_token"]
+    except (KeyError, ValueError) as e:
+        raise RuntimeError("Unexpected response format from DataCite credentials endpoint.") from e
+
+    return access_key_id, secret_access_key, session_token

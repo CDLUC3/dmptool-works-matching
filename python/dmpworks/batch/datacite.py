@@ -1,16 +1,17 @@
 import logging
+import os
 from typing import Optional
 
 from cyclopts import App
 
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
-from dmpworks.batch.utils import associate_elastic_ip, get_ec2_instance_info, s3_uri
+from dmpworks.batch.utils import s3_uri
 from dmpworks.cli_utils import DatasetSubset
 from dmpworks.transform.cli import DataCiteConfig
 from dmpworks.transform.datacite import transform_datacite
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
-from dmpworks.utils import copy_dict, run_process
+from dmpworks.utils import copy_dict, fetch_datacite_aws_credentials, run_process
 
 log = logging.getLogger(__name__)
 
@@ -19,25 +20,27 @@ app = App(name="datacite", help="DataCite AWS Batch pipeline.")
 
 
 @app.command(name="download")
-def download_cmd(bucket_name: str, run_id: str, allocation_id: str, datacite_bucket_name: str):
+def download_cmd(bucket_name: str, run_id: str, datacite_bucket_name: str):
     """Download DataCite from the DataCite S3 bucket and upload it to
     the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
-        allocation_id: the Elastic IP allocation ID.
         datacite_bucket_name: the name of the DataCite AWS S3 bucket.
     """
 
     setup_multiprocessing_logging(logging.INFO)
 
-    # Assign Elastic IP address to instance
-    instance_id, region = get_ec2_instance_info()
-    associate_elastic_ip(
-        instance_id=instance_id,
-        allocation_id=allocation_id,
-        region_name=region,
+    # Fetch DataCite AWS credentials
+    access_key_id, secret_access_key, session_token = fetch_datacite_aws_credentials()
+    env = os.environ.copy()
+    env.update(
+        {
+            "AWS_ACCESS_KEY_ID": access_key_id,
+            "AWS_SECRET_ACCESS_KEY": secret_access_key,
+            "AWS_SESSION_TOKEN": session_token,
+        }
     )
 
     # Download release
@@ -45,11 +48,11 @@ def download_cmd(bucket_name: str, run_id: str, allocation_id: str, datacite_buc
         run_process(
             [
                 "s5cmd",
-                "--no-sign-request",
                 "cp",
                 s3_uri(datacite_bucket_name, "dois/*"),
                 f"{ctx.download_dir}/",
             ],
+            env=env,
         )
 
 
