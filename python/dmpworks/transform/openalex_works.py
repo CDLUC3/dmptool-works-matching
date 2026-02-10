@@ -83,6 +83,7 @@ WORKS_SCHEMA: SchemaDefinition = {
             )
         }
     ),
+    "is_xpac": pl.Boolean,
 }
 
 
@@ -93,12 +94,15 @@ def normalise_ids(expr: pl.Expr, field_names: list[str]) -> pl.Expr:
 
 
 def transform_works(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
-    lz_cached = lz.cache()
+    lz_cached = lz.filter(
+        normalise_openalex_doi(pl.col("doi")).is_not_null() & ~pl.col("is_xpac").fill_null(False)
+    ).cache()
 
     works = lz_cached.select(
         id=normalise_identifier(pl.col("id")),
         doi=normalise_openalex_doi(pl.col("doi")),
         ids=normalise_ids(pl.col("ids"), ["doi", "mag", "openalex", "pmid", "pmcid"]),
+        is_xpac=pl.col("is_xpac"),
         title=clean_string(pl.col("title")),
         abstract=clean_string(pe.revert_inverted_index(pl.col("abstract_inverted_index"))),
         type=pl.col("type"),
