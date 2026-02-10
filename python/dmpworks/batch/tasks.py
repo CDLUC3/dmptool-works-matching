@@ -137,7 +137,7 @@ def transform_parquets_task(
     )
     yield ctx
 
-    upload_files_to_s3(transform_dir / "parquets", f"{target_uri}parquets/", "*.parquet")
+    upload_files_to_s3(transform_dir, target_uri, "*.parquet")
 
     # Cleanup files as we can't guarantee that we will end up on the same worker
     # again, and we don't want to take disk space that other tasks might use

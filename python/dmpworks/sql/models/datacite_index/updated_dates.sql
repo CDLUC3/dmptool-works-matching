@@ -28,7 +28,7 @@ FROM (
   UNION ALL
 
   SELECT doi, updated_date
-  FROM openalex.works
+  FROM openalex.openalex_works
   WHERE doi IS NOT NULL AND updated_date IS NOT NULL
 )
 GROUP BY doi;

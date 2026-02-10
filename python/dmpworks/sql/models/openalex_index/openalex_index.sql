@@ -22,7 +22,7 @@ WITH works_index AS (
     works.doi,
     openalex_index.titles.title,
     openalex_index.abstracts.abstract AS abstract_text,
-    COALESCE(UPPER(REPLACE(works.type, '-', '_')), 'OTHER') AS work_type,
+    COALESCE(UPPER(REPLACE(works.work_type, '-', '_')), 'OTHER') AS work_type,
     works.publication_date,
     openalex_index.updated_dates.updated_date,
     works.publication_venue,
@@ -31,16 +31,16 @@ WITH works_index AS (
     COALESCE(openalex_index.funders.funders, []) AS funders,
     COALESCE(openalex_index.awards.awards, []) AS awards,
     {
-      intra_work_dois := COALESCE(ri.intra_work_dois, []),
-      possible_shared_project_dois := COALESCE(ri.possible_shared_project_dois, []),
-      dataset_citation_dois := COALESCE(ri.dataset_citation_dois, [])
+      'intra_work_dois': COALESCE(ri.intra_work_dois, []),
+      'possible_shared_project_dois': COALESCE(ri.possible_shared_project_dois, []),
+      'dataset_citation_dois': COALESCE(ri.dataset_citation_dois, [])
     } AS relations,
     {
-      name := 'OpenAlex',
-      url := 'https://openalex.org/works/' || owm.id
+      'name': 'OpenAlex',
+      'url': 'https://openalex.org/works/' || owm.id
     } AS source
   FROM openalex_index.works_metadata AS owm
-  LEFT JOIN openalex.works works ON owm.id = works.id
+  LEFT JOIN openalex.openalex_works works ON owm.id = works.id
   LEFT JOIN openalex_index.titles ON owm.doi = openalex_index.titles.doi
   LEFT JOIN openalex_index.abstracts ON owm.doi = openalex_index.abstracts.doi
   LEFT JOIN openalex_index.updated_dates ON owm.doi = openalex_index.updated_dates.doi

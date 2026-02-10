@@ -9,15 +9,18 @@ test_openalex_index_awards:
           doi: "10.9999/test.0002"
         - id: "W0000000003"
           doi: "10.9999/test.0003"
-    crossref_metadata.works_funders:
+    crossref.crossref_metadata:
       rows:
-        - work_doi: "10.9999/test.0001"
-          award: "1"
-        - work_doi: "10.9999/test.0002"
-          award: "2"
-        - work_doi: "10.9999/test.0002"
-          award: null
-    openalex.works:
+        - doi: "10.9999/test.0001"
+          funders:
+            - award: "1"
+        - doi: "10.9999/test.0002"
+          funders:
+            - award: "2"
+        - doi: "10.9999/test.0002"
+          funders:
+            - award: null
+    openalex.openalex_works:
       rows:
         - id: "W0000000001"
           awards:

@@ -8,8 +8,7 @@ from typing import Optional
 import pooch
 from cyclopts import App
 
-from dmpworks.batch.tasks import download_source_task, transform_parquets_task
-from dmpworks.transform.ror import transform_ror
+from dmpworks.batch.tasks import download_source_task
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
 
 log = logging.getLogger(__name__)
@@ -81,32 +80,6 @@ def download_cmd(bucket_name: str, run_id: str, download_url: str, hash: Optiona
         # Cleanup files we no longer need
         zip_path.unlink(missing_ok=True)
         json_path.unlink(missing_ok=True)
-
-
-@app.command(name="transform")
-def transform_cmd(bucket_name: str, run_id: str, file_name: str):
-    """Download ROR from the DMP Tool S3 bucket, transform it to
-    Parquet format, and upload the results to same bucket.
-
-    Args:
-        bucket_name: DMP Tool S3 bucket name.
-        run_id: a unique ID to represent this run of the job.
-        file_name: the name of the gzipped ROR V2 JSON file.
-    """
-
-    setup_multiprocessing_logging(logging.INFO)
-
-    with transform_parquets_task(bucket_name, DATASET, run_id) as ctx:
-        json_file = ctx.download_dir / file_name
-        if not json_file.is_file():
-            msg = f"Could not find file: {json_file}"
-            log.error(msg)
-            raise FileNotFoundError(msg)
-
-        transform_ror(
-            json_file=json_file,
-            out_dir=ctx.transform_dir,
-        )
 
 
 if __name__ == "__main__":

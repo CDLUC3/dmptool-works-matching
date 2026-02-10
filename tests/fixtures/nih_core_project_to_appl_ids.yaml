@@ -6,7 +6,7 @@ interactions:
       Accept:
       - '*/*'
       Accept-Encoding:
-      - gzip, deflate, zstd
+      - gzip, deflate
       Connection:
       - keep-alive
       Content-Length:
@@ -14,12 +14,12 @@ interactions:
       Content-Type:
       - application/json
       User-Agent:
-      - python-requests/2.32.3
+      - python-requests/2.32.5
     method: POST
     uri: https://api.reporter.nih.gov/v2/projects/search
   response:
     body:
-      string: '{"meta":{"search_id":"VoUAtyYkoUubfUArxzX0QQ","total":7,"offset":0,"limit":500,"sort_field":null,"sort_order":"ASC","sorted_by_relevance":true,"properties":{"URL":"https:/reporter.nih.gov/search/VoUAtyYkoUubfUArxzX0QQ/projects"}},"results":[{"appl_id":10438551,"project_num":"5P41GM108569-08"},{"appl_id":10438555,"project_num":"5P41GM108569-08"},{"appl_id":10438547,"project_num":"5P41GM108569-08"},{"appl_id":10438553,"project_num":"5P41GM108569-08"},{"appl_id":10438554,"project_num":"5P41GM108569-08"},{"appl_id":10438548,"project_num":"5P41GM108569-08"},{"appl_id":10438552,"project_num":"5P41GM108569-08"}]}'
+      string: '{"meta":{"search_id":"yKPlhkJ620uZT-OZA8BejQ","total":7,"offset":0,"limit":500,"sort_field":null,"sort_order":"ASC","sorted_by_relevance":true,"properties":{"URL":"https:/reporter.nih.gov/search/yKPlhkJ620uZT-OZA8BejQ/projects"}},"results":[{"appl_id":10438555,"project_num":"5P41GM108569-08"},{"appl_id":10438551,"project_num":"5P41GM108569-08"},{"appl_id":10438547,"project_num":"5P41GM108569-08"},{"appl_id":10438553,"project_num":"5P41GM108569-08"},{"appl_id":10438552,"project_num":"5P41GM108569-08"},{"appl_id":10438554,"project_num":"5P41GM108569-08"},{"appl_id":10438548,"project_num":"5P41GM108569-08"}]}'
     headers:
       Connection:
       - keep-alive
@@ -28,28 +28,24 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Tue, 29 Jul 2025 02:44:24 GMT
-      Server:
-      - ''
+      - Fri, 27 Feb 2026 02:28:53 GMT
       Set-Cookie:
-      - AWSALB=Ac0KxvLpm9unn7+73kaWKJdruWE8P+gErwdWXuyJ1aLh05eI2OVGQ2OX6NE6HZK087PrSKcIUcwgW2E4OBK/qhaPXOaO9ZtzKoXcBGNKtRshjtKFnfIKrGOAhUJ/pK04iRN9/5iLrvqpK9zXy4gxpcKxD58jT7BXMkZgJM2cVmJZUdy81nM7zdGj5Befi4NlQO7gn/detAXlCOCrRezPLcMO2uzFr3DJyI5IDf9QDeHtol49hdIOLNR7tBVGAW3h2M7DzSlLoWbZil25KA==;
-        Expires=Tue, 05 Aug 2025 02:44:24 GMT; Path=/
-      - AWSALBCORS=Ac0KxvLpm9unn7+73kaWKJdruWE8P+gErwdWXuyJ1aLh05eI2OVGQ2OX6NE6HZK087PrSKcIUcwgW2E4OBK/qhaPXOaO9ZtzKoXcBGNKtRshjtKFnfIKrGOAhUJ/pK04iRN9/5iLrvqpK9zXy4gxpcKxD58jT7BXMkZgJM2cVmJZUdy81nM7zdGj5Befi4NlQO7gn/detAXlCOCrRezPLcMO2uzFr3DJyI5IDf9QDeHtol49hdIOLNR7tBVGAW3h2M7DzSlLoWbZil25KA==;
-        Expires=Tue, 05 Aug 2025 02:44:24 GMT; Path=/; SameSite=None; Secure
+      - AWSALB=Ag2gLheudjMk2wQRdxrO+vRDZoae3feY7vpJSmKcCNE9tufh587Dc5mrvDpBUOYHfjoLIOqq/HdcCPSPSAHoB0Qh3ubNcVB9Q0OaHl6uGQ4d2nfXuW0lckeOWS9t;
+        Expires=Fri, 06 Mar 2026 02:28:53 GMT; Path=/
+      - AWSALBCORS=Ag2gLheudjMk2wQRdxrO+vRDZoae3feY7vpJSmKcCNE9tufh587Dc5mrvDpBUOYHfjoLIOqq/HdcCPSPSAHoB0Qh3ubNcVB9Q0OaHl6uGQ4d2nfXuW0lckeOWS9t;
+        Expires=Fri, 06 Mar 2026 02:28:53 GMT; Path=/; SameSite=None; Secure
+      - AWSALB=7ALHpg+Y7Y9M3KgWSbdCCU5C2rPzxotYh0ESo/plWqQypaEdoT10AcqHQfpZdT+cMYDkTCtvcXLByMiZvToEX+69zC1E++ziK0UZ7+KvefAgc6g7IcackEOwhgEFL/OKtaq9TrivhWe7jlB3UqXCsVlvRUeMEnhB3kyOA4R+1/Pbw7R7IrfWmFCqvbklHXEFwVqJKejWgl42iZYP6pxLbekK3XbRsHTKhADfoI3mXVNwPv7Dn3NBkfU1rS6Fi6u++FyMxPc72dIs0J3WQA==;
+        Expires=Fri, 06 Mar 2026 02:28:53 GMT; Path=/
+      - AWSALBCORS=7ALHpg+Y7Y9M3KgWSbdCCU5C2rPzxotYh0ESo/plWqQypaEdoT10AcqHQfpZdT+cMYDkTCtvcXLByMiZvToEX+69zC1E++ziK0UZ7+KvefAgc6g7IcackEOwhgEFL/OKtaq9TrivhWe7jlB3UqXCsVlvRUeMEnhB3kyOA4R+1/Pbw7R7IrfWmFCqvbklHXEFwVqJKejWgl42iZYP6pxLbekK3XbRsHTKhADfoI3mXVNwPv7Dn3NBkfU1rS6Fi6u++FyMxPc72dIs0J3WQA==;
+        Expires=Fri, 06 Mar 2026 02:28:53 GMT; Path=/; SameSite=None; Secure
       Strict-Transport-Security:
-      - max-age=31536000; includeSubDomains; preload
-      X-Content-Type-Options:
-      - nosniff
-      X-Frame-Options:
-      - SAMEORIGIN
+      - max-age=31536000; includeSubDomains;
       X-Rate-Limit-Limit:
       - 1m
       X-Rate-Limit-Remaining:
-      - '199'
+      - '197'
       X-Rate-Limit-Reset:
-      - '2025-07-29T02:45:19.8696232Z'
-      X-XSS-Protection:
-      - 1; mode=block
+      - '2026-02-27T02:29:49.0982438Z'
       api-supported-versions:
       - '2.0'
     status:

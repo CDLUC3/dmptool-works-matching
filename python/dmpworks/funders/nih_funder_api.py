@@ -5,46 +5,11 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import requests
-from bs4 import BeautifulSoup
 
-from dmpworks.transforms import clean_string
 from dmpworks.utils import retry_session, to_batches
+from dmpworks.transform.simdjson_transforms import extract_doi
 
 log = logging.getLogger(__name__)
-
-
-def nsf_fetch_org_id(award_id: str):
-    base_url = "https://www.nsf.gov/awardsearch/showAward"
-    params = {"AWD_ID": award_id}
-    org_id = None
-    try:
-        # Fetch page
-        response = retry_session().get(base_url, params=params)
-        response.raise_for_status()
-
-        # Parse page
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        # Find the table row containing "NSF Org:"
-        nsf_org_row = soup.find("td", text="NSF Org:")
-
-        if nsf_org_row:
-            # Find the next sibling <td> that contains the actual NSF Org ID
-            nsf_org_td = nsf_org_row.find_next_sibling("td")
-
-            if nsf_org_td:
-                # Extract the NSF Org ID from the <a> tag or direct text
-                nsf_org_id = nsf_org_td.find("a").text if nsf_org_td.find("a") else nsf_org_td.text
-                org_id = nsf_org_id.strip().upper()
-                log.info(f"nsf_fetch_org_id: found NSF Org ID {org_id} for Award ID {award_id}")
-            else:
-                log.info(f"nsf_fetch_org_id: no NSF Org ID found for Award ID {award_id}")
-
-    except requests.exceptions.RequestException as e:
-        log.error(f"nsf_fetch_org_id: an error occurred while fetching data: {e}")
-        raise
-
-    return org_id
 
 
 @dataclass
@@ -237,7 +202,7 @@ def _pubmed_ids_to_dois(
         for record in records:
             pmcid = str(record.get("pmcid"))
             pmid = record.get("pmid")
-            doi = clean_string(record.get("doi"))
+            doi = extract_doi(record.get("doi"))
             outputs.append(dict(pmcid=pmcid, pmid=pmid, doi=doi))
         return outputs
 

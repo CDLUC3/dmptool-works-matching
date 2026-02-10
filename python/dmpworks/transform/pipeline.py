@@ -2,378 +2,286 @@ import logging
 import multiprocessing as mp
 import os
 import pathlib
-import queue
-import shutil
-import threading
-from abc import ABC, abstractmethod
-from concurrent.futures import as_completed, ProcessPoolExecutor
-from pathlib import Path
-from typing import Callable, Optional
+import random
+from concurrent.futures import ProcessPoolExecutor
+from typing import Callable, Generator, Optional
 
+import pyarrow as pa
+import pyarrow.parquet as pq
+import simdjson
+import time
 from tqdm import tqdm
 
-import polars as pl
-from dmpworks.transform.utils_file import extract_gzip, read_jsonls, write_parquet
-from dmpworks.utils import timed, to_batches
-from polars._typing import SchemaDefinition
-
-TransformFunc = Callable[[pl.LazyFrame], list[tuple[str, pl.LazyFrame]]]
+from dmpworks.utils import to_batches
 
 log = logging.getLogger(__name__)
 
-
-class FileExtractor:
-    def __init__(self, extract_func: Callable[[Path, Path], None], in_dir: Path, out_dir: Path):
-        self.extract_func = extract_func
-        self.in_dir = in_dir
-        self.out_dir = out_dir
-
-    def __call__(self, in_file: Path) -> Path:
-        out_file = self.out_dir / "extract" / in_file.relative_to(self.in_dir).with_suffix("")
-        out_file.parent.mkdir(parents=True, exist_ok=True)
-        self.extract_func(in_file, out_file)
-        return out_file
+# Shared multiprocessing objects
+SHARED_FILES_PROCESSED: Optional[mp.Value] = None
+SHARED_COUNTER_LOCK: Optional[mp.Lock] = None
+SHARED_ABORT_EVENT: Optional[mp.Event] = None
 
 
-class BatchTransformer:
-    def __init__(
-        self,
-        read_func: Callable[[list[Path], SchemaDefinition, bool], pl.LazyFrame],
-        transform_func: TransformFunc,
-        schema: SchemaDefinition,
-        low_memory: bool,
-        out_dir: Path,
-    ):
-        self.read_func = read_func
-        self.transform_func = transform_func
-        self.schema = schema
-        self.low_memory = low_memory
-        self.out_dir = out_dir
+def init_process_logs(shared_files_processed: mp.Value, shared_lock: mp.Lock, abort_event: mp.Event, level: int):
+    """Initialize global logging and shared multiprocessing objects for a worker process."""
 
-    def __call__(self, idx: int, batch: list[Path]):
-        # batch_non_empty = [file for file in batch if file.stat().st_size > 0]
-        lz = self.read_func(batch, self.schema, self.low_memory)
-        results = self.transform_func(lz)
-        for table_name, lz_frame in results:
-            parquet_file = self.out_dir / "parquets" / f"{table_name}_{idx:05d}.parquet"
-            parquet_file.parent.mkdir(parents=True, exist_ok=True)
-            write_parquet(lz_frame, parquet_file)
+    global SHARED_FILES_PROCESSED, SHARED_COUNTER_LOCK, SHARED_ABORT_EVENT
 
-
-class BaseWorker(threading.Thread, ABC):
-    def __init__(
-        self,
-        *,
-        input_queue: queue.Queue,
-        output_queue: queue.Queue,
-        name: Optional[str] = None,
-        log_level: int = logging.INFO,
-    ):
-        super().__init__(name=name)  # daemon=False,
-        self.input_queue = input_queue
-        self.output_queue = output_queue
-        self.log_level = log_level
-
-    def run(self):
-        log.debug("running worker")
-
-        while True:
-            log.debug(f"Waiting for task")
-            task = self.input_queue.get()
-            if task is None:
-                log.debug(f"Received exit signal")
-                self.input_queue.task_done()
-                break
-
-            idx, batch = task
-            log.debug(f"Picked up task batch={idx}")
-            try:
-                self.process_task(idx, batch)
-            except Exception:
-                log.exception(f"Error processing batch={idx}")
-            finally:
-                self.input_queue.task_done()
-                log.debug(f"Task done batch={idx}")
-
-        log.debug("worker shutdown")
-
-    @abstractmethod
-    def process_task(self, idx: int, batch: list[Path]):
-        """Process the given task. Must be implemented by subclasses."""
-        pass
-
-
-def log_stage(logger: logging.Logger, stage: str, status: str, batch: int):
-    logger.debug(f"[{stage:<10}] {status:<5} batch={batch}")
-
-
-def init_process_logs(level: int):
     logging.basicConfig(level=level, format="[%(asctime)s] [%(levelname)s] [%(processName)s] %(message)s")
 
-
-class ExtractWorker(BaseWorker):
-    def __init__(
-        self,
-        *,
-        input_queue: queue.Queue,
-        output_queue: queue.Queue,
-        file_extractor: Optional[FileExtractor] = None,
-        max_processes: int = os.cpu_count(),
-        name: str = None,
-        log_level: int = logging.INFO,
-    ):
-        super().__init__(input_queue=input_queue, output_queue=output_queue, name=name, log_level=log_level)
-        self.file_extractor = file_extractor
-        self.max_processes = max_processes
-        self.executor: Optional[ProcessPoolExecutor] = None
-
-    def run(self):
-        log.debug("Extract outer run start")
-        executor = ProcessPoolExecutor(
-            mp_context=mp.get_context("spawn"),
-            max_workers=self.max_processes,
-            initializer=init_process_logs,
-            initargs=(self.log_level,),
-        )
-        self.executor = executor
-        super().run()
-        executor.shutdown(wait=True, cancel_futures=True)
-        log.debug("Extract outer run end")
-
-    def process_task(self, idx: int, batch: list[Path]):
-        # Extract files with ProcessPoolExecutor
-        log_stage(log, "EXTRACT", "start", idx)
-
-        futures = []
-        if self.file_extractor is not None:
-            for file in batch:
-                futures.append(self.executor.submit(self.file_extractor, file))
-
-        # Wait for batch to finish
-        extracted_files = []
-        for future in as_completed(futures):
-            file_path = future.result()
-            extracted_files.append(file_path)
-
-        # Queue output
-        self.output_queue.put((idx, extracted_files))
-        log_stage(log, "EXTRACT", "end", idx)
+    SHARED_FILES_PROCESSED = shared_files_processed
+    SHARED_COUNTER_LOCK = shared_lock
+    SHARED_ABORT_EVENT = abort_event
 
 
-class TransformWorker(BaseWorker):
-    def __init__(
-        self,
-        *,
-        input_queue: queue.Queue,
-        output_queue: queue.Queue,
-        batch_transformer: BatchTransformer,
-        name: str = None,
-        log_level: int = logging.INFO,
-    ):
-        super().__init__(input_queue=input_queue, output_queue=output_queue, name=name, log_level=log_level)
-        self.batch_transformer = batch_transformer
-
-    def process_task(self, idx: int, batch: list[Path]):
-        log_stage(log, "TRANSFORM", "start", idx)
-        self.batch_transformer(idx, batch)
-
-        # Queue output
-        self.output_queue.put((idx, batch))
-        log_stage(log, "TRANSFORM", "end", idx)
-
-
-class CleanupWorker(BaseWorker):
-    def __init__(
-        self,
-        *,
-        input_queue: queue.Queue,
-        output_queue: queue.Queue,
-        name: str = None,
-        log_level: int = logging.INFO,
-    ):
-        super().__init__(input_queue=input_queue, output_queue=output_queue, name=name, log_level=log_level)
-
-    def process_task(self, idx: int, batch: list[Path]):
-        log_stage(log, "CLEANUP", "start", idx)
-        [file.unlink(missing_ok=True) for file in batch]
-        self.output_queue.put(idx)
-        log_stage(log, "CLEANUP", "end", idx)
-
-
-class Pipeline:
-    def __init__(
-        self,
-        *,
-        file_extractor: Optional[FileExtractor],
-        batch_transformer: BatchTransformer,
-        extract_workers: int = 1,
-        transform_workers: int = 1,
-        cleanup_workers: int = 1,
-        extract_queue_size: int = 0,
-        transform_queue_size: int = 0,
-        cleanup_queue_size: int = 0,
-        max_file_processes: int = os.cpu_count(),
-        log_level: logging.INFO,
-    ):
-        self.extract_queue = queue.Queue(maxsize=extract_queue_size)
-        self.transform_queue = queue.Queue(maxsize=transform_queue_size)
-        self.cleanup_queue = queue.Queue(maxsize=cleanup_queue_size)
-        self.completed_queue = queue.Queue()
-        self.extract_workers = [
-            ExtractWorker(
-                input_queue=self.extract_queue,
-                output_queue=self.transform_queue,
-                file_extractor=file_extractor,
-                max_processes=max_file_processes,
-                name=f"Extract-Thread-{i}",
-                log_level=log_level,
-            )
-            for i in range(extract_workers)
-        ]
-        self.transform_workers = [
-            TransformWorker(
-                input_queue=self.transform_queue,
-                output_queue=self.cleanup_queue,
-                batch_transformer=batch_transformer,
-                name=f"Transform-Thread-{i}",
-                log_level=log_level,
-            )
-            for i in range(transform_workers)
-        ]
-        self.cleanup_workers = [
-            CleanupWorker(
-                input_queue=self.cleanup_queue,
-                output_queue=self.completed_queue,
-                name=f"Cleanup-Thread-{i}",
-                log_level=log_level,
-            )
-            for i in range(cleanup_workers)
-        ]
-
-    def start(self, batches: list[list[Path]]):
-        num_batches = len(batches)
-        workers = self.extract_workers + self.transform_workers + self.cleanup_workers
-
-        try:
-            # Start workers
-            for worker in workers:
-                worker.start()
-
-            with tqdm(
-                total=num_batches,
-                desc="Transformation Pipeline",
-                unit="batch",
-            ) as pbar:
-                # Fill extract queue
-                for idx, batch in enumerate(batches):
-                    log.debug(f"Queuing batch: {idx}")
-                    self.extract_queue.put((idx, batch))
-
-                # Wait for tasks to complete
-                num_completed = 0
-                while num_completed < len(batches):
-                    try:
-                        idx = self.completed_queue.get(timeout=1)
-                        log.debug(f"Task completed: {idx}")
-                        if idx is None:
-                            break
-
-                        num_completed += 1
-                        pbar.update(1)
-                        self.completed_queue.task_done()
-                    except queue.Empty:
-                        log.debug(f"Completed queue empty")
-                        continue
-
-        except KeyboardInterrupt:
-            log.info("Interrupted by user")
-        finally:
-            # Signal shutdown
-            # Each worker will eventually get a None
-            for q, ws in [
-                (self.extract_queue, self.extract_workers),
-                (self.transform_queue, self.transform_workers),
-                (self.cleanup_queue, self.cleanup_workers),
-            ]:
-                for _ in ws:
-                    while True:
-                        try:
-                            q.put(None, timeout=1)
-                            break
-                        except queue.Full:
-                            log.warning("Queue full, retrying shutdown...")
-
-                    q.put(None)
-
-            # Join threads
-            log.debug("Joining threads")
-            for worker in workers:
-                log.debug(f"Joining worker: {worker}")
-                worker.join()
-            log.debug("Workers joined")
-
-
-@timed
-def process_files_parallel(
+def process_files(
     *,
-    in_dir: pathlib.Path,
-    out_dir: pathlib.Path,
-    schema: SchemaDefinition,
-    transform_func: TransformFunc,
-    file_glob: str = "**/*.gz",
-    extract_func: Callable[[Path, Path], None] = extract_gzip,
-    read_func: Callable[[list[Path], SchemaDefinition, bool], pl.LazyFrame] = read_jsonls,
-    batch_size: int = os.cpu_count(),
-    extract_workers: int = 1,
-    transform_workers: int = 1,
-    cleanup_workers: int = 1,
-    extract_queue_size: int = 0,
-    transform_queue_size: int = 0,
-    cleanup_queue_size: int = 0,
-    max_file_processes: int = os.cpu_count(),
-    n_batches: Optional[int] = None,
-    low_memory: bool = False,
+    files: list[pathlib.Path],
+    output_dir: pathlib.Path,
+    batch_size: int,
+    row_group_size: int,
+    row_groups_per_file: int,
+    schema: pa.lib.Schema,
+    read_func: Callable[[pathlib.Path], Generator[simdjson.Object, None, None]],
+    transform_func: Callable[[simdjson.Object], dict | None],
+    tqdm_description: str = "Transforming Files",
+    max_workers: int = os.cpu_count(),
+    file_prefix: Optional[str] = None,
     log_level: int = logging.INFO,
 ):
-    log.info(f"in_dir: {in_dir}")
-    log.info(f"out_dir: {out_dir}")
-    log.info(f"schema: {schema}")
-    log.info(f"transform_func: {transform_func.__name__}")
-    log.info(f"batch_size: {batch_size}")
-    log.info(f"extract_workers: {extract_workers}")
-    log.info(f"transform_workers: {transform_workers}")
-    log.info(f"cleanup_workers: {cleanup_workers}")
-    log.info(f"extract_queue_size: {extract_queue_size}")
-    log.info(f"transform_queue_size: {transform_queue_size}")
-    log.info(f"cleanup_queue_size: {cleanup_queue_size}")
-    log.info(f"max_file_processes: {max_file_processes}")
-    log.info(f"n_batches: {n_batches}")
-    log.info(f"low_memory: {low_memory}")
-    log.info(f"log_level: {logging.getLevelName(log_level)}")
+    """
+    Transform JSON-based input files (e.g. gzipped JSON Lines) into Parquet.
 
-    # Cleanup existing output directory
-    shutil.rmtree(out_dir, ignore_errors=True)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    Streams rows from one or more JSON inputs, applies a transformation
+    function to each row, and writes the results to Parquet.
 
-    # Build file extract and read functions
-    file_extractor = None if extract_func is None else FileExtractor(extract_func, in_dir, out_dir)
-    batch_transformer = BatchTransformer(read_func, transform_func, schema, low_memory, out_dir)
+    Rows are accumulated in memory and written as a single Parquet row group
+    (controlled by `row_group_size`). Multiple row groups can be written to the
+    same Parquet file (controlled by `row_groups_per_file`), allowing multiple
+    input files to be consolidated into fewer, larger Parquet files.
 
-    # Process batches in parallel
-    files = list(Path(in_dir).glob(file_glob))
-    batches = list(to_batches(files, batch_size))
-    if n_batches is not None:
-        batches = batches[:n_batches]
-    pipeline = Pipeline(
-        file_extractor=file_extractor,
-        batch_transformer=batch_transformer,
-        extract_workers=extract_workers,
-        transform_workers=transform_workers,
-        cleanup_workers=cleanup_workers,
-        extract_queue_size=extract_queue_size,
-        transform_queue_size=transform_queue_size,
-        cleanup_queue_size=cleanup_queue_size,
-        max_file_processes=max_file_processes,
-        log_level=log_level,
-    )
-    pipeline.start(batches)
+    For efficient downstream querying, target row group sizes of 128–512MB
+    and file sizes of 512MB–1GB.
+
+    Row groups are buffered fully in memory before being flushed to disk.
+    Increasing `max_workers`, `row_group_size`, or `row_groups_per_file`
+    will increase memory pressure and should be tuned accordingly.
+    """
+
+    log.debug("running process files")
+
+    total_files = len(files)
+    ctx = mp.get_context("spawn")
+    shared_files_processed = ctx.Value("i", 0)
+    shared_lock = ctx.Lock()
+    last_seen_processed_count = 0
+    abort_event = ctx.Event()
+    shuffled_files = random.sample(files, k=len(files))
+
+    with tqdm(
+        total=total_files,
+        desc=tqdm_description,
+        unit="file",
+    ) as pbar:
+        with ProcessPoolExecutor(
+            mp_context=ctx,
+            max_workers=max_workers,
+            initializer=init_process_logs,
+            initargs=(
+                shared_files_processed,
+                shared_lock,
+                abort_event,
+                log_level,
+            ),
+        ) as executor:
+            futures = []
+            # natsorted
+            for idx, batch in enumerate(to_batches(shuffled_files, batch_size=batch_size)):
+                future = executor.submit(
+                    transform_json_to_parquet,
+                    batch_index=idx,
+                    batch=batch,
+                    output_dir=output_dir,
+                    schema=schema,
+                    row_group_size=row_group_size,
+                    row_groups_per_file=row_groups_per_file,
+                    read_func=read_func,
+                    transform_func=transform_func,
+                    file_prefix=file_prefix,
+                )
+                futures.append(future)
+
+            while futures:
+                # Update progress from shared file counter
+                with shared_lock:
+                    current_processed_count = shared_files_processed.value
+                    delta = current_processed_count - last_seen_processed_count
+                    if delta > 0:
+                        pbar.update(delta)
+                        last_seen_processed_count = current_processed_count
+
+                finished_futures = []
+                for future in futures:
+                    if future.done():
+                        try:
+                            future.result()
+                        except Exception as e:
+                            log.error(f"Worker crashed! Signaling other workers to flush and exit. Error: {e}")
+                            abort_event.set()
+                        finally:
+                            finished_futures.append(future)
+
+                for future in finished_futures:
+                    futures.remove(future)
+
+                time.sleep(1)
+
+    log.debug("finished process files")
+
+
+def output_file_name(batch_index: int, file_index: int, file_prefix: Optional[str] = None) -> str:
+    """
+    Generate a Parquet output filename using batch and file indices.
+
+    Because files may be written concurrently by multiple processes, each
+    filename is namespaced by a `batch_index` to avoid collisions. The
+    `file_index` distinguishes multiple output files produced within the
+    same batch.
+
+    Args:
+        batch_index: integer identifying the process-specific batch.
+        file_index: integer identifying the file within the batch.
+        file_prefix: an optional file prefix.
+
+    Returns: the generated Parquet filename as a string.
+
+    """
+
+    parts = []
+    if file_prefix is not None:
+        parts.append(file_prefix)
+    parts.append(f"batch_{batch_index:05d}_part_{file_index:05d}.parquet")
+    return "".join(parts)
+
+
+def transform_json_to_parquet(
+    *,
+    batch_index: int,
+    batch: list[pathlib.Path],
+    output_dir: pathlib.Path,
+    schema: pa.lib.Schema,
+    row_group_size: int,
+    row_groups_per_file: int,
+    read_func: Callable[[pathlib.Path], Generator[simdjson.Object, None, None]],
+    transform_func: Callable[[simdjson.Object], dict | None],
+    file_prefix: Optional[str] = None,
+):
+    """
+    Process a batch of input files, transforming and writing them to Parquet format.
+
+    Iterates through the provided batch of input files, applies the transformation
+    function to each record, and accumulates rows in memory.
+
+    Buffering and File Rotation:
+    - Rows are buffered in memory until `row_group_size` is reached. At this point,
+      the buffer is flushed to disk as a single Parquet Row Group.
+    - Multiple Row Groups are written to a single Parquet file until the count
+      reaches `row_groups_per_file`. Once reached, the current file is closed,
+      and a new file is started (incrementing the file part index).
+    """
+
+    file_index = 0
+    num_row_groups = 0
+    row_buffer = []
+    writer = None
+    current_input_file: pathlib.Path | None = None
+
+    try:
+        for input_file in batch:
+            for obj in read_func(input_file):
+                if SHARED_ABORT_EVENT.is_set():
+                    break
+
+                transformed_obj = transform_func(obj)
+
+                # Clear original reference for simdjson parser
+                obj = None
+
+                if transformed_obj is not None:
+                    row_buffer.append(transformed_obj)
+
+                if len(row_buffer) >= row_group_size:
+                    # Only create writer when we have data
+                    if writer is None:
+                        output_file = output_dir / output_file_name(
+                            batch_index,
+                            file_index,
+                            file_prefix=file_prefix,
+                        )
+                        writer = pq.ParquetWriter(output_file, schema=schema, compression="snappy")
+
+                    try:
+                        table = pa.Table.from_pylist(row_buffer, schema=schema)
+                    except pa.lib.ArrowTypeError:
+                        debug_arrow_type_error(row_buffer, schema)
+                        raise
+                    writer.write_table(table)
+                    row_buffer.clear()
+                    num_row_groups += 1
+
+                    # Check if the current file has reached its row group limit
+                    if num_row_groups >= row_groups_per_file:
+                        writer.close()
+                        writer = None
+                        file_index += 1
+                        num_row_groups = 0
+
+            # Increment file counter
+            with SHARED_COUNTER_LOCK:
+                SHARED_FILES_PROCESSED.value += 1
+
+        if SHARED_ABORT_EVENT.is_set():
+            log.warning(f"Batch {batch_index} aborted.{' Flushing remaining buffer to disk.' if row_buffer else ''}")
+
+        # Flush any remaining data in the buffer after all files are processed
+        if row_buffer:
+            if writer is None:
+                output_file = output_dir / output_file_name(
+                    batch_index,
+                    file_index,
+                    file_prefix=file_prefix,
+                )
+                writer = pq.ParquetWriter(output_file, schema=schema, compression="snappy")
+
+            try:
+                table = pa.Table.from_pylist(row_buffer, schema=schema)
+            except pa.lib.ArrowTypeError:
+                debug_arrow_type_error(row_buffer, schema)
+                raise
+            writer.write_table(table)
+            row_buffer.clear()
+
+    except Exception:
+        # This logs a full traceback from inside the worker process
+        log.exception(
+            "Worker crashed in batch_index=%s while processing file=%s",
+            batch_index,
+            str(current_input_file) if current_input_file else None,
+        )
+        raise
+    finally:
+        # Ensure last writer was closed
+        if writer is not None:
+            writer.close()
+
+
+def debug_arrow_type_error(row_buffer: list[dict], schema: pa.Schema) -> None:
+    """Iterates through a buffer of rows to find and logs the row causing a PyArrow ArrowTypeError."""
+
+    for row in row_buffer:
+        try:
+            pa.Table.from_pylist([row], schema=schema)
+        except pa.lib.ArrowTypeError as e:
+            log.error(f"PyArrow Type Error: {e}")
+            log.error(f"Offending Row Data: {row}")
+            break

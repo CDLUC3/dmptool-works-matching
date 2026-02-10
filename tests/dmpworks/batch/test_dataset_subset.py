@@ -1,6 +1,6 @@
 import json
 
-from batch.dataset_subset import load_dois, load_institutions
+from dmpworks.dataset_subset import load_dois, load_institutions
 
 
 def test_load_institutions(tmp_path):

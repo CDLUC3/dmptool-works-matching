@@ -2,9 +2,9 @@ test_openalex_works_metadata:
   model: openalex_index.works_metadata
   inputs:
     # Works with DOIs in datacite.works should be removed from the outputs
-    datacite.works:
+    datacite.datacite:
       - doi: "10.9999/test.0005"
-    openalex.works:
+    openalex.openalex_works:
       rows:
         - id: "W0000000001"
           doi: "10.9999/test.0001"

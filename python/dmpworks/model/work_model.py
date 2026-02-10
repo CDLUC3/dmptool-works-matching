@@ -1,11 +1,22 @@
-import datetime
 from functools import cached_property
 from typing import Optional
 
 import pendulum
-from pydantic import BaseModel, computed_field, field_serializer, field_validator
+from pydantic import BaseModel, field_serializer, field_validator
 
-from dmpworks.model.common import Author, Award, Funder, Institution, Source, to_camel, Relations
+from dmpworks.model.common import (
+    Author,
+    Award,
+    Funder,
+    Institution,
+    parse_pendulum_date,
+    parse_pendulum_datetime,
+    Relations,
+    serialize_pendulum_date,
+    serialize_pendulum_datetime,
+    Source,
+    to_camel,
+)
 
 
 class WorkModel(BaseModel):
@@ -37,31 +48,17 @@ class WorkModel(BaseModel):
     @field_validator("publication_date", mode="before")
     @classmethod
     def parse_pendulum_date(cls, v):
-        if isinstance(v, str):
-            return pendulum.parse(v).date()
-        elif isinstance(v, datetime.date):
-            return pendulum.instance(v)
-        return v
+        return parse_pendulum_date(v)
 
     @field_validator("updated_date", mode="before")
     @classmethod
     def parse_pendulum_datetime(cls, v):
-        if isinstance(v, str):
-            return pendulum.parse(v)
-        elif isinstance(v, datetime.datetime):
-            return pendulum.instance(v)
-        return v
+        return parse_pendulum_datetime(v)
 
     @field_serializer("publication_date")
     def serialize_pendulum_date(self, v: Optional[pendulum.Date]):
-        if v is None:
-            return None
-
-        return v.to_date_string()
+        return serialize_pendulum_date(v)
 
     @field_serializer("updated_date")
     def serialize_pendulum_datetime(self, v: Optional[pendulum.DateTime]):
-        if v is None:
-            return None
-
-        return v.to_iso8601_string()
+        return serialize_pendulum_datetime(v)
