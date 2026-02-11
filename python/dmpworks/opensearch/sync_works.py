@@ -5,15 +5,15 @@ from typing import Iterator
 import pyarrow as pa
 import pyarrow.compute as pc
 
-from dmpworks.opensearch.sync import sync_docs
+from dmpworks.opensearch.sync import delete_docs, sync_docs
 from dmpworks.opensearch.utils import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.utils import timed
-from dmpworks.model.work_model import WorkModel
 
 log = logging.getLogger(__name__)
 
 COLUMNS = [
     "doi",
+    "hash",
     "title",
     "abstract_text",
     "work_type",
@@ -47,14 +47,11 @@ def batch_to_work_actions(
     # Create actions
     for i in range(batch.num_rows):
         doc = {name: batch[name][i].as_py() for name in batch.schema.names}
-
-        # Add runtime generated fields
-        work = WorkModel.model_validate(doc, by_name=True, by_alias=False)
-        doc["hash"] = work.hash
+        doi = doc["doi"]
         yield {
             "_op_type": "update",
             "_index": index_name,
-            "_id": work.doi,
+            "_id": doi,
             "doc": doc,
             "doc_as_upsert": True,
         }
@@ -62,18 +59,30 @@ def batch_to_work_actions(
 
 @timed
 def sync_works(
+    *,
     index_name: str,
-    in_dir: pathlib.Path,
+    works_index_export: pathlib.Path,
+    doi_state_export: pathlib.Path,
+    run_id: str,
     client_config: OpenSearchClientConfig,
     sync_config: OpenSearchSyncConfig,
     log_level: int = logging.INFO,
 ):
+    # Upsert new works
     sync_docs(
         index_name=index_name,
-        in_dir=in_dir,
+        in_dir=works_index_export,
         batch_to_actions_func=batch_to_work_actions,
         include_columns=COLUMNS,
         client_config=client_config,
         sync_config=sync_config,
         log_level=log_level,
+    )
+
+    # Delete works
+    delete_docs(
+        index_name=index_name,
+        doi_state_dir=doi_state_export,
+        run_id=run_id,
+        client_config=client_config,
     )

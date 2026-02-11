@@ -64,20 +64,34 @@ def sync_works_cmd(
     level = logging.getLevelName(log_level)
     setup_multiprocessing_logging(level)
 
-    export_dir = local_path(SQLMESH_DIR, run_id, "export")
+    works_index_export = local_path(SQLMESH_DIR, run_id, "works_index_export")
+    doi_state_export = local_path(SQLMESH_DIR, run_id, "doi_state_export")
     try:
-        # Download Parquet files from S3
-        source_uri = s3_uri(bucket_name, SQLMESH_DIR, run_id, "export/*")
-        download_files_from_s3(source_uri, export_dir)
+        # Download Works Index Parquet files from S3
+        works_index_source_uri = s3_uri(bucket_name, SQLMESH_DIR, run_id, "works_index_export/*")
+        download_files_from_s3(works_index_source_uri, works_index_export)
+
+        # Download DOI State Parquet files from S3
+        doi_state_source_uri = s3_uri(bucket_name, SQLMESH_DIR, run_id, "doi_state_export/*")
+        download_files_from_s3(doi_state_source_uri, doi_state_export)
 
         # Create index (if it doesn't exist already)
         client = make_opensearch_client(client_config)
         create_index(client, index_name, WORKS_MAPPING_FILE)
 
         # Run process
-        sync_works(index_name, export_dir, client_config, sync_config, level)
+        sync_works(
+            index_name=index_name,
+            works_index_export=works_index_export,
+            doi_state_export=doi_state_export,
+            run_id=run_id,
+            client_config=client_config,
+            sync_config=sync_config,
+            log_level=level,
+        )
     finally:
-        shutil.rmtree(export_dir, ignore_errors=True)
+        shutil.rmtree(works_index_export, ignore_errors=True)
+        shutil.rmtree(doi_state_export, ignore_errors=True)
 
 
 @app.command(name="sync-dmps")

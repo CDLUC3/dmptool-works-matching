@@ -33,9 +33,6 @@ mkdir -p "${DEMO_SOURCES_DIR}"/{dmps,datacite,openalex_works,crossref_metadata,o
 echo "Copying DMPs"
 cp -r "${SOURCE_DIR}/dmps/." "${DATA_DIR}/sources/dmps/"
 
-echo "Copying OpenAlex Funders"
-cp -r "${SOURCE_DIR}/openalex/openalex-snapshot/data/funders/." "${DATA_DIR}/sources/openalex_funders/"
-
 echo "Copying ROR"
 cp "${SOURCE_DIR}/ror/v1.63-2025-04-03-ror-data/v1.63-2025-04-03-ror-data_schema_v2.json" "${DATA_DIR}/sources/ror/v1.63-2025-04-03-ror-data_schema_v2.json"
 

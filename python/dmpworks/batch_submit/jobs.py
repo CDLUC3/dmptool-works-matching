@@ -157,6 +157,8 @@ def dataset_subset_job(
                 "DATASET_SUBSET_ENABLE": str(dataset_subset.enable).lower(),
                 "DATASET_SUBSET_INSTITUTIONS_S3_PATH": dataset_subset.institutions_s3_path,
                 "DATASET_SUBSET_DOIS_S3_PATH": dataset_subset.dois_s3_path,
+                "TQDM_POSITION": TQDM_POSITION,
+                "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
         ),
         vcpus=vcpus,
@@ -667,6 +669,7 @@ def submit_sqlmesh_job(
     *,
     env: str,
     bucket_name: str,
+    prev_run_id: str,
     run_id: str,
     openalex_works_run_id: str,
     openalex_funders_run_id: str,
@@ -685,6 +688,7 @@ def submit_sqlmesh_job(
     Args:
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket for SQLMesh data.
+        prev_run_id: a unique ID to represent the previous run of the SQLMesh job.
         run_id: a unique ID to represent this run of the SQLMesh job.
         openalex_works_run_id: The run_id of the OpenAlex works data to use.
         openalex_funders_run_id: The run_id of the OpenAlex funders data to use.
@@ -708,9 +712,10 @@ def submit_sqlmesh_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME $RUN_ID --release-dates.openalex-works $OPENALEX_WORKS_RUN_ID --release-dates.openalex-funders $OPENALEX_FUNDERS_RUN_ID --release-dates.datacite $DATACITE_RUN_ID --release-dates.crossref-metadata $CROSSREF_METADATA_RUN_ID --release-dates.ror $ROR_RUN_ID",
+        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME $PREV_RUN_ID $RUN_ID --release-dates.openalex-works $OPENALEX_WORKS_RUN_ID --release-dates.openalex-funders $OPENALEX_FUNDERS_RUN_ID --release-dates.datacite $DATACITE_RUN_ID --release-dates.crossref-metadata $CROSSREF_METADATA_RUN_ID --release-dates.ror $ROR_RUN_ID",
         environment=make_env(
             {
+                "PREV_RUN_ID": prev_run_id,
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "OPENALEX_WORKS_RUN_ID": openalex_works_run_id,

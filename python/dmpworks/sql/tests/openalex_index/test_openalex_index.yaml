@@ -121,6 +121,7 @@ test_openalex_index_openalex_index:
     query:
       rows:
         - doi: "10.9999/test.0001"
+          hash: "c01205c4f47e6fef9b020c61e14f924a"
           title: "Title 1"
           abstract_text: "Abstract 1"
           work_type: "ARTICLE"
@@ -147,6 +148,7 @@ test_openalex_index_openalex_index:
             name: "OpenAlex"
             url: "https://openalex.org/works/W0000000001"
         - doi: "10.9999/test.0002"
+          hash: "3d3ed279d70442d63efd5938c9a7efc3"
           title: "Title 2"
           abstract_text: "Abstract 2"
           work_type: "DATASET"
@@ -173,6 +175,7 @@ test_openalex_index_openalex_index:
             name: "OpenAlex"
             url: "https://openalex.org/works/W0000000002"
         - doi: "10.9999/test.0003"
+          hash: "9d7bef3543c3d8e2abec4956e53f02dd"
           title: null
           abstract_text: null
           work_type: "OTHER"

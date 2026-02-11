@@ -28,6 +28,7 @@ class ReleaseDates:
 @app.command(name="plan")
 def plan(
     bucket_name: str,
+    prev_run_id: str,
     run_id: str,
     release_dates: ReleaseDates,
     log_level: LogLevel = "INFO",
@@ -36,6 +37,7 @@ def plan(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
+        prev_run_id: a unique ID to represent this previous run of the job.
         run_id: a unique ID to represent this run of the job.
         release_dates: the release dates of each dataset.
         log_level: Python log level.
@@ -56,17 +58,28 @@ def plan(
         target_uri = s3_uri(bucket_name, dataset, release_date, "transform/*")
         download_files_from_s3(target_uri, transform_dir)
 
+    # Download previous DOI state
+    prev_sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / prev_run_id / "doi_state_export"
+    target_uri = s3_uri(bucket_name, "sqlmesh", prev_run_id, "doi_state_export/*")
+    download_files_from_s3(target_uri, prev_sqlmesh_data_dir)
+
     # Configure SQL Mesh environment
     sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / run_id
     duckdb_dir = sqlmesh_data_dir / "duckdb" / "db.db"
-    export_dir = sqlmesh_data_dir / "export"
+    works_index_export_dir = sqlmesh_data_dir / "works_index_export"
+    doi_state_export_dir = sqlmesh_data_dir / "doi_state_export"
     duckdb_dir.parent.mkdir(parents=True, exist_ok=True)
-    export_dir.mkdir(parents=True, exist_ok=True)
+    works_index_export_dir.mkdir(parents=True, exist_ok=True)
+    doi_state_export_dir.mkdir(parents=True, exist_ok=True)
     os.environ["SQLMESH__GATEWAYS__DUCKDB__CONNECTION__DATABASE"] = str(duckdb_dir)
     for dataset, release_date in datasets:
         parquet_path = local_path(dataset, release_date, "transform") / "parquets"
         os.environ[f"SQLMESH__VARIABLES__{dataset.upper()}_PATH"] = str(parquet_path)
-    os.environ["SQLMESH__VARIABLES__EXPORT_PATH"] = str(export_dir)
+
+    os.environ["SQLMESH__VARIABLES__PROCESS_WORKS_RUN_ID"] = str(run_id)
+    os.environ["SQLMESH__VARIABLES__OPENSEARCH_PATH"] = str(prev_sqlmesh_data_dir)
+    os.environ["SQLMESH__VARIABLES__WORKS_INDEX_EXPORT_PATH"] = str(works_index_export_dir)
+    os.environ["SQLMESH__VARIABLES__DOI_STATE_EXPORT_PATH"] = str(doi_state_export_dir)
 
     # TODO: only set if in dev environment
     os.environ["SQLMESH__VARIABLES__AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD"] = "1"

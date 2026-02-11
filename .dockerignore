@@ -1,11 +1,16 @@
 demo
 data
 dataset
+demo*
 .idea
-target
 .git
 .env
 .env.*
 .ipynb_checkpoints
 Dockerfile
 Dockerfile.aws
+target/
+**/*.so
+**/*.pyd
+__pycache__/
+*.pyc

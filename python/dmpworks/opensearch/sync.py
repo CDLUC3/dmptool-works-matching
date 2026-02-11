@@ -14,6 +14,8 @@ from typing import Callable, Iterator, List, Optional, TypedDict
 
 import pendulum
 import pyarrow as pa
+import pyarrow.compute as pc
+import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from opensearchpy import OpenSearch
 from opensearchpy.helpers import streaming_bulk
@@ -167,7 +169,8 @@ def default_error() -> ErrorSummary:
     return {"count": 0, "samples": []}
 
 
-def index_actions(
+def stream_actions(
+    client: OpenSearch,
     actions: Iterator[dict],
     chunk_size: int,
     max_chunk_bytes: int,
@@ -178,7 +181,7 @@ def index_actions(
     errors: ErrorMap = defaultdict(default_error)
 
     for ok, info in streaming_bulk(
-        open_search,
+        client,
         actions,
         chunk_size=chunk_size,
         max_chunk_bytes=max_chunk_bytes,
@@ -322,7 +325,8 @@ def index_file(
         )
     else:
         log.debug(f"Indexing file: {file_path}")
-        error_map = index_actions(
+        error_map = stream_actions(
+            open_search,
             actions,
             chunk_size,
             max_chunk_bytes,
@@ -335,6 +339,105 @@ def index_file(
 
 def bytes_to_mb(n):
     return n / 1024 / 1024
+
+
+@timed
+def delete_docs(
+    *,
+    index_name: str,
+    doi_state_dir: pathlib.Path,
+    run_id: str,
+    client_config: OpenSearchClientConfig,
+    chunk_size: int = CHUNK_SIZE,
+    max_chunk_bytes: int = MAX_CHUNK_BYTES,
+    max_retries: int = MAX_RETRIES,
+    initial_backoff: int = INITIAL_BACKOFF,
+    max_backoff: int = MAX_BACKOFF,
+):
+    try:
+        updated_date = pendulum.parse(run_id, strict=True)
+    except Exception as e:
+        raise ValueError(f"Invalid run_id '{run_id}'. Expected ISO date string (YYYY-MM-DD).") from e
+
+    dataset = ds.dataset(doi_state_dir, format="parquet")
+    filter_expr = (pc.field("state") == "DELETE") & (pc.field("updated_date") == updated_date)
+    total_records = dataset.count_rows(filter=filter_expr)
+    log.info(f"Total records to delete: {total_records}")
+
+    error_map: ErrorMap = defaultdict(default_error)
+    opensearch_client = make_opensearch_client(client_config)
+    total = 0
+    success_count = 0
+    failure_count = 0
+
+    start = pendulum.now()
+    with tqdm(
+        total=total_records,
+        desc="Delete Docs in OpenSearch",
+        unit="doc",
+    ) as pbar:
+        scanner = dataset.scanner(
+            columns=["doi", "state", "updated_date"],
+            filter=filter_expr,
+            batch_size=chunk_size,
+        )
+        for batch in scanner.to_batches():
+            rows = batch.to_pylist()
+            actions = yield_delete_actions(
+                index_name=index_name,
+                batch=rows,
+            )
+
+            for ok, info in streaming_bulk(
+                opensearch_client,
+                actions,
+                chunk_size=chunk_size,
+                max_chunk_bytes=max_chunk_bytes,
+                max_retries=max_retries,
+                initial_backoff=initial_backoff,
+                max_backoff=max_backoff,
+                raise_on_error=False,
+                raise_on_exception=False,
+            ):
+                if ok:
+                    success_count += 1
+                else:
+                    failure_count += 1
+
+                error = info_to_error_map(info)
+                merge_error_maps(error_map, error)
+
+                total = update_progress_bar(
+                    pbar,
+                    success_count,
+                    failure_count,
+                    total,
+                )
+
+    end = pendulum.now()
+    duration_seconds = float((end - start).seconds)  # Prevent divide by zero
+    docs_per_sec = total / max(duration_seconds, 1e-6)
+
+    log.info(f"Bulk delete complete.")
+    log.info(f"Total docs: {total:,}")
+    log.info(f"Num success: {success_count:,}")
+    log.info(f"Num failures: {failure_count:,}")
+    log.info(f"Docs/s: {round(docs_per_sec):,}")
+
+
+def yield_delete_actions(
+    *,
+    index_name: str,
+    batch: list[dict],
+):
+    for row in batch:
+        doi = row.get("doi")
+        if doi is not None:
+            yield {
+                "_op_type": "delete",
+                "_index": index_name,
+                "_id": doi,
+            }
 
 
 @timed
