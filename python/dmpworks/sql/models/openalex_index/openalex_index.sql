@@ -30,7 +30,15 @@ WITH works_index AS (
     works.authors,
     COALESCE(openalex_index.funders.funders, []) AS funders,
     COALESCE(openalex_index.awards.awards, []) AS awards,
-    {name := 'OpenAlex', url := 'https://openalex.org/works/' || owm.id} AS source
+    {
+      intra_work_dois := COALESCE(ri.intra_work_dois, []),
+      possible_shared_project_dois := COALESCE(ri.possible_shared_project_dois, []),
+      dataset_citation_dois := COALESCE(ri.dataset_citation_dois, [])
+    } AS relations,
+    {
+      name := 'OpenAlex',
+      url := 'https://openalex.org/works/' || owm.id
+    } AS source
   FROM openalex_index.works_metadata AS owm
   LEFT JOIN openalex.works works ON owm.id = works.id
   LEFT JOIN openalex_index.titles ON owm.doi = openalex_index.titles.doi
@@ -38,6 +46,7 @@ WITH works_index AS (
   LEFT JOIN openalex_index.updated_dates ON owm.doi = openalex_index.updated_dates.doi
   LEFT JOIN openalex_index.awards ON owm.doi = openalex_index.awards.doi
   LEFT JOIN openalex_index.funders ON owm.id = openalex_index.funders.id
+  LEFT JOIN relations.relations_index ri ON owm.doi = ri.doi
   WHERE owm.is_primary_doi = TRUE
 )
 
@@ -59,6 +68,7 @@ SELECT
       'authors', authors,
       'funders', funders,
       'awards', awards,
+      'relations', relations,
       'source', source
   )::VARCHAR) AS hash
 FROM works_index

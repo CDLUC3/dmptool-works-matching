@@ -247,6 +247,9 @@ def collate_results(dmp: DMPModel, hits: list[dict], max_score: float) -> list[R
         institution_matches = to_item_matches(inner_hits, "institutions")
         funder_matches = to_item_matches(inner_hits, "funders")
         award_matches = to_item_matches(inner_hits, "awards")
+        intra_work_doi_matches = to_item_matches(inner_hits, "relations.intra_work_dois")
+        possible_shared_project_doi_matches = to_item_matches(inner_hits, "relations.possible_shared_project_dois")
+        dataset_citation_doi_matches = to_item_matches(inner_hits, "relations.dataset_citation_dois")
 
         results.append(
             RelatedWork(
@@ -260,6 +263,9 @@ def collate_results(dmp: DMPModel, hits: list[dict], max_score: float) -> list[R
                 institution_matches=institution_matches,
                 funder_matches=funder_matches,
                 award_matches=award_matches,
+                intra_work_doi_matches=intra_work_doi_matches,
+                possible_shared_project_doi_matches=possible_shared_project_doi_matches,
+                dataset_citation_doi_matches=dataset_citation_doi_matches,
             )
         )
     return results

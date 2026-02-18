@@ -24,6 +24,7 @@ COLUMNS = [
     "authors",
     "funders",
     "awards",
+    "relations",
     "source",
 ]
 

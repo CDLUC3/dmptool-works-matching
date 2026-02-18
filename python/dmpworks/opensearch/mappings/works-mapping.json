@@ -181,6 +181,38 @@
           }
         }
       },
+      "relations": {
+        "type": "object",
+        "properties": {
+          "intra_work_dois": {
+            "type": "nested",
+            "properties": {
+              "doi": {
+                "type": "keyword",
+                "normalizer": "lowercase"
+              }
+            }
+          },
+          "possible_shared_project_dois": {
+            "type": "nested",
+            "properties": {
+              "doi": {
+                "type": "keyword",
+                "normalizer": "lowercase"
+              }
+            }
+          },
+          "dataset_citation_dois": {
+            "type": "nested",
+            "properties": {
+              "doi": {
+                "type": "keyword",
+                "normalizer": "lowercase"
+              }
+            }
+          }
+        }
+      },
       "source": {
         "type": "object",
         "properties": {

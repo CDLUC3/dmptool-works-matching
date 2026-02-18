@@ -1,0 +1,163 @@
+test_relations_relations_index:
+  model: relations.relations_index
+  inputs:
+    relations.datacite:
+      rows:
+        # Should appear in intra_work_dois
+        - work_doi: "10.9999/test.0001"
+          related_doi: "10.1234/test.0001"
+          relation_type: "IsIdenticalTo"
+          is_intra_work: true
+          is_possible_shared_project: false
+
+        # Should appear in possible_shared_project_dois
+        - work_doi: "10.9999/test.0100"
+          related_doi: "10.1234/test.0100"
+          relation_type: "IsDerivedFrom"
+          is_intra_work: false
+          is_possible_shared_project: true
+
+        # Also add a DataCite DOI that is related to a Crossref DOI
+        - work_doi: "10.9999/test.0200"
+          related_doi: "10.9999/test.0002"
+          relation_type: "IsSupplementTo"
+          is_intra_work: false
+          is_possible_shared_project: true
+
+        # Should not appear at all
+        - work_doi: "10.9999/test.0300"
+          related_doi: "10.1234/test.0300"
+          relation_type: "IsCitedBy"
+          is_intra_work: false
+          is_possible_shared_project: false
+
+    relations.crossref_metadata:
+      rows:
+        # Should appear in intra_work_dois
+        - work_doi: "10.9999/test.0002"
+          related_doi: "10.1234/test.0002"
+          relation_type: "is-expression-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+
+        # Should appear in possible_shared_project_dois
+        - work_doi: "10.9999/test.0101"
+          related_doi: "10.1234/test.0101"
+          relation_type: "is-derived-from"
+          is_intra_work: false
+          is_possible_shared_project: true
+
+        # Also add a Crossref DOI that is related to a Crossref DOI
+        - work_doi: "10.9999/test.0201"
+          related_doi: "10.9999/test.0001"
+          relation_type: "documents"
+          is_intra_work: false
+          is_possible_shared_project: true
+
+        # Should not appear at all
+        - work_doi: "10.9999/test.0301"
+          related_doi: "10.1234/test.0301"
+          relation_type: "is-cited-by"
+          is_intra_work: false
+          is_possible_shared_project: false
+
+    relations.data_citation_corpus:
+      rows:
+        # Dataset citations are always is_dataset_relation = true in the model
+        - work_doi: "10.9999/test.0400"
+          dataset_doi: "10.8888/test.0400"
+          source: "datacite"
+
+        # Also add a dataset citation that targets an existing work_doi so it merges into its dataset_citation_dois
+        - work_doi: "10.9999/test.0201"
+          dataset_doi: "10.8888/test.0401"
+          source: "czi"
+
+  outputs:
+    query:
+      rows:
+        # intra_work_dois
+        - doi: "10.9999/test.0001"
+          intra_work_dois:
+            - doi: "10.1234/test.0001"
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0201"
+          dataset_citation_dois: [ ]
+
+        - doi: "10.1234/test.0001"
+          intra_work_dois:
+            - doi: "10.9999/test.0001"
+          possible_shared_project_dois: [ ]
+          dataset_citation_dois: [ ]
+
+        - doi: "10.9999/test.0002"
+          intra_work_dois:
+            - doi: "10.1234/test.0002"
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0200"
+          dataset_citation_dois: [ ]
+
+        - doi: "10.1234/test.0002"
+          intra_work_dois:
+            - doi: "10.9999/test.0002"
+          possible_shared_project_dois: [ ]
+          dataset_citation_dois: [ ]
+
+        # possible_shared_project_dois
+        - doi: "10.9999/test.0100"
+          intra_work_dois: [ ]
+          possible_shared_project_dois:
+            - doi: "10.1234/test.0100"
+          dataset_citation_dois: [ ]
+
+        - doi: "10.1234/test.0100"
+          intra_work_dois: [ ]
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0100"
+          dataset_citation_dois: [ ]
+
+        - doi: "10.9999/test.0101"
+          intra_work_dois: [ ]
+          possible_shared_project_dois:
+            - doi: "10.1234/test.0101"
+          dataset_citation_dois: [ ]
+
+        - doi: "10.1234/test.0101"
+          intra_work_dois: [ ]
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0101"
+          dataset_citation_dois: [ ]
+
+        # DataCite references Crossref
+        - doi: "10.9999/test.0200"
+          intra_work_dois: [ ]
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0002"
+          dataset_citation_dois: [ ]
+
+        # Crossref references DataCite
+        - doi: "10.9999/test.0201"
+          intra_work_dois: [ ]
+          possible_shared_project_dois:
+            - doi:  "10.9999/test.0001"
+          dataset_citation_dois:
+            - doi: "10.8888/test.0401"
+
+        # dataset_citation_dois
+        - doi: "10.9999/test.0400"
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ ]
+          dataset_citation_dois:
+            - doi: "10.8888/test.0400"
+
+        - doi: "10.8888/test.0400"
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ ]
+          dataset_citation_dois:
+            - doi: "10.9999/test.0400"
+
+        - doi: "10.8888/test.0401"
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ ]
+          dataset_citation_dois:
+            - doi: "10.9999/test.0201"

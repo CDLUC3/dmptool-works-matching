@@ -1,3 +1,9 @@
+/*
+  opensearch.current_doi_state:
+
+  Contains a historic record of the DOI state before this run.
+*/
+
 MODEL (
   name opensearch.current_doi_state,
   dialect duckdb,

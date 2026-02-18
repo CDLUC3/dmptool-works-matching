@@ -116,12 +116,18 @@ test_openalex_index_openalex_index:
         - doi: "10.9999/test.0002"
           awards:
             - award_id: "2"
+    relations.relations_index:
+      rows:
+        - doi: "10.9999/test.0001"
+          intra_work_dois: [ "10.1234/test.0001" ]
+          possible_shared_project_dois: [ "10.1234/test.0002" ]
+          dataset_citation_dois: [ "10.1234/test.0003" ]
 
   outputs:
     query:
       rows:
         - doi: "10.9999/test.0001"
-          hash: "c01205c4f47e6fef9b020c61e14f924a"
+          hash: "4286ae507c7f46f05dcce4af1c8d198c"
           title: "Title 1"
           abstract_text: "Abstract 1"
           work_type: "ARTICLE"
@@ -144,11 +150,15 @@ test_openalex_index_openalex_index:
               ror: "021nxhr62"
           awards:
             - award_id: "1"
+          relations:
+            intra_work_dois: [ "10.1234/test.0001" ]
+            possible_shared_project_dois: [ "10.1234/test.0002" ]
+            dataset_citation_dois: [ "10.1234/test.0003" ]
           source:
             name: "OpenAlex"
             url: "https://openalex.org/works/W0000000001"
         - doi: "10.9999/test.0002"
-          hash: "3d3ed279d70442d63efd5938c9a7efc3"
+          hash: "e5dafd28d393de6b8de71eab3c5ade06"
           title: "Title 2"
           abstract_text: "Abstract 2"
           work_type: "DATASET"
@@ -171,11 +181,15 @@ test_openalex_index_openalex_index:
               ror: "021nxhr62"
           awards:
             - award_id: "2"
+          relations:
+            intra_work_dois: [ ]
+            possible_shared_project_dois: [ ]
+            dataset_citation_dois: [ ]
           source:
             name: "OpenAlex"
             url: "https://openalex.org/works/W0000000002"
         - doi: "10.9999/test.0003"
-          hash: "9d7bef3543c3d8e2abec4956e53f02dd"
+          hash: "0d9471cae0a9f689254f849db37e2fc0"
           title: null
           abstract_text: null
           work_type: "OTHER"
@@ -197,6 +211,10 @@ test_openalex_index_openalex_index:
             - name: "National Science Foundation"
               ror: "021nxhr62"
           awards: [ ]
+          relations:
+            intra_work_dois: [ ]
+            possible_shared_project_dois: [ ]
+            dataset_citation_dois: [ ]
           source:
             name: "OpenAlex"
             url: "https://openalex.org/works/W0000000004"

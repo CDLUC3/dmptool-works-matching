@@ -73,6 +73,9 @@ class RelatedWork(BaseModel):
     institution_matches: List[ItemMatch] = []
     funder_matches: List[ItemMatch] = []
     award_matches: List[ItemMatch] = []
+    intra_work_doi_matches: List[ItemMatch] = []
+    possible_shared_project_doi_matches: List[ItemMatch] = []
+    dataset_citation_doi_matches: List[ItemMatch] = []
 
 
 class RelatedWorkTrainingRow(BaseModel):
@@ -86,6 +89,7 @@ class RelatedWorkTrainingRow(BaseModel):
     dmp_doi: str
     work_doi: str
     work_title: Optional[str]
+
     # Features
     mlt_content: float
     funded_doi_matched: int
@@ -100,6 +104,10 @@ class RelatedWorkTrainingRow(BaseModel):
     dmp_funder_count: int
     funder_ror_match_count: int
     funder_name_match_count: int
+    intra_work_doi_count: int
+    possible_shared_project_doi_count: int
+    dataset_citation_doi_count: int
+
     # Whether the match is valid or not
     judgement: Optional[int] = None
 
@@ -122,6 +130,9 @@ class RelatedWorkTrainingRow(BaseModel):
                     self.dmp_funder_count,
                     self.funder_ror_match_count,
                     self.funder_name_match_count,
+                    self.intra_work_doi_count,
+                    self.possible_shared_project_doi_count,
+                    self.dataset_citation_doi_count,
                 ]
             )
         ]

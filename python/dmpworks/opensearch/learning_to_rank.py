@@ -64,19 +64,72 @@ def build_featureset() -> dict:
                     ),
                 },
                 # Authors
-                const_count_feature("dmp_author_count", "dmp_author_count"),
-                identifier_feature("author_orcid_match_count", "author_orcids", "authors", "authors.orcid"),
-                name_feature("author_surname_match_count", "author_surname_queries", "authors"),
-                # Institutions
-                const_count_feature("dmp_institution_count", "dmp_institution_count"),
-                identifier_feature(
-                    "institution_ror_match_count", "institution_rors", "institutions", "institutions.ror"
+                const_count_feature(
+                    "dmp_author_count",
+                    "dmp_author_count",
                 ),
-                name_feature("institution_name_match_count", "institution_name_queries", "institutions"),
+                identifier_feature(
+                    "author_orcid_match_count",
+                    "author_orcids",
+                    "authors",
+                    "authors.orcid",
+                ),
+                name_feature(
+                    "author_surname_match_count",
+                    "author_surname_queries",
+                    "authors",
+                ),
+                # Institutions
+                const_count_feature(
+                    "dmp_institution_count",
+                    "dmp_institution_count",
+                ),
+                identifier_feature(
+                    "institution_ror_match_count",
+                    "institution_rors",
+                    "institutions",
+                    "institutions.ror",
+                ),
+                name_feature(
+                    "institution_name_match_count",
+                    "institution_name_queries",
+                    "institutions",
+                ),
                 # Funders
-                const_count_feature("dmp_funder_count", "dmp_funder_count"),
-                identifier_feature("funder_ror_match_count", "funder_rors", "funders", "funders.ror"),
-                name_feature("funder_name_match_count", "funder_name_queries", "funders"),
+                const_count_feature(
+                    "dmp_funder_count",
+                    "dmp_funder_count",
+                ),
+                identifier_feature(
+                    "funder_ror_match_count",
+                    "funder_rors",
+                    "funders",
+                    "funders.ror",
+                ),
+                name_feature(
+                    "funder_name_match_count",
+                    "funder_name_queries",
+                    "funders",
+                ),
+                # Relations
+                identifier_feature(
+                    "intra_work_doi_count",
+                    "published_research_output_dois",
+                    "relations.intra_work_dois",
+                    "relations.intra_work_dois.doi",
+                ),
+                identifier_feature(
+                    "possible_shared_project_doi_count",
+                    "published_research_output_dois",
+                    "relations.possible_shared_project_dois",
+                    "relations.possible_shared_project_dois.doi",
+                ),
+                identifier_feature(
+                    "dataset_citation_doi_count",
+                    "published_research_output_dois",
+                    "relations.dataset_citation_dois",
+                    "relations.dataset_citation_dois.doi",
+                ),
             ]
         },
     }
