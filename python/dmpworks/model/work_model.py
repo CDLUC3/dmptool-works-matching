@@ -29,24 +29,6 @@ class WorkModel(BaseModel):
     awards: list[Award]
     source: Source
 
-    # @computed_field
-    # def hash(self) -> str:
-    #     """Generate a stable MD5 Hash of the work based on its content
-    #
-    #     Exclude doi and updated_date. Fields that we are not using could
-    #     trigger a change in updated_date.
-    #     """
-    #     data = self.model_dump(
-    #         exclude={"doi", "updated_date", "hash"},
-    #         by_alias=True,
-    #         mode="json",
-    #     )
-    #
-    #     # Maintain stable key order: sort_keys=True
-    #     # No whitespace: separators=(",", ":")
-    #     payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
-    #     return hashlib.md5(payload.encode("utf-8")).hexdigest()
-
     @computed_field
     def institutions_names_text(self) -> str:
         return ", ".join(dict.fromkeys(inst.name for inst in self.institutions))
