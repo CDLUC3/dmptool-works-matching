@@ -25,7 +25,8 @@ else
   echo "Aborted."
 fi
 
-mkdir -p "${TRANSFORM_DIR}"/{dmps,datacite,openalex_works,crossref_metadata,openalex_funders,ror}
+mkdir -p "${TRANSFORM_DIR}"/{dmps,datacite,openalex_works,crossref_metadata,openalex_funders,ror,opensearch/parquets}
+dmpworks sqlmesh init-doi-state "${TRANSFORM_DIR}/opensearch/parquets/doi_state_00000.parquet"
 dmpworks transform dmps "${SOURCES_DIR}/dmps" "${TRANSFORM_DIR}/dmps"
 dmpworks transform crossref-metadata "${SOURCES_DIR}/crossref_metadata" "${TRANSFORM_DIR}/crossref_metadata"
 dmpworks transform openalex-works "${SOURCES_DIR}/openalex_works" "${TRANSFORM_DIR}/openalex_works" --batch-size=2 --max-file-processes=2

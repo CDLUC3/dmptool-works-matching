@@ -76,6 +76,7 @@ test_datacite_index_datacite_index:
     query:
       rows:
         - doi: "10.9999/test.0001"
+          hash: "d1cec8178ba082a1504529ae3c18a5f2"
           title: "Title 1"
           abstract_text: "Abstract 1"
           work_type: "ARTICLE"
@@ -102,6 +103,7 @@ test_datacite_index_datacite_index:
             name: "DataCite"
             url: "https://commons.datacite.org/doi.org/10.9999/test.0001"
         - doi: "10.9999/test.0002"
+          hash: "c44b62b440877880cb6d45a5e6ca0ae3"
           title: "Title 2"
           abstract_text: "Abstract 2"
           work_type: "DATASET"
@@ -128,6 +130,7 @@ test_datacite_index_datacite_index:
             name: "DataCite"
             url: "https://commons.datacite.org/doi.org/10.9999/test.0002"
         - doi: "10.9999/test.0003"
+          hash: "10292bd7518cc419214832c7a8d1255d"
           title: null
           abstract_text: null
           work_type: "OTHER"

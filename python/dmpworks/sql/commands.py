@@ -1,7 +1,8 @@
 import pathlib
 from importlib.util import find_spec
 from pathlib import Path
-
+import pyarrow as pa
+import pyarrow.parquet as pq
 from sqlmesh.core.console import configure_console
 from sqlmesh.core.context import Context
 from sqlmesh.core.plan import Plan
@@ -41,3 +42,16 @@ def run_test() -> ModelTextTestResult:
     )
     test_results: ModelTextTestResult = ctx.test(verbosity=Verbosity.VERY_VERBOSE)
     return test_results
+
+
+def init_doi_state(file_path: pathlib.Path):
+    schema = pa.schema(
+        [
+            ("doi", pa.string()),
+            ("hash", pa.string()),
+            ("state", pa.string()),
+            ("updated_date", pa.date32()),
+        ]
+    )
+    table = pa.Table.from_batches([], schema)
+    pq.write_table(table, file_path)

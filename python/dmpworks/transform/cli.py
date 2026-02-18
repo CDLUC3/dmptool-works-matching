@@ -330,22 +330,19 @@ def dataset_subset_cmd(
                 dir_okay=False,
                 file_okay=True,
                 exists=True,
-            )
-        ),
-        Parameter(
+            ),
             env_var="DATASET_SUBSET_INSTITUTIONS_PATH",
             help="Path to a list of ROR IDs and institution names. Works authored by researchers from these institutions will be included.",
         ),
     ],
     dois_path: Annotated[
+        pathlib.Path,
         Parameter(
             validator=validators.Path(
                 dir_okay=False,
                 file_okay=True,
                 exists=True,
-            )
-        ),
-        Parameter(
+            ),
             env_var="DATASET_SUBSET_DOIS_PATH",
             help="Path to a specific list of Work DOIs to include in the subset.",
         ),

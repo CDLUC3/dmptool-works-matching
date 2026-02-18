@@ -238,7 +238,7 @@ def crossref_metadata_cmd(
     crossref_bucket_name: Annotated[
         str,
         Parameter(
-            env_var="CROSSREF_METADATA_BUCKET",
+            env_var="CROSSREF_METADATA_BUCKET_NAME",
             help="Name of the Crossref AWS S3 bucket.",
         ),
     ],
@@ -556,6 +556,13 @@ def process_works_cmd(
         str,
         Parameter(env_var="BUCKET_NAME", help="S3 bucket name for job I/O."),
     ],
+    prev_run_id: Annotated[
+        str,
+        Parameter(
+            env_var="PREV_PROCESS_WORKS_RUN_ID",
+            help="A unique ID for the previous SQLMesh run.",
+        ),
+    ],
     run_id: Annotated[
         str,
         Parameter(
@@ -687,6 +694,7 @@ def process_works_cmd(
             submit_sqlmesh_job,
             env=env,
             bucket_name=bucket_name,
+            prev_run_id=prev_run_id,
             run_id=run_id,
             openalex_works_run_id=openalex_works_run_id,
             openalex_funders_run_id=openalex_funders_run_id,

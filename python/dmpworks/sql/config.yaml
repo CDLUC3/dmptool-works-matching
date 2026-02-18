@@ -20,12 +20,14 @@ gateways:
       # token:
 
 variables:
+  opensearch_path: "/path/to/opensearch/parquets"
   crossref_metadata_path: "/path/to/crossref_metadata/parquets"
   datacite_path: "/path/to/datacite/parquets"
   openalex_funders_path: "/path/to/openalex_funders/parquets"
   openalex_works_path: "/path/to/openalex_works/parquets"
   ror_path: "/path/to/ror/parquets"
-  export_path: "/path/to/export"
+  works_index_export_path: "/path/to/works_index_export"
+  doi_state_export_path: "/path/to/doi_state_export"
   audit_crossref_metadata_works_threshold: 167008747
   audit_datacite_works_threshold: 72019576
   audit_openalex_works_threshold: 264675126
@@ -34,6 +36,8 @@ variables:
   openalex_index_abstracts_threads: 32
   openalex_index_titles_threads: 32
   openalex_index_openalex_index_threads: 32
+  max_doi_states: 3
+  process_works_run_id: {{ env_var('PROCESS_WORKS_RUN_ID') }}
 
 default_gateway: duckdb
 

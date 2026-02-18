@@ -19,7 +19,8 @@ RUN dnf -y install \
 RUN dnf group install -y "Development Tools"
 
 # Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-05-21
+ENV RUSTUP_TOOLCHAIN=nightly-2025-05-21
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app

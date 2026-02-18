@@ -1,4 +1,5 @@
 import gzip
+import json
 import logging
 import os
 import pathlib
@@ -7,7 +8,7 @@ from concurrent.futures import as_completed, ProcessPoolExecutor
 from multiprocessing import current_process
 from typing import Literal, Optional
 
-import orjson
+import simdjson
 from tqdm import tqdm
 
 from dmpworks.model.common import Institution
@@ -17,10 +18,10 @@ from dmpworks.utils import timed
 Dataset = Literal["crossref-metadata", "datacite", "openalex-works"]
 
 
-def normalise_affiliations(affiliations) -> Optional[list[dict]]:
-    if isinstance(affiliations, dict):
+def normalise_affiliations(affiliations) -> Optional[simdjson.Array | list]:
+    if isinstance(affiliations, simdjson.Object):
         return [affiliations]
-    elif isinstance(affiliations, list):
+    elif isinstance(affiliations, simdjson.Array):
         return affiliations
     else:
         return []
@@ -39,54 +40,61 @@ def normalise_name(name: Optional[str]) -> Optional[str]:
     return cleaned or None
 
 
+def get_str(record: simdjson.Object, key: str):
+    val = record.get(key)
+    if val is None:
+        return None
+    return str(val)
+
+
 def keep_record(
-    dataset: Dataset, institution_rors: set[str], institution_names: set[str], dois: set[str], record: dict
+    dataset: Dataset, institution_rors: set[str], institution_names: set[str], dois: set[str], record: simdjson.Object
 ) -> bool:
     if dataset == "openalex-works":
         # Check DOI
-        doi = extract_doi(record.get("doi"))
+        doi = extract_doi(get_str(record, "doi"))
         if doi in dois:
             return True
 
         # Check institutions
         for authorship in record.get("authorships", []):
             for inst in authorship.get("institutions", []):
-                identifier = inst.get("ror")
-                name = normalise_name(inst.get("display_name"))
+                identifier = get_str(inst, "ror")
+                name = normalise_name(get_str(inst, "display_name"))
                 if normalise_identifier(identifier) in institution_rors or name in institution_names:
                     return True
         return False
 
     elif dataset == "datacite":
         # Check DOI
-        doi = record.get("id")
+        doi = get_str(record, "id")
         if doi in dois:
             return True
 
         # Check institutions
         for creator in record.get("attributes", {}).get("creators", []):
             for affiliation in normalise_affiliations(creator.get("affiliation", [])):
-                identifier = affiliation.get("affiliationIdentifier")
-                name = normalise_name(affiliation.get("name"))
+                identifier = get_str(affiliation, "affiliationIdentifier")
+                name = normalise_name(get_str(affiliation, "name"))
                 if normalise_identifier(identifier) in institution_rors or name in institution_names:
                     return True
         return False
 
     elif dataset == "crossref-metadata":
         # Check DOI
-        doi = record.get("DOI")
+        doi = get_str(record, "DOI")
         if doi in dois:
             return True
 
         # Check institutions
         for author in record.get("author", []):
             for affiliation in author.get("affiliation", []):
-                name = normalise_name(affiliation.get("name"))
+                name = normalise_name(get_str(affiliation, "name"))
                 if name in institution_names:
                     return True
 
                 for id_struct in affiliation.get("id", []):
-                    identifier = id_struct.get("id")
+                    identifier = get_str(id_struct, "id")
                     if normalise_identifier(identifier) in institution_rors:
                         return True
         return False
@@ -123,15 +131,26 @@ def filter_dataset(
     worker_id = current_process()._identity[0]
     file_out = out_dir / f"part_{worker_id:03d}.jsonl.gz"
 
+    parser = simdjson.Parser()
     total_filtered = 0
+    # f_out: needs ab to append output when the same process processes another file
     with gzip.open(file_out, mode="ab") as f_out:
-        with gzip.open(file_in, "rt", encoding="utf-8") as f_in:
+        with gzip.open(file_in, "rb") as f_in:
             for line in f_in:
-                if line.strip():
-                    record = orjson.loads(line)
+                if not line.strip():
+                    continue
+
+                try:
+                    record = parser.parse(line)
+
                     if keep_record(dataset, institution_rors, institution_names, dois, record):
-                        f_out.write(line.encode("utf-8"))  # line already ends with newline
+                        f_out.write(line)
                         total_filtered += 1
+                except ValueError as e:
+                    print(f"ERROR: {e}")
+                    continue
+                finally:
+                    record = None
 
     logging.debug(f"end filtering {file_in}")
 

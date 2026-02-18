@@ -2,6 +2,7 @@ import logging
 import pathlib
 from typing import Annotated, Optional
 
+import pendulum
 from cyclopts import App, Parameter, validators
 
 from dmpworks.cli_utils import Directory, LogLevel
@@ -81,7 +82,9 @@ def update_mapping_cmd(
 @app.command(name="sync-works")
 def sync_works_cmd(
     index_name: str,
-    in_dir: Directory,
+    works_index_export: Directory,
+    doi_state_export: Directory,
+    run_id: str,
     client_config: Optional[OpenSearchClientConfig] = None,
     sync_config: Optional[OpenSearchSyncConfig] = None,
     log_level: LogLevel = "INFO",
@@ -90,7 +93,9 @@ def sync_works_cmd(
 
     Args:
         index_name: Name of the OpenSearch index to sync to (e.g., works).
-        in_dir: Path to the DMP Tool Works index table export directory (e.g., /path/to/export).
+        works_index_export: Path to the DMP Tool Works index table export directory (e.g., /path/to/works_index_export).
+        doi_state_export: Path to the DOI state export directory (e.g., /path/to/doi_state_export).
+        run_id: The run date when the new works were generated.
         client_config: OpenSearch client settings.
         sync_config: OpenSearch sync settings.
         log_level: Python log level (e.g., INFO).
@@ -107,10 +112,12 @@ def sync_works_cmd(
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
     sync_works(
-        index_name,
-        in_dir,
-        client_config,
-        sync_config,
+        index_name=index_name,
+        works_index_export=works_index_export,
+        doi_state_export=doi_state_export,
+        run_id=run_id,
+        client_config=client_config,
+        sync_config=sync_config,
         log_level=level,
     )
 

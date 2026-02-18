@@ -1,0 +1,385 @@
+test_next_doi_state_first_run:
+  model: opensearch.next_doi_state
+  vars:
+    process_works_run_id: "2026-02-11"
+    max_doi_states: 2
+
+  inputs:
+    opensearch.current_doi_state:
+      columns:
+        doi: TEXT
+        hash: TEXT
+        state: TEXT
+        updated_date: DATE
+      rows: [ ]
+
+    openalex_index.openalex_index:
+      columns:
+        doi: TEXT
+        hash: TEXT
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+        - doi: "10.9999/test.0002"
+          hash: "def"
+
+    datacite_index.datacite_index:
+      columns:
+        doi: TEXT
+        hash: TEXT
+      rows:
+        - doi: "10.9999/test.0101"
+          hash: "123"
+        - doi: "10.9999/test.0102"
+          hash: "456"
+
+  outputs:
+    query:
+      columns:
+        doi: TEXT
+        hash: TEXT
+        state: TEXT
+        updated_date: DATE
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0101"
+          hash: "123"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0102"
+          hash: "456"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+
+test_next_doi_state_second_run:
+  model: opensearch.next_doi_state
+  vars:
+    process_works_run_id: "2026-02-12"
+    max_doi_states: 2
+
+  inputs:
+    opensearch.current_doi_state:
+      columns:
+        doi: TEXT
+        hash: TEXT
+        state: TEXT
+        updated_date: DATE
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0101"
+          hash: "123"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0102"
+          hash: "456"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+
+    openalex_index.openalex_index:
+      columns:
+        doi: TEXT
+        hash: TEXT
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+        - doi: "10.9999/test.0002"
+          hash: "def1"
+        - doi: "10.9999/test.0003"
+          hash: "hij"
+
+    datacite_index.datacite_index:
+      columns:
+        doi: TEXT
+        hash: TEXT
+      rows:
+        - doi: "10.9999/test.0101"
+          hash: "123"
+        - doi: "10.9999/test.0102"
+          hash: "456a"
+        - doi: "10.9999/test.0103"
+          hash: "789"
+
+  outputs:
+    query:
+      columns:
+        doi: TEXT
+        hash: TEXT
+        state: TEXT
+        updated_date: DATE
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0101"
+          hash: "123"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0102"
+          hash: "456"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def1"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0003"
+          hash: "hij"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0102"
+          hash: "456a"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0103"
+          hash: "789"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+
+
+test_next_doi_state_third_run:
+  model: opensearch.next_doi_state
+  vars:
+    process_works_run_id: "2026-02-13"
+    max_doi_states: 2
+
+  inputs:
+    opensearch.current_doi_state:
+      columns:
+        doi: TEXT
+        hash: TEXT
+        state: TEXT
+        updated_date: DATE
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0101"
+          hash: "123"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0102"
+          hash: "456"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def1"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0003"
+          hash: "hij"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0102"
+          hash: "456a"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0103"
+          hash: "789"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+
+    openalex_index.openalex_index:
+      columns:
+        doi: TEXT
+        hash: TEXT
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+        - doi: "10.9999/test.0002"
+          hash: "def2"
+        - doi: "10.9999/test.0003"
+          hash: "hij"
+
+    datacite_index.datacite_index:
+      columns:
+        doi: TEXT
+        hash: TEXT
+      rows:
+        - doi: "10.9999/test.0101"
+          hash: "123"
+        - doi: "10.9999/test.0102"
+          hash: "456b"
+        - doi: "10.9999/test.0103"
+          hash: "789"
+
+  outputs:
+    query:
+      columns:
+        doi: TEXT
+        hash: TEXT
+        state: TEXT
+        updated_date: DATE
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0101"
+          hash: "123"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def1"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0003"
+          hash: "hij"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0102"
+          hash: "456a"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0103"
+          hash: "789"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0002"
+          hash: "def2"
+          state: "UPSERT"
+          updated_date: "2026-02-13"
+        - doi: "10.9999/test.0102"
+          hash: "456b"
+          state: "UPSERT"
+          updated_date: "2026-02-13"
+
+
+test_next_doi_state_delete_run:
+  model: opensearch.next_doi_state
+  vars:
+    process_works_run_id: "2026-02-14"
+    max_doi_states: 2
+
+  inputs:
+    opensearch.current_doi_state:
+      columns:
+        doi: TEXT
+        hash: TEXT
+        state: TEXT
+        updated_date: DATE
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0101"
+          hash: "123"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def1"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0003"
+          hash: "hij"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0102"
+          hash: "456a"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0103"
+          hash: "789"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0002"
+          hash: "def2"
+          state: "UPSERT"
+          updated_date: "2026-02-13"
+        - doi: "10.9999/test.0102"
+          hash: "456b"
+          state: "UPSERT"
+          updated_date: "2026-02-13"
+
+    openalex_index.openalex_index:
+      columns:
+        doi: TEXT
+        hash: TEXT
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+        - doi: "10.9999/test.0002"
+          hash: "def2"
+
+    datacite_index.datacite_index:
+      columns:
+        doi: TEXT
+        hash: TEXT
+      rows:
+        - doi: "10.9999/test.0101"
+          hash: "123"
+        - doi: "10.9999/test.0102"
+          hash: "456b"
+
+  outputs:
+    query:
+      columns:
+        doi: TEXT
+        hash: TEXT
+        state: TEXT
+        updated_date: DATE
+      rows:
+        - doi: "10.9999/test.0001"
+          hash: "abc"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0101"
+          hash: "123"
+          state: "UPSERT"
+          updated_date: "2026-02-11"
+        - doi: "10.9999/test.0002"
+          hash: "def1"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0003"
+          hash: "hij"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0102"
+          hash: "456a"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0103"
+          hash: "789"
+          state: "UPSERT"
+          updated_date: "2026-02-12"
+        - doi: "10.9999/test.0002"
+          hash: "def2"
+          state: "UPSERT"
+          updated_date: "2026-02-13"
+        - doi: "10.9999/test.0102"
+          hash: "456b"
+          state: "UPSERT"
+          updated_date: "2026-02-13"
+        - doi: "10.9999/test.0003"
+          hash: "hij"
+          state: "DELETE"
+          updated_date: "2026-02-14"
+        - doi: "10.9999/test.0103"
+          hash: "789"
+          state: "DELETE"
+          updated_date: "2026-02-14"
