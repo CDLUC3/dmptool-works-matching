@@ -20,53 +20,55 @@ logger = logging.getLogger(__name__)
 # Just including types that might be useful for finding dataset relations
 RELATION_SCHEMA = pl.Struct({"id": pl.String, "id-type": pl.String, "asserted-by": pl.String})
 RELATION_TYPES = [
-    # "is-expression-of",
-    # "has-expression",
-    # "is-format-of",
-    # "has-format",
-    # "is-identical-to",
-    # "is-manifestation-of",
-    # "has-manifestation",
-    # "is-manuscript-of",
-    # "has-manuscript",
-    # "is-preprint-of",
-    # "has-preprint",
-    # "is-replaced-by",
-    # "replaces",
-    # "is-translation-of",
-    # "has-translation",
-    # "is-variant-form-of",
-    # "is-original-form-of",
-    # "is-version-of",
-    # "has-version",
-    "is-based-on",  # dataset
-    "is-basis-for",  # dataset
-    # "is-comment-on",
-    # "has-comment",
-    # "is-continued-by",
-    # "continues",
-    "is-derived-from",  # dataset
-    # "has-derivation",
-    "is-documented-by",  # dataset
-    "documents",  # dataset
-    # "finances",
-    # "is-financed-by",
-    # "is-part-of",
-    # "has-part",
-    # "is-review-of",
-    # "has-review",
-    "references",  # dataset
-    "is-referenced-by",  # dataset
-    "is-related-material",  # dataset
-    "has-related-material",  # dataset
-    # "is-reply-to",
-    # "has-reply",
-    # "requires",
-    # "is-required-by",
-    # "is-compiled-by",
-    "compiles",  # dataset
-    "is-supplement-to",  # dataset
-    "is-supplemented-by",  # dataset
+    # intra-work relations
+    "is-expression-of",
+    "has-expression",
+    "is-format-of",
+    "has-format",
+    "is-identical-to",
+    "is-manifestation-of",
+    "has-manifestation",
+    "is-manuscript-of",
+    "has-manuscript",
+    "is-preprint-of",
+    "has-preprint",
+    "is-replaced-by",
+    "replaces",
+    "is-translation-of",
+    "has-translation",
+    "is-variant-form-of",
+    "is-original-form-of",
+    "is-version-of",
+    "has-version",
+    # inter-work relations
+    "is-based-on",
+    "is-basis-for",
+    "is-comment-on",
+    "has-comment",
+    "is-continued-by",
+    "continues",
+    "is-derived-from",
+    "has-derivation",
+    "is-documented-by",
+    "documents",
+    "finances",
+    "is-financed-by",
+    "is-part-of",
+    "has-part",
+    "is-review-of",
+    "has-review",
+    "references",
+    "is-referenced-by",
+    "is-related-material",
+    "has-related-material",
+    "is-reply-to",
+    "has-reply",
+    "requires",
+    "is-required-by",
+    "is-compiled-by",
+    "compiles",
+    "is-supplement-to",
+    "is-supplemented-by",
 ]
 
 SCHEMA: SchemaDefinition = {
@@ -214,6 +216,18 @@ def transform(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
             relation_id=normalise_identifier(pl.col("id")),
             id_type=pl.col("id-type"),
             asserted_by=pl.col("asserted-by"),
+        )
+        .filter(
+            pl.any_horizontal(
+                [
+                    pl.col(field).is_not_null()
+                    for field in [
+                        "relation_id",
+                        "id_type",
+                        "asserted_by",
+                    ]
+                ]
+            )
         )
         .unique()
     )

@@ -1,3 +1,9 @@
+/*
+  opensearch.next_doi_state:
+
+  TODO
+*/
+
 MODEL (
   name opensearch.next_doi_state,
   dialect duckdb,
