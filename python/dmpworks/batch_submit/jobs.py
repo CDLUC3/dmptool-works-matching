@@ -676,6 +676,7 @@ def submit_sqlmesh_job(
     datacite_run_id: str,
     crossref_metadata_run_id: str,
     ror_run_id: str,
+    data_citation_corpus_run_id: str,
     vcpus: int = VERY_LARGE_VCPUS,
     memory: int = VERY_LARGE_MEMORY,
     duckdb_threads: int = 32,
@@ -695,6 +696,7 @@ def submit_sqlmesh_job(
         datacite_run_id: The run_id of the DataCite data to use.
         crossref_metadata_run_id: The run_id of the Crossref metadata to use.
         ror_run_id: The run_id of the ROR data to use.
+        data_citation_corpus_run_id: The run_id of the Data Citation Corpus data to use.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         duckdb_threads: Number of threads for DuckDB to use.
@@ -712,7 +714,7 @@ def submit_sqlmesh_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME $PREV_RUN_ID $RUN_ID --release-dates.openalex-works $OPENALEX_WORKS_RUN_ID --release-dates.openalex-funders $OPENALEX_FUNDERS_RUN_ID --release-dates.datacite $DATACITE_RUN_ID --release-dates.crossref-metadata $CROSSREF_METADATA_RUN_ID --release-dates.ror $ROR_RUN_ID",
+        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME $PREV_RUN_ID $RUN_ID --release-dates.openalex-works $OPENALEX_WORKS_RUN_ID --release-dates.openalex-funders $OPENALEX_FUNDERS_RUN_ID --release-dates.datacite $DATACITE_RUN_ID --release-dates.crossref-metadata $CROSSREF_METADATA_RUN_ID --release-dates.ror $ROR_RUN_ID --release-dates.data-citation-corpus $DATA_CITATION_CORPUS_RUN_ID",
         environment=make_env(
             {
                 "PREV_RUN_ID": prev_run_id,
@@ -723,6 +725,7 @@ def submit_sqlmesh_job(
                 "DATACITE_RUN_ID": datacite_run_id,
                 "CROSSREF_METADATA_RUN_ID": crossref_metadata_run_id,
                 "ROR_RUN_ID": ror_run_id,
+                "DATA_CITATION_CORPUS_RUN_ID": data_citation_corpus_run_id,
                 "SQLMESH__GATEWAYS__DUCKDB__CONNECTION__CONNECTOR_CONFIG__THREADS": str(duckdb_threads),
                 "SQLMESH__GATEWAYS__DUCKDB__CONNECTION__CONNECTOR_CONFIG__MEMORY_LIMIT": duckdb_memory_limit,
             }

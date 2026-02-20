@@ -23,6 +23,7 @@ class ReleaseDates:
     datacite: DateString
     crossref_metadata: DateString
     ror: DateString
+    data_citation_corpus: DateString
 
 
 @app.command(name="plan")
@@ -52,6 +53,7 @@ def plan(
         ("crossref_metadata", release_dates.crossref_metadata),
         ("datacite", release_dates.datacite),
         ("ror", release_dates.ror),
+        ("data_citation_corpus", release_dates.data_citation_corpus),
     ]
     for dataset, release_date in datasets:
         transform_dir = local_path(dataset, release_date, "transform")
