@@ -26,6 +26,7 @@ variables:
   openalex_funders_path: "/path/to/openalex_funders/parquets"
   openalex_works_path: "/path/to/openalex_works/parquets"
   ror_path: "/path/to/ror/parquets"
+  data_citation_corpus_path: "/path/to/data_citation_corpus"
   works_index_export_path: "/path/to/works_index_export"
   doi_state_export_path: "/path/to/doi_state_export"
   audit_crossref_metadata_works_threshold: 167008747

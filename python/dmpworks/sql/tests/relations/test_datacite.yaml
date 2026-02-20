@@ -1,0 +1,276 @@
+test_relations_datacite:
+  model: relations.datacite
+  inputs:
+    datacite.relations:
+      rows:
+        # intra-work is true
+        - work_doi: "10.9999/test.0001"
+          related_identifier: "10.1234/test.0001"
+          relation_type: "IsIdenticalTo"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0002"
+          related_identifier: "10.1234/test.0002"
+          relation_type: "IsObsoletedBy"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0003"
+          related_identifier: "10.1234/test.0003"
+          relation_type: "Obsoletes"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0004"
+          related_identifier: "10.1234/test.0004"
+          relation_type: "IsPartOf"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0005"
+          related_identifier: "10.1234/test.0005"
+          relation_type: "HasPart"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0006"
+          related_identifier: "10.1234/test.0006"
+          relation_type: "IsPublishedIn"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0007"
+          related_identifier: "10.1234/test.0007"
+          relation_type: "IsTranslationOf"
+          related_identifier_type: "URL"
+        - work_doi: "10.9999/test.0008"
+          related_identifier: "10.1234/test.0008"
+          relation_type: "HasTranslation"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0009"
+          related_identifier: "10.1234/test.0009"
+          relation_type: "IsVariantFormOf"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0010"
+          related_identifier: "10.1234/test.0010"
+          relation_type: "IsOriginalFormOf"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0011"
+          related_identifier: "10.1234/test.0011"
+          relation_type: "HasVersion"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0012"
+          related_identifier: "10.1234/test.0012"
+          relation_type: "IsVersionOf"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0013"
+          related_identifier: "10.1234/test.0013"
+          relation_type: "IsNewVersionOf"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0014"
+          related_identifier: "10.1234/test.0014"
+          relation_type: "IsPreviousVersionOf"
+          related_identifier_type: "DOI"
+
+        # is_possible_shared_project is true
+        - work_doi: "10.9999/test.0100"
+          related_identifier: "10.1234/test.0100"
+          relation_type: "Compiles"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0101"
+          related_identifier: "10.1234/test.0101"
+          relation_type: "IsCompiledBy"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0102"
+          related_identifier: "10.1234/test.0102"
+          relation_type: "Continues"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0103"
+          related_identifier: "10.1234/test.0103"
+          relation_type: "IsContinuedBy"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0104"
+          related_identifier: "10.1234/test.0104"
+          relation_type: "IsDerivedFrom"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0105"
+          related_identifier: "10.1234/test.0105"
+          relation_type: "IsSourceOf"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0106"
+          related_identifier: "10.1234/test.0106"
+          relation_type: "Describes"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0107"
+          related_identifier: "10.1234/test.0107"
+          relation_type: "IsDescribedBy"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0108"
+          related_identifier: "10.1234/test.0108"
+          relation_type: "Documents"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0109"
+          related_identifier: "10.1234/test.0109"
+          relation_type: "IsDocumentedBy"
+          related_identifier_type: "URL"
+        - work_doi: "10.9999/test.0110"
+          related_identifier: "10.1234/test.0110"
+          relation_type: "IsSupplementTo"
+          related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0111"
+          related_identifier: "10.1234/test.0111"
+          relation_type: "IsSupplementedBy"
+          related_identifier_type: "DOI"
+
+        # Types not included will still be present
+        - work_doi: "10.9999/test.0200"
+          related_identifier: "10.1234/test.0200"
+          relation_type: "IsCitedBy"
+          related_identifier_type: "DOI"
+
+        # Works without DOIs won't be present
+        - work_doi: "10.9999/test.0201"
+          related_identifier: "https://example.org/fulltext/0201"
+          relation_type: "IsIdenticalTo"
+          related_identifier_type: "URL"
+        - work_doi: "10.9999/test.0202"
+          related_identifier: "https://example.org/dataset/0202"
+          relation_type: "IsDerivedFrom"
+          related_identifier_type: "URL"
+
+  outputs:
+    query:
+      rows:
+        # is_intra_work true
+        - work_doi: "10.9999/test.0001"
+          related_doi: "10.1234/test.0001"
+          relation_type: "IsIdenticalTo"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0002"
+          related_doi: "10.1234/test.0002"
+          relation_type: "IsObsoletedBy"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0003"
+          related_doi: "10.1234/test.0003"
+          relation_type: "Obsoletes"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0004"
+          related_doi: "10.1234/test.0004"
+          relation_type: "IsPartOf"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0005"
+          related_doi: "10.1234/test.0005"
+          relation_type: "HasPart"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0006"
+          related_doi: "10.1234/test.0006"
+          relation_type: "IsPublishedIn"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0007"
+          related_doi: "10.1234/test.0007"
+          relation_type: "IsTranslationOf"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0008"
+          related_doi: "10.1234/test.0008"
+          relation_type: "HasTranslation"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0009"
+          related_doi: "10.1234/test.0009"
+          relation_type: "IsVariantFormOf"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0010"
+          related_doi: "10.1234/test.0010"
+          relation_type: "IsOriginalFormOf"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0011"
+          related_doi: "10.1234/test.0011"
+          relation_type: "HasVersion"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0012"
+          related_doi: "10.1234/test.0012"
+          relation_type: "IsVersionOf"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0013"
+          related_doi: "10.1234/test.0013"
+          relation_type: "IsNewVersionOf"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0014"
+          related_doi: "10.1234/test.0014"
+          relation_type: "IsPreviousVersionOf"
+          is_intra_work: true
+          is_possible_shared_project: false
+
+        # is_possible_shared_project true
+        - work_doi: "10.9999/test.0100"
+          related_doi: "10.1234/test.0100"
+          relation_type: "Compiles"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0101"
+          related_doi: "10.1234/test.0101"
+          relation_type: "IsCompiledBy"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0102"
+          related_doi: "10.1234/test.0102"
+          relation_type: "Continues"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0103"
+          related_doi: "10.1234/test.0103"
+          relation_type: "IsContinuedBy"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0104"
+          related_doi: "10.1234/test.0104"
+          relation_type: "IsDerivedFrom"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0105"
+          related_doi: "10.1234/test.0105"
+          relation_type: "IsSourceOf"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0106"
+          related_doi: "10.1234/test.0106"
+          relation_type: "Describes"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0107"
+          related_doi: "10.1234/test.0107"
+          relation_type: "IsDescribedBy"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0108"
+          related_doi: "10.1234/test.0108"
+          relation_type: "Documents"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0109"
+          related_doi: "10.1234/test.0109"
+          relation_type: "IsDocumentedBy"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0110"
+          related_doi: "10.1234/test.0110"
+          relation_type: "IsSupplementTo"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0111"
+          related_doi: "10.1234/test.0111"
+          relation_type: "IsSupplementedBy"
+          is_intra_work: false
+          is_possible_shared_project: true
+
+        # neither flag set (still present)
+        - work_doi: "10.9999/test.0200"
+          related_doi: "10.1234/test.0200"
+          relation_type: "IsCitedBy"
+          is_intra_work: false
+          is_possible_shared_project: false
+
+        # Works with a related_identifier that isn't a DOI won't be present
+        # "10.9999/test.0201"
+        # "10.9999/test.0202"

@@ -1,0 +1,369 @@
+test_relations_crossref_metadata:
+  model: relations.crossref_metadata
+  inputs:
+    crossref_metadata.relations:
+      rows:
+        # intra-work is true
+        - work_doi: "10.9999/test.0001"
+          relation_id: "10.1234/test.0001"
+          relation_type: "is-expression-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0002"
+          relation_id: "10.1234/test.0002"
+          relation_type: "has-expression"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0003"
+          relation_id: "10.1234/test.0003"
+          relation_type: "is-expression-of"
+          id_type: "url"
+        - work_doi: "10.9999/test.0004"
+          relation_id: "10.1234/test.0004"
+          relation_type: "is-expression-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0005"
+          relation_id: "10.1234/test.0005"
+          relation_type: "is-format-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0006"
+          relation_id: "10.1234/test.0006"
+          relation_type: "has-format"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0007"
+          relation_id: "10.1234/test.0007"
+          relation_type: "is-identical-to"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0008"
+          relation_id: "10.1234/test.0008"
+          relation_type: "is-manifestation-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0009"
+          relation_id: "10.1234/test.0009"
+          relation_type: "has-manifestation"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0010"
+          relation_id: "10.1234/test.0010"
+          relation_type: "is-manuscript-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0011"
+          relation_id: "10.1234/test.0011"
+          relation_type: "has-manuscript"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0012"
+          relation_id: "10.1234/test.0012"
+          relation_type: "is-preprint-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0013"
+          relation_id: "10.1234/test.0013"
+          relation_type: "has-preprint"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0014"
+          relation_id: "10.1234/test.0014"
+          relation_type: "is-replaced-by"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0015"
+          relation_id: "10.1234/test.0015"
+          relation_type: "replaces"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0016"
+          relation_id: "10.1234/test.0016"
+          relation_type: "is-translation-of"
+          id_type: "url"
+        - work_doi: "10.9999/test.0017"
+          relation_id: "10.1234/test.0017"
+          relation_type: "has-translation"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0018"
+          relation_id: "10.1234/test.0018"
+          relation_type: "is-variant-form-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0019"
+          relation_id: "10.1234/test.0019"
+          relation_type: "is-original-form-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0020"
+          relation_id: "10.1234/test.0020"
+          relation_type: "is-version-of"
+          id_type: "doi"
+
+        # inter-work
+        - work_doi: "10.9999/test.0100"
+          relation_id: "10.1234/test.0100"
+          relation_type: "is-derived-from"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0101"
+          relation_id: "10.1234/test.0101"
+          relation_type: "has-derivation"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0102"
+          relation_id: "10.1234/test.0102"
+          relation_type: "is-basis-for"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0103"
+          relation_id: "10.1234/test.0103"
+          relation_type: "is-based-on"
+          id_type: "url"
+        - work_doi: "10.9999/test.0104"
+          relation_id: "10.1234/test.0104"
+          relation_type: "is-supplement-to"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0105"
+          relation_id: "10.1234/test.0105"
+          relation_type: "is-supplemented-by"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0106"
+          relation_id: "10.1234/test.0106"
+          relation_type: "documents"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0107"
+          relation_id: "10.1234/test.0107"
+          relation_type: "is-documented-by"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0108"
+          relation_id: "10.1234/test.0108"
+          relation_type: "has-part"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0109"
+          relation_id: "10.1234/test.0109"
+          relation_type: "is-part-of"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0110"
+          relation_id: "10.1234/test.0110"
+          relation_type: "continues"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0111"
+          relation_id: "10.1234/test.0111"
+          relation_type: "is-continued-by"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0112"
+          relation_id: "10.1234/test.0112"
+          relation_type: "compiles"
+          id_type: "url"
+        - work_doi: "10.9999/test.0113"
+          relation_id: "10.1234/test.0113"
+          relation_type: "is-compiled-by"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0114"
+          relation_id: "10.1234/test.0114"
+          relation_type: "is-related-material"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0115"
+          relation_id: "10.1234/test.0115"
+          relation_type: "has-related-material"
+          id_type: "doi"
+
+        # others that should be filtered out
+        - work_doi: "10.9999/test.0200"
+          relation_id: "10.1234/test.0200"
+          relation_type: "is-cited-by"
+          id_type: "doi"
+        - work_doi: "10.9999/test.0201"
+          relation_id: "https://example.org/fulltext/0201"
+          relation_type: "is-expression-of"
+          id_type: "url"
+        - work_doi: "10.9999/test.0202"
+          relation_id: "https://example.org/dataset/0202"
+          relation_type: "is-derived-from"
+          id_type: "url"
+        - work_doi: "10.9999/test.0203"
+          relation_id: "https://example.org/not-a-doi"
+          relation_type: "is-expression-of"
+          id_type: "doi"
+
+  outputs:
+    query:
+      rows:
+        # is_intra_work is true
+        - work_doi: "10.9999/test.0001"
+          related_doi: "10.1234/test.0001"
+          relation_type: "is-expression-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0002"
+          related_doi: "10.1234/test.0002"
+          relation_type: "has-expression"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0003"
+          related_doi: "10.1234/test.0003"
+          relation_type: "is-expression-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0004"
+          related_doi: "10.1234/test.0004"
+          relation_type: "is-expression-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0005"
+          related_doi: "10.1234/test.0005"
+          relation_type: "is-format-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0006"
+          related_doi: "10.1234/test.0006"
+          relation_type: "has-format"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0007"
+          related_doi: "10.1234/test.0007"
+          relation_type: "is-identical-to"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0008"
+          related_doi: "10.1234/test.0008"
+          relation_type: "is-manifestation-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0009"
+          related_doi: "10.1234/test.0009"
+          relation_type: "has-manifestation"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0010"
+          related_doi: "10.1234/test.0010"
+          relation_type: "is-manuscript-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0011"
+          related_doi: "10.1234/test.0011"
+          relation_type: "has-manuscript"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0012"
+          related_doi: "10.1234/test.0012"
+          relation_type: "is-preprint-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0013"
+          related_doi: "10.1234/test.0013"
+          relation_type: "has-preprint"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0014"
+          related_doi: "10.1234/test.0014"
+          relation_type: "is-replaced-by"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0015"
+          related_doi: "10.1234/test.0015"
+          relation_type: "replaces"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0016"
+          related_doi: "10.1234/test.0016"
+          relation_type: "is-translation-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0017"
+          related_doi: "10.1234/test.0017"
+          relation_type: "has-translation"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0018"
+          related_doi: "10.1234/test.0018"
+          relation_type: "is-variant-form-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0019"
+          related_doi: "10.1234/test.0019"
+          relation_type: "is-original-form-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+        - work_doi: "10.9999/test.0020"
+          related_doi: "10.1234/test.0020"
+          relation_type: "is-version-of"
+          is_intra_work: true
+          is_possible_shared_project: false
+
+      # is_possible_shared_project true
+        - work_doi: "10.9999/test.0100"
+          related_doi: "10.1234/test.0100"
+          relation_type: "is-derived-from"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0101"
+          related_doi: "10.1234/test.0101"
+          relation_type: "has-derivation"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0102"
+          related_doi: "10.1234/test.0102"
+          relation_type: "is-basis-for"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0103"
+          related_doi: "10.1234/test.0103"
+          relation_type: "is-based-on"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0104"
+          related_doi: "10.1234/test.0104"
+          relation_type: "is-supplement-to"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0105"
+          related_doi: "10.1234/test.0105"
+          relation_type: "is-supplemented-by"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0106"
+          related_doi: "10.1234/test.0106"
+          relation_type: "documents"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0107"
+          related_doi: "10.1234/test.0107"
+          relation_type: "is-documented-by"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0108"
+          related_doi: "10.1234/test.0108"
+          relation_type: "has-part"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0109"
+          related_doi: "10.1234/test.0109"
+          relation_type: "is-part-of"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0110"
+          related_doi: "10.1234/test.0110"
+          relation_type: "continues"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0111"
+          related_doi: "10.1234/test.0111"
+          relation_type: "is-continued-by"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0112"
+          related_doi: "10.1234/test.0112"
+          relation_type: "compiles"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0113"
+          related_doi: "10.1234/test.0113"
+          relation_type: "is-compiled-by"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0114"
+          related_doi: "10.1234/test.0114"
+          relation_type: "is-related-material"
+          is_intra_work: false
+          is_possible_shared_project: true
+        - work_doi: "10.9999/test.0115"
+          related_doi: "10.1234/test.0115"
+          relation_type: "has-related-material"
+          is_intra_work: false
+          is_possible_shared_project: true
+
+        # Types not included will still be present
+        - work_doi: "10.9999/test.0200"
+          related_doi: "10.1234/test.0200"
+          relation_type: "is-cited-by"
+          is_intra_work: false
+          is_possible_shared_project: false
+
+        # Works without DOIs won't be present
+        # 10.9999/test.0201
+        # 10.9999/test.0202
+        # 10.9999/test.0203
