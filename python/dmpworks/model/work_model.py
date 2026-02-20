@@ -5,7 +5,7 @@ from typing import Optional
 import pendulum
 from pydantic import BaseModel, computed_field, field_serializer, field_validator
 
-from dmpworks.model.common import Author, Award, Funder, Institution, Source, to_camel
+from dmpworks.model.common import Author, Award, Funder, Institution, Source, to_camel, Relations
 
 
 class WorkModel(BaseModel):
@@ -27,6 +27,7 @@ class WorkModel(BaseModel):
     authors: list[Author]
     funders: list[Funder]
     awards: list[Award]
+    relations: Relations
     source: Source
 
     @computed_field
