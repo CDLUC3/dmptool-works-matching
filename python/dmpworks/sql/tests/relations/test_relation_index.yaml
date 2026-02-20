@@ -78,70 +78,86 @@ test_relations_relations_index:
       rows:
         # intra_work_dois
         - doi: "10.9999/test.0001"
-          intra_work_dois: [ "10.1234/test.0001" ]
-          possible_shared_project_dois: [ "10.9999/test.0201" ]
+          intra_work_dois:
+            - doi: "10.1234/test.0001"
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0201"
           dataset_citation_dois: [ ]
 
         - doi: "10.1234/test.0001"
-          intra_work_dois: [ "10.9999/test.0001" ]
+          intra_work_dois:
+            - doi: "10.9999/test.0001"
           possible_shared_project_dois: [ ]
           dataset_citation_dois: [ ]
 
         - doi: "10.9999/test.0002"
-          intra_work_dois: [ "10.1234/test.0002" ]
-          possible_shared_project_dois: [ "10.9999/test.0200" ]
+          intra_work_dois:
+            - doi: "10.1234/test.0002"
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0200"
           dataset_citation_dois: [ ]
 
         - doi: "10.1234/test.0002"
-          intra_work_dois: [ "10.9999/test.0002" ]
+          intra_work_dois:
+            - doi: "10.9999/test.0002"
           possible_shared_project_dois: [ ]
           dataset_citation_dois: [ ]
 
         # possible_shared_project_dois
         - doi: "10.9999/test.0100"
           intra_work_dois: [ ]
-          possible_shared_project_dois: [ "10.1234/test.0100" ]
+          possible_shared_project_dois:
+            - doi: "10.1234/test.0100"
           dataset_citation_dois: [ ]
 
         - doi: "10.1234/test.0100"
           intra_work_dois: [ ]
-          possible_shared_project_dois: [ "10.9999/test.0100" ]
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0100"
           dataset_citation_dois: [ ]
 
         - doi: "10.9999/test.0101"
           intra_work_dois: [ ]
-          possible_shared_project_dois: [ "10.1234/test.0101" ]
+          possible_shared_project_dois:
+            - doi: "10.1234/test.0101"
           dataset_citation_dois: [ ]
 
         - doi: "10.1234/test.0101"
           intra_work_dois: [ ]
-          possible_shared_project_dois: [ "10.9999/test.0101" ]
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0101"
           dataset_citation_dois: [ ]
 
         # DataCite references Crossref
         - doi: "10.9999/test.0200"
           intra_work_dois: [ ]
-          possible_shared_project_dois: [ "10.9999/test.0002" ]
+          possible_shared_project_dois:
+            - doi: "10.9999/test.0002"
           dataset_citation_dois: [ ]
 
         # Crossref references DataCite
         - doi: "10.9999/test.0201"
           intra_work_dois: [ ]
-          possible_shared_project_dois: [ "10.9999/test.0001" ]
-          dataset_citation_dois: [ "10.8888/test.0401" ]
+          possible_shared_project_dois:
+            - doi:  "10.9999/test.0001"
+          dataset_citation_dois:
+            - doi: "10.8888/test.0401"
 
         # dataset_citation_dois
         - doi: "10.9999/test.0400"
           intra_work_dois: [ ]
           possible_shared_project_dois: [ ]
-          dataset_citation_dois: [ "10.8888/test.0400" ]
+          dataset_citation_dois:
+            - doi: "10.8888/test.0400"
 
         - doi: "10.8888/test.0400"
           intra_work_dois: [ ]
           possible_shared_project_dois: [ ]
-          dataset_citation_dois: [ "10.9999/test.0400" ]
+          dataset_citation_dois:
+            - doi: "10.9999/test.0400"
 
         - doi: "10.8888/test.0401"
           intra_work_dois: [ ]
           possible_shared_project_dois: [ ]
-          dataset_citation_dois: [ "10.9999/test.0201" ]
+          dataset_citation_dois:
+            - doi: "10.9999/test.0201"

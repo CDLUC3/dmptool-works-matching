@@ -185,6 +185,9 @@
           }
         }
       },
+      "accepted_dois": {
+        "type": "keyword"
+      },
       "external_data": {
         "type": "object",
         "properties": {
