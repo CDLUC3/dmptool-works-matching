@@ -1,7 +1,7 @@
 /*
   opensearch.current_doi_state:
 
-  TODO
+  Contains a historic record of the DOI state before this run.
 */
 
 MODEL (

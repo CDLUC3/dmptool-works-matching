@@ -1,7 +1,7 @@
 /*
   relations.datacite:
 
-  TODO
+   DataCite relations between DOIs grouped into higher level types.
 */
 
 MODEL (
@@ -26,7 +26,6 @@ PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
 -- Variant: IsVariantFormOf, IsOriginalFormOf
 -- Version: HasVersion, IsVersionOf, IsNewVersionOf, IsPreviousVersionOf
 
-
 -- inter-work relations relations that imply a possible shared origin:
 -- Compilation: Compiles, IsCompiledBy
 -- Continuation: Continues, IsContinuedBy
@@ -50,12 +49,11 @@ WITH relations_with_dois AS (
       WHEN relation_type IN ('Compiles', 'IsCompiledBy', 'Continues', 'IsContinuedBy', 'IsDerivedFrom', 'IsSourceOf',
                              'Describes', 'IsDescribedBy', 'Documents', 'IsDocumentedBy', 'IsSupplementTo',
                              'IsSupplementedBy') THEN TRUE
-
-
--- what about is published in?
       ELSE FALSE
     END AS is_possible_shared_project
   FROM datacite.relations r
+  -- Don't filter on related_identifier_type = 'DOI', sometimes related_identifier_type is not 'DOI' but contains DOIs
+  -- hence, we use extract_doi instead and check rd.related_doi IS NOT NULL at the end
 )
 
 SELECT DISTINCT

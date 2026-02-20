@@ -1,7 +1,7 @@
 /*
   relations.relations_index:
 
-  TODO
+  Relations from Crossref Metadata, DataCite and Data Citation Corpus merged.
 */
 
 MODEL (
@@ -81,3 +81,8 @@ FROM (
   FROM relations.data_citation_corpus r
 )
 GROUP BY work_doi
+HAVING COUNT(*) FILTER (
+  WHERE is_intra_work
+     OR is_possible_shared_project
+     OR is_dataset_relation
+) > 0

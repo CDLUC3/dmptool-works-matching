@@ -1,7 +1,7 @@
 /*
   relations.crossref_metadata:
 
-  TODO
+  Crossref Metadata relations between DOIs grouped into higher level types.
 */
 
 MODEL (
@@ -56,7 +56,8 @@ WITH relations_with_dois AS (
       ELSE FALSE
     END AS is_possible_shared_project
   FROM crossref_metadata.relations r
-  WHERE r.id_type = 'doi'
+  -- Don't filter on id_type = 'DOI', sometimes id_type is not 'doi' but contains DOIs
+  -- hence, we use extract_doi instead and check rd.related_doi IS NOT NULL at the end
 )
 
 SELECT DISTINCT

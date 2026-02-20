@@ -1,7 +1,7 @@
 /*
   relations.data_citation_corpus:
 
-  TODO
+  Extract Data Citation Corpus relations between DOIs.
 */
 
 MODEL (
