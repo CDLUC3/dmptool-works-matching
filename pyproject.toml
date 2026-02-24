@@ -14,7 +14,7 @@ dependencies = [
     "tqdm>=4,<5",
     "opensearch-py>=2.8.0,<3",
     "pyarrow>=19,<21",
-    "sqlmesh==0.227.1",
+    "sqlmesh==0.230.1",
     "cyclopts>=3,<4",
     "pooch>=1,<2",
     "boto3>=1,<2",
