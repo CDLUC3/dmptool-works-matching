@@ -1,3 +1,9 @@
+/*
+  opensearch.next_doi_state:
+
+  Contains a new historic record of the DOI state from this run.
+*/
+
 MODEL (
   name opensearch.next_doi_state,
   dialect duckdb,

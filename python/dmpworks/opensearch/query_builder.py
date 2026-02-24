@@ -4,7 +4,7 @@ from typing import Callable, Optional
 import pendulum
 
 from dmpworks.model.common import Institution
-from dmpworks.model.dmp_model import Award, DMPModel
+from dmpworks.model.dmp_model import Award, DMPModel, ResearchOutput
 
 
 def get_query_builder(name: str) -> Callable[[DMPModel, int, int, int], dict]:
@@ -178,6 +178,43 @@ def build_dmp_works_search_baseline_query(
                 }
             }
         )
+
+    # Relations
+    # Intra work DOIs are the same core work, so they get a high rank
+    # These are appended to must because if one of these matches it is almost
+    # certainly a match.
+    published_research_outputs = dmp.published_research_outputs if dmp.published_research_outputs is not None else []
+    intra_work_dois = build_relations_query(
+        "relations.intra_work_dois",
+        "relations.intra_work_dois.doi",
+        [work.doi for work in published_research_outputs],
+        boost=10.0,
+    )
+    if intra_work_dois is not None:
+        must.append(intra_work_dois)
+
+    # Inter work DOIs with relation types that can be used for linking works
+    # published as a part of the same project. E.g. a supplement rather than
+    # a citation.
+    possible_shared_project_dois = build_relations_query(
+        "relations.possible_shared_project_dois",
+        "relations.possible_shared_project_dois.doi",
+        [work.doi for work in published_research_outputs],
+        boost=5.0,
+    )
+    if possible_shared_project_dois is not None:
+        must.append(possible_shared_project_dois)
+
+    # Dataset citations, these are any kind of citation of a dataset, but still
+    # could be useful information, so have ranked lower than the above two.
+    dataset_citation_dois = build_relations_query(
+        "relations.dataset_citation_dois",
+        "relations.dataset_citation_dois.doi",
+        [work.doi for work in published_research_outputs],
+        boost=2.5,
+    )
+    if dataset_citation_dois is not None:
+        must.append(dataset_citation_dois)
 
     # Final query and filter based on date range
     # also remove DMPs from search results (OUTPUT_MANAGEMENT_PLAN)
@@ -476,6 +513,46 @@ def build_awards_query(
     return None
 
 
+def build_relations_query(
+    path: str,
+    doi_field: str,
+    dois: list[str],
+    inner_hits_size: int = 50,
+    boost: float = 1.0,
+) -> Optional[dict]:
+    should_queries: list[dict] = []
+
+    for doi in dois:
+        should_queries.append(
+            {
+                "constant_score": {
+                    "_name": f"{doi_field}.{doi}",
+                    "filter": {"term": {doi_field: doi}},
+                    "boost": boost,
+                }
+            }
+        )
+
+    if not should_queries:
+        return None
+
+    return {
+        "nested": {
+            "path": path,
+            "query": {
+                "bool": {
+                    "minimum_should_match": 1,
+                    "should": should_queries,
+                }
+            },
+            "inner_hits": {
+                "name": path,
+                "size": inner_hits_size,
+            },
+        }
+    }
+
+
 def build_entity_query(
     path: str,
     id_field: str,
@@ -549,6 +626,8 @@ def build_entity_query(
 
 
 def build_ltr_features(dmp: DMPModel):
+    published_research_outputs = dmp.published_research_outputs if dmp.published_research_outputs is not None else []
+
     return {
         "content": [make_content(dmp)],
         "funded_dois": dmp.funded_dois,
@@ -557,14 +636,18 @@ def build_ltr_features(dmp: DMPModel):
         "award_groups": build_sltr_awards_query(dmp.external_data.awards),
         # Authors
         "dmp_author_count": len(dmp.authors),
-        "author_orcids": list({author.orcid for author in dmp.authors if author.orcid is not None}),
+        "author_orcids": list(
+            {author.orcid for author in dmp.authors if author.orcid is not None},
+        ),
         "author_surname_queries": build_sltr_name_queries(
             "authors.full",
             {author.surname for author in dmp.authors if author.surname is not None},
         ),
         # Institutions
         "dmp_institution_count": len(dmp.institutions),
-        "institution_rors": list({inst.ror for inst in dmp.institutions if inst.ror is not None}),
+        "institution_rors": list(
+            {inst.ror for inst in dmp.institutions if inst.ror is not None},
+        ),
         "institution_name_queries": build_sltr_name_queries(
             "institutions.name",
             {inst.name for inst in dmp.institutions if inst.name is not None},
@@ -579,6 +662,10 @@ def build_ltr_features(dmp: DMPModel):
             "funders.name",
             {fund.funder.name for fund in dmp.funding if fund.funder is not None and fund.funder.name is not None},
             name_slop=3,
+        ),
+        # Relations
+        "published_research_output_dois": list(
+            {output.doi for output in published_research_outputs if output.doi is not None}
         ),
     }
 

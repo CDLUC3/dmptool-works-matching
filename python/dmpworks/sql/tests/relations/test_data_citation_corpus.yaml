@@ -1,0 +1,30 @@
+test_relations_data_citation_corpus:
+  model: relations.data_citation_corpus
+  inputs:
+    data_citation_corpus.relations:
+      rows:
+        - publication: "https://doi.org/10.9999/test.0001"
+          dataset: ABC
+          source: eupmc
+        - publication: "https://doi.org/10.9999/test.0002"
+          dataset: "https://doi.org/10.1234/test.0002"
+          source: czi
+        - publication: "https://doi.org/10.9999/test.0003"
+          dataset: "https://doi.org/10.1234/test.0003"
+          source: datacite
+        - publication: "https://doi.org/10.9999/test.0004"
+          dataset: "https://doi.org/10.1234/test.0004"
+          source: eupmc
+
+  outputs:
+    query:
+      rows:
+        - work_doi: "10.9999/test.0002"
+          dataset_doi: "10.1234/test.0002"
+          source: czi
+        - work_doi: "10.9999/test.0003"
+          dataset_doi: "10.1234/test.0003"
+          source: datacite
+        - work_doi: "10.9999/test.0004"
+          dataset_doi: "10.1234/test.0004"
+          source: eupmc

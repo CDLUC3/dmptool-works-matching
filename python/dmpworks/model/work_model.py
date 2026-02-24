@@ -5,7 +5,7 @@ from typing import Optional
 import pendulum
 from pydantic import BaseModel, computed_field, field_serializer, field_validator
 
-from dmpworks.model.common import Author, Award, Funder, Institution, Source, to_camel
+from dmpworks.model.common import Author, Award, Funder, Institution, Source, to_camel, Relations
 
 
 class WorkModel(BaseModel):
@@ -27,19 +27,8 @@ class WorkModel(BaseModel):
     authors: list[Author]
     funders: list[Funder]
     awards: list[Award]
+    relations: Relations
     source: Source
-
-    @computed_field
-    def institutions_names_text(self) -> str:
-        return ", ".join(dict.fromkeys(inst.name for inst in self.institutions))
-
-    @computed_field
-    def authors_names_text(self) -> str:
-        return ", ".join(dict.fromkeys(author.full for author in self.authors))
-
-    @computed_field
-    def funders_names_text(self) -> str:
-        return ", ".join(dict.fromkeys(funder.name for funder in self.funders))
 
     @cached_property
     def funder_ids_set(self) -> frozenset[str]:

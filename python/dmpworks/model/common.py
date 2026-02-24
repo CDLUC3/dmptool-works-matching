@@ -54,6 +54,26 @@ class Award(BaseModel):
     award_id: str
 
 
+class Relation(BaseModel):
+    model_config = {
+        "alias_generator": to_camel,
+        "populate_by_name": True,
+    }
+
+    doi: str
+
+
+class Relations(BaseModel):
+    model_config = {
+        "alias_generator": to_camel,
+        "populate_by_name": True,
+    }
+
+    intra_work_dois: list[Relation]
+    possible_shared_project_dois: list[Relation]
+    dataset_citation_dois: list[Relation]
+
+
 class Source(BaseModel):
     model_config = {
         "alias_generator": to_camel,

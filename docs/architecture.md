@@ -173,6 +173,9 @@ The following is a summary of the LTR feature set used for training:
 1. **dmp_funder_count**: the number of DMP funders.
 1. **funder_ror_match_count**: the number of DMP funder ROR IDs that matched with the work.
 1. **funder_name_match_count**: the number of DMP funder names that matched with the work.
+1. **intra_work_doi_count**: the number of published research output DOIs from the DMP that matched the work’s intra-work DOIs (i.e., DOIs representing the same work).
+1. **possible_shared_project_doi_count**: the number of published research output DOIs from the DMP that matched the work’s possible shared-project DOIs (i.e., DOIs linked through relationships that could originate from the same project).
+1. **dataset_citation_doi_count**: the number of published research output DOIs from the DMP that matched the work’s dataset citation DOIs (i.e., DOIs linked through dataset citation relationships).
 
 The feature set is defined in the `build_featureset` function in:<br>
 [learning_to_rank.py](../python/dmpworks/opensearch/learning_to_rank.py).

@@ -29,6 +29,7 @@ class DMPModel(BaseModel):
     institutions: list[Institution]
     authors: list[Author]
     funding: list[FundingItem]
+    published_research_outputs: Optional[list[ResearchOutput]] = None
     external_data: Optional[ExternalData] = None
 
     @cached_property
@@ -51,6 +52,10 @@ class DMPModel(BaseModel):
     @field_serializer("created", "registered", "modified", "project_start", "project_end")
     def serialize_pendulum_date(self, v: pendulum.Date):
         return v.to_date_string()
+
+
+class ResearchOutput(BaseModel):
+    doi: str
 
 
 class FundingItem(BaseModel):

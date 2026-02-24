@@ -185,6 +185,15 @@
           }
         }
       },
+      "published_research_outputs": {
+        "type": "nested",
+        "properties": {
+          "doi": {
+            "type": "keyword",
+            "normalizer": "lowercase"
+          }
+        }
+      },
       "external_data": {
         "type": "object",
         "properties": {

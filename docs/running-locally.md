@@ -222,7 +222,8 @@ Download `RankLib-2.18.jar` and save in `bin` from:<br>
 https://sourceforge.net/projects/lemur/files/lemur/RankLib-2.18/
 
 Create a `features.txt` file that instructs RankLib what features from the
-feature set to use for training:
+feature set to use for training. Each line contains the 1-based index of a
+feature to include when training the model.
 ```text
 1
 2
@@ -233,6 +234,9 @@ feature set to use for training:
 10
 12
 13
+14
+15
+16
 ```
 
 ### 7.2. Create Feature Set

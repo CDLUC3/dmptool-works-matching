@@ -9,7 +9,7 @@ from typing import Annotated, Any, Callable, Generator, Iterable, List, Optional
 import pymysql.cursors
 from cyclopts import App, Parameter, validators
 from jsonlines import jsonlines
-from opensearchpy import exceptions, OpenSearch
+from opensearchpy import exceptions, NotFoundError, OpenSearch
 
 from dmpworks.cli_utils import LogLevel
 from dmpworks.model.work_model import WorkModel
@@ -17,6 +17,8 @@ from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientCo
 from dmpworks.transforms import extract_doi
 
 app = App(name="related-works", help="DMSP related works utilities.")
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -411,6 +413,113 @@ def serialise_json(data) -> str:
     if isinstance(data, str):
         return data
     return json.dumps(data, sort_keys=True, separators=(",", ":"))
+
+
+@app.command(name="sync-published-outputs")
+def sync_published_outputs_cmd(
+    dmps_index: str,
+    mysql_config: MySQLConfig,
+    opensearch_config: Optional[OpenSearchClientConfig] = None,
+    log_level: LogLevel = "INFO",
+):
+    """
+    Syncs published outputs from the DMP Tool MySQL database with the OpenSearch
+    DMPs index.
+
+    Args:
+        dmps_index: the DMPs index name.
+        mysql_config: the MySQL config object.
+        opensearch_config: the OpenSearch config object.
+        log_level: the log level.
+
+    """
+
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+
+    if opensearch_config is None:
+        opensearch_config = OpenSearchClientConfig()
+
+    conn = pymysql.connect(
+        host=mysql_config.mysql_host,
+        port=mysql_config.mysql_tcp_port,
+        user=mysql_config.mysql_user,
+        password=mysql_config.mysql_pwd,
+        database=mysql_config.mysql_database,
+        cursorclass=pymysql.cursors.DictCursor,
+    )
+    os_client = make_opensearch_client(opensearch_config)
+
+    dmps = fetch_published_outputs(conn)
+    for dmp in dmps:
+        dmp_doi = dmp.dmp_doi
+        published_research_outputs = [{"doi": doi} for doi in dmp.work_dois]
+        try:
+            response = os_client.update(
+                index=dmps_index,
+                id=dmp_doi,
+                body={
+                    "doc": {
+                        "published_research_outputs": published_research_outputs,
+                    }
+                },
+            )
+            state = response["result"]
+            if state in ("updated", "created", "noop"):
+                log.info(f"DMP {dmp_doi}: update successful — {state}")
+            else:
+                log.error(f"DMP {dmp_doi}: update failed — {state}")
+
+        except NotFoundError:
+            log.warning(f"DMP {dmp_doi}: does not exist — skipping")
+
+
+@dataclass
+class DmpPublishedOutputs:
+    dmp_doi: str
+    work_dois: list[str]
+
+
+def fetch_published_outputs(conn) -> list[DmpPublishedOutputs]:
+    """Returns valid related works from migration table."""
+    sql = """
+    WITH published_outputs AS (
+      SELECT DISTINCT
+        NULLIF(
+          LOWER(
+            TRIM(
+              REGEXP_SUBSTR(p.dmpId, '10\\.[0-9.]+/[^[:space:]]+')
+            )
+          ),
+         ''
+        ) AS dmp_doi,
+        w.doi AS work_doi
+      FROM relatedWorks rw
+      LEFT JOIN plans p ON rw.planId = p.id
+      LEFT JOIN workVersions wv ON rw.workVersionId = wv.id
+      LEFT JOIN works w ON wv.workId = w.id
+      WHERE rw.status = 'ACCEPTED'
+    )
+    
+    SELECT
+      dmp_doi,
+      JSON_ARRAYAGG(po.work_doi) AS work_dois
+    FROM published_outputs po
+    WHERE po.dmp_doi IS NOT NULL AND po.work_doi IS NOT NULL
+    GROUP BY po.dmp_doi;
+    """
+
+    outputs = []
+    with conn.cursor() as cursor:
+        cursor.execute(sql)
+        rows = list(cursor.fetchall())
+        for row in rows:
+            dmp_doi = row.get("dmp_doi")
+            work_dois = json.loads(row.get("work_dois"))
+            work_dois.sort()
+            outputs.append(DmpPublishedOutputs(dmp_doi, work_dois))
+
+    return outputs
 
 
 if __name__ == "__main__":
