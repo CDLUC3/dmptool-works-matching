@@ -422,6 +422,18 @@ def sync_published_outputs_cmd(
     opensearch_config: Optional[OpenSearchClientConfig] = None,
     log_level: LogLevel = "INFO",
 ):
+    """
+    Syncs published outputs from the DMP Tool MySQL database with the OpenSearch
+    DMPs index.
+
+    Args:
+        dmps_index: the DMPs index name.
+        mysql_config: the MySQL config object.
+        opensearch_config: the OpenSearch config object.
+        log_level: the log level.
+
+    """
+
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
