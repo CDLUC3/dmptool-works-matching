@@ -9,7 +9,7 @@ crate-type= ["cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-pyo3 = { version = "0.24.2", features = ["extension-module", "abi3-py39"] }
+pyo3 = { version = "0.28.0", features = ["extension-module", "abi3-py39"] }
 pyo3-polars = { path = "../pyo3-polars/pyo3-polars", version = "0.21.0", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.140"
