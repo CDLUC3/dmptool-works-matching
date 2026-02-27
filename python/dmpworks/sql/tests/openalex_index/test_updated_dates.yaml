@@ -9,7 +9,7 @@ test_openalex_index_updated_dates:
           doi: "10.9999/test.0002"
         - id: "W0000000003"
           doi: "10.9999/test.0003" # This item should be dropped as it only has null updated_dates
-    openalex.works:
+    openalex.openalex_works:
       rows:
         - id: "W0000000001"
           doi: "10.9999/test.0001"
@@ -20,7 +20,7 @@ test_openalex_index_updated_dates:
         - id: "W0000000003"
           doi: "10.9999/test.0003"
           updated_date: null
-    crossref_metadata.works:
+    crossref.crossref_metadata:
       rows:
         - doi: "10.9999/test.0001"
           updated_date: "2025-01-01 00:00:00"

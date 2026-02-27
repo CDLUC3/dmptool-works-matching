@@ -15,11 +15,11 @@ test_openalex_index_openalex_index:
         - id: "W0000000004"
           doi: "10.9999/test.0003"
           is_primary_doi: true
-    openalex.works:
+    openalex.openalex_works:
       rows:
         - id: "W0000000001"
           doi: "10.9999/test.0001"
-          type: "article"
+          work_type: "article"
           publication_date: "2024-01-01"
           publication_venue: "Physics"
           institutions:
@@ -35,7 +35,7 @@ test_openalex_index_openalex_index:
               orcid: "0000-0000-0000-0001"
         - id: "W0000000002"
           doi: "10.9999/test.0002"
-          type: "dataset"
+          work_type: "dataset"
           publication_date: "2025-01-01"
           publication_venue: "Physics"
           institutions:
@@ -51,14 +51,14 @@ test_openalex_index_openalex_index:
               orcid: "0000-0000-0000-001X"
         - id: "W0000000003"
           doi: "10.9999/test.0003"
-          type: "dataset"
+          work_type: "dataset"
           publication_date: "2025-01-02"
           publication_venue: null
           institutions: [ ]
           authors: [ ]
         - id: "W0000000004"
           doi: "10.9999/test.0003"
-          type: null
+          work_type: null
           publication_date: "2025-01-03"
           publication_venue: null
           institutions:

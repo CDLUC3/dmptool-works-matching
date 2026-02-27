@@ -13,7 +13,7 @@ DMP Tool Python package that matches DMPs to their published outputs.
 * ROR: https://zenodo.org/records/15132361
 
 ## Documentation
-See the below pages for in depth documentaion.
+See the below pages for in depth documentation.
 
 * [Architecture](docs/architecture.md)
 * [Running Locally with Dataset Subset](docs/running-locally.md)

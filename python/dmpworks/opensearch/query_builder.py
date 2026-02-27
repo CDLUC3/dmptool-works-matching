@@ -85,9 +85,9 @@ def build_dmps_query(
 
 
 def make_content(dmp: DMPModel) -> Optional[str]:
-    has_text = dmp.title is not None or dmp.abstract is not None
+    has_text = dmp.title is not None or dmp.abstract_text is not None
     if has_text:
-        return " ".join([text for text in [dmp.title, dmp.abstract] if text is not None and text != ""])
+        return " ".join([text for text in [dmp.title, dmp.abstract_text] if text is not None and text != ""])
 
     return None
 
@@ -183,11 +183,11 @@ def build_dmp_works_search_baseline_query(
     # Intra work DOIs are the same core work, so they get a high rank
     # These are appended to must because if one of these matches it is almost
     # certainly a match.
-    published_research_outputs = dmp.published_research_outputs if dmp.published_research_outputs is not None else []
+    published_outputs = dmp.published_outputs if dmp.published_outputs is not None else []
     intra_work_dois = build_relations_query(
         "relations.intra_work_dois",
         "relations.intra_work_dois.doi",
-        [work.doi for work in published_research_outputs],
+        [work.doi for work in published_outputs],
         boost=10.0,
     )
     if intra_work_dois is not None:
@@ -199,7 +199,7 @@ def build_dmp_works_search_baseline_query(
     possible_shared_project_dois = build_relations_query(
         "relations.possible_shared_project_dois",
         "relations.possible_shared_project_dois.doi",
-        [work.doi for work in published_research_outputs],
+        [work.doi for work in published_outputs],
         boost=5.0,
     )
     if possible_shared_project_dois is not None:
@@ -210,7 +210,7 @@ def build_dmp_works_search_baseline_query(
     dataset_citation_dois = build_relations_query(
         "relations.dataset_citation_dois",
         "relations.dataset_citation_dois.doi",
-        [work.doi for work in published_research_outputs],
+        [work.doi for work in published_outputs],
         boost=2.5,
     )
     if dataset_citation_dois is not None:
@@ -626,7 +626,7 @@ def build_entity_query(
 
 
 def build_ltr_features(dmp: DMPModel):
-    published_research_outputs = dmp.published_research_outputs if dmp.published_research_outputs is not None else []
+    published_outputs = dmp.published_outputs if dmp.published_outputs is not None else []
 
     return {
         "content": [make_content(dmp)],
@@ -664,9 +664,7 @@ def build_ltr_features(dmp: DMPModel):
             name_slop=3,
         ),
         # Relations
-        "published_research_output_dois": list(
-            {output.doi for output in published_research_outputs if output.doi is not None}
-        ),
+        "published_output_dois": list({output.doi for output in published_outputs if output.doi is not None}),
     }
 
 

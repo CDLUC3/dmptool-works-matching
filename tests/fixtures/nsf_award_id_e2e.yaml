@@ -5,11 +5,11 @@ interactions:
       Accept:
       - '*/*'
       Accept-Encoding:
-      - gzip, deflate, zstd
+      - gzip, deflate
       Connection:
       - keep-alive
       User-Agent:
-      - python-requests/2.32.3
+      - python-requests/2.32.5
     method: GET
     uri: https://www.research.gov/awardapi-service/v1/awards.json?id=2132549
   response:
@@ -80,22 +80,30 @@ interactions:
         Grant\",\"awardee\":\"THE REGENTS OF THE UNIVERSITY OF CALIFORNIA\",\"orgCodeDiv\":\"05090000\",\"orgCodeDir\":\"05000000\",\"divAbbr\":\"OAC\",\"dirAbbr\":\"CSE\",\"initAmendmentDate\":\"06/30/2021\",\"latestAmendmentDate\":\"06/30/2021\",\"orgLongName\":\"Directorate
         for Computer and Information Science and Engineering\",\"orgLongName2\":\"Office
         of Advanced Cyberinfrastructure (OAC)\",\"progEleCode\":\"741400\",\"progRefCode\":\"7916\",\"program\":\"EAGER\",\"fundsObligated\":[\"FY
-        2021 = $296,234.00\"],\"histAwd\":\"false\",\"activeAwd\":\"false\",\"managingPec\":\"741400\",\"orgUrl\":\"https://www.nsf.gov/div/index.jsp?div=OAC\"}]}}"
+        2021 = $296,234.00\"],\"histAwd\":\"false\",\"activeAwd\":\"false\",\"managingPec\":\"741400\",\"orgUrl\":\"https://www.nsf.gov/div/index.jsp?div=OAC\",\"jrnl\":[{\"auth\":\"Robinson,
+        Erin and Buys, Matthew and Chodacki, John and Garzas, Kristian and Monfort,
+        Steven and Nancarrow, Catherine and Praetzellis, Maria and Riley, Brian and
+        Wimalaratne, Sarala and Davies, Neil\",\"artTitl\":\"FAIR Island: real-world
+        examples of place-based open science\",\"jrnlTitl\":\"GigaScience\",\"jrnlVol\":\"12\",\"jrnlYr\":\"2023\",\"dgtlObjId\":\"https://doi.org/10.1093/gigascience/giad004\",\"parPblcId\":\"10402405\"},{\"auth\":\"Praetzellis,
+        Maria and Buys, Matthew and Chen, Xiaoli and Chodacki, John and Davies, Neil
+        and Garza, Kristian and Nancarrow, Catherine and Riley, Brian and Robinson,
+        Erin\",\"artTitl\":\"A Programmatic and Scalable Approach to Making Data Management
+        Machine-Actionable\",\"jrnlTitl\":\"Data science journal\",\"jrnlVol\":\"22\",\"jrnlYr\":\"2023\",\"dgtlObjId\":\"https://doi.org/10.5334/dsj-2023-026\",\"parPblcId\":\"10526864\",\"authIndCode\":\"N\"}]}]}}"
     headers:
       Connection:
       - keep-alive
       Content-Type:
       - application/json
       Date:
-      - Wed, 03 Dec 2025 04:25:04 GMT
+      - Fri, 27 Feb 2026 02:28:58 GMT
       Server:
-      - nginx/1.29.1
+      - nginx/1.27.5
       Set-Cookie:
-      - BIGipServerweb-research.aws-prod.nsf.gov=vi26001f280078081a0000000000009f85.47873;
-        path=/; Httponly; Secure
+      - BIGipServerweb-research.aws-prod.nsf.gov=783652874.47873.0000; path=/; Httponly;
+        Secure
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains
-      - max-age=-447726304; includeSubDomains
+      - max-age=-455149738; includeSubDomains
       Transfer-Encoding:
       - chunked
       Vary:
@@ -111,11 +119,11 @@ interactions:
       Accept:
       - '*/*'
       Accept-Encoding:
-      - gzip, deflate, zstd
+      - gzip, deflate
       Connection:
       - keep-alive
       User-Agent:
-      - python-requests/2.32.3
+      - python-requests/2.32.5
     method: GET
     uri: https://www.research.gov/awardapi-service/v1/awards.json?id=2132549&printFields=publicationResearch
   response:
@@ -186,22 +194,30 @@ interactions:
         Grant\",\"awardee\":\"THE REGENTS OF THE UNIVERSITY OF CALIFORNIA\",\"orgCodeDiv\":\"05090000\",\"orgCodeDir\":\"05000000\",\"divAbbr\":\"OAC\",\"dirAbbr\":\"CSE\",\"initAmendmentDate\":\"06/30/2021\",\"latestAmendmentDate\":\"06/30/2021\",\"orgLongName\":\"Directorate
         for Computer and Information Science and Engineering\",\"orgLongName2\":\"Office
         of Advanced Cyberinfrastructure (OAC)\",\"progEleCode\":\"741400\",\"progRefCode\":\"7916\",\"program\":\"EAGER\",\"fundsObligated\":[\"FY
-        2021 = $296,234.00\"],\"histAwd\":\"false\",\"activeAwd\":\"false\",\"managingPec\":\"741400\",\"orgUrl\":\"https://www.nsf.gov/div/index.jsp?div=OAC\"}]}}"
+        2021 = $296,234.00\"],\"histAwd\":\"false\",\"activeAwd\":\"false\",\"managingPec\":\"741400\",\"orgUrl\":\"https://www.nsf.gov/div/index.jsp?div=OAC\",\"jrnl\":[{\"auth\":\"Robinson,
+        Erin and Buys, Matthew and Chodacki, John and Garzas, Kristian and Monfort,
+        Steven and Nancarrow, Catherine and Praetzellis, Maria and Riley, Brian and
+        Wimalaratne, Sarala and Davies, Neil\",\"artTitl\":\"FAIR Island: real-world
+        examples of place-based open science\",\"jrnlTitl\":\"GigaScience\",\"jrnlVol\":\"12\",\"jrnlYr\":\"2023\",\"dgtlObjId\":\"https://doi.org/10.1093/gigascience/giad004\",\"parPblcId\":\"10402405\"},{\"auth\":\"Praetzellis,
+        Maria and Buys, Matthew and Chen, Xiaoli and Chodacki, John and Davies, Neil
+        and Garza, Kristian and Nancarrow, Catherine and Riley, Brian and Robinson,
+        Erin\",\"artTitl\":\"A Programmatic and Scalable Approach to Making Data Management
+        Machine-Actionable\",\"jrnlTitl\":\"Data science journal\",\"jrnlVol\":\"22\",\"jrnlYr\":\"2023\",\"dgtlObjId\":\"https://doi.org/10.5334/dsj-2023-026\",\"parPblcId\":\"10526864\",\"authIndCode\":\"N\"}]}]}}"
     headers:
       Connection:
       - keep-alive
       Content-Type:
       - application/json
       Date:
-      - Wed, 03 Dec 2025 04:25:05 GMT
+      - Fri, 27 Feb 2026 02:28:58 GMT
       Server:
-      - nginx/1.29.1
+      - nginx/1.27.5
       Set-Cookie:
-      - BIGipServerweb-research.aws-prod.nsf.gov=vi26001f280078081a0000000000009f85.47873;
-        path=/; Httponly; Secure
+      - BIGipServerweb-research.aws-prod.nsf.gov=783652874.47873.0000; path=/; Httponly;
+        Secure
       Strict-Transport-Security:
       - max-age=31536000; includeSubDomains
-      - max-age=-447726305; includeSubDomains
+      - max-age=-455149738; includeSubDomains
       Transfer-Encoding:
       - chunked
       Vary:

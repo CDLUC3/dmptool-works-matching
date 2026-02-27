@@ -12,7 +12,7 @@ test_openalex_index_titles:
         - id: "W0000000006"
           doi: "10.9999/test.0003"
           title_length: 11
-    openalex.works:
+    openalex.openalex_works:
       rows:
         - id: "W0000000002"
           doi: "10.9999/test.0001"
@@ -31,7 +31,7 @@ test_openalex_index_titles:
           title_length: 7
         - doi: "10.9999/test.0003"
           title_length: 7
-    crossref_metadata.works:
+    crossref.crossref_metadata:
       rows:
         - doi: "10.9999/test.0001"
           title: "Title One"

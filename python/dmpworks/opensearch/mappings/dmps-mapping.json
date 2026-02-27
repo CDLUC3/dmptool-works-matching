@@ -50,7 +50,7 @@
         "analyzer": "icu_analyzer",
         "term_vector": "with_positions_offsets"
       },
-      "abstract": {
+      "abstract_text": {
         "type": "text",
         "analyzer": "icu_analyzer",
         "term_vector": "with_positions_offsets"
@@ -185,7 +185,7 @@
           }
         }
       },
-      "published_research_outputs": {
+      "published_outputs": {
         "type": "nested",
         "properties": {
           "doi": {

@@ -81,3 +81,12 @@ class DMPSubset:
             help="S3 path (excluding bucket URI) to a specific list of DMP DOIs to include in the subset.",
         ),
     ] = None
+
+
+@dataclass
+class MySQLConfig:
+    mysql_host: Annotated[str, Parameter(env_var="MYSQL_HOST", help="MySQL hostname")]
+    mysql_tcp_port: Annotated[int, Parameter(env_var="MYSQL_TCP_PORT", help="MySQL port")]
+    mysql_user: Annotated[str, Parameter(env_var="MYSQL_USER", help="MySQL user name")]
+    mysql_database: Annotated[str, Parameter(env_var="MYSQL_DATABASE", help="MySQL database name")]
+    mysql_pwd: Annotated[str, Parameter(env_var="MYSQL_PWD", help="MySQL password")]

@@ -18,7 +18,7 @@ test_openalex_index_funders:
           doi: "10.9999/test.0001"
           is_primary_doi: false
 
-    openalex.works:
+    openalex.openalex_works:
       rows:
         - id: "W0000000001"
           doi: "10.9999/test.0001"

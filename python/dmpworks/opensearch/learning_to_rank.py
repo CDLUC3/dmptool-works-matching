@@ -114,19 +114,19 @@ def build_featureset() -> dict:
                 # Relations
                 identifier_feature(
                     "intra_work_doi_count",
-                    "published_research_output_dois",
+                    "published_output_dois",
                     "relations.intra_work_dois",
                     "relations.intra_work_dois.doi",
                 ),
                 identifier_feature(
                     "possible_shared_project_doi_count",
-                    "published_research_output_dois",
+                    "published_output_dois",
                     "relations.possible_shared_project_dois",
                     "relations.possible_shared_project_dois.doi",
                 ),
                 identifier_feature(
                     "dataset_citation_doi_count",
-                    "published_research_output_dois",
+                    "published_output_dois",
                     "relations.dataset_citation_dois",
                     "relations.dataset_citation_dois.doi",
                 ),

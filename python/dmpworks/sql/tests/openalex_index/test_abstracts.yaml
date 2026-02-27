@@ -12,7 +12,7 @@ test_openalex_index_abstracts:
         - id: "W0000000006"
           doi: "10.9999/test.0003"
           abstract_length: 14
-    openalex.works:
+    openalex.openalex_works:
       rows:
         - id: "W0000000002"
           doi: "10.9999/test.0001"
@@ -31,7 +31,7 @@ test_openalex_index_abstracts:
           abstract_length: 10
         - doi: "10.9999/test.0003"
           abstract_length: 10
-    crossref_metadata.works:
+    crossref.crossref_metadata:
       rows:
         - doi: "10.9999/test.0001"
           abstract: "Abstract One"

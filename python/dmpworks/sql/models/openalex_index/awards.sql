@@ -27,16 +27,16 @@ WITH award_ids AS (
     -- OpenAlex
     SELECT owm.id, owm.doi, award.funder_award_id AS award_id
     FROM openalex_index.works_metadata AS owm
-    INNER JOIN openalex.works works ON owm.id = works.id, UNNEST(works.awards) AS item(award)
+    INNER JOIN openalex.openalex_works works ON owm.id = works.id, UNNEST(works.awards) AS item(award)
     WHERE award.funder_award_id IS NOT NULL
 
     UNION ALL
 
     -- Crossref Metadata
-    SELECT owm.id, owm.doi, award AS award_id
-    FROM openalex_index.works_metadata AS owm
-    INNER JOIN crossref_metadata.works_funders ON owm.doi = work_doi
-    WHERE award IS NOT NULL
+    SELECT owm.id, owm.doi, funder.award AS award_id
+    FROM openalex_index.works_metadata owm
+    INNER JOIN crossref.crossref_metadata cm ON owm.doi = cm.doi, UNNEST(cm.funders) AS item(funder)
+    WHERE funder.award IS NOT NULL
   )
   GROUP BY doi
 )

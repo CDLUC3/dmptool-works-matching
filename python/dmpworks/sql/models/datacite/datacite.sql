@@ -1,5 +1,5 @@
 MODEL (
-  name datacite.works,
+  name datacite.datacite,
   dialect duckdb,
   kind VIEW,
   audits (
@@ -8,7 +8,7 @@ MODEL (
     not_empty_string(column := doi, blocking := false),
     not_empty_string(column := title, blocking := false),
     not_empty_string(column := abstract, blocking := false),
-    accepted_values(column := type, is_in :=('Audiovisual', 'Award', 'Book', 'BookChapter', 'Collection',
+    accepted_values(column := work_type, is_in :=('Audiovisual', 'Award', 'Book', 'BookChapter', 'Collection',
                                              'ComputationalNotebook', 'ConferencePaper', 'ConferenceProceeding', 'DataPaper',
                                              'Dataset', 'Dissertation', 'Event', 'Film', 'Image', 'Instrument', 'InteractiveResource',
                                              'Journal', 'JournalArticle', 'List of nomenclatural and taxonomic changes for the New Zealand flora.',
@@ -22,4 +22,4 @@ MODEL (
 PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
 
 SELECT *
-FROM read_parquet(@VAR('datacite_path') || '/datacite_works_[0-9]*.parquet');
+FROM read_parquet(@VAR('datacite_path') || '/datacite_batch_[0-9]*_part_[0-9]*.parquet');

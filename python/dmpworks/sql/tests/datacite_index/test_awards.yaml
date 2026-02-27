@@ -13,7 +13,7 @@ test_datacite_index_awards:
         - doi: "10.9999/test.0003" # This item should be dropped as it has no funders
           funders: [ ]
 
-    openalex.works:
+    openalex.openalex_works:
       rows:
         - doi: "10.9999/test.0001"
           awards:

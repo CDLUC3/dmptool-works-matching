@@ -256,139 +256,6 @@ def ror_download_job(
     )
 
 
-def ror_transform_job(
-    *,
-    env: str,
-    bucket_name: str,
-    run_id: str,
-    file_name: str,
-    vcpus: int = SMALL_VCPUS,
-    memory: int = SMALL_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
-) -> str:
-    """
-    Submits the ROR data transform job to AWS Batch.
-
-    Args:
-        env: environment, i.e., dev, stage, prod.
-        bucket_name: S3 bucket containing the data.
-        run_id: a unique ID to represent this run of the job.
-        file_name: the name of the file to be transformed.
-        vcpus: number of vCPUs for the job.
-        memory: memory (in MiB) for the job.
-        depends_on: optional list of job dependencies.
-
-    Returns:
-        str: the job ID of the submitted AWS Batch job.
-    """
-
-    return submit_job(
-        job_name="ror-transform",
-        run_id=run_id,
-        job_queue=standard_job_queue(env),
-        job_definition=standard_job_definition(env),
-        vcpus=vcpus,
-        memory=memory,
-        command="dmpworks aws-batch ror transform $BUCKET_NAME $RUN_ID $FILE_NAME",
-        environment=make_env(
-            {
-                "RUN_ID": run_id,
-                "BUCKET_NAME": bucket_name,
-                "FILE_NAME": file_name,
-                "TQDM_POSITION": TQDM_POSITION,
-                "TQDM_MININTERVAL": TQDM_MININTERVAL,
-            }
-        ),
-        depends_on=depends_on,
-    )
-
-
-def openalex_funders_download_job(
-    *,
-    env: str,
-    bucket_name: str,
-    run_id: str,
-    openalex_bucket_name: str,
-    vcpus: int = NANO_VCPUS,
-    memory: int = NANO_MEMORY,
-) -> str:
-    """
-    Submits the OpenAlex funders data download job to AWS Batch.
-
-    Args:
-        env: environment, i.e., dev, stage, prod.
-        bucket_name: S3 bucket to download the file to.
-        run_id: a unique ID to represent this run of the job.
-        openalex_bucket_name: Name of the OpenAlex AWS S3 bucket.
-        vcpus: number of vCPUs for the job.
-        memory: memory (in MiB) for the job.
-
-    Returns:
-        str: the job ID of the submitted AWS Batch job.
-    """
-
-    return submit_job(
-        job_name="openalex-funders-download",
-        run_id=run_id,
-        job_queue=standard_job_queue(env),
-        job_definition=standard_job_definition(env),
-        vcpus=vcpus,
-        memory=memory,
-        command="dmpworks aws-batch openalex-funders download $BUCKET_NAME $RUN_ID $OPENALEX_BUCKET_NAME",
-        environment=make_env(
-            {
-                "RUN_ID": run_id,
-                "BUCKET_NAME": bucket_name,
-                "OPENALEX_BUCKET_NAME": openalex_bucket_name,
-            }
-        ),
-    )
-
-
-def openalex_funders_transform_job(
-    *,
-    env: str,
-    bucket_name: str,
-    run_id: str,
-    vcpus: int = NANO_VCPUS,
-    memory: int = NANO_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
-) -> str:
-    """
-    Submits the OpenAlex funders data transform job to AWS Batch.
-
-    Args:
-        env: environment, i.e., dev, stage, prod.
-        bucket_name: S3 bucket containing the raw data.
-        run_id: a unique ID to represent this run of the job.
-        vcpus: number of vCPUs for the job.
-        memory: memory (in MiB) for the job.
-        depends_on: optional list of job dependencies.
-
-    Returns:
-        str: the job ID of the submitted AWS Batch job.
-    """
-
-    return submit_job(
-        job_name="openalex-funders-transform",
-        run_id=run_id,
-        job_queue=standard_job_queue(env),
-        job_definition=standard_job_definition(env),
-        vcpus=vcpus,
-        memory=memory,
-        command="dmpworks aws-batch openalex-funders transform $BUCKET_NAME $RUN_ID",
-        environment=make_env(
-            {
-                "RUN_ID": run_id,
-                "BUCKET_NAME": bucket_name,
-                "TQDM_POSITION": TQDM_POSITION,
-                "TQDM_MININTERVAL": TQDM_MININTERVAL,
-            }
-        ),
-        depends_on=depends_on,
-    )
-
-
 def openalex_works_download_job(
     *,
     env: str,
@@ -468,14 +335,12 @@ def openalex_works_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --max-file-processes=$MAX_FILE_PROCESSES --batch-size=$BATCH_SIZE --use-subset=$USE_SUBSET",
+        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "USE_SUBSET": str(use_subset).lower(),
-                "MAX_FILE_PROCESSES": str(max_file_processes),
-                "BATCH_SIZE": str(batch_size),
                 "TQDM_POSITION": TQDM_POSITION,
                 "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
@@ -672,7 +537,6 @@ def submit_sqlmesh_job(
     prev_run_id: str,
     run_id: str,
     openalex_works_run_id: str,
-    openalex_funders_run_id: str,
     datacite_run_id: str,
     crossref_metadata_run_id: str,
     ror_run_id: str,
@@ -692,7 +556,6 @@ def submit_sqlmesh_job(
         prev_run_id: a unique ID to represent the previous run of the SQLMesh job.
         run_id: a unique ID to represent this run of the SQLMesh job.
         openalex_works_run_id: The run_id of the OpenAlex works data to use.
-        openalex_funders_run_id: The run_id of the OpenAlex funders data to use.
         datacite_run_id: The run_id of the DataCite data to use.
         crossref_metadata_run_id: The run_id of the Crossref metadata to use.
         ror_run_id: The run_id of the ROR data to use.
@@ -714,14 +577,13 @@ def submit_sqlmesh_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME $PREV_RUN_ID $RUN_ID --release-dates.openalex-works $OPENALEX_WORKS_RUN_ID --release-dates.openalex-funders $OPENALEX_FUNDERS_RUN_ID --release-dates.datacite $DATACITE_RUN_ID --release-dates.crossref-metadata $CROSSREF_METADATA_RUN_ID --release-dates.ror $ROR_RUN_ID --release-dates.data-citation-corpus $DATA_CITATION_CORPUS_RUN_ID",
+        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME $PREV_RUN_ID $RUN_ID --release-dates.openalex-works $OPENALEX_WORKS_RUN_ID --release-dates.datacite $DATACITE_RUN_ID --release-dates.crossref-metadata $CROSSREF_METADATA_RUN_ID --release-dates.ror $ROR_RUN_ID --release-dates.data-citation-corpus $DATA_CITATION_CORPUS_RUN_ID",
         environment=make_env(
             {
                 "PREV_RUN_ID": prev_run_id,
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "OPENALEX_WORKS_RUN_ID": openalex_works_run_id,
-                "OPENALEX_FUNDERS_RUN_ID": openalex_funders_run_id,
                 "DATACITE_RUN_ID": datacite_run_id,
                 "CROSSREF_METADATA_RUN_ID": crossref_metadata_run_id,
                 "ROR_RUN_ID": ror_run_id,
@@ -808,7 +670,6 @@ def submit_sync_works_job(
 def submit_sync_dmps_job(
     *,
     env: str,
-    bucket_name: str,
     dmps_run_id: str,
     host: str,
     region: str,
@@ -816,9 +677,7 @@ def submit_sync_dmps_job(
     mode: str = "aws",
     port: int = 443,
     service: str = "es",
-    max_processes: int = 2,
     chunk_size: int = 1000,
-    max_retries: int = 3,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
@@ -828,7 +687,6 @@ def submit_sync_dmps_job(
 
     Args:
         env: environment, i.e., dev, stage, prod.
-        bucket_name: S3 bucket containing the data to sync.
         dmps_run_id: The run_id of the DMPs data to use.
         host: The OpenSearch host URL.
         region: The AWS region of the OpenSearch cluster.
@@ -836,9 +694,7 @@ def submit_sync_dmps_job(
         mode: Client connection mode (e.g., "aws").
         port: OpenSearch connection port.
         service: OpenSearch service name (e.g., "es").
-        max_processes: Max number of processes for the sync job.
         chunk_size: Number of documents per sync chunk.
-        max_retries: Max retries for failed chunks.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -851,23 +707,19 @@ def submit_sync_dmps_job(
         job_name="opensearch-sync-dmps",
         run_id=dmps_run_id,
         job_queue=standard_job_queue(env),
-        job_definition=standard_job_definition(env),
+        job_definition=database_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch sync-dmps $BUCKET_NAME $RUN_ID $INDEX_NAME --client-config.mode=$MODE --client-config.host=$HOST --client-config.port=$PORT --client-config.region=$REGION --client-config.service=$SERVICE --sync-config.max-processes=$MAX_PROCESSES --sync-config.chunk-size=$CHUNK_SIZE --sync-config.max-retries=$MAX_RETRIES",
+        command="dmpworks opensearch sync-dmps $INDEX_NAME --opensearch-config.mode=$OPENSEARCH_MODE --opensearch-config.host=$OPENSEARCH_HOST --opensearch-config.port=$OPENSEARCH_PORT --opensearch-config.region=$OPENSEARCH_REGION --opensearch-config.service=$OPENSEARCH_SERVICE --chunk-size=$CHUNK_SIZE",
         environment=make_env(
             {
-                "RUN_ID": dmps_run_id,
-                "BUCKET_NAME": bucket_name,
                 "INDEX_NAME": index_name,
-                "MODE": mode,
-                "HOST": host,
-                "PORT": str(port),
-                "REGION": region,
-                "SERVICE": service,
-                "MAX_PROCESSES": str(max_processes),
+                "OPENSEARCH_MODE": mode,
+                "OPENSEARCH_HOST": host,
+                "OPENSEARCH_PORT": str(port),
+                "OPENSEARCH_REGION": region,
+                "OPENSEARCH_SERVICE": service,
                 "CHUNK_SIZE": str(chunk_size),
-                "MAX_RETRIES": str(max_retries),
                 "TQDM_POSITION": TQDM_POSITION,
                 "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }

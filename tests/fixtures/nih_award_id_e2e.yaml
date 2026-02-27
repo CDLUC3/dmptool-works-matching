@@ -7,7 +7,7 @@ interactions:
       Accept:
       - '*/*'
       Accept-Encoding:
-      - gzip, deflate, zstd
+      - gzip, deflate
       Connection:
       - keep-alive
       Content-Length:
@@ -15,12 +15,12 @@ interactions:
       Content-Type:
       - application/json
       User-Agent:
-      - python-requests/2.32.3
+      - python-requests/2.32.5
     method: POST
     uri: https://api.reporter.nih.gov/v2/projects/search
   response:
     body:
-      string: '{"meta":{"search_id":"wfiBbuObNUuSPhi-Idjl1A","total":7,"offset":0,"limit":500,"sort_field":null,"sort_order":"ASC","sorted_by_relevance":true,"properties":{"URL":"https:/reporter.nih.gov/search/wfiBbuObNUuSPhi-Idjl1A/projects"}},"results":[{"appl_id":10893225,"project_num":"7R01HL126896-07"},{"appl_id":10447089,"project_num":"5R01HL126896-06"},{"appl_id":10198989,"project_num":"5R01HL126896-05"},{"appl_id":9971166,"project_num":"2R01HL126896-04A1"},{"appl_id":9527861,"project_num":"5R01HL126896-03"},{"appl_id":9335940,"project_num":"5R01HL126896-02"},{"appl_id":9029501,"project_num":"1R01HL126896-01A1"}]}'
+      string: '{"meta":{"search_id":"d-uEexTJWk2qyvTEsYem8w","total":7,"offset":0,"limit":500,"sort_field":null,"sort_order":"ASC","sorted_by_relevance":true,"properties":{"URL":"https:/reporter.nih.gov/search/d-uEexTJWk2qyvTEsYem8w/projects"}},"results":[{"appl_id":10893225,"project_num":"7R01HL126896-07"},{"appl_id":10447089,"project_num":"5R01HL126896-06"},{"appl_id":10198989,"project_num":"5R01HL126896-05"},{"appl_id":9971166,"project_num":"2R01HL126896-04A1"},{"appl_id":9527861,"project_num":"5R01HL126896-03"},{"appl_id":9335940,"project_num":"5R01HL126896-02"},{"appl_id":9029501,"project_num":"1R01HL126896-01A1"}]}'
     headers:
       Connection:
       - keep-alive
@@ -29,28 +29,24 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Mon, 11 Aug 2025 02:36:29 GMT
-      Server:
-      - ''
+      - Fri, 27 Feb 2026 02:28:49 GMT
       Set-Cookie:
-      - AWSALB=SPjP4R5uqcIKKONdx3oEVYqpwoxPriNtVbA2qyf8iHCGF/Uz7KM7D+WnhpmADWPXn+SE3Kun0Al50H/Ndru9cxr6JvYtIFzTt3fgCTtV5qaku5cqhVUkvlpkhyOO3T6/SWsEe+euDesbuI64y3J+HmFG4GHw9qfYKxQR2jWezwWTrB8yD255tPEGtnpZ8Ujs3YKvQ8cWYiYVxMYVCQ/JVk8HgzhASI3cEEcMRE2mWrfs4fvTmnYKsqukH4HXTsP/g6JqhCV8hLaQyne0Ow==;
-        Expires=Mon, 18 Aug 2025 02:36:29 GMT; Path=/
-      - AWSALBCORS=SPjP4R5uqcIKKONdx3oEVYqpwoxPriNtVbA2qyf8iHCGF/Uz7KM7D+WnhpmADWPXn+SE3Kun0Al50H/Ndru9cxr6JvYtIFzTt3fgCTtV5qaku5cqhVUkvlpkhyOO3T6/SWsEe+euDesbuI64y3J+HmFG4GHw9qfYKxQR2jWezwWTrB8yD255tPEGtnpZ8Ujs3YKvQ8cWYiYVxMYVCQ/JVk8HgzhASI3cEEcMRE2mWrfs4fvTmnYKsqukH4HXTsP/g6JqhCV8hLaQyne0Ow==;
-        Expires=Mon, 18 Aug 2025 02:36:29 GMT; Path=/; SameSite=None; Secure
+      - AWSALB=x/hJzaS27qpSkRkcrFdPJl5k3ibJmv3xX2DiZKPj3Km3TvVizUM6W63FrVOc7kvCkdQGXzmQHWG9ZV4wamvWb+K+wDnusVA1JFLdlF3fBK2P7st8y9TYbEQMePpO;
+        Expires=Fri, 06 Mar 2026 02:28:49 GMT; Path=/
+      - AWSALBCORS=x/hJzaS27qpSkRkcrFdPJl5k3ibJmv3xX2DiZKPj3Km3TvVizUM6W63FrVOc7kvCkdQGXzmQHWG9ZV4wamvWb+K+wDnusVA1JFLdlF3fBK2P7st8y9TYbEQMePpO;
+        Expires=Fri, 06 Mar 2026 02:28:49 GMT; Path=/; SameSite=None; Secure
+      - AWSALB=DANiKa1MXw6hllX4Xo/uMo5qZFvdVrD/0+eNe8WZ9Kmrw+ls2Go3DtgPC0Y/TnV/0KthcVzNO820Tonp3WKopOa2x2lofNwn3cCtRTGO8TpkdjAQRG6tSvL2xpOEXYp9g5PqJV0oXX4N+YpwPRw0Xb1QSm013UsE1PSz2g8EWSwaP71uK/Wxbx4yby/dxpdlvN774WWQtOeydLYaf+8CglZlAqOF5RJahlkkIQfowM5rSvZSHKMKW5V0WlVNqwR5+BStwrdTu4jUZxbTFg==;
+        Expires=Fri, 06 Mar 2026 02:28:49 GMT; Path=/
+      - AWSALBCORS=DANiKa1MXw6hllX4Xo/uMo5qZFvdVrD/0+eNe8WZ9Kmrw+ls2Go3DtgPC0Y/TnV/0KthcVzNO820Tonp3WKopOa2x2lofNwn3cCtRTGO8TpkdjAQRG6tSvL2xpOEXYp9g5PqJV0oXX4N+YpwPRw0Xb1QSm013UsE1PSz2g8EWSwaP71uK/Wxbx4yby/dxpdlvN774WWQtOeydLYaf+8CglZlAqOF5RJahlkkIQfowM5rSvZSHKMKW5V0WlVNqwR5+BStwrdTu4jUZxbTFg==;
+        Expires=Fri, 06 Mar 2026 02:28:49 GMT; Path=/; SameSite=None; Secure
       Strict-Transport-Security:
-      - max-age=31536000; includeSubDomains; preload
-      X-Content-Type-Options:
-      - nosniff
-      X-Frame-Options:
-      - SAMEORIGIN
+      - max-age=31536000; includeSubDomains;
       X-Rate-Limit-Limit:
       - 1m
       X-Rate-Limit-Remaining:
       - '199'
       X-Rate-Limit-Reset:
-      - '2025-08-11T02:37:16.2101097Z'
-      X-XSS-Protection:
-      - 1; mode=block
+      - '2026-02-27T02:29:49.0982438Z'
       api-supported-versions:
       - '2.0'
     status:
@@ -64,7 +60,7 @@ interactions:
       Accept:
       - '*/*'
       Accept-Encoding:
-      - gzip, deflate, zstd
+      - gzip, deflate
       Connection:
       - keep-alive
       Content-Length:
@@ -72,12 +68,12 @@ interactions:
       Content-Type:
       - application/json
       User-Agent:
-      - python-requests/2.32.3
+      - python-requests/2.32.5
     method: POST
     uri: https://api.reporter.nih.gov/v2/projects/search
   response:
     body:
-      string: '{"meta":{"search_id":"UYTJ4qrt6kaZCrKMohGlpw","total":7,"offset":0,"limit":500,"sort_field":null,"sort_order":"ASC","sorted_by_relevance":true,"properties":{"URL":"https:/reporter.nih.gov/search/UYTJ4qrt6kaZCrKMohGlpw/projects"}},"results":[{"appl_id":10893225,"project_num":"7R01HL126896-07"},{"appl_id":10447089,"project_num":"5R01HL126896-06"},{"appl_id":10198989,"project_num":"5R01HL126896-05"},{"appl_id":9971166,"project_num":"2R01HL126896-04A1"},{"appl_id":9527861,"project_num":"5R01HL126896-03"},{"appl_id":9335940,"project_num":"5R01HL126896-02"},{"appl_id":9029501,"project_num":"1R01HL126896-01A1"}]}'
+      string: '{"meta":{"search_id":"7aYUjOQ4DUKUpRooFjqMgg","total":7,"offset":0,"limit":500,"sort_field":null,"sort_order":"ASC","sorted_by_relevance":true,"properties":{"URL":"https:/reporter.nih.gov/search/7aYUjOQ4DUKUpRooFjqMgg/projects"}},"results":[{"appl_id":10893225,"project_num":"7R01HL126896-07"},{"appl_id":10447089,"project_num":"5R01HL126896-06"},{"appl_id":10198989,"project_num":"5R01HL126896-05"},{"appl_id":9971166,"project_num":"2R01HL126896-04A1"},{"appl_id":9527861,"project_num":"5R01HL126896-03"},{"appl_id":9335940,"project_num":"5R01HL126896-02"},{"appl_id":9029501,"project_num":"1R01HL126896-01A1"}]}'
     headers:
       Connection:
       - keep-alive
@@ -86,28 +82,24 @@ interactions:
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Mon, 11 Aug 2025 02:36:30 GMT
-      Server:
-      - ''
+      - Fri, 27 Feb 2026 02:28:50 GMT
       Set-Cookie:
-      - AWSALB=rUV0cxT4yYUMVRndzJGEzfCGMfdmViFZHmuYAKmw+ZGs95RsY1UprSgl/QrWOq3HL45L6jqIe9lFXol6sxq5LF52HGaaweUUcWPtCNRczif6U/V0IiX1K2zoYF39VIkYXUUByzYdTio+a2xJPXi5bKDhtJfLydJKPLrfUUVjylArhcpWxEA080vah+3ZQqp/tYvbCQUNMKptl8H99I6a9XG7Bik/F3XTKG7WWF/8YC9c+NBG15veEdu4GZ4mi5Ay186/Y/qt9P8MstWyyA==;
-        Expires=Mon, 18 Aug 2025 02:36:30 GMT; Path=/
-      - AWSALBCORS=rUV0cxT4yYUMVRndzJGEzfCGMfdmViFZHmuYAKmw+ZGs95RsY1UprSgl/QrWOq3HL45L6jqIe9lFXol6sxq5LF52HGaaweUUcWPtCNRczif6U/V0IiX1K2zoYF39VIkYXUUByzYdTio+a2xJPXi5bKDhtJfLydJKPLrfUUVjylArhcpWxEA080vah+3ZQqp/tYvbCQUNMKptl8H99I6a9XG7Bik/F3XTKG7WWF/8YC9c+NBG15veEdu4GZ4mi5Ay186/Y/qt9P8MstWyyA==;
-        Expires=Mon, 18 Aug 2025 02:36:30 GMT; Path=/; SameSite=None; Secure
+      - AWSALB=+yOJ915W/dcVH3fdlXtEI1lbl5dRnMfVo+LzntxRoJqDN2LEzjOaazTmG5vrCE0eN2ViRwmwgLTpS1kDTQPrBN/nvLod+CWLGY8E9xnoKzG253JV/0oaU70xwy35;
+        Expires=Fri, 06 Mar 2026 02:28:50 GMT; Path=/
+      - AWSALBCORS=+yOJ915W/dcVH3fdlXtEI1lbl5dRnMfVo+LzntxRoJqDN2LEzjOaazTmG5vrCE0eN2ViRwmwgLTpS1kDTQPrBN/nvLod+CWLGY8E9xnoKzG253JV/0oaU70xwy35;
+        Expires=Fri, 06 Mar 2026 02:28:50 GMT; Path=/; SameSite=None; Secure
+      - AWSALB=KptYEHUSsJPhx3NADbYTELa5Niy4krat/Cea7dZu/JqAxmBC/0eJBBn+5UvxmBowFj9IRS4axKM222kEllqE6Or07PnPL95TRdtxaNqtYP3CfOwdcWm6ZYQsLJDO7Gu8UOkKSKHuFhg7Qw/GNOSHeb2EsVIn49osNfx3tc/Xua8ZftVH/cKJlmYW3xzSKp1Rcfn9Gui5e54Gi3OIWsyrch8YPAE/w6iuuvqIm3+QeQOxfILCMPmb+fmjvZib0dTX30uTdijz+gY2hEqK5A==;
+        Expires=Fri, 06 Mar 2026 02:28:50 GMT; Path=/
+      - AWSALBCORS=KptYEHUSsJPhx3NADbYTELa5Niy4krat/Cea7dZu/JqAxmBC/0eJBBn+5UvxmBowFj9IRS4axKM222kEllqE6Or07PnPL95TRdtxaNqtYP3CfOwdcWm6ZYQsLJDO7Gu8UOkKSKHuFhg7Qw/GNOSHeb2EsVIn49osNfx3tc/Xua8ZftVH/cKJlmYW3xzSKp1Rcfn9Gui5e54Gi3OIWsyrch8YPAE/w6iuuvqIm3+QeQOxfILCMPmb+fmjvZib0dTX30uTdijz+gY2hEqK5A==;
+        Expires=Fri, 06 Mar 2026 02:28:50 GMT; Path=/; SameSite=None; Secure
       Strict-Transport-Security:
-      - max-age=31536000; includeSubDomains; preload
-      X-Content-Type-Options:
-      - nosniff
-      X-Frame-Options:
-      - SAMEORIGIN
+      - max-age=31536000; includeSubDomains;
       X-Rate-Limit-Limit:
       - 1m
       X-Rate-Limit-Remaining:
-      - '199'
+      - '198'
       X-Rate-Limit-Reset:
-      - '2025-08-11T02:37:16.8695549Z'
-      X-XSS-Protection:
-      - 1; mode=block
+      - '2026-02-27T02:29:49.0982438Z'
       api-supported-versions:
       - '2.0'
     status:
@@ -119,16 +111,31 @@ interactions:
       Accept:
       - '*/*'
       Accept-Encoding:
-      - gzip, deflate, zstd
+      - gzip, deflate
       Connection:
       - keep-alive
       User-Agent:
-      - python-requests/2.32.3
+      - python-requests/2.32.5
     method: GET
     uri: https://reporter.nih.gov/services/Projects/Publications?projectId=10893225
   response:
     body:
-      string: "{\"meta\":{\"search_id\":null,\"total\":47,\"offset\":0,\"limit\":0,\"sort_field\":null,\"sort_order\":null,\"sorted_by_relevance\":false,\"properties\":{}},\"results\":[{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39084333,\"pmc_id\":11775230,\"pub_title_link\":{\"key\":\"A
+      string: "{\"meta\":{\"search_id\":null,\"total\":52,\"offset\":0,\"limit\":0,\"sort_field\":null,\"sort_order\":null,\"sorted_by_relevance\":false,\"properties\":{}},\"results\":[{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":40944900,\"pmc_id\":12715685,\"pub_title_link\":{\"key\":\"Delivery
+        of oxygen during cardiopulmonary bypass and associated clinical outcomes among
+        adult cardiac surgery patients: A systematic review.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/12715685\"},\"pub_title\":\"Delivery
+        of oxygen during cardiopulmonary bypass and associated clinical outcomes among
+        adult cardiac surgery patients: A systematic review.\",\"pub_date\":\"2025
+        Sep 13\",\"journal_title_link\":{\"key\":\"Perfusion\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/40944900\"},\"journal_title\":\"Perfusion\",\"journal_volume\":null,\"journal_issue\":null,\"page_number\":\"2676591251380659\",\"issn\":\"1477-111X\",\"author_list\":\"Dias,
+        Roger D; Borges, Paulo; Rance, Geoffrey; Srey, Rithy; Kennedy Metz, Lauren
+        R; Martinez-Rioux, Annette; Arney, David; Paladugu, Phani; Gikandi, Ajami;
+        Miccile, Christian; Harari, Ryan; Iwai, Kristina; Fitzgerald, Jennifer; O'Gara,
+        Paul; Shann, Kenneth; Gombolay, Matthew; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"Medical
+        AI & Cognitive Engineering (MAICE) Lab, Department of Emergency Medicine,
+        Mass General Brigham, Boston, MA, USA.\",\"pub_year\":2025,\"journal_title_abbr\":\"Perfusion\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2025-09-13T12:30:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2025-12-19T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=40944900&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC12715685/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=40944900\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC12715685/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39084333,\"pmc_id\":11775230,\"pub_title_link\":{\"key\":\"A
         novel multimodal, intraoperative cognitive workload assessment of cardiac
         surgery team members.\",\"value\":\"\"},\"pub_title\":\"A novel multimodal,
         intraoperative cognitive workload assessment of cardiac surgery team members.\",\"pub_date\":\"2025
@@ -146,32 +153,67 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39084333&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11775230/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39084333\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11775230/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39083274,\"pmc_id\":11292454,\"pub_title_link\":{\"key\":\"Deep
-        Learning Analysis of Surgical Video Recordings to Assess Nontechnical Skills.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11292454\"},\"pub_title\":\"Deep
-        Learning Analysis of Surgical Video Recordings to Assess Nontechnical Skills.\",\"pub_date\":\"2024
-        Jul 01\",\"journal_title_link\":{\"key\":\"JAMA network open\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/39083274\"},\"journal_title\":\"JAMA
-        network open\",\"journal_volume\":\"7\",\"journal_issue\":\"7\",\"page_number\":\"e2422520\",\"issn\":\"2574-3805\",\"author_list\":\"Harari,
-        Rayan Ebnali; Dias, Roger D; Kennedy-Metz, Lauren R; Varni, Giovanna; Gombolay,
-        Matthew; Yule, Steven; Salas, Eduardo; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"Mass General Brigham, Harvard Medical School,
-        Boston, Massachusetts.\",\"pub_year\":2024,\"journal_title_abbr\":\"JAMA Netw
-        Open\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2024-07-31T12:44:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2024-07-31T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39083274&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11292454/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39083274\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11292454/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39184954,\"pmc_id\":11342855,\"pub_title_link\":{\"key\":\"Exploring
-        Intraoperative Cognitive Biases in Cardiac Surgery Teams.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11342855\"},\"pub_title\":\"Exploring
-        Intraoperative Cognitive Biases in Cardiac Surgery Teams.\",\"pub_date\":\"2024\",\"journal_title_link\":{\"key\":\"Applied
-        Human Factors and Ergonomics Conference\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/39184954\"},\"journal_title\":\"Applied
-        Human Factors and Ergonomics Conference\",\"journal_volume\":\"130\",\"journal_issue\":null,\"page_number\":\"1-7\",\"issn\":\"2376-4252\",\"author_list\":\"Dias,
-        Roger D; Yule, Steven J; Harari, Ryan; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"STRATUS Center for Medical Simulation, Mass
-        General Brigham, Boston, MA, USA.\",\"pub_year\":2024,\"journal_title_abbr\":\"Appl
-        Hum Factors Ergon Conf\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2024-08-26T12:40:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2024-08-23T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39184954&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11342855/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39184954\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11342855/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39076411,\"pmc_id\":11285016,\"pub_title_link\":{\"key\":\"A
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11775230/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":40693180,\"pmc_id\":12277974,\"pub_title_link\":{\"key\":\"Evaluation
+        of Large Language Models to Detect Team Mental Model Misalignments During
+        Cardiac Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/12277974\"},\"pub_title\":\"Evaluation
+        of Large Language Models to Detect Team Mental Model Misalignments During
+        Cardiac Surgery.\",\"pub_date\":\"2025 Jun\",\"journal_title_link\":{\"key\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/40693180\"},\"journal_title\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"journal_volume\":\"2025\",\"journal_issue\":null,\"page_number\":\"129-130\",\"issn\":\"2755-0036\",\"author_list\":\"Dias,
+        Roger D; Unhelkar, Vaibhav; Shann, Kenneth; Weinberg, Allison; Rance, Geoff;
+        Srey, Rithy; O'Gara, Paul; Shapeton, Alexander; Robertson, Jamie M; Borges,
+        Paulo; Verly, Robson; Mendu, Sanjana; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"Department
+        of Emergency Medicine, Harvard Medical School.\",\"pub_year\":2025,\"journal_title_abbr\":\"Hamlyn
+        Symp Med Robot\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2025-07-22T11:49:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2025-07-21T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=40693180&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC12277974/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=40693180\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC12277974/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":40693178,\"pmc_id\":12277972,\"pub_title_link\":{\"key\":\"Monitoring
+        of Perfusionists' Cognitive Load and Stress and Patients' Oxygen Delivery
+        during Cardiopulmonary Bypass in Cardiac Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/12277972\"},\"pub_title\":\"Monitoring
+        of Perfusionists' Cognitive Load and Stress and Patients' Oxygen Delivery
+        during Cardiopulmonary Bypass in Cardiac Surgery.\",\"pub_date\":\"2025 Jun\",\"journal_title_link\":{\"key\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/40693178\"},\"journal_title\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"journal_volume\":\"2025\",\"journal_issue\":null,\"page_number\":\"185-186\",\"issn\":\"2755-0036\",\"author_list\":\"Dias,
+        Roger D; Kennedy-Metz, Lauren R; Rance, Geoff; Srey, Rithy; Harari, Ryan;
+        Borges, Paulo; Mendu, Sanjana; O'Gara, Paul; Gombolay, Matthew; Zenati, Marco
+        A\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"Department
+        of Emergency Medicine, Harvard Medical School.\",\"pub_year\":2025,\"journal_title_abbr\":\"Hamlyn
+        Symp Med Robot\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2025-07-22T06:27:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2025-07-21T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=40693178&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC12277972/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=40693178\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC12277972/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":40693181,\"pmc_id\":12277971,\"pub_title_link\":{\"key\":\"Voice
+        Acoustic Patterns Predict Quality of Interprofessional Team Behavior in Cardiac
+        Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/12277971\"},\"pub_title\":\"Voice
+        Acoustic Patterns Predict Quality of Interprofessional Team Behavior in Cardiac
+        Surgery.\",\"pub_date\":\"2025 Jun\",\"journal_title_link\":{\"key\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/40693181\"},\"journal_title\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"journal_volume\":\"2025\",\"journal_issue\":null,\"page_number\":\"17-18\",\"issn\":\"2755-0036\",\"author_list\":\"Mendu,
+        Sanjana; Mishra, Shrivatsa; Ruiz, Victor Murcia; Fricks, Rafael; Harari, Rayan;
+        Dias, Roger D; Chaspari, Theodora; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"Medical
+        Robotics & Computer Assisted Surgery (MRCAS) Laboratory, Division of Cardiac
+        Surgery, Veterans Affairs Boston Healthcare System, Boston, MA, USA.\",\"pub_year\":2025,\"journal_title_abbr\":\"Hamlyn
+        Symp Med Robot\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2025-07-22T11:49:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2025-07-21T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=40693181&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC12277971/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=40693181\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC12277971/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":40693182,\"pmc_id\":12277970,\"pub_title_link\":{\"key\":\"Impact
+        of Surgical Flow Disruptions on Neuroergonomics in a High-Fidelity Cardiac
+        Surgery Simulation Environment.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/12277970\"},\"pub_title\":\"Impact
+        of Surgical Flow Disruptions on Neuroergonomics in a High-Fidelity Cardiac
+        Surgery Simulation Environment.\",\"pub_date\":\"2025 Jun\",\"journal_title_link\":{\"key\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/40693182\"},\"journal_title\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"journal_volume\":\"2025\",\"journal_issue\":null,\"page_number\":\"153-154\",\"issn\":\"2755-0036\",\"author_list\":\"Mendu,
+        Sanjana; Dias, Roger D; Ordali, Erica; Marcos-Prieto, Pablo; Rubio-Solis,
+        Adrian; Jin, Kaizhe; Ford, Kylie M; Mylonas, George; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"Medical
+        Robotics & Computer Assisted Surgery (MRCAS) Laboratory, Division of Cardiac
+        Surgery, Veterans Affairs Boston Healthcare System, Boston, MA, USA.\",\"pub_year\":2025,\"journal_title_abbr\":\"Hamlyn
+        Symp Med Robot\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2025-07-22T11:49:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2025-07-21T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=40693182&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC12277970/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=40693182\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC12277970/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39076411,\"pmc_id\":11285016,\"pub_title_link\":{\"key\":\"A
         Clinician-Centered Explainable Artificial Intelligence Framework for Decision
         Support in the Operating Theatre.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11285016\"},\"pub_title\":\"A
         Clinician-Centered Explainable Artificial Intelligence Framework for Decision
@@ -185,20 +227,7 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39076411&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11285016/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39076411\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11285016/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39076410,\"pmc_id\":11285017,\"pub_title_link\":{\"key\":\"Acoustic
-        Patterns of Interprofessional Communication and Quality of Teamwork in the
-        Cardiac Operating Theatre.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11285017\"},\"pub_title\":\"Acoustic
-        Patterns of Interprofessional Communication and Quality of Teamwork in the
-        Cardiac Operating Theatre.\",\"pub_date\":\"2024 Jun\",\"journal_title_link\":{\"key\":\"The
-        Hamlyn Symposium on Medical Robotics : proceedings\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/39076410\"},\"journal_title\":\"The
-        Hamlyn Symposium on Medical Robotics : proceedings\",\"journal_volume\":\"16\",\"journal_issue\":null,\"page_number\":\"103-104\",\"issn\":\"2755-0036\",\"author_list\":\"Mishra,
-        Shrivatsa; Dias, Roger D; Zenati, Marco A; Chaspari, Theodora\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"Computer
-        Science & Institute of Cognitive Science, University of Colorado Boulder,
-        USA.\",\"pub_year\":2024,\"journal_title_abbr\":\"Hamlyn Symp Med Robot\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2024-07-30T06:43:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2024-07-29T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39076410&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11285017/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39076410\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11285017/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39081305,\"pmc_id\":11287473,\"pub_title_link\":{\"key\":\"Misalignment
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11285016/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39081305,\"pmc_id\":11287473,\"pub_title_link\":{\"key\":\"Misalignment
         of Cognitive Processes within Cardiac Surgery Teams.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11287473\"},\"pub_title\":\"Misalignment
         of Cognitive Processes within Cardiac Surgery Teams.\",\"pub_date\":\"2024
         Jun\",\"journal_title_link\":{\"key\":\"The Hamlyn Symposium on Medical Robotics
@@ -211,7 +240,45 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39081305&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11287473/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39081305\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11287473/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":37112231,\"pmc_id\":10145698,\"pub_title_link\":{\"key\":\"An
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11287473/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39184954,\"pmc_id\":11342855,\"pub_title_link\":{\"key\":\"Exploring
+        Intraoperative Cognitive Biases in Cardiac Surgery Teams.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11342855\"},\"pub_title\":\"Exploring
+        Intraoperative Cognitive Biases in Cardiac Surgery Teams.\",\"pub_date\":\"2024\",\"journal_title_link\":{\"key\":\"Applied
+        Human Factors and Ergonomics Conference\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/39184954\"},\"journal_title\":\"Applied
+        Human Factors and Ergonomics Conference\",\"journal_volume\":\"130\",\"journal_issue\":null,\"page_number\":\"1-7\",\"issn\":\"2376-4252\",\"author_list\":\"Dias,
+        Roger D; Yule, Steven J; Harari, Ryan; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"STRATUS Center for Medical Simulation, Mass
+        General Brigham, Boston, MA, USA.\",\"pub_year\":2024,\"journal_title_abbr\":\"Appl
+        Hum Factors Ergon Conf\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2024-08-26T12:40:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2024-08-23T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39184954&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11342855/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39184954\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11342855/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39083274,\"pmc_id\":11292454,\"pub_title_link\":{\"key\":\"Deep
+        Learning Analysis of Surgical Video Recordings to Assess Nontechnical Skills.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11292454\"},\"pub_title\":\"Deep
+        Learning Analysis of Surgical Video Recordings to Assess Nontechnical Skills.\",\"pub_date\":\"2024
+        Jul 01\",\"journal_title_link\":{\"key\":\"JAMA network open\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/39083274\"},\"journal_title\":\"JAMA
+        network open\",\"journal_volume\":\"7\",\"journal_issue\":\"7\",\"page_number\":\"e2422520\",\"issn\":\"2574-3805\",\"author_list\":\"Harari,
+        Rayan Ebnali; Dias, Roger D; Kennedy-Metz, Lauren R; Varni, Giovanna; Gombolay,
+        Matthew; Yule, Steven; Salas, Eduardo; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"Mass General Brigham, Harvard Medical School,
+        Boston, Massachusetts.\",\"pub_year\":2024,\"journal_title_abbr\":\"JAMA Netw
+        Open\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2024-07-31T12:44:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2024-07-31T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39083274&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11292454/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39083274\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11292454/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":39076410,\"pmc_id\":11285017,\"pub_title_link\":{\"key\":\"Acoustic
+        Patterns of Interprofessional Communication and Quality of Teamwork in the
+        Cardiac Operating Theatre.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/11285017\"},\"pub_title\":\"Acoustic
+        Patterns of Interprofessional Communication and Quality of Teamwork in the
+        Cardiac Operating Theatre.\",\"pub_date\":\"2024 Jun\",\"journal_title_link\":{\"key\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/39076410\"},\"journal_title\":\"The
+        Hamlyn Symposium on Medical Robotics : proceedings\",\"journal_volume\":\"16\",\"journal_issue\":null,\"page_number\":\"103-104\",\"issn\":\"2755-0036\",\"author_list\":\"Mishra,
+        Shrivatsa; Dias, Roger D; Zenati, Marco A; Chaspari, Theodora\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"Computer
+        Science & Institute of Cognitive Science, University of Colorado Boulder,
+        USA.\",\"pub_year\":2024,\"journal_title_abbr\":\"Hamlyn Symp Med Robot\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2024-07-30T06:43:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2024-07-29T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=39076410&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC11285017/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=39076410\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC11285017/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":37112231,\"pmc_id\":10145698,\"pub_title_link\":{\"key\":\"An
         Open-Source, Interoperable Architecture for Generating Real-Time Surgical
         Team Cognitive Alerts from Heart-Rate Variability Monitoring.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/10145698\"},\"pub_title\":\"An
         Open-Source, Interoperable Architecture for Generating Real-Time Surgical
@@ -226,7 +293,22 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=37112231&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC10145698/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=37112231\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC10145698/\"},\"relative_citation_ratio\":1.69},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":37497240,\"pmc_id\":10371197,\"pub_title_link\":{\"key\":\"Using
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC10145698/\"},\"relative_citation_ratio\":1.69},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":37838385,\"pmc_id\":10703542,\"pub_title_link\":{\"key\":\"Nontechnical
+        Skills for Intraoperative Team Members.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/10703542\"},\"pub_title\":\"Nontechnical
+        Skills for Intraoperative Team Members.\",\"pub_date\":\"2023 Dec\",\"journal_title_link\":{\"key\":\"Anesthesiology
+        clinics\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/37838385\"},\"journal_title\":\"Anesthesiology
+        clinics\",\"journal_volume\":\"41\",\"journal_issue\":\"4\",\"page_number\":\"803-818\",\"issn\":\"1932-2275\",\"author_list\":\"Mathis,
+        Michael R; Janda, Allison M; Yule, Steven J; Dias, Roger D; Likosky, Donald
+        S; Pagani, Francis D; Stakich-Alpirez, Korana; Kerray, Fiona M; Schultz, Megan
+        L; Fitzgerald, David; Sturmer, David; Manojlovich, Milisa; Krein, Sarah L;
+        Caldwell, Matthew D\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Department
+        of Anesthesiology, University of Michigan Medical School, 1500 East Medical
+        Center Drive, Ann Arbor, MI 48109, USA. Electronic address: mathism@med.umich.edu.\",\"pub_year\":2023,\"journal_title_abbr\":\"Anesthesiol
+        Clin\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2023-11-01T12:44:00\",\"pub_status\":null,\"other_related_grants\":\"R01DK133226;T32GM103730;IK6HX003399;K23HL166685;R01HL157457;R01HL146619;K01HL141701;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2023-12-07T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=37838385&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC10703542/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=37838385\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC10703542/\"},\"relative_citation_ratio\":2.08},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":37497240,\"pmc_id\":10371197,\"pub_title_link\":{\"key\":\"Using
         Digital Biomarkers for Objective Assessment of Perfusionists' Workload and
         Acute Stress During Cardiac Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/10371197\"},\"pub_title\":\"Using
         Digital Biomarkers for Objective Assessment of Perfusionists' Workload and
@@ -244,35 +326,22 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=37497240&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC10371197/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=37497240\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC10371197/\"},\"relative_citation_ratio\":1.23},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":37838385,\"pmc_id\":10703542,\"pub_title_link\":{\"key\":\"Nontechnical
-        Skills for Intraoperative Team Members.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/10703542\"},\"pub_title\":\"Nontechnical
-        Skills for Intraoperative Team Members.\",\"pub_date\":\"2023 Dec\",\"journal_title_link\":{\"key\":\"Anesthesiology
-        clinics\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/37838385\"},\"journal_title\":\"Anesthesiology
-        clinics\",\"journal_volume\":\"41\",\"journal_issue\":\"4\",\"page_number\":\"803-818\",\"issn\":\"1932-2275\",\"author_list\":\"Mathis,
-        Michael R; Janda, Allison M; Yule, Steven J; Dias, Roger D; Likosky, Donald
-        S; Pagani, Francis D; Stakich-Alpirez, Korana; Kerray, Fiona M; Schultz, Megan
-        L; Fitzgerald, David; Sturmer, David; Manojlovich, Milisa; Krein, Sarah L;
-        Caldwell, Matthew D\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Department
-        of Anesthesiology, University of Michigan Medical School, 1500 East Medical
-        Center Drive, Ann Arbor, MI 48109, USA. Electronic address: mathism@med.umich.edu.\",\"pub_year\":2023,\"journal_title_abbr\":\"Anesthesiol
-        Clin\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2023-11-01T12:44:00\",\"pub_status\":null,\"other_related_grants\":\"R01DK133226;T32GM103730;IK6HX003399;K23HL166685;R01HL157457;R01HL146619;K01HL141701;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":\"2023-12-07T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=37838385&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC10703542/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=37838385\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC10703542/\"},\"relative_citation_ratio\":2.08},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33931232,\"pmc_id\":8481338,\"pub_title_link\":{\"key\":\"Importance
-        of high-performing teams in the cardiovascular intensive care unit.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8481338\"},\"pub_title\":\"Importance
-        of high-performing teams in the cardiovascular intensive care unit.\",\"pub_date\":\"2022
-        Mar\",\"journal_title_link\":{\"key\":\"The Journal of thoracic and cardiovascular
-        surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33931232\"},\"journal_title\":\"The
-        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"163\",\"journal_issue\":\"3\",\"page_number\":\"1096-1104\",\"issn\":\"1097-685X\",\"author_list\":\"Kennedy-Metz,
-        Lauren R; Barbeito, Atilio; Dias, Roger D; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"Department of Surgery, Harvard Medical School,
-        Boston, Mass; Division of Cardiac Surgery, VA Boston Healthcare System, Boston,
-        Mass.\",\"pub_year\":2022,\"journal_title_abbr\":\"J Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-03-01T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33931232&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8481338/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33931232\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8481338/\"},\"relative_citation_ratio\":2.45},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":35937956,\"pmc_id\":9355042,\"pub_title_link\":{\"key\":\"Using
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC10371197/\"},\"relative_citation_ratio\":1.23},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":35994041,\"pmc_id\":9386571,\"pub_title_link\":{\"key\":\"Assessing
+        Team Situational Awareness in the Operating Room via Computer Vision.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/9386571\"},\"pub_title\":\"Assessing
+        Team Situational Awareness in the Operating Room via Computer Vision.\",\"pub_date\":\"2022
+        Jun\",\"journal_title_link\":{\"key\":\"IEEE Conference on Cognitive and Computational
+        Aspects of Situation Management (CogSIMA)\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/35994041\"},\"journal_title\":\"IEEE
+        Conference on Cognitive and Computational Aspects of Situation Management
+        (CogSIMA)\",\"journal_volume\":\"2022\",\"journal_issue\":null,\"page_number\":\"94-96\",\"issn\":null,\"author_list\":\"Dias,
+        Roger D; Kennedy-Metz, Lauren R; Yule, Steven J; Gombolay, Matthew; Zenati,
+        Marco A\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Department
+        of Emergency Medicine, Harvard Medical School, Brigham and Women's Hospital,
+        Boston, MA, USA.\",\"pub_year\":2022,\"journal_title_abbr\":\"IEEE Conf Cogn
+        Comput Asp Situat Manag\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-08-23T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=35994041&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC9386571/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=35994041\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC9386571/\"},\"relative_citation_ratio\":1.34},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":35937956,\"pmc_id\":9355042,\"pub_title_link\":{\"key\":\"Using
         machine learning to predict perfusionists' critical decision-making during
         cardiac surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/9355042\"},\"pub_title\":\"Using
         machine learning to predict perfusionists' critical decision-making during
@@ -299,50 +368,20 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=34171871&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8683575/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=34171871\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8683575/\"},\"relative_citation_ratio\":2.4},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33773815,\"pmc_id\":8387494,\"pub_title_link\":{\"key\":\"Commentary:
-        Nontechnical skills redux.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8387494\"},\"pub_title\":\"Commentary:
-        Nontechnical skills redux.\",\"pub_date\":\"2022 Jun\",\"journal_title_link\":{\"key\":\"The
-        Journal of thoracic and cardiovascular surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33773815\"},\"journal_title\":\"The
-        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"163\",\"journal_issue\":\"6\",\"page_number\":\"2164-2165\",\"issn\":\"1097-685X\",\"author_list\":\"Zenati,
-        Marco A; Dias, Roger D; Kennedy-Metz, Lauren R\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"Division of Cardiac Surgery, Veterans Affairs
-        Boston Healthcare System, and Department of Surgery, Brigham and Women's Hospital,
-        Harvard Medical School, Boston, Mass. Electronic address: Marco_Zenati@hms.harvard.edu.\",\"pub_year\":2022,\"journal_title_abbr\":\"J
-        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-05-18T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33773815&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8387494/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33773815\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8387494/\"},\"relative_citation_ratio\":0.23},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":35984653,\"pmc_id\":9382699,\"pub_title_link\":{\"key\":\"Association
-        Between Operating Room Noise and Team Cognitive Workload in Cardiac Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/9382699\"},\"pub_title\":\"Association
-        Between Operating Room Noise and Team Cognitive Workload in Cardiac Surgery.\",\"pub_date\":\"2022
-        Jun\",\"journal_title_link\":{\"key\":\"IEEE Conference on Cognitive and Computational
-        Aspects of Situation Management (CogSIMA)\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/35984653\"},\"journal_title\":\"IEEE
-        Conference on Cognitive and Computational Aspects of Situation Management
-        (CogSIMA)\",\"journal_volume\":\"2022\",\"journal_issue\":null,\"page_number\":\"89-93\",\"issn\":null,\"author_list\":\"Kennedy-Metz,
-        Lauren R; Arshanskiy, Maria; Keller, Sandra; Arney, David; Dias, Roger D;
-        Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Department
-        of Surgery, Harvard Medical School, VA Boston Healthcare System, West Roxbury,
-        MA, USA.\",\"pub_year\":2022,\"journal_title_abbr\":\"IEEE Conf Cogn Comput
-        Asp Situat Manag\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-08-20T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=35984653&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC9382699/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=35984653\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC9382699/\"},\"relative_citation_ratio\":1.62},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":35994041,\"pmc_id\":9386571,\"pub_title_link\":{\"key\":\"Assessing
-        Team Situational Awareness in the Operating Room via Computer Vision.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/9386571\"},\"pub_title\":\"Assessing
-        Team Situational Awareness in the Operating Room via Computer Vision.\",\"pub_date\":\"2022
-        Jun\",\"journal_title_link\":{\"key\":\"IEEE Conference on Cognitive and Computational
-        Aspects of Situation Management (CogSIMA)\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/35994041\"},\"journal_title\":\"IEEE
-        Conference on Cognitive and Computational Aspects of Situation Management
-        (CogSIMA)\",\"journal_volume\":\"2022\",\"journal_issue\":null,\"page_number\":\"94-96\",\"issn\":null,\"author_list\":\"Dias,
-        Roger D; Kennedy-Metz, Lauren R; Yule, Steven J; Gombolay, Matthew; Zenati,
-        Marco A\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Department
-        of Emergency Medicine, Harvard Medical School, Brigham and Women's Hospital,
-        Boston, MA, USA.\",\"pub_year\":2022,\"journal_title_abbr\":\"IEEE Conf Cogn
-        Comput Asp Situat Manag\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-08-23T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"R01HL157457;R56HL157457\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=35994041&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC9386571/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=35994041\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC9386571/\"},\"relative_citation_ratio\":1.34},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":36037053,\"pmc_id\":9413016,\"pub_title_link\":{\"key\":\"A
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8683575/\"},\"relative_citation_ratio\":2.4},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33931232,\"pmc_id\":8481338,\"pub_title_link\":{\"key\":\"Importance
+        of high-performing teams in the cardiovascular intensive care unit.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8481338\"},\"pub_title\":\"Importance
+        of high-performing teams in the cardiovascular intensive care unit.\",\"pub_date\":\"2022
+        Mar\",\"journal_title_link\":{\"key\":\"The Journal of thoracic and cardiovascular
+        surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33931232\"},\"journal_title\":\"The
+        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"163\",\"journal_issue\":\"3\",\"page_number\":\"1096-1104\",\"issn\":\"1097-685X\",\"author_list\":\"Kennedy-Metz,
+        Lauren R; Barbeito, Atilio; Dias, Roger D; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"Department of Surgery, Harvard Medical School,
+        Boston, Mass; Division of Cardiac Surgery, VA Boston Healthcare System, Boston,
+        Mass.\",\"pub_year\":2022,\"journal_title_abbr\":\"J Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-03-01T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33931232&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8481338/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33931232\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8481338/\"},\"relative_citation_ratio\":2.45},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":36037053,\"pmc_id\":9413016,\"pub_title_link\":{\"key\":\"A
         Coding Framework for Usability Evaluation of Digital Health Technologies.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/9413016\"},\"pub_title\":\"A
         Coding Framework for Usability Evaluation of Digital Health Technologies.\",\"pub_date\":\"2022\",\"journal_title_link\":{\"key\":\"Human-Computer
         Interaction. Theoretical Approaches and Design Methods : Thematic Area, HCI
@@ -360,7 +399,49 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=36037053&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC9413016/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=36037053\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC9413016/\"},\"relative_citation_ratio\":0.8},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33327770,\"pmc_id\":8207176,\"pub_title_link\":{\"key\":\"Analysis
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC9413016/\"},\"relative_citation_ratio\":0.8},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":35984653,\"pmc_id\":9382699,\"pub_title_link\":{\"key\":\"Association
+        Between Operating Room Noise and Team Cognitive Workload in Cardiac Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/9382699\"},\"pub_title\":\"Association
+        Between Operating Room Noise and Team Cognitive Workload in Cardiac Surgery.\",\"pub_date\":\"2022
+        Jun\",\"journal_title_link\":{\"key\":\"IEEE Conference on Cognitive and Computational
+        Aspects of Situation Management (CogSIMA)\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/35984653\"},\"journal_title\":\"IEEE
+        Conference on Cognitive and Computational Aspects of Situation Management
+        (CogSIMA)\",\"journal_volume\":\"2022\",\"journal_issue\":null,\"page_number\":\"89-93\",\"issn\":null,\"author_list\":\"Kennedy-Metz,
+        Lauren R; Arshanskiy, Maria; Keller, Sandra; Arney, David; Dias, Roger D;
+        Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Department
+        of Surgery, Harvard Medical School, VA Boston Healthcare System, West Roxbury,
+        MA, USA.\",\"pub_year\":2022,\"journal_title_abbr\":\"IEEE Conf Cogn Comput
+        Asp Situat Manag\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-08-20T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=35984653&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC9382699/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=35984653\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC9382699/\"},\"relative_citation_ratio\":1.62},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33773815,\"pmc_id\":8387494,\"pub_title_link\":{\"key\":\"Commentary:
+        Nontechnical skills redux.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8387494\"},\"pub_title\":\"Commentary:
+        Nontechnical skills redux.\",\"pub_date\":\"2022 Jun\",\"journal_title_link\":{\"key\":\"The
+        Journal of thoracic and cardiovascular surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33773815\"},\"journal_title\":\"The
+        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"163\",\"journal_issue\":\"6\",\"page_number\":\"2164-2165\",\"issn\":\"1097-685X\",\"author_list\":\"Zenati,
+        Marco A; Dias, Roger D; Kennedy-Metz, Lauren R\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"Division of Cardiac Surgery, Veterans Affairs
+        Boston Healthcare System, and Department of Surgery, Brigham and Women's Hospital,
+        Harvard Medical School, Boston, Mass. Electronic address: Marco_Zenati@hms.harvard.edu.\",\"pub_year\":2022,\"journal_title_abbr\":\"J
+        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-05-18T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33773815&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8387494/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33773815\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8387494/\"},\"relative_citation_ratio\":0.23},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":34148709,\"pmc_id\":8733606,\"pub_title_link\":{\"key\":\"The
+        impact of team familiarity on intra and postoperative cardiac surgical outcomes.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8733606\"},\"pub_title\":\"The
+        impact of team familiarity on intra and postoperative cardiac surgical outcomes.\",\"pub_date\":\"2021
+        Oct\",\"journal_title_link\":{\"key\":\"Surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/34148709\"},\"journal_title\":\"Surgery\",\"journal_volume\":\"170\",\"journal_issue\":\"4\",\"page_number\":\"1031-1038\",\"issn\":\"1532-7361\",\"author_list\":\"Mathis,
+        Michael R; Yule, Steven; Wu, Xiaoting; Dias, Roger D; Janda, Allison M; Krein,
+        Sarah L; Manojlovich, Milisa; Caldwell, Matthew D; Stakich-Alpirez, Korana;
+        Zhang, Min; Corso, Jason; Louis, Nathan; Xu, Tongbo; Wolverton, Jeremy; Pagani,
+        Francis D; Likosky, Donald S; Video Assessment Cardiac Surgery Quality (VARSITY)
+        Group. Electronic address: https://twitter.com/SurgeryVarsity\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"Department of Anesthesiology, Michigan Medicine,
+        University of Michigan, Ann Arbor, MI. Electronic address: https://twitter.com/Michael_Mathis.\",\"pub_year\":2021,\"journal_title_abbr\":\"Surgery\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-11-26T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"T32GM103730;R01HL146619;K01HL141701\",\"appl_id\":10893225,\"pmc_release_date\":\"2022-10-01T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=34148709&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8733606/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=34148709\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8733606/\"},\"relative_citation_ratio\":1.87},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33327770,\"pmc_id\":8207176,\"pub_title_link\":{\"key\":\"Analysis
         of Dynamic Changes in Cognitive Workload During Cardiac Surgery Perfusionists'
         Interactions With the Cardiopulmonary Bypass Pump.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8207176\"},\"pub_title\":\"Analysis
         of Dynamic Changes in Cognitive Workload During Cardiac Surgery Perfusionists'
@@ -374,36 +455,7 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33327770&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8207176/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33327770\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8207176/\"},\"relative_citation_ratio\":0.55},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33160616,\"pmc_id\":8547430,\"pub_title_link\":{\"key\":\"Commentary:
-        The need for emotional intelligence coaching in cardiothoracic surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8547430\"},\"pub_title\":\"Commentary:
-        The need for emotional intelligence coaching in cardiothoracic surgery.\",\"pub_date\":\"2021
-        10\",\"journal_title_link\":{\"key\":\"The Journal of thoracic and cardiovascular
-        surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33160616\"},\"journal_title\":\"The
-        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"162\",\"journal_issue\":\"4\",\"page_number\":\"1141-1142\",\"issn\":\"1097-685X\",\"author_list\":\"Zenati,
-        Marco A; Megighian, Chiara H\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Division
-        of Cardiac Surgery, Veterans Affairs Boston Healthcare System, Boston, Mass;
-        Department of Surgery, Brigham and Women's Hospital, Harvard Medical School,
-        Boston, Mass. Electronic address: Marco_Zenati@hms.harvard.edu.\",\"pub_year\":2021,\"journal_title_abbr\":\"J
-        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-09-22T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33160616&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8547430/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33160616\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8547430/\"},\"relative_citation_ratio\":0.18},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33644703,\"pmc_id\":7908934,\"pub_title_link\":{\"key\":\"Computer
-        Vision in the Operating Room: Opportunities and Caveats.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7908934\"},\"pub_title\":\"Computer
-        Vision in the Operating Room: Opportunities and Caveats.\",\"pub_date\":\"2021
-        Feb\",\"journal_title_link\":{\"key\":\"IEEE transactions on medical robotics
-        and bionics\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33644703\"},\"journal_title\":\"IEEE
-        transactions on medical robotics and bionics\",\"journal_volume\":\"3\",\"journal_issue\":\"1\",\"page_number\":\"2-10\",\"issn\":\"2576-3202\",\"author_list\":\"Kennedy-Metz,
-        Lauren R; Mascagni, Pietro; Torralba, Antonio; Dias, Roger D; Perona, Pietro;
-        Shah, Julie A; Padoy, Nicolas; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"Medical Robotics and Computer-Assisted Surgery
-        (MRCAS) Laboratory, affiliated with Harvard Medical School in Boston, MA 02115
-        and the VA Boston Healthcare System in West Roxbury, MA 02132.\",\"pub_year\":2021,\"journal_title_abbr\":\"IEEE
-        Trans Med Robot Bionics\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-03-02T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":\"2022-02-01T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33644703&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7908934/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33644703\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7908934/\"},\"relative_citation_ratio\":2.22},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31348036,\"pmc_id\":7241253,\"pub_title_link\":{\"key\":\"Dissecting
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8207176/\"},\"relative_citation_ratio\":0.55},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31348036,\"pmc_id\":7241253,\"pub_title_link\":{\"key\":\"Dissecting
         Cardiac Surgery: A Video-based Recall Protocol to Elucidate Team Cognitive
         Processes in the Operating Room.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7241253\"},\"pub_title\":\"Dissecting
         Cardiac Surgery: A Video-based Recall Protocol to Elucidate Team Cognitive
@@ -418,35 +470,21 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=31348036&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7241253/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=31348036\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7241253/\"},\"relative_citation_ratio\":1.66},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":34676380,\"pmc_id\":8528342,\"pub_title_link\":{\"key\":\"The
-        Cognitive Relevance of a Formal Pre-incision Time-out in Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8528342\"},\"pub_title\":\"The
-        Cognitive Relevance of a Formal Pre-incision Time-out in Surgery.\",\"pub_date\":\"2021
-        Apr\",\"journal_title_link\":{\"key\":\"ECCE ... : proceedings of the ...
-        European Conference on Cognitive Ergonomics. European Conference on Cognitive
-        Ergonomics\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/34676380\"},\"journal_title\":\"ECCE
-        ... : proceedings of the ... European Conference on Cognitive Ergonomics.
-        European Conference on Cognitive Ergonomics\",\"journal_volume\":\"2021\",\"journal_issue\":null,\"page_number\":null,\"issn\":null,\"author_list\":\"Kennedy-Metz,
-        Lauren R; Dias, Roger D; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"Medical Robotics and Computer-Assisted Surgery
-        Lab, Harvard Medical School and VA Boston Healthcare System, Boston, MA, US.\",\"pub_year\":2021,\"journal_title_abbr\":\"ECCE\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-10-23T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=34676380&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8528342/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=34676380\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8528342/\"},\"relative_citation_ratio\":0.18},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":34148709,\"pmc_id\":8733606,\"pub_title_link\":{\"key\":\"The
-        impact of team familiarity on intra and postoperative cardiac surgical outcomes.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8733606\"},\"pub_title\":\"The
-        impact of team familiarity on intra and postoperative cardiac surgical outcomes.\",\"pub_date\":\"2021
-        Oct\",\"journal_title_link\":{\"key\":\"Surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/34148709\"},\"journal_title\":\"Surgery\",\"journal_volume\":\"170\",\"journal_issue\":\"4\",\"page_number\":\"1031-1038\",\"issn\":\"1532-7361\",\"author_list\":\"Mathis,
-        Michael R; Yule, Steven; Wu, Xiaoting; Dias, Roger D; Janda, Allison M; Krein,
-        Sarah L; Manojlovich, Milisa; Caldwell, Matthew D; Stakich-Alpirez, Korana;
-        Zhang, Min; Corso, Jason; Louis, Nathan; Xu, Tongbo; Wolverton, Jeremy; Pagani,
-        Francis D; Likosky, Donald S; Video Assessment Cardiac Surgery Quality (VARSITY)
-        Group. Electronic address: https://twitter.com/SurgeryVarsity\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"Department of Anesthesiology, Michigan Medicine,
-        University of Michigan, Ann Arbor, MI. Electronic address: https://twitter.com/Michael_Mathis.\",\"pub_year\":2021,\"journal_title_abbr\":\"Surgery\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-11-26T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"T32GM103730;R01HL146619;K01HL141701\",\"appl_id\":10893225,\"pmc_release_date\":\"2022-10-01T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=34148709&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8733606/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=34148709\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8733606/\"},\"relative_citation_ratio\":1.87},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":32863172,\"pmc_id\":7904574,\"pub_title_link\":{\"key\":\"Analysis
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7241253/\"},\"relative_citation_ratio\":1.66},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":35253018,\"pmc_id\":8893011,\"pub_title_link\":{\"key\":\"Towards
+        an AI Coach to Infer Team Mental Model Alignment in Healthcare.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8893011\"},\"pub_title\":\"Towards
+        an AI Coach to Infer Team Mental Model Alignment in Healthcare.\",\"pub_date\":\"2021
+        May\",\"journal_title_link\":{\"key\":\"IEEE Conference on Cognitive and Computational
+        Aspects of Situation Management (CogSIMA)\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/35253018\"},\"journal_title\":\"IEEE
+        Conference on Cognitive and Computational Aspects of Situation Management
+        (CogSIMA)\",\"journal_volume\":\"2021\",\"journal_issue\":null,\"page_number\":\"39-44\",\"issn\":null,\"author_list\":\"Seo,
+        Sangwon; Kennedy-Metz, Lauren R; Zenati, Marco A; Shah, Julie A; Dias, Roger
+        D; Unhelkar, Vaibhav V\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Department
+        of Computer Science, Rice University, Houston, TX, USA.\",\"pub_year\":2021,\"journal_title_abbr\":\"IEEE
+        Conf Cogn Comput Asp Situat Manag\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-03-08T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=35253018&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8893011/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=35253018\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8893011/\"},\"relative_citation_ratio\":0.56},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":32863172,\"pmc_id\":7904574,\"pub_title_link\":{\"key\":\"Analysis
         of Mirrored Psychophysiological Change of Cardiac Surgery Team Members During
         Open Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7904574\"},\"pub_title\":\"Analysis
         of Mirrored Psychophysiological Change of Cardiac Surgery Team Members During
@@ -462,34 +500,50 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=32863172&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7904574/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=32863172\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7904574/\"},\"relative_citation_ratio\":1.89},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":35253018,\"pmc_id\":8893011,\"pub_title_link\":{\"key\":\"Towards
-        an AI Coach to Infer Team Mental Model Alignment in Healthcare.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8893011\"},\"pub_title\":\"Towards
-        an AI Coach to Infer Team Mental Model Alignment in Healthcare.\",\"pub_date\":\"2021
-        May\",\"journal_title_link\":{\"key\":\"IEEE Conference on Cognitive and Computational
-        Aspects of Situation Management (CogSIMA)\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/35253018\"},\"journal_title\":\"IEEE
-        Conference on Cognitive and Computational Aspects of Situation Management
-        (CogSIMA)\",\"journal_volume\":\"2021\",\"journal_issue\":null,\"page_number\":\"39-44\",\"issn\":null,\"author_list\":\"Seo,
-        Sangwon; Kennedy-Metz, Lauren R; Zenati, Marco A; Shah, Julie A; Dias, Roger
-        D; Unhelkar, Vaibhav V\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Department
-        of Computer Science, Rice University, Houston, TX, USA.\",\"pub_year\":2021,\"journal_title_abbr\":\"IEEE
-        Conf Cogn Comput Asp Situat Manag\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2022-03-08T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=35253018&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8893011/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=35253018\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8893011/\"},\"relative_citation_ratio\":0.56},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31630837,\"pmc_id\":7301962,\"pub_title_link\":{\"key\":\"Commentary:
-        Another Dutch treat.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7301962\"},\"pub_title\":\"Commentary:
-        Another Dutch treat.\",\"pub_date\":\"2020 05\",\"journal_title_link\":{\"key\":\"The
-        Journal of thoracic and cardiovascular surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/31630837\"},\"journal_title\":\"The
-        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"159\",\"journal_issue\":\"5\",\"page_number\":\"1893-1894\",\"issn\":\"1097-685X\",\"author_list\":\"Zenati,
-        Marco A; Yule, Steven J\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Division
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7904574/\"},\"relative_citation_ratio\":1.89},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33160616,\"pmc_id\":8547430,\"pub_title_link\":{\"key\":\"Commentary:
+        The need for emotional intelligence coaching in cardiothoracic surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8547430\"},\"pub_title\":\"Commentary:
+        The need for emotional intelligence coaching in cardiothoracic surgery.\",\"pub_date\":\"2021
+        10\",\"journal_title_link\":{\"key\":\"The Journal of thoracic and cardiovascular
+        surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33160616\"},\"journal_title\":\"The
+        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"162\",\"journal_issue\":\"4\",\"page_number\":\"1141-1142\",\"issn\":\"1097-685X\",\"author_list\":\"Zenati,
+        Marco A; Megighian, Chiara H\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Division
         of Cardiac Surgery, Veterans Affairs Boston Healthcare System, Boston, Mass;
         Department of Surgery, Brigham and Women's Hospital, Harvard Medical School,
-        Boston, Mass. Electronic address: Marco_Zenati@hms.harvard.edu.\",\"pub_year\":2020,\"journal_title_abbr\":\"J
-        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2020-06-10T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=31630837&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7301962/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=31630837\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7301962/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":32938323,\"pmc_id\":7744397,\"pub_title_link\":{\"key\":\"Surgery
+        Boston, Mass. Electronic address: Marco_Zenati@hms.harvard.edu.\",\"pub_year\":2021,\"journal_title_abbr\":\"J
+        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-09-22T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33160616&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8547430/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33160616\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8547430/\"},\"relative_citation_ratio\":0.18},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":34676380,\"pmc_id\":8528342,\"pub_title_link\":{\"key\":\"The
+        Cognitive Relevance of a Formal Pre-incision Time-out in Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8528342\"},\"pub_title\":\"The
+        Cognitive Relevance of a Formal Pre-incision Time-out in Surgery.\",\"pub_date\":\"2021
+        Apr\",\"journal_title_link\":{\"key\":\"ECCE ... : proceedings of the ...
+        European Conference on Cognitive Ergonomics. European Conference on Cognitive
+        Ergonomics\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/34676380\"},\"journal_title\":\"ECCE
+        ... : proceedings of the ... European Conference on Cognitive Ergonomics.
+        European Conference on Cognitive Ergonomics\",\"journal_volume\":\"2021\",\"journal_issue\":null,\"page_number\":null,\"issn\":null,\"author_list\":\"Kennedy-Metz,
+        Lauren R; Dias, Roger D; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"Medical Robotics and Computer-Assisted Surgery
+        Lab, Harvard Medical School and VA Boston Healthcare System, Boston, MA, US.\",\"pub_year\":2021,\"journal_title_abbr\":\"ECCE\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-10-23T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=34676380&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8528342/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=34676380\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8528342/\"},\"relative_citation_ratio\":0.18},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33644703,\"pmc_id\":7908934,\"pub_title_link\":{\"key\":\"Computer
+        Vision in the Operating Room: Opportunities and Caveats.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7908934\"},\"pub_title\":\"Computer
+        Vision in the Operating Room: Opportunities and Caveats.\",\"pub_date\":\"2021
+        Feb\",\"journal_title_link\":{\"key\":\"IEEE transactions on medical robotics
+        and bionics\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33644703\"},\"journal_title\":\"IEEE
+        transactions on medical robotics and bionics\",\"journal_volume\":\"3\",\"journal_issue\":\"1\",\"page_number\":\"2-10\",\"issn\":\"2576-3202\",\"author_list\":\"Kennedy-Metz,
+        Lauren R; Mascagni, Pietro; Torralba, Antonio; Dias, Roger D; Perona, Pietro;
+        Shah, Julie A; Padoy, Nicolas; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"Medical Robotics and Computer-Assisted Surgery
+        (MRCAS) Laboratory, affiliated with Harvard Medical School in Boston, MA 02115
+        and the VA Boston Healthcare System in West Roxbury, MA 02132.\",\"pub_year\":2021,\"journal_title_abbr\":\"IEEE
+        Trans Med Robot Bionics\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-03-02T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":\"2022-02-01T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33644703&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7908934/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33644703\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7908934/\"},\"relative_citation_ratio\":2.22},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":32938323,\"pmc_id\":7744397,\"pub_title_link\":{\"key\":\"Surgery
         Task Load Index in Cardiac Surgery: Measuring Cognitive Load Among Teams.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7744397\"},\"pub_title\":\"Surgery
         Task Load Index in Cardiac Surgery: Measuring Cognitive Load Among Teams.\",\"pub_date\":\"2020
         Dec\",\"journal_title_link\":{\"key\":\"Surgical innovation\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/32938323\"},\"journal_title\":\"Surgical
@@ -501,7 +555,27 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=32938323&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7744397/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=32938323\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7744397/\"},\"relative_citation_ratio\":2.45},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":34350424,\"pmc_id\":8329755,\"pub_title_link\":{\"key\":\"Autonomic
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7744397/\"},\"relative_citation_ratio\":2.45},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":34723287,\"pmc_id\":8555746,\"pub_title_link\":{\"key\":\"Digital
+        Cognitive Aids to Support Adaptation of Surgical Processes to COVID-19 Protective
+        Policies.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8555746\"},\"pub_title\":\"Digital
+        Cognitive Aids to Support Adaptation of Surgical Processes to COVID-19 Protective
+        Policies.\",\"pub_date\":\"2020 Aug\",\"journal_title_link\":{\"key\":\"IEEE
+        CogSIMA : 2020 IEEE International Conference on Cognitive and Computational
+        Aspects of Situation Management (CogSIMA) : proceedings : Virtual Conference,
+        24-28 August 2020. IEEE Conference on Cognitive and Computational Aspects
+        of ...\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/34723287\"},\"journal_title\":\"IEEE
+        CogSIMA : 2020 IEEE International Conference on Cognitive and Computational
+        Aspects of Situation Management (CogSIMA) : proceedings : Virtual Conference,
+        24-28 August 2020. IEEE Conference on Cognitive and Computational Aspects
+        of ...\",\"journal_volume\":\"2020\",\"journal_issue\":null,\"page_number\":\"205-210\",\"issn\":null,\"author_list\":\"Conboy,
+        Heather M; Kennedy-Metz, Lauren R; Avrunin, George S; Clarke, Lori A; Osterweil,
+        Leon J; Dias, Roger D; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"University of Massachusetts Amherst Amherst,
+        MA, US.\",\"pub_year\":2020,\"journal_title_abbr\":\"IEEE CogSIMA (2020)\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2020-08-01T00:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=34723287&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8555746/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=34723287\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8555746/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":34350424,\"pmc_id\":8329755,\"pub_title_link\":{\"key\":\"Autonomic
         Activity and Surgical Flow Disruptions in Healthcare Providers during Cardiac
         Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8329755\"},\"pub_title\":\"Autonomic
         Activity and Surgical Flow Disruptions in Healthcare Providers during Cardiac
@@ -522,27 +596,48 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=34350424&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8329755/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=34350424\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8329755/\"},\"relative_citation_ratio\":0.27},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":34723287,\"pmc_id\":8555746,\"pub_title_link\":{\"key\":\"Digital
-        Cognitive Aids to Support Adaptation of Surgical Processes to COVID-19 Protective
-        Policies.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/8555746\"},\"pub_title\":\"Digital
-        Cognitive Aids to Support Adaptation of Surgical Processes to COVID-19 Protective
-        Policies.\",\"pub_date\":\"2020 Aug\",\"journal_title_link\":{\"key\":\"IEEE
-        CogSIMA : 2020 IEEE International Conference on Cognitive and Computational
-        Aspects of Situation Management (CogSIMA) : proceedings : Virtual Conference,
-        24-28 August 2020. IEEE Conference on Cognitive and Computational Aspects
-        of ...\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/34723287\"},\"journal_title\":\"IEEE
-        CogSIMA : 2020 IEEE International Conference on Cognitive and Computational
-        Aspects of Situation Management (CogSIMA) : proceedings : Virtual Conference,
-        24-28 August 2020. IEEE Conference on Cognitive and Computational Aspects
-        of ...\",\"journal_volume\":\"2020\",\"journal_issue\":null,\"page_number\":\"205-210\",\"issn\":null,\"author_list\":\"Conboy,
-        Heather M; Kennedy-Metz, Lauren R; Avrunin, George S; Clarke, Lori A; Osterweil,
-        Leon J; Dias, Roger D; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"University of Massachusetts Amherst Amherst,
-        MA, US.\",\"pub_year\":2020,\"journal_title_abbr\":\"IEEE CogSIMA (2020)\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2020-08-01T00:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=34723287&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC8555746/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=34723287\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8555746/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31629782,\"pmc_id\":7060831,\"pub_title_link\":{\"key\":\"Cognitive
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC8329755/\"},\"relative_citation_ratio\":0.27},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33659965,\"pmc_id\":7923697,\"pub_title_link\":{\"key\":\"Feasibility
+        of Healthcare Providers' Autonomic Activation Recognition in Real-Life Cardiac
+        Surgery Using Noninvasive Sensors.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7923697\"},\"pub_title\":\"Feasibility
+        of Healthcare Providers' Autonomic Activation Recognition in Real-Life Cardiac
+        Surgery Using Noninvasive Sensors.\",\"pub_date\":\"2020 Jul\",\"journal_title_link\":{\"key\":\"HCI
+        International 2020 - late breaking posters : 22nd International Conference,
+        HCII 2020, Copenhagen, Denmark, July 19-24, 2020, Proceedings, Part I\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33659965\"},\"journal_title\":\"HCI
+        International 2020 - late breaking posters : 22nd International Conference,
+        HCII 2020, Copenhagen, Denmark, July 19-24, 2020, Proceedings, Part I\",\"journal_volume\":\"1293\",\"journal_issue\":null,\"page_number\":\"402-408\",\"issn\":null,\"author_list\":\"Kennedy-Metz,
+        Lauren R; Bizzego, Andrea; Dias, Roger D; Furlanello, Cesare; Esposito, Gianluca;
+        Zenati, Marco A\",\"language\":\"eng\",\"country\":\"Switzerland\",\"author_affiliation\":\"Medical
+        Robotics and Computer-Assisted Surgery Lab, Harvard Medical School and VA
+        Boston Healthcare System, Boston, MA, USA.\",\"pub_year\":2020,\"journal_title_abbr\":\"HCI
+        Int 2020 Late Break Posters (2020)\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-03-05T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33659965&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7923697/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33659965\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7923697/\"},\"relative_citation_ratio\":0.12},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":32989966,\"pmc_id\":7959017,\"pub_title_link\":{\"key\":\"Artificial
+        intelligence in cardiothoracic surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7959017\"},\"pub_title\":\"Artificial
+        intelligence in cardiothoracic surgery.\",\"pub_date\":\"2020 Oct\",\"journal_title_link\":{\"key\":\"Minerva
+        cardioangiologica\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/32989966\"},\"journal_title\":\"Minerva
+        cardioangiologica\",\"journal_volume\":\"68\",\"journal_issue\":\"5\",\"page_number\":\"532-538\",\"issn\":\"1827-1618\",\"author_list\":\"Dias,
+        Roger D; Shah, Julie A; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"Italy\",\"author_affiliation\":\"STRATUS
+        Center for Medical Simulation, Brigham Health, Boston, MA, USA - rdias@bwh.harvard.edu.\",\"pub_year\":2020,\"journal_title_abbr\":\"Minerva
+        Cardioangiol\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-09-08T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":\"2021-03-15T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=32989966&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7959017/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=32989966\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7959017/\"},\"relative_citation_ratio\":1.39},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31630837,\"pmc_id\":7301962,\"pub_title_link\":{\"key\":\"Commentary:
+        Another Dutch treat.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7301962\"},\"pub_title\":\"Commentary:
+        Another Dutch treat.\",\"pub_date\":\"2020 05\",\"journal_title_link\":{\"key\":\"The
+        Journal of thoracic and cardiovascular surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/31630837\"},\"journal_title\":\"The
+        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"159\",\"journal_issue\":\"5\",\"page_number\":\"1893-1894\",\"issn\":\"1097-685X\",\"author_list\":\"Zenati,
+        Marco A; Yule, Steven J\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Division
+        of Cardiac Surgery, Veterans Affairs Boston Healthcare System, Boston, Mass;
+        Department of Surgery, Brigham and Women's Hospital, Harvard Medical School,
+        Boston, Mass. Electronic address: Marco_Zenati@hms.harvard.edu.\",\"pub_year\":2020,\"journal_title_abbr\":\"J
+        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2020-06-10T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=31630837&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7301962/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=31630837\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7301962/\"},\"relative_citation_ratio\":null},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31629782,\"pmc_id\":7060831,\"pub_title_link\":{\"key\":\"Cognitive
         Engineering to Improve Patient Safety and Outcomes in Cardiothoracic Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7060831\"},\"pub_title\":\"Cognitive
         Engineering to Improve Patient Safety and Outcomes in Cardiothoracic Surgery.\",\"pub_date\":\"2020
         Spring\",\"journal_title_link\":{\"key\":\"Seminars in thoracic and cardiovascular
@@ -573,48 +668,7 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33227967&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7699221/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33227967\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7699221/\"},\"relative_citation_ratio\":1.3},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":32989966,\"pmc_id\":7959017,\"pub_title_link\":{\"key\":\"Artificial
-        intelligence in cardiothoracic surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7959017\"},\"pub_title\":\"Artificial
-        intelligence in cardiothoracic surgery.\",\"pub_date\":\"2020 Oct\",\"journal_title_link\":{\"key\":\"Minerva
-        cardioangiologica\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/32989966\"},\"journal_title\":\"Minerva
-        cardioangiologica\",\"journal_volume\":\"68\",\"journal_issue\":\"5\",\"page_number\":\"532-538\",\"issn\":\"1827-1618\",\"author_list\":\"Dias,
-        Roger D; Shah, Julie A; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"Italy\",\"author_affiliation\":\"STRATUS
-        Center for Medical Simulation, Brigham Health, Boston, MA, USA - rdias@bwh.harvard.edu.\",\"pub_year\":2020,\"journal_title_abbr\":\"Minerva
-        Cardioangiol\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-09-08T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":\"2021-03-15T00:00:00\",\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=32989966&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7959017/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=32989966\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7959017/\"},\"relative_citation_ratio\":1.39},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":33659965,\"pmc_id\":7923697,\"pub_title_link\":{\"key\":\"Feasibility
-        of Healthcare Providers' Autonomic Activation Recognition in Real-Life Cardiac
-        Surgery Using Noninvasive Sensors.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7923697\"},\"pub_title\":\"Feasibility
-        of Healthcare Providers' Autonomic Activation Recognition in Real-Life Cardiac
-        Surgery Using Noninvasive Sensors.\",\"pub_date\":\"2020 Jul\",\"journal_title_link\":{\"key\":\"HCI
-        International 2020 - late breaking posters : 22nd International Conference,
-        HCII 2020, Copenhagen, Denmark, July 19-24, 2020, Proceedings, Part I\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/33659965\"},\"journal_title\":\"HCI
-        International 2020 - late breaking posters : 22nd International Conference,
-        HCII 2020, Copenhagen, Denmark, July 19-24, 2020, Proceedings, Part I\",\"journal_volume\":\"1293\",\"journal_issue\":null,\"page_number\":\"402-408\",\"issn\":null,\"author_list\":\"Kennedy-Metz,
-        Lauren R; Bizzego, Andrea; Dias, Roger D; Furlanello, Cesare; Esposito, Gianluca;
-        Zenati, Marco A\",\"language\":\"eng\",\"country\":\"Switzerland\",\"author_affiliation\":\"Medical
-        Robotics and Computer-Assisted Surgery Lab, Harvard Medical School and VA
-        Boston Healthcare System, Boston, MA, USA.\",\"pub_year\":2020,\"journal_title_abbr\":\"HCI
-        Int 2020 Late Break Posters (2020)\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2021-03-05T06:01:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=33659965&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7923697/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=33659965\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7923697/\"},\"relative_citation_ratio\":0.12},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31295623,\"pmc_id\":7226673,\"pub_title_link\":{\"key\":\"Physiological
-        synchronization and entropy as measures of team cognitive load.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7226673\"},\"pub_title\":\"Physiological
-        synchronization and entropy as measures of team cognitive load.\",\"pub_date\":\"2019
-        08\",\"journal_title_link\":{\"key\":\"Journal of biomedical informatics\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/31295623\"},\"journal_title\":\"Journal
-        of biomedical informatics\",\"journal_volume\":\"96\",\"journal_issue\":null,\"page_number\":\"103250\",\"issn\":\"1532-0480\",\"author_list\":\"Dias,
-        Roger D; Zenati, Marco A; Stevens, Ronald; Gabany, Jennifer M; Yule, Steven
-        J\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"STRATUS
-        Center for Medical Simulation, Brigham and Women's Hospital, USA; Department
-        of Emergency Medicine, Harvard Medical School, USA. Electronic address: rdias@bwh.harvard.edu.\",\"pub_year\":2019,\"journal_title_abbr\":\"J
-        Biomed Inform\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2020-09-30T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=31295623&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7226673/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=31295623\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7226673/\"},\"relative_citation_ratio\":2.61},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30936587,\"pmc_id\":6436169,\"pub_title_link\":{\"key\":\"Establishing
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7699221/\"},\"relative_citation_ratio\":1.3},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30936587,\"pmc_id\":6436169,\"pub_title_link\":{\"key\":\"Establishing
         a Ventilator-Heart Lung Machine Communication Bridge to Mitigate Errors when
         Weaning from Bypass.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6436169\"},\"pub_title\":\"Establishing
         a Ventilator-Heart Lung Machine Communication Bridge to Mitigate Errors when
@@ -628,7 +682,46 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30936587&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6436169/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30936587\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6436169/\"},\"relative_citation_ratio\":0.38},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30578828,\"pmc_id\":6584063,\"pub_title_link\":{\"key\":\"First
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6436169/\"},\"relative_citation_ratio\":0.38},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30851373,\"pmc_id\":6731156,\"pub_title_link\":{\"key\":\"Process-Model-Driven
+        Guidance to Reduce Surgical Procedure Errors: An Expert Opinion.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6731156\"},\"pub_title\":\"Process-Model-Driven
+        Guidance to Reduce Surgical Procedure Errors: An Expert Opinion.\",\"pub_date\":\"2019
+        Autumn\",\"journal_title_link\":{\"key\":\"Seminars in thoracic and cardiovascular
+        surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/30851373\"},\"journal_title\":\"Seminars
+        in thoracic and cardiovascular surgery\",\"journal_volume\":\"31\",\"journal_issue\":\"3\",\"page_number\":\"453-457\",\"issn\":\"1532-9488\",\"author_list\":\"Osterweil,
+        Leon J; Conboy, Heather M; Clarke, Lori A; Avrunin, George S\",\"language\":\"eng\",\"country\":\"United
+        States\",\"author_affiliation\":\"Laboratory for Advanced Software Engineering
+        Research (LASER), College of Information and Computer Science, University
+        of Massachusetts Amherst, Amherst, Massachusetts. Electronic address: ljo@cs.umass.edu.\",\"pub_year\":2019,\"journal_title_abbr\":\"Semin
+        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2020-01-09T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30851373&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6731156/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30851373\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6731156/\"},\"relative_citation_ratio\":0.33},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31295623,\"pmc_id\":7226673,\"pub_title_link\":{\"key\":\"Physiological
+        synchronization and entropy as measures of team cognitive load.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/7226673\"},\"pub_title\":\"Physiological
+        synchronization and entropy as measures of team cognitive load.\",\"pub_date\":\"2019
+        08\",\"journal_title_link\":{\"key\":\"Journal of biomedical informatics\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/31295623\"},\"journal_title\":\"Journal
+        of biomedical informatics\",\"journal_volume\":\"96\",\"journal_issue\":null,\"page_number\":\"103250\",\"issn\":\"1532-0480\",\"author_list\":\"Dias,
+        Roger D; Zenati, Marco A; Stevens, Ronald; Gabany, Jennifer M; Yule, Steven
+        J\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"STRATUS
+        Center for Medical Simulation, Brigham and Women's Hospital, USA; Department
+        of Emergency Medicine, Harvard Medical School, USA. Electronic address: rdias@bwh.harvard.edu.\",\"pub_year\":2019,\"journal_title_abbr\":\"J
+        Biomed Inform\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2020-09-30T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=31295623&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC7226673/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=31295623\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC7226673/\"},\"relative_citation_ratio\":2.61},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31548741,\"pmc_id\":6749167,\"pub_title_link\":{\"key\":\"A
+        Quick Reference Tool for Goal-Directed Perfusion in Cardiac Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6749167\"},\"pub_title\":\"A
+        Quick Reference Tool for Goal-Directed Perfusion in Cardiac Surgery.\",\"pub_date\":\"2019
+        Sep\",\"journal_title_link\":{\"key\":\"The journal of extra-corporeal technology\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/31548741\"},\"journal_title\":\"The
+        journal of extra-corporeal technology\",\"journal_volume\":\"51\",\"journal_issue\":\"3\",\"page_number\":\"172-174\",\"issn\":\"0022-1058\",\"author_list\":\"Srey,
+        Rithy; Rance, Geoffrey; Shapeton, Alexander D; Leissner, Kay B; Zenati, Marco
+        A\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Veterans
+        Affairs Boston Healthcare System, Division of Cardiac Surgery, Boston, Massachusetts.\",\"pub_year\":2019,\"journal_title_abbr\":\"J
+        Extra Corpor Technol\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2019-10-18T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=31548741&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6749167/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=31548741\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6749167/\"},\"relative_citation_ratio\":1.1},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30578828,\"pmc_id\":6584063,\"pub_title_link\":{\"key\":\"First
         Reported Use of Team Cognitive Workload for Root Cause Analysis in Cardiac
         Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6584063\"},\"pub_title\":\"First
         Reported Use of Team Cognitive Workload for Root Cause Analysis in Cardiac
@@ -645,45 +738,7 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30578828&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6584063/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30578828\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6584063/\"},\"relative_citation_ratio\":2.25},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":31548741,\"pmc_id\":6749167,\"pub_title_link\":{\"key\":\"A
-        Quick Reference Tool for Goal-Directed Perfusion in Cardiac Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6749167\"},\"pub_title\":\"A
-        Quick Reference Tool for Goal-Directed Perfusion in Cardiac Surgery.\",\"pub_date\":\"2019
-        Sep\",\"journal_title_link\":{\"key\":\"The journal of extra-corporeal technology\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/31548741\"},\"journal_title\":\"The
-        journal of extra-corporeal technology\",\"journal_volume\":\"51\",\"journal_issue\":\"3\",\"page_number\":\"172-174\",\"issn\":\"0022-1058\",\"author_list\":\"Srey,
-        Rithy; Rance, Geoffrey; Shapeton, Alexander D; Leissner, Kay B; Zenati, Marco
-        A\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Veterans
-        Affairs Boston Healthcare System, Division of Cardiac Surgery, Boston, Massachusetts.\",\"pub_year\":2019,\"journal_title_abbr\":\"J
-        Extra Corpor Technol\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2019-10-18T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=31548741&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6749167/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=31548741\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6749167/\"},\"relative_citation_ratio\":1.1},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30851373,\"pmc_id\":6731156,\"pub_title_link\":{\"key\":\"Process-Model-Driven
-        Guidance to Reduce Surgical Procedure Errors: An Expert Opinion.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6731156\"},\"pub_title\":\"Process-Model-Driven
-        Guidance to Reduce Surgical Procedure Errors: An Expert Opinion.\",\"pub_date\":\"2019
-        Autumn\",\"journal_title_link\":{\"key\":\"Seminars in thoracic and cardiovascular
-        surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/30851373\"},\"journal_title\":\"Seminars
-        in thoracic and cardiovascular surgery\",\"journal_volume\":\"31\",\"journal_issue\":\"3\",\"page_number\":\"453-457\",\"issn\":\"1532-9488\",\"author_list\":\"Osterweil,
-        Leon J; Conboy, Heather M; Clarke, Lori A; Avrunin, George S\",\"language\":\"eng\",\"country\":\"United
-        States\",\"author_affiliation\":\"Laboratory for Advanced Software Engineering
-        Research (LASER), College of Information and Computer Science, University
-        of Massachusetts Amherst, Amherst, Massachusetts. Electronic address: ljo@cs.umass.edu.\",\"pub_year\":2019,\"journal_title_abbr\":\"Semin
-        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2020-01-09T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30851373&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6731156/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30851373\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6731156/\"},\"relative_citation_ratio\":0.33},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30119285,\"pmc_id\":6100786,\"pub_title_link\":{\"key\":\"Cutting
-        off the lizard's tail in surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6100786\"},\"pub_title\":\"Cutting
-        off the lizard's tail in surgery.\",\"pub_date\":\"2018 Sep\",\"journal_title_link\":{\"key\":\"The
-        Journal of thoracic and cardiovascular surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/30119285\"},\"journal_title\":\"The
-        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"156\",\"journal_issue\":\"3\",\"page_number\":\"1220-1221\",\"issn\":\"1097-685X\",\"author_list\":\"Zenati,
-        Marco A; Scarinci, Andrea\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Harvard
-        Medical School, Harvard University, Boston, Mass; Division of Cardiothoracic
-        Surgery, Veterans Affairs Boston Healthcare System, Boston, Mass.\",\"pub_year\":2018,\"journal_title_abbr\":\"J
-        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2019-09-19T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30119285&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6100786/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30119285\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6100786/\"},\"relative_citation_ratio\":0.15},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30140792,\"pmc_id\":6103223,\"pub_title_link\":{\"key\":\"Toward
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6584063/\"},\"relative_citation_ratio\":2.25},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30140792,\"pmc_id\":6103223,\"pub_title_link\":{\"key\":\"Toward
         Improving Surgical Outcomes by Incorporating Cognitive Load Measurement into
         Process-Driven Guidance.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6103223\"},\"pub_title\":\"Toward
         Improving Surgical Outcomes by Incorporating Cognitive Load Measurement into
@@ -700,7 +755,30 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30140792&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6103223/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30140792\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6103223/\"},\"relative_citation_ratio\":0.9},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30547096,\"pmc_id\":6289194,\"pub_title_link\":{\"key\":\"Development
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6103223/\"},\"relative_citation_ratio\":0.9},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30815055,\"pmc_id\":6371362,\"pub_title_link\":{\"key\":\"Process
+        Driven Guidance for Complex Surgical Procedures.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6371362\"},\"pub_title\":\"Process
+        Driven Guidance for Complex Surgical Procedures.\",\"pub_date\":\"2018\",\"journal_title_link\":{\"key\":\"AMIA
+        ... Annual Symposium proceedings. AMIA Symposium\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/30815055\"},\"journal_title\":\"AMIA
+        ... Annual Symposium proceedings. AMIA Symposium\",\"journal_volume\":\"2018\",\"journal_issue\":null,\"page_number\":\"175-184\",\"issn\":\"1942-597X\",\"author_list\":\"Avrunin,
+        George S; Christov, Stefan C; Clarke, Lori A; Conboy, Heather M; Osterweil,
+        Leon J; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"University
+        of Massachusetts, Amherst, MA, USA.\",\"pub_year\":2018,\"journal_title_abbr\":\"AMIA
+        Annu Symp Proc\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2019-09-29T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30815055&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6371362/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30815055\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6371362/\"},\"relative_citation_ratio\":0.33},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":29465749,\"pmc_id\":5878696,\"pub_title_link\":{\"key\":\"Systematic
+        review of measurement tools to assess surgeons' intraoperative cognitive workload.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/5878696\"},\"pub_title\":\"Systematic
+        review of measurement tools to assess surgeons' intraoperative cognitive workload.\",\"pub_date\":\"2018
+        Apr\",\"journal_title_link\":{\"key\":\"The British journal of surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/29465749\"},\"journal_title\":\"The
+        British journal of surgery\",\"journal_volume\":\"105\",\"journal_issue\":\"5\",\"page_number\":\"491-501\",\"issn\":\"1365-2168\",\"author_list\":\"Dias,
+        R D; Ngo-Howard, M C; Boskovski, M T; Zenati, M A; Yule, S J\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"STRATUS
+        Center for Medical Simulation, Brigham and Women's Hospital, Boston, Massachusetts,
+        USA.\",\"pub_year\":2018,\"journal_title_abbr\":\"Br J Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2018-12-12T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=29465749&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC5878696/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=29465749\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC5878696/\"},\"relative_citation_ratio\":10.17},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30547096,\"pmc_id\":6289194,\"pub_title_link\":{\"key\":\"Development
         of an Interactive Dashboard to Analyze Cognitive Workload of Surgical Teams
         During Complex Procedural Care.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6289194\"},\"pub_title\":\"Development
         of an Interactive Dashboard to Analyze Cognitive Workload of Surgical Teams
@@ -740,7 +818,19 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30506066&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6267949/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30506066\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6267949/\"},\"relative_citation_ratio\":0.74},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30729236,\"pmc_id\":6360335,\"pub_title_link\":{\"key\":\"A
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6267949/\"},\"relative_citation_ratio\":0.74},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30119285,\"pmc_id\":6100786,\"pub_title_link\":{\"key\":\"Cutting
+        off the lizard's tail in surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6100786\"},\"pub_title\":\"Cutting
+        off the lizard's tail in surgery.\",\"pub_date\":\"2018 Sep\",\"journal_title_link\":{\"key\":\"The
+        Journal of thoracic and cardiovascular surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/30119285\"},\"journal_title\":\"The
+        Journal of thoracic and cardiovascular surgery\",\"journal_volume\":\"156\",\"journal_issue\":\"3\",\"page_number\":\"1220-1221\",\"issn\":\"1097-685X\",\"author_list\":\"Zenati,
+        Marco A; Scarinci, Andrea\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"Harvard
+        Medical School, Harvard University, Boston, Mass; Division of Cardiothoracic
+        Surgery, Veterans Affairs Boston Healthcare System, Boston, Mass.\",\"pub_year\":2018,\"journal_title_abbr\":\"J
+        Thorac Cardiovasc Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2019-09-19T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
+        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30119285&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
+        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6100786/\"},\"article_pub_med_central\":{\"key\":\"Cited
+        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30119285\"},\"article_citing_google\":{\"key\":\"Cited
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6100786/\"},\"relative_citation_ratio\":0.15},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30729236,\"pmc_id\":6360335,\"pub_title_link\":{\"key\":\"A
         Novel Interoperable Safety System for Improved Coordination and Communication
         in Cardiac Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6360335\"},\"pub_title\":\"A
         Novel Interoperable Safety System for Improved Coordination and Communication
@@ -779,30 +869,7 @@ interactions:
         PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30740198&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
         Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6364745/\"},\"article_pub_med_central\":{\"key\":\"Cited
         By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30740198\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6364745/\"},\"relative_citation_ratio\":1.51},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":30815055,\"pmc_id\":6371362,\"pub_title_link\":{\"key\":\"Process
-        Driven Guidance for Complex Surgical Procedures.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/6371362\"},\"pub_title\":\"Process
-        Driven Guidance for Complex Surgical Procedures.\",\"pub_date\":\"2018\",\"journal_title_link\":{\"key\":\"AMIA
-        ... Annual Symposium proceedings. AMIA Symposium\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/30815055\"},\"journal_title\":\"AMIA
-        ... Annual Symposium proceedings. AMIA Symposium\",\"journal_volume\":\"2018\",\"journal_issue\":null,\"page_number\":\"175-184\",\"issn\":\"1942-597X\",\"author_list\":\"Avrunin,
-        George S; Christov, Stefan C; Clarke, Lori A; Conboy, Heather M; Osterweil,
-        Leon J; Zenati, Marco A\",\"language\":\"eng\",\"country\":\"United States\",\"author_affiliation\":\"University
-        of Massachusetts, Amherst, MA, USA.\",\"pub_year\":2018,\"journal_title_abbr\":\"AMIA
-        Annu Symp Proc\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2019-09-29T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=30815055&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC6371362/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=30815055\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6371362/\"},\"relative_citation_ratio\":0.33},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":29465749,\"pmc_id\":5878696,\"pub_title_link\":{\"key\":\"Systematic
-        review of measurement tools to assess surgeons' intraoperative cognitive workload.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/5878696\"},\"pub_title\":\"Systematic
-        review of measurement tools to assess surgeons' intraoperative cognitive workload.\",\"pub_date\":\"2018
-        Apr\",\"journal_title_link\":{\"key\":\"The British journal of surgery\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/29465749\"},\"journal_title\":\"The
-        British journal of surgery\",\"journal_volume\":\"105\",\"journal_issue\":\"5\",\"page_number\":\"491-501\",\"issn\":\"1365-2168\",\"author_list\":\"Dias,
-        R D; Ngo-Howard, M C; Boskovski, M T; Zenati, M A; Yule, S J\",\"language\":\"eng\",\"country\":\"England\",\"author_affiliation\":\"STRATUS
-        Center for Medical Simulation, Brigham and Women's Hospital, Boston, Massachusetts,
-        USA.\",\"pub_year\":2018,\"journal_title_abbr\":\"Br J Surg\",\"last_revison_date\":null,\"j_id\":null,\"mesh_date\":\"2018-12-12T06:00:00\",\"pub_status\":null,\"other_related_grants\":\"\",\"appl_id\":10893225,\"pmc_release_date\":null,\"total_publications\":0,\"total_core_projects\":0,\"total_records\":0,\"related_pub_med_links\":{\"key\":\"Related,
-        PubMed\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?Db=pubmed&DbFrom=pubmed&Cmd=Link&LinkName=pubmed_pubmed&IdsFromResult=29465749&ordinalpos=1&itool=EntrezSystem2.PEntrez.Pubmed.Pubmed_ResultsPanel.Pubmed_DiscoveryPanel.Pubmed_Discovery_RA&log$=relatedarticles&logdbfrom=pubmed\"},\"related_pub_med_google\":{\"key\":\"Related,
-        Google Scholar\",\"value\":\"https://scholar.google.com/scholar?q=related:https://pmc.ncbi.nlm.nih.gov/articles/PMC5878696/\"},\"article_pub_med_central\":{\"key\":\"Cited
-        By, PMID\",\"value\":\"https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid=29465749\"},\"article_citing_google\":{\"key\":\"Cited
-        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC5878696/\"},\"relative_citation_ratio\":10.17},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":28752132,\"pmc_id\":5526347,\"pub_title_link\":{\"key\":\"Cognitive
+        By, Google\",\"value\":\"https://scholar.google.com/scholar?hl=en&lr=&cites=https://pmc.ncbi.nlm.nih.gov/articles/PMC6364745/\"},\"relative_citation_ratio\":1.51},{\"core_project_num\":\"R01HL126896\",\"era_pub_id\":null,\"pm_id\":28752132,\"pmc_id\":5526347,\"pub_title_link\":{\"key\":\"Cognitive
         Support During High-Consequence Episodes of Care in Cardiovascular Surgery.\",\"value\":\"https://www.ncbi.nlm.nih.gov/pmc/articles/5526347\"},\"pub_title\":\"Cognitive
         Support During High-Consequence Episodes of Care in Cardiovascular Surgery.\",\"pub_date\":\"2017
         Mar\",\"journal_title_link\":{\"key\":\"... IEEE International Inter-Disciplinary
@@ -838,32 +905,29 @@ interactions:
       Connection:
       - keep-alive
       Content-Length:
-      - '102930'
+      - '114169'
       Content-Type:
       - application/json; charset=utf-8
       Date:
-      - Mon, 11 Aug 2025 02:36:31 GMT
-      Server:
-      - ''
+      - Fri, 27 Feb 2026 02:28:51 GMT
       Set-Cookie:
-      - AWSALB=neFVgPOW9UIbU5rvNIPSiYyZ+67BsSvD4RIeQgbl8fZEhrSxwZEW0aBvbfPyRRC8TCe0olz5nsOboMCoHX1bZolJCZo772EvQ6FoadCchOwhUhuZuzwjkRCCqSzcceUaNBVCz1yJO3v7sChXFSP5vKl99oWda09izurSPnId2vQukZsF8vQhhlKPagaOMkZphGHzKb8COmRggsvEEcV0OLYrYPRqgJLy3nmrgiXqyRUGqL1UE86Sbl0orfrDLztLfysnxCpPfCbmFMXzAA==;
-        Expires=Mon, 18 Aug 2025 02:36:30 GMT; Path=/
-      - AWSALBCORS=neFVgPOW9UIbU5rvNIPSiYyZ+67BsSvD4RIeQgbl8fZEhrSxwZEW0aBvbfPyRRC8TCe0olz5nsOboMCoHX1bZolJCZo772EvQ6FoadCchOwhUhuZuzwjkRCCqSzcceUaNBVCz1yJO3v7sChXFSP5vKl99oWda09izurSPnId2vQukZsF8vQhhlKPagaOMkZphGHzKb8COmRggsvEEcV0OLYrYPRqgJLy3nmrgiXqyRUGqL1UE86Sbl0orfrDLztLfysnxCpPfCbmFMXzAA==;
-        Expires=Mon, 18 Aug 2025 02:36:30 GMT; Path=/; SameSite=None; Secure
+      - AWSALB=6tHJVUMchtqczFWKVtVbwAA9GPaqW0g5LXjwyQYI26WVa3npAWy2+LRDlYTGTsRUmMnBSm3bM3asMTuXHy+E4nEgZVMlY8+Qxe0gUuOUapWdvEODn3FCcR00Gq8q;
+        Expires=Fri, 06 Mar 2026 02:28:51 GMT; Path=/
+      - AWSALBCORS=6tHJVUMchtqczFWKVtVbwAA9GPaqW0g5LXjwyQYI26WVa3npAWy2+LRDlYTGTsRUmMnBSm3bM3asMTuXHy+E4nEgZVMlY8+Qxe0gUuOUapWdvEODn3FCcR00Gq8q;
+        Expires=Fri, 06 Mar 2026 02:28:51 GMT; Path=/; SameSite=None; Secure
+      - AWSALB=7jgFFVLU8IsDn55wTc0sjk1L6orD7QMu9KeLiOWbIXeAVeEcWoNHTUw0gu/jN/MXlEIAh9HyQbCo6WYlnfN5o1nKf7c0/ghTp5tcEbn8FIJMmlf9a1iW4jhy4rIW1mZQVMGU2o/KfH8ntO2PbfP/dYVZ6Sxyy3iKnsmQlCI1gLC6uvT2PPQbK339v3HjFeWl2SiZfaaKCWhnzo/CLu//237fhhk8l8LG/PEtSMQAYO7lfe5z7klAcaoGezQq/1e9RSNBmUF84l1H19NKyg==;
+        Expires=Fri, 06 Mar 2026 02:28:51 GMT; Path=/
+      - AWSALBCORS=7jgFFVLU8IsDn55wTc0sjk1L6orD7QMu9KeLiOWbIXeAVeEcWoNHTUw0gu/jN/MXlEIAh9HyQbCo6WYlnfN5o1nKf7c0/ghTp5tcEbn8FIJMmlf9a1iW4jhy4rIW1mZQVMGU2o/KfH8ntO2PbfP/dYVZ6Sxyy3iKnsmQlCI1gLC6uvT2PPQbK339v3HjFeWl2SiZfaaKCWhnzo/CLu//237fhhk8l8LG/PEtSMQAYO7lfe5z7klAcaoGezQq/1e9RSNBmUF84l1H19NKyg==;
+        Expires=Fri, 06 Mar 2026 02:28:51 GMT; Path=/; SameSite=None; Secure
       Strict-Transport-Security:
-      - max-age=31536000; includeSubDomains; preload
-      X-Content-Type-Options:
-      - nosniff
-      X-Frame-Options:
-      - SAMEORIGIN
+      - max-age=31536000; includeSubDomains;
       X-Rate-Limit-Limit:
       - 1m
       X-Rate-Limit-Remaining:
       - '199'
       X-Rate-Limit-Reset:
-      - '2025-08-11T02:37:17.7632434Z'
+      - '2026-02-27T02:29:51.1803190Z'
       X-XSS-Protection:
-      - 1; mode=block
       - 1; mode=block
     status:
       code: 200
@@ -874,16 +938,16 @@ interactions:
       Accept:
       - '*/*'
       Accept-Encoding:
-      - gzip, deflate, zstd
+      - gzip, deflate
       Connection:
       - keep-alive
       User-Agent:
-      - python-requests/2.32.3
+      - python-requests/2.32.5
     method: GET
-    uri: https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids=39084333%2C39083274%2C39184954%2C39076411%2C39076410%2C39081305%2C37112231%2C37497240%2C37838385%2C33931232%2C35937956%2C34171871%2C33773815%2C35984653%2C35994041%2C36037053%2C33327770%2C33160616%2C33644703%2C31348036%2C34676380%2C34148709%2C32863172%2C35253018%2C31630837%2C32938323%2C34350424%2C34723287%2C31629782%2C33227967%2C32989966%2C33659965%2C31295623%2C30936587%2C30578828%2C31548741%2C30851373%2C30119285%2C30140792%2C30547096%2C30506066%2C30729236%2C30740198%2C30815055%2C29465749%2C28752132%2C27706489&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
+    uri: https://www.ncbi.nlm.nih.gov/pmc/utils/idconv/v1.0/?ids=40944900%2C39084333%2C40693180%2C40693178%2C40693181%2C40693182%2C39076411%2C39081305%2C39184954%2C39083274%2C39076410%2C37112231%2C37838385%2C37497240%2C35994041%2C35937956%2C34171871%2C33931232%2C36037053%2C35984653%2C33773815%2C34148709%2C33327770%2C31348036%2C35253018%2C32863172%2C33160616%2C34676380%2C33644703%2C32938323%2C34723287%2C34350424%2C33659965%2C32989966%2C31630837%2C31629782%2C33227967%2C30936587%2C30851373%2C31295623%2C31548741%2C30578828%2C30140792%2C30815055%2C29465749%2C30547096%2C30506066%2C30119285%2C30729236%2C30740198%2C28752132%2C27706489&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
   response:
     body:
-      string: '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+      string: '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 
         <html><head>
 
@@ -893,7 +957,7 @@ interactions:
 
         <h1>Moved Permanently</h1>
 
-        <p>The document has moved <a href="https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39084333%2C39083274%2C39184954%2C39076411%2C39076410%2C39081305%2C37112231%2C37497240%2C37838385%2C33931232%2C35937956%2C34171871%2C33773815%2C35984653%2C35994041%2C36037053%2C33327770%2C33160616%2C33644703%2C31348036%2C34676380%2C34148709%2C32863172%2C35253018%2C31630837%2C32938323%2C34350424%2C34723287%2C31629782%2C33227967%2C32989966%2C33659965%2C31295623%2C30936587%2C30578828%2C31548741%2C30851373%2C30119285%2C30140792%2C30547096%2C30506066%2C30729236%2C30740198%2C30815055%2C29465749%2C28752132%2C27706489&amp;format=json&amp;idtype=pmid&amp;tool=dmptool-workflow&amp;versions=no">here</a>.</p>
+        <p>The document has moved <a href="https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=40944900%2C39084333%2C40693180%2C40693178%2C40693181%2C40693182%2C39076411%2C39081305%2C39184954%2C39083274%2C39076410%2C37112231%2C37838385%2C37497240%2C35994041%2C35937956%2C34171871%2C33931232%2C36037053%2C35984653%2C33773815%2C34148709%2C33327770%2C31348036%2C35253018%2C32863172%2C33160616%2C34676380%2C33644703%2C32938323%2C34723287%2C34350424%2C33659965%2C32989966%2C31630837%2C31629782%2C33227967%2C30936587%2C30851373%2C31295623%2C31548741%2C30578828%2C30140792%2C30815055%2C29465749%2C30547096%2C30506066%2C30119285%2C30729236%2C30740198%2C28752132%2C27706489&amp;format=json&amp;idtype=pmid&amp;tool=dmptool-workflow&amp;versions=no">here</a>.</p>
 
         </body></html>
 
@@ -902,17 +966,17 @@ interactions:
       Connection:
       - Keep-Alive
       Content-Length:
-      - '859'
+      - '954'
       Content-Security-Policy:
       - upgrade-insecure-requests
       Content-Type:
       - text/html; charset=iso-8859-1
       Date:
-      - Mon, 11 Aug 2025 02:36:32 GMT
+      - Fri, 27 Feb 2026 02:28:52 GMT
       Keep-Alive:
       - timeout=1, max=10
       Location:
-      - https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39084333%2C39083274%2C39184954%2C39076411%2C39076410%2C39081305%2C37112231%2C37497240%2C37838385%2C33931232%2C35937956%2C34171871%2C33773815%2C35984653%2C35994041%2C36037053%2C33327770%2C33160616%2C33644703%2C31348036%2C34676380%2C34148709%2C32863172%2C35253018%2C31630837%2C32938323%2C34350424%2C34723287%2C31629782%2C33227967%2C32989966%2C33659965%2C31295623%2C30936587%2C30578828%2C31548741%2C30851373%2C30119285%2C30140792%2C30547096%2C30506066%2C30729236%2C30740198%2C30815055%2C29465749%2C28752132%2C27706489&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
+      - https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=40944900%2C39084333%2C40693180%2C40693178%2C40693181%2C40693182%2C39076411%2C39081305%2C39184954%2C39083274%2C39076410%2C37112231%2C37838385%2C37497240%2C35994041%2C35937956%2C34171871%2C33931232%2C36037053%2C35984653%2C33773815%2C34148709%2C33327770%2C31348036%2C35253018%2C32863172%2C33160616%2C34676380%2C33644703%2C32938323%2C34723287%2C34350424%2C33659965%2C32989966%2C31630837%2C31629782%2C33227967%2C30936587%2C30851373%2C31295623%2C31548741%2C30578828%2C30140792%2C30815055%2C29465749%2C30547096%2C30506066%2C30119285%2C30729236%2C30740198%2C28752132%2C27706489&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
       Referrer-Policy:
       - origin-when-cross-origin
       Server:
@@ -928,24 +992,24 @@ interactions:
       Accept:
       - '*/*'
       Accept-Encoding:
-      - gzip, deflate, zstd
+      - gzip, deflate
       Connection:
       - keep-alive
       User-Agent:
-      - python-requests/2.32.3
+      - python-requests/2.32.5
     method: GET
-    uri: https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=39084333%2C39083274%2C39184954%2C39076411%2C39076410%2C39081305%2C37112231%2C37497240%2C37838385%2C33931232%2C35937956%2C34171871%2C33773815%2C35984653%2C35994041%2C36037053%2C33327770%2C33160616%2C33644703%2C31348036%2C34676380%2C34148709%2C32863172%2C35253018%2C31630837%2C32938323%2C34350424%2C34723287%2C31629782%2C33227967%2C32989966%2C33659965%2C31295623%2C30936587%2C30578828%2C31548741%2C30851373%2C30119285%2C30140792%2C30547096%2C30506066%2C30729236%2C30740198%2C30815055%2C29465749%2C28752132%2C27706489&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
+    uri: https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/?ids=40944900%2C39084333%2C40693180%2C40693178%2C40693181%2C40693182%2C39076411%2C39081305%2C39184954%2C39083274%2C39076410%2C37112231%2C37838385%2C37497240%2C35994041%2C35937956%2C34171871%2C33931232%2C36037053%2C35984653%2C33773815%2C34148709%2C33327770%2C31348036%2C35253018%2C32863172%2C33160616%2C34676380%2C33644703%2C32938323%2C34723287%2C34350424%2C33659965%2C32989966%2C31630837%2C31629782%2C33227967%2C30936587%2C30851373%2C31295623%2C31548741%2C30578828%2C30140792%2C30815055%2C29465749%2C30547096%2C30506066%2C30119285%2C30729236%2C30740198%2C28752132%2C27706489&format=json&idtype=pmid&tool=dmptool-workflow&versions=no
   response:
     body:
-      string: '{"status":"ok","response-date":"2025-08-10 22:36:32","request":{"warnings":["query
-        param `email` is missing."],"versions":"no","format":"json","idtype":"pmid","ids":["39084333","39083274","39184954","39076411","39076410","39081305","37112231","37497240","37838385","33931232","35937956","34171871","33773815","35984653","35994041","36037053","33327770","33160616","33644703","31348036","34676380","34148709","32863172","35253018","31630837","32938323","34350424","34723287","31629782","33227967","32989966","33659965","31295623","30936587","30578828","31548741","30851373","30119285","30140792","30547096","30506066","30729236","30740198","30815055","29465749","28752132","27706489"],"tool":"dmptool-workflow","echo":"ids=39084333%2C39083274%2C39184954%2C39076411%2C39076410%2C39081305%2C37112231%2C37497240%2C37838385%2C33931232%2C35937956%2C34171871%2C33773815%2C35984653%2C35994041%2C36037053%2C33327770%2C33160616%2C33644703%2C31348036%2C34676380%2C34148709%2C32863172%2C35253018%2C31630837%2C32938323%2C34350424%2C34723287%2C31629782%2C33227967%2C32989966%2C33659965%2C31295623%2C30936587%2C30578828%2C31548741%2C30851373%2C30119285%2C30140792%2C30547096%2C30506066%2C30729236%2C30740198%2C30815055%2C29465749%2C28752132%2C27706489&format=json&idtype=pmid&tool=dmptool-workflow&versions=no","showaiid":"no"},"records":[{"doi":"10.1016/j.jtcvs.2024.07.050","live":false,"pmcid":"PMC11775230","pmid":39084333,"release-date":"2026-07-01","requested-id":"39084333"},{"doi":"10.1001/jamanetworkopen.2024.22520","pmcid":"PMC11292454","pmid":39083274,"requested-id":"39083274"},{"doi":"10.54941/ahfe1004831","pmcid":"PMC11342855","pmid":39184954,"requested-id":"39184954"},{"pmcid":"PMC11285016","pmid":39076411,"requested-id":"39076411"},{"pmcid":"PMC11285017","pmid":39076410,"requested-id":"39076410"},{"pmcid":"PMC11287473","pmid":39081305,"requested-id":"39081305"},{"doi":"10.3390/s23083890","pmcid":"PMC10145698","pmid":37112231,"requested-id":"37112231"},{"doi":"10.1007/978-3-031-34953-9_35","pmcid":"PMC10371197","pmid":37497240,"requested-id":"37497240"},{"doi":"10.1016/j.anclin.2023.03.013","pmcid":"PMC10703542","pmid":37838385,"requested-id":"37838385"},{"doi":"10.1016/j.jtcvs.2021.02.098","pmcid":"PMC8481338","pmid":33931232,"requested-id":"33931232"},{"doi":"10.1080/21681163.2021.2002724","pmcid":"PMC9355042","pmid":35937956,"requested-id":"35937956"},{"doi":"10.1097/SLA.0000000000005022","pmcid":"PMC8683575","pmid":34171871,"requested-id":"34171871"},{"doi":"10.1016/j.jtcvs.2021.02.072","pmcid":"PMC8387494","pmid":33773815,"requested-id":"33773815"},{"doi":"10.1109/cogsima54611.2022.9830675","pmcid":"PMC9382699","pmid":35984653,"requested-id":"35984653"},{"doi":"10.1109/cogsima54611.2022.9830664","pmcid":"PMC9386571","pmid":35994041,"requested-id":"35994041"},{"doi":"10.1007/978-3-031-05311-5_12","pmcid":"PMC9413016","pmid":36037053,"requested-id":"36037053"},{"doi":"10.1177/0018720820976297","pmcid":"PMC8207176","pmid":33327770,"requested-id":"33327770"},{"doi":"10.1016/j.jtcvs.2020.06.111","pmcid":"PMC8547430","pmid":33160616,"requested-id":"33160616"},{"doi":"10.1109/tmrb.2020.3040002","pmcid":"PMC7908934","pmid":33644703,"requested-id":"33644703"},{"doi":"10.1097/SLA.0000000000003489","pmcid":"PMC7241253","pmid":31348036,"requested-id":"31348036"},{"doi":"10.1145/3452853.3452867","pmcid":"PMC8528342","pmid":34676380,"requested-id":"34676380"},{"doi":"10.1016/j.surg.2021.05.020","pmcid":"PMC8733606","pmid":34148709,"requested-id":"34148709"},{"doi":"10.1016/j.jsurg.2020.08.012","pmcid":"PMC7904574","pmid":32863172,"requested-id":"32863172"},{"doi":"10.1109/cogsima51574.2021.9475925","pmcid":"PMC8893011","pmid":35253018,"requested-id":"35253018"},{"doi":"10.1016/j.jtcvs.2019.08.123","pmcid":"PMC7301962","pmid":31630837,"requested-id":"31630837"},{"doi":"10.1177/1553350620934931","pmcid":"PMC7744397","pmid":32938323,"requested-id":"32938323"},{"doi":"10.1109/cogsima49017.2020.9216076","pmcid":"PMC8329755","pmid":34350424,"requested-id":"34350424"},{"doi":"10.1109/cogsima49017.2020.9215995","pmcid":"PMC8555746","pmid":34723287,"requested-id":"34723287"},{"doi":"10.1053/j.semtcvs.2019.10.011","pmcid":"PMC7060831","pmid":31629782,"requested-id":"31629782"},{"doi":"10.3390/s20226616","pmcid":"PMC7699221","pmid":33227967,"requested-id":"33227967"},{"doi":"10.23736/S0026-4725.20.05235-4","pmcid":"PMC7959017","pmid":32989966,"requested-id":"32989966"},{"doi":"10.1007/978-3-030-60700-5_51","pmcid":"PMC7923697","pmid":33659965,"requested-id":"33659965"},{"doi":"10.1016/j.jbi.2019.103250","pmcid":"PMC7226673","pmid":31295623,"requested-id":"31295623"},{"pmcid":"PMC6436169","pmid":30936587,"requested-id":"30936587"},{"doi":"10.1053/j.semtcvs.2018.12.003","pmcid":"PMC6584063","pmid":30578828,"requested-id":"30578828"},{"pmcid":"PMC6749167","pmid":31548741,"requested-id":"31548741"},{"doi":"10.1053/j.semtcvs.2019.02.030","pmcid":"PMC6731156","pmid":30851373,"requested-id":"30851373"},{"doi":"10.1016/j.jtcvs.2018.02.047","pmcid":"PMC6100786","pmid":30119285,"requested-id":"30119285"},{"doi":"10.1145/3194696.3194705","pmcid":"PMC6103223","pmid":30140792,"requested-id":"30140792"},{"doi":"10.1109/COGSIMA.2018.8423995","pmcid":"PMC6289194","pmid":30547096,"requested-id":"30547096"},{"doi":"10.1007/978-3-030-01201-4_8","pmcid":"PMC6267949","pmid":30506066,"requested-id":"30506066"},{"doi":"10.1007/978-3-030-01201-4_5","pmcid":"PMC6360335","pmid":30729236,"requested-id":"30729236"},{"doi":"10.1109/COGSIMA.2018.8423991","pmcid":"PMC6364745","pmid":30740198,"requested-id":"30740198"},{"pmcid":"PMC6371362","pmid":30815055,"requested-id":"30815055"},{"doi":"10.1002/bjs.10795","pmcid":"PMC5878696","pmid":29465749,"requested-id":"29465749"},{"doi":"10.1109/COGSIMA.2017.7929610","pmcid":"PMC5526347","pmid":28752132,"requested-id":"28752132"},{"doi":"10.1001/jamasurg.2016.2839","pmcid":"PMC5177530","pmid":27706489,"requested-id":"27706489"}]}'
+      string: '{"status":"ok","response-date":"2026-02-26 21:28:52","request":{"warnings":["query
+        param `email` is missing."],"versions":"no","format":"json","idtype":"pmid","ids":["40944900","39084333","40693180","40693178","40693181","40693182","39076411","39081305","39184954","39083274","39076410","37112231","37838385","37497240","35994041","35937956","34171871","33931232","36037053","35984653","33773815","34148709","33327770","31348036","35253018","32863172","33160616","34676380","33644703","32938323","34723287","34350424","33659965","32989966","31630837","31629782","33227967","30936587","30851373","31295623","31548741","30578828","30140792","30815055","29465749","30547096","30506066","30119285","30729236","30740198","28752132","27706489"],"tool":"dmptool-workflow","echo":"ids=40944900%2C39084333%2C40693180%2C40693178%2C40693181%2C40693182%2C39076411%2C39081305%2C39184954%2C39083274%2C39076410%2C37112231%2C37838385%2C37497240%2C35994041%2C35937956%2C34171871%2C33931232%2C36037053%2C35984653%2C33773815%2C34148709%2C33327770%2C31348036%2C35253018%2C32863172%2C33160616%2C34676380%2C33644703%2C32938323%2C34723287%2C34350424%2C33659965%2C32989966%2C31630837%2C31629782%2C33227967%2C30936587%2C30851373%2C31295623%2C31548741%2C30578828%2C30140792%2C30815055%2C29465749%2C30547096%2C30506066%2C30119285%2C30729236%2C30740198%2C28752132%2C27706489&format=json&idtype=pmid&tool=dmptool-workflow&versions=no","showaiid":"no"},"records":[{"doi":"10.1177/02676591251380659","pmcid":"PMC12715685","pmid":40944900,"requested-id":"40944900"},{"doi":"10.1016/j.jtcvs.2024.07.050","live":false,"pmcid":"PMC11775230","pmid":39084333,"release-date":"2026-07-01","requested-id":"39084333"},{"pmcid":"PMC12277974","pmid":40693180,"requested-id":"40693180"},{"pmcid":"PMC12277972","pmid":40693178,"requested-id":"40693178"},{"pmcid":"PMC12277971","pmid":40693181,"requested-id":"40693181"},{"pmcid":"PMC12277970","pmid":40693182,"requested-id":"40693182"},{"pmcid":"PMC11285016","pmid":39076411,"requested-id":"39076411"},{"pmcid":"PMC11287473","pmid":39081305,"requested-id":"39081305"},{"doi":"10.54941/ahfe1004831","pmcid":"PMC11342855","pmid":39184954,"requested-id":"39184954"},{"doi":"10.1001/jamanetworkopen.2024.22520","pmcid":"PMC11292454","pmid":39083274,"requested-id":"39083274"},{"pmcid":"PMC11285017","pmid":39076410,"requested-id":"39076410"},{"doi":"10.3390/s23083890","pmcid":"PMC10145698","pmid":37112231,"requested-id":"37112231"},{"doi":"10.1016/j.anclin.2023.03.013","pmcid":"PMC10703542","pmid":37838385,"requested-id":"37838385"},{"doi":"10.1007/978-3-031-34953-9_35","pmcid":"PMC10371197","pmid":37497240,"requested-id":"37497240"},{"doi":"10.1109/cogsima54611.2022.9830664","pmcid":"PMC9386571","pmid":35994041,"requested-id":"35994041"},{"doi":"10.1080/21681163.2021.2002724","pmcid":"PMC9355042","pmid":35937956,"requested-id":"35937956"},{"doi":"10.1097/SLA.0000000000005022","pmcid":"PMC8683575","pmid":34171871,"requested-id":"34171871"},{"doi":"10.1016/j.jtcvs.2021.02.098","pmcid":"PMC8481338","pmid":33931232,"requested-id":"33931232"},{"doi":"10.1007/978-3-031-05311-5_12","pmcid":"PMC9413016","pmid":36037053,"requested-id":"36037053"},{"doi":"10.1109/cogsima54611.2022.9830675","pmcid":"PMC9382699","pmid":35984653,"requested-id":"35984653"},{"doi":"10.1016/j.jtcvs.2021.02.072","pmcid":"PMC8387494","pmid":33773815,"requested-id":"33773815"},{"doi":"10.1016/j.surg.2021.05.020","pmcid":"PMC8733606","pmid":34148709,"requested-id":"34148709"},{"doi":"10.1177/0018720820976297","pmcid":"PMC8207176","pmid":33327770,"requested-id":"33327770"},{"doi":"10.1097/SLA.0000000000003489","pmcid":"PMC7241253","pmid":31348036,"requested-id":"31348036"},{"doi":"10.1109/cogsima51574.2021.9475925","pmcid":"PMC8893011","pmid":35253018,"requested-id":"35253018"},{"doi":"10.1016/j.jsurg.2020.08.012","pmcid":"PMC7904574","pmid":32863172,"requested-id":"32863172"},{"doi":"10.1016/j.jtcvs.2020.06.111","pmcid":"PMC8547430","pmid":33160616,"requested-id":"33160616"},{"doi":"10.1145/3452853.3452867","pmcid":"PMC8528342","pmid":34676380,"requested-id":"34676380"},{"doi":"10.1109/tmrb.2020.3040002","pmcid":"PMC7908934","pmid":33644703,"requested-id":"33644703"},{"doi":"10.1177/1553350620934931","pmcid":"PMC7744397","pmid":32938323,"requested-id":"32938323"},{"doi":"10.1109/cogsima49017.2020.9215995","pmcid":"PMC8555746","pmid":34723287,"requested-id":"34723287"},{"doi":"10.1109/cogsima49017.2020.9216076","pmcid":"PMC8329755","pmid":34350424,"requested-id":"34350424"},{"doi":"10.1007/978-3-030-60700-5_51","pmcid":"PMC7923697","pmid":33659965,"requested-id":"33659965"},{"doi":"10.23736/S0026-4725.20.05235-4","pmcid":"PMC7959017","pmid":32989966,"requested-id":"32989966"},{"doi":"10.1016/j.jtcvs.2019.08.123","pmcid":"PMC7301962","pmid":31630837,"requested-id":"31630837"},{"doi":"10.1053/j.semtcvs.2019.10.011","pmcid":"PMC7060831","pmid":31629782,"requested-id":"31629782"},{"doi":"10.3390/s20226616","pmcid":"PMC7699221","pmid":33227967,"requested-id":"33227967"},{"pmcid":"PMC6436169","pmid":30936587,"requested-id":"30936587"},{"doi":"10.1053/j.semtcvs.2019.02.030","pmcid":"PMC6731156","pmid":30851373,"requested-id":"30851373"},{"doi":"10.1016/j.jbi.2019.103250","pmcid":"PMC7226673","pmid":31295623,"requested-id":"31295623"},{"pmcid":"PMC6749167","pmid":31548741,"requested-id":"31548741"},{"doi":"10.1053/j.semtcvs.2018.12.003","pmcid":"PMC6584063","pmid":30578828,"requested-id":"30578828"},{"doi":"10.1145/3194696.3194705","pmcid":"PMC6103223","pmid":30140792,"requested-id":"30140792"},{"pmcid":"PMC6371362","pmid":30815055,"requested-id":"30815055"},{"doi":"10.1002/bjs.10795","pmcid":"PMC5878696","pmid":29465749,"requested-id":"29465749"},{"doi":"10.1109/COGSIMA.2018.8423995","pmcid":"PMC6289194","pmid":30547096,"requested-id":"30547096"},{"doi":"10.1007/978-3-030-01201-4_8","pmcid":"PMC6267949","pmid":30506066,"requested-id":"30506066"},{"doi":"10.1016/j.jtcvs.2018.02.047","pmcid":"PMC6100786","pmid":30119285,"requested-id":"30119285"},{"doi":"10.1007/978-3-030-01201-4_5","pmcid":"PMC6360335","pmid":30729236,"requested-id":"30729236"},{"doi":"10.1109/COGSIMA.2018.8423991","pmcid":"PMC6364745","pmid":30740198,"requested-id":"30740198"},{"doi":"10.1109/COGSIMA.2017.7929610","pmcid":"PMC5526347","pmid":28752132,"requested-id":"28752132"},{"doi":"10.1001/jamasurg.2016.2839","pmcid":"PMC5177530","pmid":27706489,"requested-id":"27706489"}]}'
     headers:
       Alt-Svc:
       - clear
       Content-Encoding:
       - gzip
       Date:
-      - Mon, 11 Aug 2025 02:36:32 GMT
+      - Fri, 27 Feb 2026 02:28:52 GMT
       Server:
       - istio-envoy
       Strict-Transport-Security:
@@ -967,15 +1031,15 @@ interactions:
       referrer-policy:
       - same-origin
       set-cookie:
-      - ncbi_sid=1464081D89954AC3_1240SID; Domain=.nih.gov; expires=Tue, 11 Aug 2026
-        02:36:32 GMT; Max-Age=31536000; Path=/
+      - ncbi_sid=7E44B4BD9A100AD3_0728SID; Domain=.nih.gov; expires=Sat, 27 Feb 2027
+        02:28:52 GMT; Max-Age=31536000; Path=/
       vary:
       - Accept,Accept-Encoding
       x-content-type-options:
       - nosniff
       - nosniff
       x-envoy-upstream-service-time:
-      - '13'
+      - '15'
       x-frame-options:
       - DENY
     status:

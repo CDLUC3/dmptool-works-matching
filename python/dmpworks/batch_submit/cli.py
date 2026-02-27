@@ -12,12 +12,9 @@ from dmpworks.batch_submit.jobs import (
     datacite_transform_job,
     dataset_subset_job,
     dmps_transform_job,
-    openalex_funders_download_job,
-    openalex_funders_transform_job,
     openalex_works_download_job,
     openalex_works_transform_job,
     ror_download_job,
-    ror_transform_job,
     submit_dmp_works_search_job,
     submit_enrich_dmps_job,
     submit_merge_related_works_job,
@@ -120,7 +117,7 @@ def dmps_cmd(
     )
 
 
-ROR_JOBS: tuple[str, ...] = ("download", "transform")
+ROR_JOBS: tuple[str, ...] = ("download",)
 
 
 @app.command(name="ror")
@@ -160,13 +157,6 @@ def ror_cmd(
             help="The expected hash of the data file.",
         ),
     ],
-    file_name: Annotated[
-        str,
-        Parameter(
-            env_var="ROR_FILE_NAME",
-            help="The name of the file to be transformed.",
-        ),
-    ],
     start_job: Annotated[
         Literal[*ROR_JOBS],
         Parameter(
@@ -185,14 +175,7 @@ def ror_cmd(
             run_id=run_id,
             download_url=download_url,
             hash=hash,
-        ),
-        "transform": partial(
-            ror_transform_job,
-            env=env,
-            bucket_name=bucket_name,
-            run_id=run_id,
-            file_name=file_name,
-        ),
+        )
     }
 
     run_job_pipeline(
@@ -477,72 +460,6 @@ def openalex_works_cmd(
     )
 
 
-OPENALEX_FUNDERS_JOBS: tuple[str, ...] = ("download", "transform")
-
-
-@app.command(name="openalex-funders")
-def openalex_funders_cmd(
-    env: Annotated[
-        EnvTypes,
-        Parameter(
-            env_var="ENV",
-            help="Environment (e.g., dev, stage, prod)",
-        ),
-    ],
-    run_id: Annotated[
-        str,
-        Parameter(
-            env_var="OPENALEX_FUNDERS_RUN_ID",
-            help="A unique ID to represent this run of the job.",
-        ),
-    ],
-    bucket_name: Annotated[
-        str,
-        Parameter(
-            env_var="BUCKET_NAME",
-            help="S3 bucket name for job I/O.",
-        ),
-    ],
-    openalex_bucket_name: Annotated[
-        str,
-        Parameter(
-            env_var="OPENALEX_BUCKET_NAME",
-            help="Name of the OpenAlex AWS S3 bucket.",
-        ),
-    ],
-    start_job: Annotated[
-        Literal[*OPENALEX_FUNDERS_JOBS],
-        Parameter(
-            env_var="OPENALEX_FUNDERS_START_JOB",
-            help="The first job to run in the sequence.",
-        ),
-    ] = OPENALEX_FUNDERS_JOBS[0],
-):
-    logging.basicConfig(level=logging.INFO)
-
-    task_definitions = {
-        "download": partial(
-            openalex_funders_download_job,
-            env=env,
-            bucket_name=bucket_name,
-            run_id=run_id,
-            openalex_bucket_name=openalex_bucket_name,
-        ),
-        "transform": partial(
-            openalex_funders_transform_job,
-            env=env,
-            bucket_name=bucket_name,
-            run_id=run_id,
-        ),
-    }
-
-    run_job_pipeline(
-        task_definitions=task_definitions,
-        task_order=list(OPENALEX_FUNDERS_JOBS),
-        start_task_name=start_job,
-    )
-
-
 PROCESS_WORKS_JOBS: tuple[str, ...] = ("sqlmesh-transform", "sync-works")
 
 
@@ -577,13 +494,6 @@ def process_works_cmd(
             help="The run_id of the OpenAlex works data to use (for SQLMesh).",
         ),
     ],
-    openalex_funders_run_id: Annotated[
-        str,
-        Parameter(
-            env_var="OPENALEX_FUNDERS_RUN_ID",
-            help="The run_id of the OpenAlex funders data to use (for SQLMesh).",
-        ),
-    ],
     datacite_run_id: Annotated[
         str,
         Parameter(
@@ -603,6 +513,13 @@ def process_works_cmd(
         Parameter(
             env_var="ROR_RUN_ID",
             help="The run_id of the ROR data to use (for SQLMesh).",
+        ),
+    ],
+    data_citation_corpus_run_id: Annotated[
+        str,
+        Parameter(
+            env_var="DATA_CITATION_CORPUS_RUN_ID",
+            help="The run_id of the Data Citation Corpus data to use (for SQLMesh).",
         ),
     ],
     opensearch_host: Annotated[
@@ -697,10 +614,10 @@ def process_works_cmd(
             prev_run_id=prev_run_id,
             run_id=run_id,
             openalex_works_run_id=openalex_works_run_id,
-            openalex_funders_run_id=openalex_funders_run_id,
             datacite_run_id=datacite_run_id,
             crossref_metadata_run_id=crossref_metadata_run_id,
             ror_run_id=ror_run_id,
+            data_citation_corpus_run_id=data_citation_corpus_run_id,
             duckdb_threads=sqlmesh_duckdb_threads,
             duckdb_memory_limit=sqlmesh_duckdb_memory_limit,
         ),
@@ -796,13 +713,6 @@ def process_dmps_cmd(
             help="OpenSearch service name (e.g., 'es').",
         ),
     ] = "es",
-    sync_max_processes: Annotated[
-        int,
-        Parameter(
-            env_var="SYNC_MAX_PROCESSES",
-            help="Max number of processes for the sync-dmps job.",
-        ),
-    ] = 2,
     sync_chunk_size: Annotated[
         int,
         Parameter(
@@ -810,13 +720,6 @@ def process_dmps_cmd(
             help="Number of documents per chunk for the sync-dmps job.",
         ),
     ] = 1000,
-    sync_max_retries: Annotated[
-        int,
-        Parameter(
-            env_var="SYNC_MAX_RETRIES",
-            help="Max retries for failed chunks for the sync-dmps job.",
-        ),
-    ] = 3,
     dmp_subset: DMPSubset = None,
     start_job: Annotated[
         Literal[*PROCESS_DMPS_JOBS],
@@ -832,7 +735,6 @@ def process_dmps_cmd(
         "sync-dmps": partial(
             submit_sync_dmps_job,
             env=env,
-            bucket_name=bucket_name,
             dmps_run_id=dmps_run_id,
             host=opensearch_host,
             region=opensearch_region,
@@ -840,9 +742,7 @@ def process_dmps_cmd(
             mode=opensearch_mode,
             port=opensearch_port,
             service=opensearch_service,
-            max_processes=sync_max_processes,
             chunk_size=sync_chunk_size,
-            max_retries=sync_max_retries,
         ),
         "enrich-dmps": partial(
             submit_enrich_dmps_job,

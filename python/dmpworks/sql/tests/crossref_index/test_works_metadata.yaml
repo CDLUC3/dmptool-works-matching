@@ -1,7 +1,7 @@
 test_crossref_index_works_metadata:
   model: crossref_index.works_metadata
   inputs:
-    crossref_metadata.works:
+    crossref.crossref_metadata:
       rows:
         - doi: "10.9999/test.0001"
           title: "Title One"

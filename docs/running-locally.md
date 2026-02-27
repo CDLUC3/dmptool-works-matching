@@ -12,47 +12,30 @@ Clone dmsp_api_prototype repo:
 git clone git@github.com:CDLUC3/dmptool-works-matching.git
 ```
 
-Clone Polars:
-```bash
-git clone fix-load-json-as-string --single-branch git@github.com:jdddog/polars.git
-```
-
-Clone pyo3 Polars:
-```bash
-git clone --branch local-build --single-branch git@github.com:jdddog/pyo3-polars.git
-```
-
 ### 1.2. Python & Rust Build Environment
 Make a Python virtual environment:
 ```bash
-python -m venv polars/.venv
+python -m venv .venv
 ```
 
 Activate the Python virtual environment:
 ```bash
-source polars/.venv/activate
+source .venv/activate
 ```
 
-Install Polars dependencies:
+Install maturin:
 ```bash
-(cd polars && rustup toolchain install nightly --component miri)
-(cd polars/py-polars && make requirements-all)
+pip install maturin
 ```
 
-Build Polars:
+Install Rust:
 ```bash
-(cd polars/py-polars && RUSTFLAGS="-C target-cpu=native" make build-dist-release)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Install dmpworks Python package dependencies:
+Build Rust extensions and install Python package into local environment:
 ```bash
-(cd dmptool-works-matching && pip install -e .[dev])
-```
-
-Build and install the dmpworks Python package, including its Polars expression 
-plugin:
-```bash
-(cd dmptool-works-matching && RUSTFLAGS="-C target-cpu=native" maturin develop --release)
+RUSTFLAGS="-C target-cpu=native" maturin develop --release --extras dev
 ```
 
 ## 2. Runtime Configuration
@@ -113,7 +96,26 @@ dmpworks sqlmesh test
 This section describes how to generate a subset of the source datasets used for 
 development and testing.
 
-### 3.1. Create Dataset Subsets
+### 3.1 Download Datasets
+Download datasets into a folder on your computer, including:
+* Crossref Metadata: https://www.crossref.org/learning/public-data-file/
+* Data Citation Corpus: https://zenodo.org/records/16901115
+* DataCite: https://datafiles.datacite.org/
+* OpenAlex: https://docs.openalex.org/download
+* ROR: https://zenodo.org/records/18761279
+
+You will then need to untar Crossref Metadata, unzip Data Citation Corpus, 
+untar DataCite (if it is the yearly data file), and unzip ROR.
+
+Create a folder somewhere to store these datasets, then inside it, create the 
+following subfolders and copy specific portions of the datasets to them:
+* `crossref_metadata`: jsonl.gz files should be directly in here.
+* `data_citation_corpus`: json files should be directly in here.
+* `datacite/dois`: the dois folder should be on this path.
+* `openalex/openalex-snapshot/data/works`: works folder from snapshot should be on this path.
+* `ror`: gzip the extracted json file, e.g. with `gzip v2.3-2026-02-24-ror-data.json`, this matches how the AWS batch process prepares this file.
+
+### 3.2. Create Dataset Subsets
 Run the following bash script to create a subset of Crossref Metadata, DataCite 
 and OpenAlex Works for local use:
 ```bash
@@ -168,9 +170,11 @@ dmpworks opensearch create-index works-index works-mapping.json
 ```
 
 ### 5.2. DMPs Index
-Sync the DMPs index with OpenSearch:
+To the DMPs index with OpenSearch, make sure you have a connection to the MySQL
+database and configure the MySQL environment variables as explained in `.env.local.example`,
+then run:
 ```bash
-dmpworks opensearch sync-dmps dmps-index ${DATA_DIR}/transform/dmps/parquets
+dmpworks opensearch sync-dmps dmps-index
 ```
 
 Enrich the DMPs index with additional data:

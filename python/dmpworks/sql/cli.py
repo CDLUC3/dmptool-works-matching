@@ -31,7 +31,7 @@ def plan_cmd():
 @app.command(name="init-doi-state")
 def init_doi_state(
     parquet_file: Annotated[
-        Optional[pathlib.Path],
+        pathlib.Path,
         Parameter(
             validator=validators.Path(
                 dir_okay=False,
@@ -39,7 +39,7 @@ def init_doi_state(
                 exists=False,
             )
         ),
-    ] = None,
+    ],
 ):
     """Initialises DOI state parquet file.
 

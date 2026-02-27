@@ -19,7 +19,6 @@ app = App(name="sqlmesh", help="SQLMesh AWS Batch pipeline.")
 @dataclass
 class ReleaseDates:
     openalex_works: DateString
-    openalex_funders: DateString
     datacite: DateString
     crossref_metadata: DateString
     ror: DateString
@@ -48,17 +47,16 @@ def plan(
 
     # Download Parquet files for each dataset from S3.
     datasets = [
-        ("openalex_works", release_dates.openalex_works),
-        ("openalex_funders", release_dates.openalex_funders),
-        ("crossref_metadata", release_dates.crossref_metadata),
-        ("datacite", release_dates.datacite),
-        ("ror", release_dates.ror),
-        ("data_citation_corpus", release_dates.data_citation_corpus),
+        ("openalex_works", release_dates.openalex_works, "transform/*"),
+        ("crossref_metadata", release_dates.crossref_metadata, "transform/*"),
+        ("datacite", release_dates.datacite, "transform/*"),
+        ("ror", release_dates.ror, "download/*"),
+        ("data_citation_corpus", release_dates.data_citation_corpus, "download/*"),
     ]
-    for dataset, release_date in datasets:
+    for dataset, release_date, folder in datasets:
+        source_uri = s3_uri(bucket_name, dataset, release_date, folder)
         transform_dir = local_path(dataset, release_date, "transform")
-        target_uri = s3_uri(bucket_name, dataset, release_date, "transform/*")
-        download_files_from_s3(target_uri, transform_dir)
+        download_files_from_s3(source_uri, transform_dir)
 
     # Download previous DOI state
     prev_sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / prev_run_id / "doi_state_export"
@@ -74,8 +72,8 @@ def plan(
     works_index_export_dir.mkdir(parents=True, exist_ok=True)
     doi_state_export_dir.mkdir(parents=True, exist_ok=True)
     os.environ["SQLMESH__GATEWAYS__DUCKDB__CONNECTION__DATABASE"] = str(duckdb_dir)
-    for dataset, release_date in datasets:
-        parquet_path = local_path(dataset, release_date, "transform") / "parquets"
+    for dataset, release_date, _ in datasets:
+        parquet_path = local_path(dataset, release_date, "transform")
         os.environ[f"SQLMESH__VARIABLES__{dataset.upper()}_PATH"] = str(parquet_path)
 
     os.environ["SQLMESH__VARIABLES__PROCESS_WORKS_RUN_ID"] = str(run_id)

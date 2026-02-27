@@ -1,16 +1,67 @@
-demo
-data
-dataset
-demo*
-.idea
+# Git
 .git
+.gitignore
+.gitattributes
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/*.egg
+**/*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Rust
+target/
+**/*.rs.bk
+**/*.so
+
+# Java
+**/*.jar
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and Caches
+**/*.log
+**/logs/
+**/.cache/
+
+# Local config / secrets
 .env
 .env.*
-.ipynb_checkpoints
-Dockerfile
-Dockerfile.aws
-target/
-**/*.so
-**/*.pyd
-__pycache__/
-*.pyc
+*.key
+*.pem
+
+# Large data
+data/
+dataset/
+datasets/
+demo/
