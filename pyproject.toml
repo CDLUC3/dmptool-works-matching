@@ -12,7 +12,7 @@ dependencies = [
     "polars>=1,<2",
     "pendulum>=3,<4",
     "tqdm>=4,<5",
-    "opensearch-py>=2.8.0,<3",
+    "opensearch-py>=3.1,<4",
     "pyarrow>=19,<21",
     "sqlmesh==0.227.1",
     "cyclopts>=3,<4",
