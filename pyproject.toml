@@ -33,7 +33,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8,<9", # testing
+    "pytest>=9,<10", # testing
     "pytest-mock>=3,<4", # testing
     "black>=25,<26", # code formatting
     "maturin>=1.0,<2.0", # Build system
