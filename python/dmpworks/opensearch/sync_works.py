@@ -9,6 +9,7 @@ from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.sync import delete_docs, sync_docs
 from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.utils import timed
+from dmpworks.opensearch.utils import force_index_refresh, update_refresh_interval
 
 log = logging.getLogger(__name__)
 
@@ -72,25 +73,46 @@ def sync_works(
     sync_config: OpenSearchSyncConfig,
     log_level: int = logging.INFO,
 ):
-    # Create index (if it doesn't exist already)
-    client = make_opensearch_client(client_config)
-    create_index(client, index_name, WORKS_MAPPING_FILE)
+    client = None
 
-    # Upsert new works
-    sync_docs(
-        index_name=index_name,
-        in_dir=works_index_export,
-        batch_to_actions_func=batch_to_work_actions,
-        include_columns=COLUMNS,
-        client_config=client_config,
-        sync_config=sync_config,
-        log_level=log_level,
-    )
+    try:
+        # Create index (if it doesn't exist already)
+        client = make_opensearch_client(client_config)
+        create_index(client, index_name, WORKS_MAPPING_FILE)
 
-    # Delete works
-    delete_docs(
-        index_name=index_name,
-        doi_state_dir=doi_state_export,
-        run_id=run_id,
-        client_config=client_config,
-    )
+        # Disable refresh interval
+        update_refresh_interval(
+            client=client,
+            index=index_name,
+            refresh_interval="-1",
+        )
+
+        # Upsert new works
+        sync_docs(
+            index_name=index_name,
+            in_dir=works_index_export,
+            batch_to_actions_func=batch_to_work_actions,
+            include_columns=COLUMNS,
+            client_config=client_config,
+            sync_config=sync_config,
+            log_level=log_level,
+        )
+
+        # Delete works
+        delete_docs(
+            index_name=index_name,
+            doi_state_dir=doi_state_export,
+            run_id=run_id,
+            client_config=client_config,
+        )
+    finally:
+        if client:
+            update_refresh_interval(
+                client=client,
+                index=index_name,
+                refresh_interval="180s",
+            )
+            force_index_refresh(
+                client=client,
+                index=index_name,
+            )

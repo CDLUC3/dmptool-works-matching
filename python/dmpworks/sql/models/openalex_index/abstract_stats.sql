@@ -20,7 +20,7 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('openalex_index_abstract_stats_threads') AS INT64);
 
 -- Choose the id with the longest abstract for each duplicate DOI
 SELECT

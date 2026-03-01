@@ -4,7 +4,7 @@ MODEL (
   kind FULL
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('crossref_index_works_metadata_threads') AS INT64);
 
 SELECT
   doi,

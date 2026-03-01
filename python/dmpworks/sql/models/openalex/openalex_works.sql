@@ -17,7 +17,7 @@ MODEL (
   )
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('openalex_openalex_works_threads') AS INT64);
 
 SELECT *
 FROM read_parquet(@VAR('openalex_works_path') || '/openalex_works_batch_[0-9]*_part_[0-9]*.parquet');

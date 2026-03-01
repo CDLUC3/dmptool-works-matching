@@ -15,7 +15,7 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('opensearch_export_threads') AS INT64);
 
 -- Make a dummy query
 SELECT CAST(@VAR('process_works_run_id') AS DATE) AS export_date;

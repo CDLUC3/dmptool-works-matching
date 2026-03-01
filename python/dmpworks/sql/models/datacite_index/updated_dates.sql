@@ -14,7 +14,7 @@ MODEL (
   enabled true,
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('datacite_index_updated_dates_threads') AS INT64);
 
 -- Choose the most recent updated date from DataCite and OpenAlex
 SELECT

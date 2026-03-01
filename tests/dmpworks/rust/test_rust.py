@@ -4,8 +4,8 @@ from dmpworks.rust import parse_name, revert_inverted_index, strip_markup
 
 
 class TestParseName:
-    def test_john_doe(self):
-        parsed = parse_name("John Doe")
+    def test_full_name_only_latin(self):
+        parsed = parse_name(raw_full="John Doe")
         assert parsed.first_initial == "J"
         assert parsed.given_name == "John"
         assert parsed.middle_initials is None
@@ -13,26 +13,54 @@ class TestParseName:
         assert parsed.surname == "Doe"
         assert parsed.full == "John Doe"
 
-    def test_doe_john(self):
-        parsed = parse_name("Doe, John")
+    def test_full_name_inverted(self):
+        parsed = parse_name(raw_full="Doe, John")
         assert parsed.first_initial == "J"
         assert parsed.given_name == "John"
         assert parsed.middle_initials is None
         assert parsed.middle_names is None
         assert parsed.surname == "Doe"
-        assert parsed.full == "John Doe"
+        # The full name should now preserve the original input string
+        assert parsed.full == "Doe, John"
 
-    def test_complex(self):
-        parsed = parse_name("Dr. Martin Luther King Jr.")
+    def test_complex_full_name(self):
+        parsed = parse_name(raw_full="Dr. Martin Luther King Jr.")
         assert parsed.first_initial == "M"
         assert parsed.given_name == "Martin"
         assert parsed.middle_initials == "L"
         assert parsed.middle_names == "Luther"
         assert parsed.surname == "King"
-        assert parsed.full == "Martin Luther King, Jr."
+        # Original string preserved instead of "Martin Luther King, Jr."
+        assert parsed.full == "Dr. Martin Luther King Jr."
+
+    def test_explicit_given_and_surname(self):
+        # Directly providing parts skips human_name and stitches the full name
+        parsed = parse_name(raw_given_name="John", raw_surname="Doe")
+        assert parsed.first_initial == "J"
+        assert parsed.given_name == "John"
+        assert parsed.middle_initials is None
+        assert parsed.middle_names is None
+        assert parsed.surname == "Doe"
+        assert parsed.full == "John Doe"
+
+    def test_explicit_parts_with_original_full_override(self):
+        # The provided raw_full should override the stitched version
+        parsed = parse_name(raw_given_name="John", raw_surname="Doe", raw_full="Dr. John Doe")
+        assert parsed.first_initial == "J"
+        assert parsed.given_name == "John"
+        assert parsed.surname == "Doe"
+        assert parsed.full == "Dr. John Doe"
+
+    def test_explicit_cjk_name(self):
+        # Non-Latin names should not get a first initial
+        parsed = parse_name(raw_given_name="가은", raw_surname="김")
+        assert parsed.first_initial is None
+        assert parsed.given_name == "가은"
+        assert parsed.surname == "김"
+        assert parsed.full == "가은 김"
 
     def test_fallback(self):
-        parsed = parse_name("sam wu")
+        parsed = parse_name(raw_full="sam wu")
         assert parsed.first_initial is None
         assert parsed.given_name == "sam"
         assert parsed.middle_initials is None
@@ -42,13 +70,17 @@ class TestParseName:
 
     def test_none_or_empty(self):
         for val in [None, "", "   "]:
-            parsed = parse_name(val)
+            parsed = parse_name(raw_full=val)
             assert parsed.first_initial is None
             assert parsed.given_name is None
             assert parsed.middle_initials is None
             assert parsed.middle_names is None
             assert parsed.surname is None
             assert parsed.full is None
+
+            # Also test when all kwargs are explicitly passed as empty/None
+            parsed_all = parse_name(raw_given_name=val, raw_surname=val, raw_full=val)
+            assert parsed_all.full is None
 
 
 class TestStripMarkup:

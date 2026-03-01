@@ -19,7 +19,7 @@ MODEL (
   )
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('datacite_datacite_threads') AS INT64);
 
 SELECT *
 FROM read_parquet(@VAR('datacite_path') || '/datacite_batch_[0-9]*_part_[0-9]*.parquet');

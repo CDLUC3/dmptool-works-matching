@@ -11,7 +11,6 @@ from dmpworks.transform.simdjson_transforms import (
     extract_doi,
     extract_orcid,
     extract_ror,
-    parse_author_name,
     parse_iso8601_calendar_date,
     replace_with_null,
 )
@@ -158,7 +157,9 @@ def parse_authors(objects: list[dict]) -> list[dict]:
         orcid = extract_orcid(obj.get("orcid"))
         given = clean_string(obj.get("given_name"), lower=False)
         family = clean_string(obj.get("surname"), lower=False)
-        first_initial, given_name, middle_initials, middle_names, surname, full = parse_author_name(given, family)
+        first_initial, given_name, middle_initials, middle_names, surname, full = parse_name(
+            raw_given_name=given, raw_surname=family
+        )
         if any([orcid, first_initial, given_name, middle_initials, middle_names, surname, full]):
             author = {
                 "orcid": orcid,

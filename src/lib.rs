@@ -3,8 +3,11 @@ use pyo3::prelude::*;
 mod core;
 
 #[pyfunction]
+#[pyo3(signature = (raw_given_name=None, raw_surname=None, raw_full=None))]
 fn parse_name(
-    text: Option<&str>,
+    raw_given_name: Option<&str>,
+    raw_surname: Option<&str>,
+    raw_full: Option<&str>,
 ) -> (
     Option<String>,
     Option<String>,
@@ -13,7 +16,7 @@ fn parse_name(
     Option<String>,
     Option<String>,
 ) {
-    let parsed = core::parse_name(text);
+    let parsed = core::parse_name(raw_given_name, raw_surname, raw_full);
 
     (
         parsed.first_initial,
@@ -26,8 +29,9 @@ fn parse_name(
 }
 
 #[pyfunction]
-fn revert_inverted_index(text: Option<&[u8]>) -> Option<String> {
-    core::revert_inverted_index(text)
+#[pyo3(signature = (text, null_if_equals = None))]
+fn revert_inverted_index(text: Option<&[u8]>, null_if_equals: Option<Vec<String>>) -> Option<String> {
+    core::revert_inverted_index(text, null_if_equals.as_deref())
 }
 
 #[pyfunction]

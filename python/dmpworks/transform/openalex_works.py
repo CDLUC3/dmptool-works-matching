@@ -163,7 +163,38 @@ def parse_abstract(inverted_index_obj: Optional[simdjson.Object]) -> Optional[st
     if inverted_index_obj is None:
         return None
     inverted_index_bytes = inverted_index_obj.mini
-    return revert_inverted_index(inverted_index_bytes)
+    return revert_inverted_index(
+        inverted_index_bytes,
+        null_if_equals=[
+            "a",
+            ":unav",
+            "No abstract.",
+            "Abstract",
+            "abstract",
+            "peer reviewed",
+            "Peer Reviewed",
+            "No abstract available.",
+            "No description provided.",
+            "No abstract available",
+            "This article has no abstract.",
+            "Abstract not Available.",
+            "status: Published",
+            "Version of Record",
+            "[TODO] Add abstract here.",
+            "No abstract",
+            "No Abstract.",
+            "No abstract is available for this article.",
+            "Cover title.",
+            "(Abstract to follow)",
+            "No contiene resumen",
+            "not provided.",
+            "No abstract received.",
+            "n/a",
+            "N/A",
+            ".",
+            "-",
+        ],
+    )
 
 
 def parse_publication_venue(primary_location_obj: Optional[simdjson.Object]) -> Optional[str]:
@@ -191,7 +222,7 @@ def parse_authors_and_institutions(
         author = obj.get("author")
         author_orcid = extract_orcid(author.get("orcid"))
         author_full_name = to_optional_string(author.get("display_name"))
-        first_initial, given_name, middle_initials, middle_names, surname, full = parse_name(author_full_name)
+        first_initial, given_name, middle_initials, middle_names, surname, full = parse_name(raw_full=author_full_name)
         if any([author_orcid, first_initial, given_name, middle_initials, middle_names, surname, full]):
             author = {
                 "orcid": author_orcid,

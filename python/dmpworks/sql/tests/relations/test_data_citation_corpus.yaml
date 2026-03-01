@@ -19,12 +19,15 @@ test_relations_data_citation_corpus:
   outputs:
     query:
       rows:
-        - work_doi: "10.9999/test.0002"
-          dataset_doi: "10.1234/test.0002"
-          source: czi
-        - work_doi: "10.9999/test.0003"
-          dataset_doi: "10.1234/test.0003"
-          source: datacite
-        - work_doi: "10.9999/test.0004"
-          dataset_doi: "10.1234/test.0004"
-          source: eupmc
+        - doi: "10.9999/test.0002"
+          dataset_citation_dois: ["10.1234/test.0002"]
+        - doi: "10.1234/test.0002"
+          dataset_citation_dois: ["10.9999/test.0002"]
+        - doi: "10.9999/test.0003"
+          dataset_citation_dois: ["10.1234/test.0003"]
+        - doi: "10.1234/test.0003"
+          dataset_citation_dois: ["10.9999/test.0003"]
+        - doi: "10.9999/test.0004"
+          dataset_citation_dois: ["10.1234/test.0004"]
+        - doi: "10.1234/test.0004"
+          dataset_citation_dois: ["10.9999/test.0004"]

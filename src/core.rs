@@ -34,9 +34,50 @@ fn fallback_parse_name(text: &str) -> (Option<String>, Option<String>, String) {
     }
 }
 
+/// Checks if the first character of a string is a Latin character.
+/// Covers Basic Latin, Latin-1 Supp, and Latin Extended A/B
+fn is_latin(text: &str) -> bool {
+    text.chars().next().map_or(false, |c| {
+        let u = c as u32;
+        u <= 0x024F
+    })
+}
+
 /// Parses a raw name string into a structured `ParsedName` object, utilizing `human_name` with a fallback strategy.
-pub fn parse_name(text: Option<&str>) -> ParsedName {
-    let Some(s) = text.map(str::trim).filter(|s| !s.is_empty()) else {
+pub fn parse_name(
+  raw_given_name: Option<&str>,
+  raw_surname: Option<&str>,
+  raw_full: Option<&str>,
+) -> ParsedName {
+    let given = raw_given_name.map(str::trim).filter(|s| !s.is_empty());
+    let surname = raw_surname.map(str::trim).filter(|s| !s.is_empty());
+    let full = raw_full.map(str::trim).filter(|s| !s.is_empty());
+
+    // If both given and surname are provided, build the final struct straight away
+    if let (Some(g), Some(s)) = (given, surname) {
+        let first_initial = if is_latin(g) {
+            g.chars().next().map(|c| c.to_uppercase().to_string())
+        } else {
+            None
+        };
+
+        // Use original full name if provided, otherwise build from given and surname
+        let full_name = full
+            .map(|f| f.to_string())
+            .unwrap_or_else(|| format!("{} {}", g, s));
+
+        return ParsedName {
+            first_initial,
+            given_name: Some(g.to_string()),
+            middle_initials: None,
+            middle_names: None,
+            surname: Some(s.to_string()),
+            full: Some(full_name),
+        };
+    }
+
+    // If full, given and surname are all None then return None
+    let Some(text_to_parse) = full.or(given).or(surname) else {
         return ParsedName {
             first_initial: None,
             given_name: None,
@@ -47,35 +88,36 @@ pub fn parse_name(text: Option<&str>) -> ParsedName {
         };
     };
 
-    if let Some(person) = Name::parse(s) {
+    if let Some(person) = Name::parse(text_to_parse) {
         return ParsedName {
             first_initial: Some(person.first_initial().to_string()),
             given_name: person.given_name().map(|v| v.to_string()),
             middle_initials: person.middle_initials().map(|v| v.to_string()),
             middle_names: person.middle_names().map(|v| v.join(" ")),
             surname: Some(person.surname().to_string()),
-            full: Some(person.display_full().into_owned()),
+            full: Some(text_to_parse.to_string()),
         };
     }
 
-    let (given_name, surname, full) = fallback_parse_name(s);
+    // Fallback if human_name fails
+    let (parsed_given, parsed_surname, parsed_full) = fallback_parse_name(text_to_parse);
     warn!(
         "fallback_parse_name: given_name='{:?}', surname='{:?}', full='{}'",
-        given_name, surname, full
+        parsed_given, parsed_surname, parsed_full
     );
 
     ParsedName {
         first_initial: None,
-        given_name,
+        given_name: parsed_given,
         middle_initials: None,
         middle_names: None,
-        surname,
-        full: Some(full),
+        surname: parsed_surname,
+        full: Some(text_to_parse.to_string()),
     }
 }
 
 /// Reconstructs the original text from a JSON-serialized inverted index (mapping words to their positions).
-pub fn revert_inverted_index(text: Option<&[u8]>) -> Option<String> {
+pub fn revert_inverted_index(text: Option<&[u8]>, null_if_equals: Option<&[String]>) -> Option<String> {
     let bytes = text?;
     if bytes.is_empty() {
         return None;
@@ -121,12 +163,11 @@ pub fn revert_inverted_index(text: Option<&[u8]>) -> Option<String> {
 
     // Trim final result
     let trimmed = out.trim();
-
     if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed.to_string())
+        return None;
     }
+
+    strip_markup(Some(trimmed), null_if_equals)
 }
 
 /// Removes HTML tags and surrounding whitespace from the input text, with an option to treat specific results as null.

@@ -15,7 +15,7 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('datacite_index_work_types_threads') AS INT64);
 
  -- Mapping table to normalise DataCite types
 WITH work_type_map AS (

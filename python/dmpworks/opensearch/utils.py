@@ -8,7 +8,7 @@ import pendulum
 import pyarrow.dataset as ds
 from cyclopts import Parameter, Token
 from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection, Transport
-from opensearchpy.exceptions import TransportError
+from opensearchpy.exceptions import OpenSearchException, TransportError
 
 log = logging.getLogger(__name__)
 
@@ -207,3 +207,34 @@ def count_records(in_dir: pathlib.Path) -> int:
     log.info(f"Counting records: {in_dir}")
     dataset = load_dataset(in_dir)
     return dataset.count_rows()
+
+
+def update_refresh_interval(*, client: OpenSearch, index: str, refresh_interval: str) -> None:
+    try:
+        client.indices.put_settings(
+            index=index,
+            body={"index": {"refresh_interval": refresh_interval}},
+        )
+
+        log.info(f"Successfully updated refresh_interval for index '{index}' " f"to '{refresh_interval}'")
+
+    except OpenSearchException:
+        log.exception(f"Failed to update refresh_interval for index '{index}' " f"to '{refresh_interval}'")
+        raise
+
+
+def force_index_refresh(*, client: OpenSearch, index: str) -> None:
+    try:
+        response = client.indices.refresh(index=index)
+
+        shards = response.get("_shards", {})
+        failed = shards.get("failed", 0)
+
+        if failed == 0:
+            log.info(f"Successfully refreshed index '{index}'")
+        else:
+            log.warning(f"Refresh completed with shard failures for index '{index}': {shards}")
+
+    except OpenSearchException:
+        log.exception(f"Failed to refresh index '{index}'")
+        raise

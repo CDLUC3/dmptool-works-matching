@@ -19,7 +19,7 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('openalex_index_works_metadata_threads') AS INT64);
 
 -- Remove works that can be found in DataCite
 -- And works without DOIs
@@ -31,48 +31,6 @@ WITH base AS (
   WHERE doi IS NOT NULL AND NOT EXISTS (SELECT 1 FROM datacite.datacite WHERE oaw.doi = datacite.datacite.doi)
 ),
 
--- Count how many unique ORCID IDs per work
-orcid_counts AS (
-  SELECT
-    base.id,
-    COUNT(DISTINCT author.orcid) AS orcid_count
-  FROM base
-  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id, UNNEST(ow.authors) AS item(author)
-  WHERE author.orcid IS NOT NULL
-  GROUP BY base.id
-),
-
--- Count how many unique Award IDs
-award_counts AS (
-  SELECT
-    base.id,
-    COUNT(DISTINCT award.funder_award_id) AS award_id_count
-  FROM base
-  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id, UNNEST(ow.awards) AS item(award)
-  GROUP BY base.id
-),
-
--- Count how many unique funder IDs per work
-funder_counts AS (
-  SELECT
-    base.id,
-    COUNT(DISTINCT funder.id) AS funder_id_count
-  FROM base
-  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id, UNNEST(ow.funders) AS item(funder)
-  GROUP BY base.id
-),
-
--- Count how many unique institution ROR IDs per work
-inst_id_counts AS (
-  SELECT
-    base.id,
-    COUNT(DISTINCT inst.ror) AS inst_id_count
-  FROM base
-  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id, UNNEST(ow.institutions) AS item(inst)
-  WHERE inst.ror IS NOT NULL
-  GROUP BY base.id
-),
-
 -- Count how many instances of each DOI
 doi_counts AS (
   SELECT
@@ -82,23 +40,26 @@ doi_counts AS (
   GROUP BY doi
 ),
 
-counts AS (
+metadata_counts AS (
   SELECT
     base.id,
     base.doi,
     dc.doi_count,
-    ((CASE WHEN ow.ids.mag IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN ow.ids.pmid IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN ow.ids.pmcid IS NOT NULL THEN 1 ELSE 0 END)) AS id_count,
-    COALESCE(oc.orcid_count, 0) AS orcid_count,
-    COALESCE(fc.funder_id_count, 0) AS funder_id_count,
-    COALESCE(ac.award_id_count, 0) AS award_id_count,
-    COALESCE(ic.inst_id_count, 0) AS inst_id_count
+
+    ((CASE WHEN ow.ids.mag IS NOT NULL THEN 1 ELSE 0 END) +
+     (CASE WHEN ow.ids.pmid IS NOT NULL THEN 1 ELSE 0 END) +
+     (CASE WHEN ow.ids.pmcid IS NOT NULL THEN 1 ELSE 0 END)) AS id_count,
+
+    COALESCE(list_unique(list_filter(list_transform(ow.authors, x -> x.orcid), x -> x IS NOT NULL)), 0) AS orcid_count,
+    COALESCE(list_unique(list_filter(list_transform(ow.awards, x -> x.funder_award_id), x -> x IS NOT NULL)), 0) AS award_id_count,
+    COALESCE(list_unique(list_filter(list_transform(ow.funders, x -> x.id), x -> x IS NOT NULL)), 0) AS funder_id_count,
+    COALESCE(list_unique(list_filter(list_transform(ow.institutions, x -> x.ror), x -> x IS NOT NULL)), 0) AS inst_id_count,
+
+    LENGTH(ow.title) AS title_length,
+    LENGTH(ow.abstract) AS abstract_length
   FROM base
   LEFT JOIN doi_counts dc ON base.doi = dc.doi
   LEFT JOIN openalex.openalex_works ow ON base.id = ow.id
-  LEFT JOIN orcid_counts AS oc ON ow.id = oc.id
-  LEFT JOIN award_counts AS ac ON ow.id = ac.id
-  LEFT JOIN funder_counts AS fc ON ow.id = fc.id
-  LEFT JOIN inst_id_counts AS ic ON ow.id = ic.id
 ),
 
 ranked_works AS (
@@ -109,24 +70,22 @@ ranked_works AS (
       PARTITION BY doi
       ORDER BY (id_count + orcid_count + funder_id_count + award_id_count + inst_id_count) DESC, id
     ) AS doi_rank
-  FROM counts
+  FROM metadata_counts
 )
 
 SELECT
-  base.id,
-  base.doi,
-  LENGTH(oaw.title) AS title_length,
-  LENGTH(oaw.abstract) AS abstract_length,
-  rw.doi_count,
-  rw.id_count,
-  rw.orcid_count,
-  rw.funder_id_count,
-  rw.award_id_count,
-  rw.inst_id_count,
-  rw.total_count,
-  rw.doi_rank,
-  rw.doi_count > 1 AS is_duplicate,
+  id,
+  doi,
+  title_length,
+  abstract_length,
+  doi_count,
+  id_count,
+  orcid_count,
+  funder_id_count,
+  award_id_count,
+  inst_id_count,
+  total_count,
+  doi_rank,
+  doi_count > 1 AS is_duplicate,
   (doi_rank = 1) AS is_primary_doi
-FROM base
-LEFT JOIN ranked_works rw ON base.id = rw.id
-LEFT JOIN openalex.openalex_works oaw ON base.id = oaw.id;
+FROM ranked_works;

@@ -184,22 +184,6 @@ def to_optional_string(value: Any) -> Optional[str]:
     return str(value)
 
 
-def parse_author_name(given_name: Optional[str], surname: Optional[str], full_name: Optional[str] = None) -> ParsedName:
-    """Parses an author name"""
-
-    full = clean_string(full_name, lower=False)
-    if full:
-        return parse_name(full)
-
-    given = clean_string(given_name, lower=False)
-    family = clean_string(surname, lower=False)
-    if given or family:
-        full = " ".join(part for part in (given, family) if part)
-        return parse_name(full)
-
-    return ParsedName(*(None,) * 6)
-
-
 def replace_with_null(value: Optional[str], values: set[str]) -> Optional[str]:
     """
     Strip whitespace and return None if the lowercased value matches any entry

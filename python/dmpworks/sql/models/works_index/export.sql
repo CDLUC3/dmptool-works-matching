@@ -15,7 +15,7 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('works_index_export_threads') AS INT64);
 
 -- Make a dummy query
 SELECT CAST(@VAR('process_works_run_id') AS DATE) AS export_date;
@@ -24,18 +24,25 @@ SELECT CAST(@VAR('process_works_run_id') AS DATE) AS export_date;
 @IF(
   @runtime_stage = 'creating', -- https://sqlmesh.readthedocs.io/en/stable/concepts/macros/macro_variables/#runtime-variables
   COPY (
+    WITH target_upserts AS (
+      SELECT doi, hash
+      FROM opensearch.next_doi_state
+      WHERE state = 'UPSERT' AND updated_date = CAST(@VAR('process_works_run_id') AS DATE)
+    )
 
     SELECT
-      d.*
-    FROM datacite_index.datacite_index d
-    INNER JOIN opensearch.next_doi_state nds ON nds.doi = d.doi AND nds.hash = d.hash AND nds.state = 'UPSERT' AND nds.updated_date = CAST(@VAR('process_works_run_id') AS DATE)
+      d.*,
+      tu.hash
+    FROM target_upserts tu
+    INNER JOIN datacite_index.datacite_index d ON tu.doi = d.doi
 
-    UNION ALL
+    UNION ALL BY NAME
 
     SELECT
-      o.*
-    FROM openalex_index.openalex_index o
-    INNER JOIN opensearch.next_doi_state nds ON nds.doi = o.doi AND nds.hash = o.hash AND nds.state = 'UPSERT' AND nds.updated_date = CAST(@VAR('process_works_run_id') AS DATE)
+      o.*,
+      tu.hash
+    FROM target_upserts tu
+    INNER JOIN openalex_index.openalex_index o ON tu.doi = o.doi
 
   ) TO @VAR('works_index_export_path') (FORMAT PARQUET, OVERWRITE true, FILE_SIZE_BYTES '500MB', FILENAME_PATTERN 'works_index_')
 )

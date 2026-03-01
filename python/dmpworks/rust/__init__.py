@@ -17,8 +17,12 @@ class ParsedName(NamedTuple):
     full: Optional[str]
 
 
-def parse_name(text: Optional[str]) -> ParsedName:
-    return ParsedName(*_parse_name(text))
+def parse_name(
+    raw_given_name: Optional[str] = None,
+    raw_surname: Optional[str] = None,
+    raw_full: Optional[str] = None,
+) -> ParsedName:
+    return ParsedName(*_parse_name(raw_given_name, raw_surname, raw_full))
 
 
 __all__ = ["__version__", "parse_name", "strip_markup", "revert_inverted_index"]

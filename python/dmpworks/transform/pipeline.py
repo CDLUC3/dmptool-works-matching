@@ -76,6 +76,15 @@ def process_files(
     shared_lock = ctx.Lock()
     last_seen_processed_count = 0
     abort_event = ctx.Event()
+
+    # Shuffle files before batching.
+    # OpenAlex orders files by `updated_date`, and recent files typically contain
+    # significantly more records. If we process files sequentially, later batches
+    # will be much larger than earlier ones, leading to workload imbalance where
+    # only a subset of workers handle the heaviest batches.
+    #
+    # By shuffling first, we distribute high-volume and low-volume files more
+    # evenly across batches, improving parallel load balancing.
     shuffled_files = random.sample(files, k=len(files))
 
     with tqdm(
@@ -95,7 +104,6 @@ def process_files(
             ),
         ) as executor:
             futures = []
-            # natsorted
             for idx, batch in enumerate(to_batches(shuffled_files, batch_size=batch_size)):
                 future = executor.submit(
                     transform_json_to_parquet,

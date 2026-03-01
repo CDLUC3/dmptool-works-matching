@@ -13,7 +13,7 @@ test_next_doi_state_first_run:
         updated_date: DATE
       rows: [ ]
 
-    openalex_index.openalex_index:
+    openalex_index.openalex_index_hashes:
       columns:
         doi: TEXT
         hash: TEXT
@@ -23,7 +23,7 @@ test_next_doi_state_first_run:
         - doi: "10.9999/test.0002"
           hash: "def"
 
-    datacite_index.datacite_index:
+    datacite_index.datacite_index_hashes:
       columns:
         doi: TEXT
         hash: TEXT
@@ -89,7 +89,7 @@ test_next_doi_state_second_run:
           state: "UPSERT"
           updated_date: "2026-02-11"
 
-    openalex_index.openalex_index:
+    openalex_index.openalex_index_hashes:
       columns:
         doi: TEXT
         hash: TEXT
@@ -101,7 +101,7 @@ test_next_doi_state_second_run:
         - doi: "10.9999/test.0003"
           hash: "hij"
 
-    datacite_index.datacite_index:
+    datacite_index.datacite_index_hashes:
       columns:
         doi: TEXT
         hash: TEXT
@@ -202,7 +202,7 @@ test_next_doi_state_third_run:
           state: "UPSERT"
           updated_date: "2026-02-12"
 
-    openalex_index.openalex_index:
+    openalex_index.openalex_index_hashes:
       columns:
         doi: TEXT
         hash: TEXT
@@ -214,7 +214,7 @@ test_next_doi_state_third_run:
         - doi: "10.9999/test.0003"
           hash: "hij"
 
-    datacite_index.datacite_index:
+    datacite_index.datacite_index_hashes:
       columns:
         doi: TEXT
         hash: TEXT
@@ -315,7 +315,7 @@ test_next_doi_state_delete_run:
           state: "UPSERT"
           updated_date: "2026-02-13"
 
-    openalex_index.openalex_index:
+    openalex_index.openalex_index_hashes:
       columns:
         doi: TEXT
         hash: TEXT
@@ -325,7 +325,7 @@ test_next_doi_state_delete_run:
         - doi: "10.9999/test.0002"
           hash: "def2"
 
-    datacite_index.datacite_index:
+    datacite_index.datacite_index_hashes:
       columns:
         doi: TEXT
         hash: TEXT

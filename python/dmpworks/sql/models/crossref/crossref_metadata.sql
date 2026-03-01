@@ -11,7 +11,7 @@ MODEL (
   )
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('crossref_crossref_metadata_threads') AS INT64);
 
 SELECT *
 FROM read_parquet(@VAR('crossref_metadata_path') || '/crossref_metadata_batch_[0-9]*_part_[0-9]*.parquet');

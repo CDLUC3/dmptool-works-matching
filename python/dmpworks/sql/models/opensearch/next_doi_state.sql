@@ -11,12 +11,14 @@ MODEL (
   enabled true
 );
 
+PRAGMA threads=CAST(@VAR('opensearch_next_doi_state_threads') AS INT64);
+
 WITH works_index AS (
   SELECT DISTINCT doi, hash
   FROM (
-    SELECT doi, hash FROM openalex_index.openalex_index
+    SELECT doi, hash FROM openalex_index.openalex_index_hashes
     UNION ALL
-    SELECT doi, hash FROM datacite_index.datacite_index
+    SELECT doi, hash FROM datacite_index.datacite_index_hashes
   )
 ),
 

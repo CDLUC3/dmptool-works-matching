@@ -14,7 +14,7 @@ gateways:
       # extensions:
       connector_config:
         threads: 1
-        memory_limit: '200GB'
+        memory_limit: '225GB'
         preserve_insertion_order: 'false'
       # secrets:
       # token:
@@ -31,11 +31,43 @@ variables:
   audit_crossref_metadata_works_threshold: 167008747
   audit_datacite_works_threshold: 72019576
   audit_openalex_works_threshold: 264675126
-  default_threads: 32
-  openalex_index_author_names_threads: 32
+
+  crossref_crossref_metadata_threads: 32
+  crossref_index_works_metadata_threads: 32
+  datacite_datacite_threads: 32
+  datacite_index_awards_threads: 32
+  datacite_index_datacite_index_threads: 32
+  datacite_index_funders_threads: 32
+  datacite_index_institutions_threads: 32
+  datacite_index_updated_dates_threads: 32
+  datacite_index_work_types_threads: 32
+  datacite_index_works_threads: 32
+  datacite_index_datacite_index_hashes_threads: 32
+  openalex_openalex_works_threads: 32
+  openalex_index_abstract_stats_threads: 32
   openalex_index_abstracts_threads: 32
-  openalex_index_titles_threads: 32
+  openalex_index_author_names_threads: 32
+  openalex_index_awards_threads: 32
+  openalex_index_funders_threads: 32
   openalex_index_openalex_index_threads: 32
+  openalex_index_publication_dates_threads: 32
+  openalex_index_title_stats_threads: 32
+  openalex_index_titles_threads: 32
+  openalex_index_updated_dates_threads: 32
+  openalex_index_works_metadata_threads: 32
+  openalex_index_openalex_index_hashes_threads: 32
+  opensearch_current_doi_state_threads: 32
+  opensearch_export_threads: 32
+  opensearch_next_doi_state_threads: 32
+  data_citation_corpus_relations_threads: 32
+  relations_crossref_metadata_threads: 32
+  relations_data_citation_corpus_threads: 32
+  relations_datacite_threads: 16
+  relations_relations_index_threads: 32
+  ror_index_threads: 32
+  ror_ror_threads: 32
+  works_index_export_threads: 32
+
   max_doi_states: 3
   process_works_run_id: {{ env_var('PROCESS_WORKS_RUN_ID') }}
 

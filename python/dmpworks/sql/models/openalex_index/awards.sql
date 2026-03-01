@@ -17,31 +17,40 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('openalex_index_awards_threads') AS INT64);
 
-WITH award_ids AS (
+WITH raw_awards AS (
+  -- OpenAlex
+  SELECT owm.id, owm.doi, award.funder_award_id AS award_id
+  FROM openalex_index.works_metadata AS owm
+  INNER JOIN openalex.openalex_works works ON owm.id = works.id, UNNEST(works.awards) AS item(award)
+  WHERE award.funder_award_id IS NOT NULL
+
+  UNION ALL
+
+  -- Crossref Metadata
+  SELECT owm.id, owm.doi, funder.award AS award_id
+  FROM openalex_index.works_metadata owm
+  INNER JOIN crossref.crossref_metadata cm ON owm.doi = cm.doi, UNNEST(cm.funders) AS item(funder)
+  WHERE funder.award IS NOT NULL
+),
+
+distinct_awards AS (
+  SELECT DISTINCT
+    doi,
+    award_id
+  FROM raw_awards
+),
+
+award_ids AS (
   SELECT
     doi,
-    @array_agg_distinct(award_id) AS award_ids
-  FROM (
-    -- OpenAlex
-    SELECT owm.id, owm.doi, award.funder_award_id AS award_id
-    FROM openalex_index.works_metadata AS owm
-    INNER JOIN openalex.openalex_works works ON owm.id = works.id, UNNEST(works.awards) AS item(award)
-    WHERE award.funder_award_id IS NOT NULL
-
-    UNION ALL
-
-    -- Crossref Metadata
-    SELECT owm.id, owm.doi, funder.award AS award_id
-    FROM openalex_index.works_metadata owm
-    INNER JOIN crossref.crossref_metadata cm ON owm.doi = cm.doi, UNNEST(cm.funders) AS item(funder)
-    WHERE funder.award IS NOT NULL
-  )
+    COALESCE(ARRAY_AGG(award_id ORDER BY LOWER(award_id) ASC), []) AS award_ids
+  FROM distinct_awards
   GROUP BY doi
 )
 
 SELECT
-  award_ids.doi,
-  list_transform(award_ids.award_ids, x -> {'award_id': x}) AS awards
-FROM award_ids
+  doi,
+  list_transform(award_ids, x -> {'award_id': x}) AS awards
+FROM award_ids;

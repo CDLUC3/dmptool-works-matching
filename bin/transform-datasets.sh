@@ -25,12 +25,12 @@ else
   echo "Aborted."
 fi
 
-mkdir -p "${TRANSFORM_DIR}"/{datacite,openalex_works,crossref_metadata,ror,opensearch,data_citation_corpus}
+mkdir -p "${TRANSFORM_DIR}"/{datacite/dois,openalex/openalex-snapshot/data/works,crossref_metadata,ror,opensearch,data_citation_corpus}
 dmpworks sqlmesh init-doi-state "${TRANSFORM_DIR}/opensearch/doi_state_00000.parquet"
 echo "Copying ROR"
 cp -r "${SOURCES_DIR}/ror/." "${TRANSFORM_DIR}/ror/"
 echo "Copying Data Citation Corpus"
 cp -r "${SOURCES_DIR}/data_citation_corpus/." "${TRANSFORM_DIR}/data_citation_corpus/"
 dmpworks transform crossref-metadata "${SOURCES_DIR}/crossref_metadata" "${TRANSFORM_DIR}/crossref_metadata"
-dmpworks transform openalex-works "${SOURCES_DIR}/openalex_works" "${TRANSFORM_DIR}/openalex_works"
-dmpworks transform datacite "${SOURCES_DIR}/datacite" "${TRANSFORM_DIR}/datacite"
+dmpworks transform openalex-works "${SOURCES_DIR}/openalex/openalex-snapshot/data/works" "${TRANSFORM_DIR}/openalex/openalex-snapshot/data/works"
+dmpworks transform datacite "${SOURCES_DIR}/datacite/dois" "${TRANSFORM_DIR}/datacite/dois"

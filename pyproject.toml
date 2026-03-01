@@ -27,7 +27,6 @@ dependencies = [
     "numpy>=1.22,<2.4.0",
     "scipy>=1.16.3,<2",
     "pysimdjson>=7.0.2,<8",
-    "natsort>=8,<9"
 ]
 
 [project.optional-dependencies]

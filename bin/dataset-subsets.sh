@@ -30,7 +30,7 @@ fi
 
 mkdir -p "${DATA_DIR}/duckdb"
 
-mkdir -p "${DEMO_SOURCES_DIR}"/{datacite,openalex_works,crossref_metadata,ror,data_citation_corpus}
+mkdir -p "${DEMO_SOURCES_DIR}"/{datacite/dois,openalex/openalex-snapshot/data/works,crossref_metadata,ror,data_citation_corpus}
 
 echo "Copying ROR"
 cp -r "${SOURCE_DIR}/ror/." "${DATA_DIR}/sources/ror/"
@@ -39,5 +39,5 @@ echo "Copying Data Citation Corpus"
 cp -r "${SOURCE_DIR}/data_citation_corpus/." "${DATA_DIR}/sources/data_citation_corpus/"
 
 dmpworks transform dataset-subset crossref-metadata "${SOURCE_DIR}/crossref_metadata" "${DATA_DIR}/sources/crossref_metadata"
-dmpworks transform dataset-subset datacite "${SOURCE_DIR}/datacite/dois" "${DATA_DIR}/sources/datacite"
-dmpworks transform dataset-subset openalex-works "${SOURCE_DIR}/openalex/openalex-snapshot/data/works" "${DATA_DIR}/sources/openalex_works"
+dmpworks transform dataset-subset datacite "${SOURCE_DIR}/datacite/dois" "${DATA_DIR}/sources/datacite/dois"
+dmpworks transform dataset-subset openalex-works "${SOURCE_DIR}/openalex/openalex-snapshot/data/works" "${DATA_DIR}/sources/openalex/openalex-snapshot/data/works"
