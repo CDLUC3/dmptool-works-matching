@@ -6,6 +6,7 @@ from ._internal import __version__ as __version__
 from ._internal import parse_name as _parse_name
 from ._internal import strip_markup
 from ._internal import revert_inverted_index
+from ._internal import has_meaningful_initials
 
 
 class ParsedName(NamedTuple):
@@ -25,4 +26,10 @@ def parse_name(
     return ParsedName(*_parse_name(raw_given_name, raw_surname, raw_full))
 
 
-__all__ = ["__version__", "parse_name", "strip_markup", "revert_inverted_index"]
+__all__ = [
+    "__version__",
+    "parse_name",
+    "strip_markup",
+    "revert_inverted_index",
+    "has_meaningful_initials",
+]

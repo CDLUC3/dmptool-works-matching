@@ -40,6 +40,12 @@ fn strip_markup(text: Option<&str>, null_if_equals: Option<Vec<String>>) -> Opti
     core::strip_markup(text, null_if_equals.as_deref())
 }
 
+#[pyfunction]
+#[pyo3(signature = (text))]
+fn has_meaningful_initials(text: Option<&str>) -> bool {
+    text.map_or(false, core::has_meaningful_initials)
+}
+
 #[pymodule]
 fn _internal(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
@@ -48,6 +54,7 @@ fn _internal(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_name, m)?)?;
     m.add_function(wrap_pyfunction!(revert_inverted_index, m)?)?;
     m.add_function(wrap_pyfunction!(strip_markup, m)?)?;
+    m.add_function(wrap_pyfunction!(has_meaningful_initials, m)?)?;
 
     // Configures logging for core functions.
     // Enable with: export RUST_LOG=dmpworks_rust=debug before running

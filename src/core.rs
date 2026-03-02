@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use log::warn;
 use serde_json;
 use strip_tags::strip_tags;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, Clone)]
 pub struct ParsedName {
@@ -34,13 +35,32 @@ fn fallback_parse_name(text: &str) -> (Option<String>, Option<String>, String) {
     }
 }
 
-/// Checks if the first character of a string is a Latin character.
-/// Covers Basic Latin, Latin-1 Supp, and Latin Extended A/B
-fn is_latin(text: &str) -> bool {
-    text.chars().next().map_or(false, |c| {
-        let u = c as u32;
-        u <= 0x024F
-    })
+/// Checks if a string starts with a character that makes sense as an initial.
+/// Returns true for alphabetic scripts (Latin, Cyrillic, Greek, Arabic, etc.)
+/// and explicitly excludes CJK (Chinese, Japanese, Korean) ideographs/syllables.
+pub fn has_meaningful_initials(text: &str) -> bool {
+    let Some(c) = text.chars().next() else {
+        return false;
+    };
+
+    // Must be a letter-like character
+    if !c.is_alphabetic() {
+        return false;
+    }
+
+    let u = c as u32;
+
+    // Denylist for CJK Unicode Blocks
+    let is_cjk = matches!(u,
+        0x3000..=0x31FF | // Hiragana, Katakana, Bopomofo, Hangul Jamo
+        0x3400..=0x4DBF | // CJK Unified Ideographs Extension A
+        0x4E00..=0x9FFF | // CJK Unified Ideographs (Main Block)
+        0xAC00..=0xD7AF | // Hangul Syllables
+        0xF900..=0xFAFF | // CJK Compatibility Ideographs
+        0x20000..=0x2A6DF // CJK Unified Ideographs Extension B, C, D, E, etc.
+    );
+
+    !is_cjk
 }
 
 /// Parses a raw name string into a structured `ParsedName` object, utilizing `human_name` with a fallback strategy.
@@ -55,13 +75,16 @@ pub fn parse_name(
 
     // If both given and surname are provided, build the final struct straight away
     if let (Some(g), Some(s)) = (given, surname) {
-        let first_initial = if is_latin(g) {
-            g.chars().next().map(|c| c.to_uppercase().to_string())
+        let first_initial = if has_meaningful_initials(g) {
+            g.graphemes(true).next().map(|grapheme| grapheme.to_uppercase())
         } else {
             None
         };
 
         // Use original full name if provided, otherwise build from given and surname
+        // TODO: not ideal to combine first + last for many languages, but we will
+        // just be using this for search so it is OK for now. The first initial, first name,
+        // and surname are used for display so are more important to get right.
         let full_name = full
             .map(|f| f.to_string())
             .unwrap_or_else(|| format!("{} {}", g, s));

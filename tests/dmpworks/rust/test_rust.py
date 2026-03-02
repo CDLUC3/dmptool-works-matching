@@ -1,6 +1,6 @@
 import json
 
-from dmpworks.rust import parse_name, revert_inverted_index, strip_markup
+from dmpworks.rust import parse_name, revert_inverted_index, strip_markup, has_meaningful_initials
 
 
 class TestParseName:
@@ -68,6 +68,57 @@ class TestParseName:
         assert parsed.surname == "wu"
         assert parsed.full == "sam wu"
 
+    def test_explicit_cjk_names(self):
+        # CJK names should not get a first initial because they are ideographic/syllabic
+
+        # Korean
+        parsed_ko = parse_name(raw_given_name="가은", raw_surname="김")
+        assert parsed_ko.first_initial is None
+        assert parsed_ko.given_name == "가은"
+        assert parsed_ko.surname == "김"
+        assert parsed_ko.full == "가은 김"
+
+        # Chinese
+        parsed_zh = parse_name(raw_given_name="伟", raw_surname="李")
+        assert parsed_zh.first_initial is None
+        assert parsed_zh.given_name == "伟"
+        assert parsed_zh.surname == "李"
+        assert parsed_zh.full == "伟 李"
+
+        # Japanese
+        parsed_ja = parse_name(raw_given_name="さくら", raw_surname="田中")
+        assert parsed_ja.first_initial is None
+        assert parsed_ja.given_name == "さくら"
+        assert parsed_ja.surname == "田中"
+        assert parsed_ja.full == "さくら 田中"
+
+    def test_explicit_cyrillic_name(self):
+        # Cyrillic names should get a first initial
+        parsed = parse_name(raw_given_name="Иван", raw_surname="Петров")
+        assert parsed.first_initial == "И"
+        assert parsed.given_name == "Иван"
+        assert parsed.surname == "Петров"
+        assert parsed.full == "Иван Петров"
+
+    def test_has_meaningful_initials(self):
+        # Alphabetic / Meaningful
+        assert has_meaningful_initials("John") is True
+        assert has_meaningful_initials("Élise") is True  # Accented
+        assert has_meaningful_initials("Иван") is True  # Cyrillic
+        assert has_meaningful_initials("محمد") is True  # Arabic
+
+        # CJK / Non-meaningful initials
+        assert has_meaningful_initials("김") is False  # Korean
+        assert has_meaningful_initials("가은") is False  # Korean
+        assert has_meaningful_initials("李") is False  # Chinese
+        assert has_meaningful_initials("田中") is False  # Japanese
+
+        # Symbols / Numbers / Empty
+        assert has_meaningful_initials("1234") is False
+        assert has_meaningful_initials("🚀") is False
+        assert has_meaningful_initials("") is False
+        assert has_meaningful_initials(None) is False
+
     def test_none_or_empty(self):
         for val in [None, "", "   "]:
             parsed = parse_name(raw_full=val)
@@ -130,3 +181,9 @@ class TestRevertInvertedIndex:
 
         # Also check it is one of the expected words
         assert first in ["A", "B"]
+
+    def test_strips_html_markup(self):
+        # Checks that HTML tags inside the inverted index are stripped
+        data = {"<b>The</b>": [0], "<i>prelims</i>": [1], "<span class='x'>comprise:</span>": [2]}
+        encoded = json.dumps(data).encode("utf-8")
+        assert revert_inverted_index(encoded) == "The prelims comprise:"
