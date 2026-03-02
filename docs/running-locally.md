@@ -170,9 +170,9 @@ dmpworks opensearch create-index works-index works-mapping.json
 ```
 
 ### 5.2. DMPs Index
-To the DMPs index with OpenSearch, make sure you have a connection to the MySQL
-database and configure the MySQL environment variables as explained in `.env.local.example`,
-then run:
+Before creating the DMPs index and syncing DMPs with OpenSearch, make sure you 
+have a connection to the MySQL database and configure the MySQL environment 
+variables as explained in `.env.local.example`, then run:
 ```bash
 dmpworks opensearch sync-dmps dmps-index
 ```
