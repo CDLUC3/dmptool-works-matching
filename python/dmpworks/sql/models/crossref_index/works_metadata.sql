@@ -10,4 +10,4 @@ SELECT
   doi,
   LENGTH(title) AS title_length,
   LENGTH(abstract) AS abstract_length,
-FROM crossref_metadata.works;
+FROM crossref.crossref_metadata;

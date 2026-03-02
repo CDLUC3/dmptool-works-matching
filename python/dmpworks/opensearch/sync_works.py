@@ -5,8 +5,9 @@ from typing import Iterator
 import pyarrow as pa
 import pyarrow.compute as pc
 
+from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.sync import delete_docs, sync_docs
-from dmpworks.opensearch.utils import OpenSearchClientConfig, OpenSearchSyncConfig
+from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.utils import timed
 
 log = logging.getLogger(__name__)
@@ -27,6 +28,8 @@ COLUMNS = [
     "relations",
     "source",
 ]
+
+WORKS_MAPPING_FILE = "works-mapping.json"
 
 
 def batch_to_work_actions(
@@ -69,6 +72,10 @@ def sync_works(
     sync_config: OpenSearchSyncConfig,
     log_level: int = logging.INFO,
 ):
+    # Create index (if it doesn't exist already)
+    client = make_opensearch_client(client_config)
+    create_index(client, index_name, WORKS_MAPPING_FILE)
+
     # Upsert new works
     sync_docs(
         index_name=index_name,

@@ -1,39 +1,65 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/*.egg
+**/*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
 
-# Virtual environment
-venv/
+# Virtual environments
 .env/
 .venv/
+venv/
+env/
+ENV/
 
-# Distribution / packaging
-build/
-dist/
-*.egg-info/
+# Python tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
 
-# IDEs and editors
-.idea/
-.vscode/
+# Jupyter
+.ipynb_checkpoints/
 
 # Rust
-*.so
-*.pyc
-target
-*.so
-*.dll
-*.pyd
+target/
+**/*.rs.bk
+**/*.so
 
-# SQL Mesh
-logs
+# Java
+**/*.jar
 
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and Caches
+**/*.log
+**/logs/
+**/.cache/
+
+# Local config / secrets
+.env
 .env.*
 !.env.example
 !.env.*.example
-data
-demo
+*.key
+*.pem
 
-*.jar
-
-demo*
+# Large data
+data/
+dataset/
+datasets/
+demo/

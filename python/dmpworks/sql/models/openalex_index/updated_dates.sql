@@ -24,14 +24,14 @@ SELECT
 FROM (
   SELECT owm.doi, updated_date
   FROM openalex_index.works_metadata AS owm
-  INNER JOIN openalex.works ow ON owm.id = ow.id
+  INNER JOIN openalex.openalex_works ow ON owm.id = ow.id
   WHERE updated_date IS NOT NULL
 
   UNION ALL
 
   SELECT owm.doi, cfw.updated_date
   FROM openalex_index.works_metadata AS owm
-  INNER JOIN crossref_metadata.works cfw ON owm.doi = cfw.doi
+  INNER JOIN crossref.crossref_metadata cfw ON owm.doi = cfw.doi
   WHERE owm.doi IS NOT NULL AND cfw.updated_date IS NOT NULL
 )
 GROUP BY doi;

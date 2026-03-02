@@ -1,303 +1,297 @@
 import logging
-import os
 import pathlib
+from typing import Optional
 
-import dmpworks.polars_expr_plugin as pe
+import pyarrow as pa
+import simdjson
+from dmpworks.rust import parse_name, revert_inverted_index, strip_markup
 
-import polars as pl
-from dmpworks.transform.pipeline import process_files_parallel
-from dmpworks.transform.transforms import clean_string, normalise_identifier, normalise_openalex_doi
-from dmpworks.transform.utils_file import read_jsonls
-from polars._typing import SchemaDefinition
+from dmpworks.transform.dataset_subset import normalise_identifier
+from dmpworks.transform.pipeline import process_files
+from dmpworks.transform.simdjson_transforms import (
+    clean_string,
+    extract_doi,
+    extract_orcid,
+    normalise_identifier,
+    parse_iso8601_calendar_date,
+    parse_iso8601_datetime,
+    to_optional_string,
+)
+from dmpworks.transform.utils_file import setup_multiprocessing_logging, yield_objects_from_jsonl
 
 logger = logging.getLogger(__name__)
 
-WORKS_SCHEMA: SchemaDefinition = {
-    "id": pl.String,  # https://docs.openalex.org/api-entities/works/work-object#id
-    "doi": pl.String,  # https://docs.openalex.org/api-entities/works/work-object#doi
-    "ids": pl.Struct(  # https://docs.openalex.org/api-entities/works/work-object#ids
-        {
-            "doi": pl.String,
-            "mag": pl.String,
-            "openalex": pl.String,
-            "pmid": pl.String,
-            "pmcid": pl.String,
-        }
-    ),
-    "title": pl.String,  # https://docs.openalex.org/api-entities/works/work-object#title
-    "abstract_inverted_index": pl.String,  # https://docs.openalex.org/api-entities/works/work-object#abstract_inverted_index
-    "type": pl.String,  # https://docs.openalex.org/api-entities/works/work-object#type
-    "publication_date": pl.Date,  # https://docs.openalex.org/api-entities/works/work-object#publication_date
-    "updated_date": pl.Datetime,  # https://docs.openalex.org/api-entities/works/work-object#updated_date
-    "authorships": pl.List(  # https://docs.openalex.org/api-entities/works/work-object#authorships
-        pl.Struct(
-            {
-                "author": pl.Struct(
-                    {
-                        "id": pl.String,
-                        "display_name": pl.String,
-                        "orcid": pl.String,
-                    }
-                ),
-                "institutions": pl.List(
-                    pl.Struct(
-                        {
-                            "id": pl.String,
-                            "display_name": pl.String,
-                            "type": pl.String,
-                            "ror": pl.String,
-                        }
-                    )
-                ),
+OPENALEX_WORKS_SCHEMA = pa.schema(
+    [
+        pa.field("id", pa.string(), nullable=False),
+        pa.field("doi", pa.string(), nullable=False),
+        pa.field("is_xpac", pa.bool_(), nullable=False),
+        pa.field(
+            "ids",
+            pa.struct(
+                [
+                    pa.field("doi", pa.string(), nullable=True),
+                    pa.field("mag", pa.string(), nullable=True),
+                    pa.field("openalex", pa.string(), nullable=True),
+                    pa.field("pmid", pa.string(), nullable=True),
+                    pa.field("pmcid", pa.string(), nullable=True),
+                ]
+            ),
+            nullable=False,
+        ),
+        pa.field("title", pa.string(), nullable=True),
+        pa.field("abstract", pa.string(), nullable=True),
+        pa.field("work_type", pa.string(), nullable=True),
+        pa.field("publication_date", pa.date32(), nullable=True),
+        pa.field("updated_date", pa.timestamp("us"), nullable=True),
+        pa.field("publication_venue", pa.string(), nullable=True),
+        pa.field(
+            "authors",
+            pa.list_(
+                pa.struct(
+                    [
+                        pa.field("orcid", pa.string(), nullable=True),
+                        pa.field("first_initial", pa.string(), nullable=True),
+                        pa.field("given_name", pa.string(), nullable=True),
+                        pa.field("middle_initials", pa.string(), nullable=True),
+                        pa.field("middle_names", pa.string(), nullable=True),
+                        pa.field("surname", pa.string(), nullable=True),
+                        pa.field("full", pa.string(), nullable=True),
+                    ]
+                )
+            ),
+            nullable=False,
+        ),
+        pa.field(
+            "institutions",
+            pa.list_(
+                pa.struct(
+                    [
+                        pa.field("name", pa.string(), nullable=True),
+                        pa.field("ror", pa.string(), nullable=True),
+                    ]
+                )
+            ),
+            nullable=False,
+        ),
+        pa.field(
+            "funders",
+            pa.list_(
+                pa.struct(
+                    [
+                        pa.field("id", pa.string(), nullable=True),
+                        pa.field("display_name", pa.string(), nullable=True),
+                        pa.field("ror", pa.string(), nullable=True),
+                    ]
+                )
+            ),
+            nullable=False,
+        ),
+        pa.field(
+            "awards",
+            pa.list_(
+                pa.struct(
+                    [
+                        pa.field("id", pa.string(), nullable=True),
+                        pa.field("display_name", pa.string(), nullable=True),
+                        pa.field("funder_award_id", pa.string(), nullable=True),
+                        pa.field("funder_id", pa.string(), nullable=True),
+                        pa.field("funder_display_name", pa.string(), nullable=True),
+                        pa.field("doi", pa.string(), nullable=True),
+                    ]
+                )
+            ),
+            nullable=False,
+        ),
+    ]
+)
+
+
+def parse_openalex_works_record(obj: simdjson.Object) -> dict | None:
+    doi = extract_doi(obj.get("doi"))
+    is_xpac = obj.get("is_xpac")
+
+    # Break early if no DOI or work is xpac
+    if doi is None or is_xpac:
+        return None
+
+    work_id = normalise_identifier(obj.get("id"))
+    ids = parse_ids(obj.get("ids"))
+    title = parse_title(obj.get("title"))
+    abstract = parse_abstract(obj.get("abstract_inverted_index"))
+    work_type = to_optional_string(obj.get("type"))
+    publication_date = parse_iso8601_calendar_date(obj.get("publication_date"))
+    updated_date = parse_iso8601_datetime(obj.get("updated_date"))
+    publication_venue = parse_publication_venue(obj.get("primary_location"))
+    authors, institutions = parse_authors_and_institutions(obj.get("authorships"))
+    funders = parse_funders(obj.get("funders"))
+    awards = parse_awards(obj.get("awards"))
+
+    return {
+        "id": work_id,
+        "doi": doi,
+        "is_xpac": is_xpac,
+        "ids": ids,
+        "title": title,
+        "abstract": abstract,
+        "work_type": work_type,
+        "publication_date": publication_date,
+        "updated_date": updated_date,
+        "publication_venue": publication_venue,
+        "authors": authors,
+        "institutions": institutions,
+        "funders": funders,
+        "awards": awards,
+    }
+
+
+def parse_ids(ids_obj: Optional[simdjson.Object]) -> dict:
+    ids = {"doi": extract_doi(ids_obj.get("doi"))}
+    for key in ["mag", "openalex", "pmid", "pmcid"]:
+        value = ids_obj.get(key)
+        ids[key] = normalise_identifier(value)
+    return ids
+
+
+def parse_title(text: Optional[str]) -> Optional[str]:
+    if text is not None:
+        return strip_markup(str(text))
+    return None
+
+
+def parse_abstract(inverted_index_obj: Optional[simdjson.Object]) -> Optional[str]:
+    if inverted_index_obj is None:
+        return None
+    inverted_index_bytes = inverted_index_obj.mini
+    return revert_inverted_index(inverted_index_bytes)
+
+
+def parse_publication_venue(primary_location_obj: Optional[simdjson.Object]) -> Optional[str]:
+    if primary_location_obj is None:
+        return None
+
+    source = primary_location_obj.get("source")
+    if source is None:
+        return None
+
+    return to_optional_string(source.get("display_name"))
+
+
+def parse_authors_and_institutions(
+    authorships_array: simdjson.Array | list[simdjson.Object],
+) -> tuple[list[dict], list[dict]]:
+
+    authors = []
+    authors_seen = set()
+    institutions = []
+    institutions_seen = set()
+
+    for obj in authorships_array:
+        # Parse author
+        author = obj.get("author")
+        author_orcid = extract_orcid(author.get("orcid"))
+        author_full_name = to_optional_string(author.get("display_name"))
+        first_initial, given_name, middle_initials, middle_names, surname, full = parse_name(author_full_name)
+        if any([author_orcid, first_initial, given_name, middle_initials, middle_names, surname, full]):
+            author = {
+                "orcid": author_orcid,
+                "first_initial": first_initial,
+                "given_name": given_name,
+                "middle_initials": middle_initials,
+                "middle_names": middle_names,
+                "surname": surname,
+                "full": full,
             }
-        )
-    ),
-    "awards": pl.List(  # https://docs.openalex.org/api-entities/works/work-object#awards
-        pl.Struct(
-            {
-                "id": pl.String,
-                "display_name": pl.String,
-                "funder_award_id": pl.String,
-                "funder_id": pl.String,
-                "funder_display_name": pl.String,
-                "doi": pl.String,
-            }
-        )
-    ),
-    "funders": pl.List(  # https://docs.openalex.org/api-entities/works/work-object#funders
-        pl.Struct(
-            {
-                "id": pl.String,
-                "display_name": pl.String,
-                "ror": pl.String,
-            }
-        )
-    ),
-    "primary_location": pl.Struct(  # https://docs.openalex.org/api-entities/works/work-object#primary_location
-        {
-            "source": pl.Struct(
+            key = frozenset(author.items())
+            if key not in authors_seen:
+                authors_seen.add(key)
+                authors.append(author)
+
+        # Parse institutions
+        author_institutions = obj.get("institutions", [])
+        for inst in author_institutions:
+            inst_name = to_optional_string(inst.get("display_name"))
+            inst_ror = normalise_identifier(inst.get("ror"))
+            if any([inst_name, inst_ror]):
+                inst = {
+                    "name": inst_name,
+                    "ror": inst_ror,
+                }
+                key = frozenset(inst.items())
+                if key not in institutions_seen:
+                    institutions_seen.add(key)
+                    institutions.append(inst)
+
+    return authors, institutions
+
+
+def parse_funders(funders_array: simdjson.Array | list[simdjson.Object]) -> list[dict]:
+    funders = []
+    for obj in funders_array:
+        funder_id = normalise_identifier(obj.get("id"))
+        display_name = clean_string(obj.get("display_name"), lower=False)
+        ror = normalise_identifier(obj.get("ror"))
+        if any([funder_id, display_name, ror]):
+            funders.append(
                 {
-                    "display_name": pl.String,
-                    "publisher": pl.String,
+                    "id": funder_id,
+                    "display_name": display_name,
+                    "ror": ror,
                 }
             )
-        }
-    ),
-    "is_xpac": pl.Boolean,
-}
+    return funders
 
 
-def normalise_ids(expr: pl.Expr, field_names: list[str]) -> pl.Expr:
-    return pl.struct(
-        [normalise_identifier(expr.struct.field(field_name)).alias(field_name) for field_name in field_names]
-    )
+def parse_awards(awards_array: simdjson.Array | list[simdjson.Object]) -> list[dict]:
+    awards = []
+    for obj in awards_array:
+        award_id = normalise_identifier(obj.get("id"))
+        display_name = clean_string(obj.get("display_name"), lower=False)
+        funder_id = normalise_identifier(obj.get("funder_id"))
+        funder_display_name = clean_string(obj.get("funder_display_name"), lower=False)
+        doi = extract_doi(obj.get("doi"))
 
-
-def transform_works(lz: pl.LazyFrame) -> list[tuple[str, pl.LazyFrame]]:
-    lz_cached = lz.filter(
-        normalise_openalex_doi(pl.col("doi")).is_not_null() & ~pl.col("is_xpac").fill_null(False)
-    ).cache()
-
-    works = lz_cached.select(
-        id=normalise_identifier(pl.col("id")),
-        doi=normalise_openalex_doi(pl.col("doi")),
-        ids=normalise_ids(pl.col("ids"), ["doi", "mag", "openalex", "pmid", "pmcid"]),
-        is_xpac=pl.col("is_xpac"),
-        title=clean_string(pl.col("title")),
-        abstract=clean_string(pe.revert_inverted_index(pl.col("abstract_inverted_index"))),
-        type=pl.col("type"),
-        publication_date=pl.col("publication_date"),  # e.g. 2014-06-04
-        updated_date=pl.col("updated_date"),  # e.g. 025-02-27T06:49:42.321119
-        publication_venue=pl.col("primary_location").struct.field("source").struct.field("display_name"),
-        authors=pl.col("authorships")
-        .list.eval(
-            pl.struct(
-                [
-                    normalise_identifier(pl.element().struct.field("author").struct.field("orcid")).alias("orcid"),
-                    pe.parse_name(pl.element().struct.field("author").struct.field("display_name")).struct.unnest(),
-                ]
-            )
-        )
-        .list.eval(
-            pl.element().filter(
-                pl.any_horizontal(
-                    [
-                        pl.element().struct.field(field).is_not_null()
-                        for field in [
-                            "orcid",
-                            "first_initial",
-                            "given_name",
-                            "middle_initials",
-                            "middle_names",
-                            "surname",
-                            "full",
-                        ]
-                    ]
+        raw_awards_value = to_optional_string(obj.get("funder_award_id"))
+        raw_awards = raw_awards_value.split(",") if raw_awards_value is not None else []
+        for raw_award in raw_awards:
+            funder_award_id = clean_string(raw_award, lower=False)
+            if any([award_id, display_name, funder_award_id, funder_id, funder_display_name, doi]):
+                awards.append(
+                    {
+                        "id": award_id,
+                        "display_name": display_name,
+                        "funder_award_id": funder_award_id,
+                        "funder_id": funder_id,
+                        "funder_display_name": funder_display_name,
+                        "doi": doi,
+                    }
                 )
-            )
-        )
-        .list.drop_nulls(),
-        funders=pl.col("funders")
-        .list.eval(
-            pl.struct(
-                id=normalise_identifier(pl.element().struct.field("id")),
-                display_name=clean_string(pl.element().struct.field("display_name")),
-                ror=normalise_identifier(pl.element().struct.field("ror")),
-            )
-        )
-        .list.eval(
-            pl.element().filter(
-                pl.any_horizontal(
-                    [
-                        pl.element().struct.field(col).is_not_null()
-                        for col in [
-                            "id",
-                            "display_name",
-                            "ror",
-                        ]
-                    ]
-                )
-            )
-        )
-        .list.drop_nulls(),
-    )
-
-    awards_by_work = (
-        lz_cached.select(
-            work_id=normalise_identifier(pl.col("id")),
-            awards=pl.col("awards"),
-        )
-        .explode("awards")
-        .unnest("awards")
-        .with_columns(
-            funder_award_id=pl.col("funder_award_id").str.split(",").list.eval(pl.element().str.strip_chars())
-        )
-        .explode("funder_award_id")
-        .select(
-            work_id=pl.col("work_id"),
-            id=normalise_identifier(normalise_identifier(pl.col("id"))),
-            display_name=pl.col("display_name"),
-            funder_award_id=clean_string(pl.col("funder_award_id")),
-            funder_id=normalise_identifier(pl.col("funder_id")),
-            funder_display_name=clean_string(pl.col("funder_display_name")),
-            doi=normalise_openalex_doi(pl.col("doi")),
-        )
-        .filter(
-            pl.any_horizontal(
-                [
-                    pl.col(field).is_not_null()
-                    for field in [
-                        "id",
-                        "display_name",
-                        "funder_award_id",
-                        "funder_id",
-                        "funder_display_name",
-                        "doi",
-                    ]
-                ]
-            )
-        )
-        .group_by("work_id")
-        .agg(
-            pl.struct(
-                [
-                    "id",
-                    "display_name",
-                    "funder_award_id",
-                    "funder_id",
-                    "funder_display_name",
-                    "doi",
-                ]
-            ).alias("awards")
-        )
-    )
-
-    institutions = (
-        lz_cached.select(
-            work_id=normalise_identifier(pl.col("id")),
-            authorships=pl.col("authorships"),
-        )
-        .explode("authorships")
-        .unnest("authorships")
-        .explode("institutions")
-        .unnest("institutions")
-        .select(
-            pl.col("work_id"),
-            name=pl.col("display_name"),
-            ror=normalise_identifier(pl.col("ror")),
-        )
-        .filter(pl.any_horizontal([pl.col(field).is_not_null() for field in ["name", "ror"]]))
-        .unique(maintain_order=True)
-    )
-    institutions_by_work = (
-        institutions.with_columns(
-            inst=pl.struct(
-                pl.col("name"),
-                pl.col("ror"),
-            )
-        )
-        .group_by("work_id")
-        .agg(institutions=pl.col("inst").unique(maintain_order=True))
-    )
-
-    # Build final dataframe
-    inst_dtype = institutions_by_work.collect_schema()["institutions"]
-    award_dtype = awards_by_work.collect_schema()["awards"]
-    openalex_works = (
-        works.join(
-            institutions_by_work,
-            left_on="id",
-            right_on="work_id",
-            how="left",
-        )
-        .join(
-            awards_by_work,
-            left_on="id",
-            right_on="work_id",
-            how="left",
-        )
-        .with_columns(
-            institutions=pl.col("institutions").fill_null(pl.lit([]).cast(inst_dtype)),
-            awards=pl.col("awards").fill_null(pl.lit([]).cast(award_dtype)),
-        )
-    )
-
-    return [
-        ("openalex_works", openalex_works),
-    ]
+    return awards
 
 
 def transform_openalex_works(
+    *,
     in_dir: pathlib.Path,
     out_dir: pathlib.Path,
-    batch_size: int = os.cpu_count(),
-    extract_workers: int = 1,
-    transform_workers: int = 1,
-    cleanup_workers: int = 1,
-    extract_queue_size: int = 0,
-    transform_queue_size: int = 2,
-    cleanup_queue_size: int = 0,
-    max_file_processes: int = os.cpu_count(),
-    n_batches: int = None,
-    low_memory: bool = False,
+    batch_size: int,
+    row_group_size: int,
+    row_groups_per_file: int,
+    max_workers: int,
+    log_level: int = logging.INFO,
 ):
-    process_files_parallel(
-        # Non customizable parameters, specific to Crossref Metadata
-        schema=WORKS_SCHEMA,
-        transform_func=transform_works,
-        file_glob="**/*.gz",
-        read_func=read_jsonls,
-        # Customisable parameters
-        in_dir=in_dir,
-        out_dir=out_dir,
+    setup_multiprocessing_logging(log_level)
+    files = list(in_dir.glob("**/*.gz"))
+    process_files(
+        files=files,
+        output_dir=out_dir,
         batch_size=batch_size,
-        extract_workers=extract_workers,
-        transform_workers=transform_workers,
-        cleanup_workers=cleanup_workers,
-        extract_queue_size=extract_queue_size,
-        transform_queue_size=transform_queue_size,
-        cleanup_queue_size=cleanup_queue_size,
-        max_file_processes=max_file_processes,
-        n_batches=n_batches,
-        low_memory=low_memory,
+        row_group_size=row_group_size,
+        row_groups_per_file=row_groups_per_file,
+        schema=OPENALEX_WORKS_SCHEMA,
+        read_func=yield_objects_from_jsonl,
+        transform_func=parse_openalex_works_record,
+        max_workers=max_workers,
+        file_prefix="openalex_works_",
+        tqdm_description="Transforming OpenAlex Works",
+        log_level=log_level,
     )

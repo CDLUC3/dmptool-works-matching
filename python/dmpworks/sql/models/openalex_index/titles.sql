@@ -24,6 +24,6 @@ SELECT
     ELSE oaw.title
   END AS title
 FROM openalex_index.title_stats AS stats
-LEFT JOIN openalex.works oaw ON stats.id = oaw.id
+LEFT JOIN openalex.openalex_works oaw ON stats.id = oaw.id
 LEFT JOIN crossref_index.works_metadata cwm ON stats.doi = cwm.doi
-LEFT JOIN crossref_metadata.works cfw ON stats.doi = cfw.doi;
+LEFT JOIN crossref.crossref_metadata cfw ON stats.doi = cfw.doi;

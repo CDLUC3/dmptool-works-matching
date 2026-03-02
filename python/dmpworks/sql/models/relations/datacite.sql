@@ -36,22 +36,22 @@ PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
 
 WITH relations_with_dois AS (
   SELECT
-    @extract_doi(r.work_doi) AS work_doi,
+    @extract_doi(dc.doi) AS work_doi,
     @extract_doi(r.related_identifier) AS related_doi,
     r.relation_type,
     CASE
-      WHEN relation_type IN ('IsIdenticalTo', 'IsObsoletedBy', 'Obsoletes', 'IsPartOf', 'HasPart', 'IsPublishedIn',
+      WHEN r.relation_type IN ('IsIdenticalTo', 'IsObsoletedBy', 'Obsoletes', 'IsPartOf', 'HasPart', 'IsPublishedIn',
                              'IsTranslationOf', 'HasTranslation', 'IsVariantFormOf', 'IsOriginalFormOf',
                              'HasVersion', 'IsVersionOf', 'IsNewVersionOf', 'IsPreviousVersionOf') THEN TRUE
       ELSE FALSE
     END AS is_intra_work,
     CASE
-      WHEN relation_type IN ('Compiles', 'IsCompiledBy', 'Continues', 'IsContinuedBy', 'IsDerivedFrom', 'IsSourceOf',
+      WHEN r.relation_type IN ('Compiles', 'IsCompiledBy', 'Continues', 'IsContinuedBy', 'IsDerivedFrom', 'IsSourceOf',
                              'Describes', 'IsDescribedBy', 'Documents', 'IsDocumentedBy', 'IsSupplementTo',
                              'IsSupplementedBy') THEN TRUE
       ELSE FALSE
     END AS is_possible_shared_project
-  FROM datacite.relations r
+  FROM datacite.datacite dc, UNNEST(dc.relations) AS item(r)
   -- Don't filter on related_identifier_type = 'DOI', sometimes related_identifier_type is not 'DOI' but contains DOIs
   -- hence, we use extract_doi instead and check rd.related_doi IS NOT NULL at the end
 )

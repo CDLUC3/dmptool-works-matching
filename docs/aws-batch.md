@@ -132,19 +132,9 @@ Usage: dmpworks batch-submit ror [ARGS] [OPTIONS]
 ```
 
 ## 2. Download and Normalise Datasets
-Transform DMPs:
-```bash
-dmpworks batch-submit dmps
-```
-
 Download and normalise ROR data:
 ```bash
 dmpworks batch-submit ror
-```
-
-Download and normalise OpenAlex Funders data:
-```bash
-dmpworks batch-submit openalex-funders
 ```
 
 Download and normalise OpenAlex Works:

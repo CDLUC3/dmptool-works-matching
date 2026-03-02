@@ -19,5 +19,5 @@ MODEL (
 PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
 
 SELECT works.*
-FROM datacite.works works
+FROM datacite.datacite works
 QUALIFY ROW_NUMBER() OVER (PARTITION BY doi ORDER BY updated_date DESC NULLS LAST) = 1;

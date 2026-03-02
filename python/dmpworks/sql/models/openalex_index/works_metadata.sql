@@ -27,8 +27,8 @@ WITH base AS (
   SELECT
     id,
     doi
-  FROM openalex.works oaw
-  WHERE doi IS NOT NULL AND NOT EXISTS (SELECT 1 FROM datacite.works WHERE oaw.doi = datacite.works.doi)
+  FROM openalex.openalex_works oaw
+  WHERE doi IS NOT NULL AND NOT EXISTS (SELECT 1 FROM datacite.datacite WHERE oaw.doi = datacite.datacite.doi)
 ),
 
 -- Count how many unique ORCID IDs per work
@@ -37,7 +37,7 @@ orcid_counts AS (
     base.id,
     COUNT(DISTINCT author.orcid) AS orcid_count
   FROM base
-  LEFT JOIN openalex.works ow ON base.id = ow.id, UNNEST(ow.authors) AS item(author)
+  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id, UNNEST(ow.authors) AS item(author)
   WHERE author.orcid IS NOT NULL
   GROUP BY base.id
 ),
@@ -48,7 +48,7 @@ award_counts AS (
     base.id,
     COUNT(DISTINCT award.funder_award_id) AS award_id_count
   FROM base
-  LEFT JOIN openalex.works ow ON base.id = ow.id, UNNEST(ow.awards) AS item(award)
+  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id, UNNEST(ow.awards) AS item(award)
   GROUP BY base.id
 ),
 
@@ -58,7 +58,7 @@ funder_counts AS (
     base.id,
     COUNT(DISTINCT funder.id) AS funder_id_count
   FROM base
-  LEFT JOIN openalex.works ow ON base.id = ow.id, UNNEST(ow.funders) AS item(funder)
+  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id, UNNEST(ow.funders) AS item(funder)
   GROUP BY base.id
 ),
 
@@ -68,7 +68,7 @@ inst_id_counts AS (
     base.id,
     COUNT(DISTINCT inst.ror) AS inst_id_count
   FROM base
-  LEFT JOIN openalex.works ow ON base.id = ow.id, UNNEST(ow.institutions) AS item(inst)
+  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id, UNNEST(ow.institutions) AS item(inst)
   WHERE inst.ror IS NOT NULL
   GROUP BY base.id
 ),
@@ -94,7 +94,7 @@ counts AS (
     COALESCE(ic.inst_id_count, 0) AS inst_id_count
   FROM base
   LEFT JOIN doi_counts dc ON base.doi = dc.doi
-  LEFT JOIN openalex.works ow ON base.id = ow.id
+  LEFT JOIN openalex.openalex_works ow ON base.id = ow.id
   LEFT JOIN orcid_counts AS oc ON ow.id = oc.id
   LEFT JOIN award_counts AS ac ON ow.id = ac.id
   LEFT JOIN funder_counts AS fc ON ow.id = fc.id
@@ -129,4 +129,4 @@ SELECT
   (doi_rank = 1) AS is_primary_doi
 FROM base
 LEFT JOIN ranked_works rw ON base.id = rw.id
-LEFT JOIN openalex.works oaw ON base.id = oaw.id;
+LEFT JOIN openalex.openalex_works oaw ON base.id = oaw.id;

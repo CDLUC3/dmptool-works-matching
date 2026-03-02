@@ -1,12 +1,12 @@
 /*
-  datacite_index.types:
+  datacite_index.work_types:
 
   Consolidates DataCite types into a set of types more compatible with OpenAlex
   types.
 */
 
 MODEL (
-  name datacite_index.types,
+  name datacite_index.work_types,
   dialect duckdb,
   kind FULL,
   audits (
@@ -18,7 +18,7 @@ MODEL (
 PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
 
  -- Mapping table to normalise DataCite types
-WITH type_map AS (
+WITH work_type_map AS (
   SELECT * FROM (VALUES
     ('Audiovisual', 'AUDIO_VISUAL'),
     ('Award', 'OTHER'),
@@ -59,6 +59,6 @@ WITH type_map AS (
 
 SELECT
   doi,
-  type_map.normalized_type AS type
+  work_type_map.normalized_type AS work_type
 FROM datacite_index.works dw
-INNER JOIN type_map ON dw.type = type_map.original_type;
+INNER JOIN work_type_map ON dw.work_type = work_type_map.original_type;

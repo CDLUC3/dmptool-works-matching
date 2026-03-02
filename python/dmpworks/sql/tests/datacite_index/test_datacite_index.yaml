@@ -32,12 +32,12 @@ test_datacite_index_datacite_index:
         - doi: "10.9999/test.0003"
           publication_venue: null
           authors: [ ]
-    datacite_index.types:
+    datacite_index.work_types:
       rows:
         - doi: "10.9999/test.0001"
-          type: "ARTICLE"
+          work_type: "ARTICLE"
         - doi: "10.9999/test.0002"
-          type: "DATASET"
+          work_type: "DATASET"
     datacite_index.updated_dates:
       rows:
         - doi: "10.9999/test.0001"

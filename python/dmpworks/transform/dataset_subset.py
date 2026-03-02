@@ -1,5 +1,4 @@
 import gzip
-import json
 import logging
 import os
 import pathlib
@@ -12,7 +11,7 @@ import simdjson
 from tqdm import tqdm
 
 from dmpworks.model.common import Institution
-from dmpworks.transforms import clean_string, extract_doi
+from dmpworks.transform.simdjson_transforms import extract_doi, to_optional_string
 from dmpworks.utils import timed
 
 Dataset = Literal["crossref-metadata", "datacite", "openalex-works"]
@@ -40,61 +39,54 @@ def normalise_name(name: Optional[str]) -> Optional[str]:
     return cleaned or None
 
 
-def get_str(record: simdjson.Object, key: str):
-    val = record.get(key)
-    if val is None:
-        return None
-    return str(val)
-
-
 def keep_record(
     dataset: Dataset, institution_rors: set[str], institution_names: set[str], dois: set[str], record: simdjson.Object
 ) -> bool:
     if dataset == "openalex-works":
         # Check DOI
-        doi = extract_doi(get_str(record, "doi"))
+        doi = extract_doi(to_optional_string(record.get("doi")))
         if doi in dois:
             return True
 
         # Check institutions
         for authorship in record.get("authorships", []):
             for inst in authorship.get("institutions", []):
-                identifier = get_str(inst, "ror")
-                name = normalise_name(get_str(inst, "display_name"))
+                identifier = to_optional_string(inst.get("ror"))
+                name = normalise_name(to_optional_string(inst.get("display_name")))
                 if normalise_identifier(identifier) in institution_rors or name in institution_names:
                     return True
         return False
 
     elif dataset == "datacite":
         # Check DOI
-        doi = get_str(record, "id")
+        doi = to_optional_string(record.get("id"))
         if doi in dois:
             return True
 
         # Check institutions
         for creator in record.get("attributes", {}).get("creators", []):
             for affiliation in normalise_affiliations(creator.get("affiliation", [])):
-                identifier = get_str(affiliation, "affiliationIdentifier")
-                name = normalise_name(get_str(affiliation, "name"))
+                identifier = to_optional_string(affiliation.get("affiliationIdentifier"))
+                name = normalise_name(to_optional_string(affiliation.get("name")))
                 if normalise_identifier(identifier) in institution_rors or name in institution_names:
                     return True
         return False
 
     elif dataset == "crossref-metadata":
         # Check DOI
-        doi = get_str(record, "DOI")
+        doi = to_optional_string(record.get("DOI"))
         if doi in dois:
             return True
 
         # Check institutions
         for author in record.get("author", []):
             for affiliation in author.get("affiliation", []):
-                name = normalise_name(get_str(affiliation, "name"))
+                name = normalise_name(to_optional_string(affiliation.get("name")))
                 if name in institution_names:
                     return True
 
                 for id_struct in affiliation.get("id", []):
-                    identifier = get_str(id_struct, "id")
+                    identifier = to_optional_string(id_struct.get("id"))
                     if normalise_identifier(identifier) in institution_rors:
                         return True
         return False
@@ -176,7 +168,7 @@ def create_dataset_subset(
     futures = []
     institution_rors = set([inst.ror for inst in institutions if inst.ror is not None])
     institution_names = set([val for inst in institutions if (val := normalise_name(inst.name)) is not None])
-    dois_set = set([clean_string(doi) for doi in dois])
+    dois_set = set([extract_doi(doi) for doi in dois])
 
     logging.info(f"institutions: {institutions}")
     logging.info(f"dois: {dois_set}")

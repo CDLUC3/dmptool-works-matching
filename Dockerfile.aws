@@ -19,20 +19,13 @@ RUN dnf -y install \
 RUN dnf group install -y "Development Tools"
 
 # Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-05-21
-ENV RUSTUP_TOOLCHAIN=nightly-2025-05-21
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Install maturin
+RUN python${PYTHON_VERSION} -m pip install maturin
+
 WORKDIR /app
-
-# Clone Polars dependencies
-RUN git clone --branch fix-load-json-as-string --single-branch https://github.com/jdddog/polars.git
-RUN git clone --branch local-build --single-branch https://github.com/jdddog/pyo3-polars.git
-
-# Build Polars
-WORKDIR /app/polars/py-polars
-RUN python${PYTHON_VERSION} -m pip install -r requirements-dev.txt -r requirements-lint.txt
-RUN RUSTFLAGS="-C target-cpu=${RUST_TARGET_CPU}" maturin build --interpreter python${PYTHON_VERSION} --profile dist-release
 
 # Build dmpworks
 WORKDIR /app/dmptool-works-matching
@@ -74,10 +67,6 @@ RUN wget https://github.com/peak/s5cmd/releases/download/v${S5CMD_VERSION}/s5cmd
   chmod +x s5cmd && \
   mv s5cmd /usr/local/bin/ && \
   rm s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz
-
-# Copy and install Polars
-COPY --from=builder /app/polars/target/wheels /app/wheels/polars
-RUN python${PYTHON_VERSION} -m pip install /app/wheels/polars/*.whl
 
 # Copy and install dmpworks
 COPY --from=builder /app/dmptool-works-matching/target/wheels /app/wheels/dmpworks

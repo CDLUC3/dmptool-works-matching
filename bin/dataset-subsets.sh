@@ -28,14 +28,16 @@ else
   echo "Aborted."
 fi
 
-mkdir -p "${DEMO_SOURCES_DIR}"/{dmps,datacite,openalex_works,crossref_metadata,openalex_funders,ror}
+mkdir -p "${DATA_DIR}/duckdb"
 
-echo "Copying DMPs"
-cp -r "${SOURCE_DIR}/dmps/." "${DATA_DIR}/sources/dmps/"
+mkdir -p "${DEMO_SOURCES_DIR}"/{datacite,openalex_works,crossref_metadata,ror,data_citation_corpus}
 
 echo "Copying ROR"
-cp "${SOURCE_DIR}/ror/v1.63-2025-04-03-ror-data/v1.63-2025-04-03-ror-data_schema_v2.json" "${DATA_DIR}/sources/ror/v1.63-2025-04-03-ror-data_schema_v2.json"
+cp -r "${SOURCE_DIR}/ror/." "${DATA_DIR}/sources/ror/"
 
-dmpworks transform dataset-subset crossref-metadata "${SOURCE_DIR}/crossref_metadata/March 2025 Public Data File from Crossref" "${DATA_DIR}/sources/crossref_metadata"
-dmpworks transform dataset-subset datacite "${SOURCE_DIR}/datacite/DataCite_Public_Data_File_2024/dois" "${DATA_DIR}/sources/datacite"
+echo "Copying Data Citation Corpus"
+cp -r "${SOURCE_DIR}/data_citation_corpus/." "${DATA_DIR}/sources/data_citation_corpus/"
+
+dmpworks transform dataset-subset crossref-metadata "${SOURCE_DIR}/crossref_metadata" "${DATA_DIR}/sources/crossref_metadata"
+dmpworks transform dataset-subset datacite "${SOURCE_DIR}/datacite/dois" "${DATA_DIR}/sources/datacite"
 dmpworks transform dataset-subset openalex-works "${SOURCE_DIR}/openalex/openalex-snapshot/data/works" "${DATA_DIR}/sources/openalex_works"

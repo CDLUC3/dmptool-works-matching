@@ -2,10 +2,9 @@ import logging
 import pathlib
 from typing import Annotated, Optional
 
-import pendulum
 from cyclopts import App, Parameter, validators
 
-from dmpworks.cli_utils import Directory, LogLevel
+from dmpworks.cli_utils import Directory, LogLevel, MySQLConfig
 from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
@@ -125,26 +124,23 @@ def sync_works_cmd(
 @app.command(name="sync-dmps")
 def sync_dmps_cmd(
     index_name: str,
-    in_dir: Directory,
-    client_config: Optional[OpenSearchClientConfig] = None,
-    sync_config: Optional[OpenSearchSyncConfig] = None,
+    mysql_config: MySQLConfig,
+    opensearch_config: Optional[OpenSearchClientConfig] = None,
+    chunk_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
-    """Sync the DMP Tool DMP Table with OpenSearch.
+    """Sync DMPs from MySQL with OpenSearch DMPs index.
 
     Args:
         index_name: Name of the OpenSearch index to sync to (e.g., dmps).
-        in_dir: Path to the DMP Tool DMPs export directory (e.g., /path/to/export).
-        client_config: OpenSearch client settings.
-        sync_config: OpenSearch sync settings.
+        mysql_config: MySQL config.
+        opensearch_config: OpenSearch client settings.
+        chunk_size: OpenSearch bulk indexing chunk size.
         log_level: Python log level (e.g., INFO).
     """
 
-    if client_config is None:
-        client_config = OpenSearchClientConfig()
-
-    if sync_config is None:
-        sync_config = OpenSearchSyncConfig()
+    if opensearch_config is None:
+        opensearch_config = OpenSearchClientConfig()
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
@@ -152,10 +148,9 @@ def sync_dmps_cmd(
 
     sync_dmps(
         index_name,
-        in_dir,
-        client_config,
-        sync_config,
-        log_level=level,
+        mysql_config,
+        opensearch_config=opensearch_config,
+        chunk_size=chunk_size,
     )
 
 

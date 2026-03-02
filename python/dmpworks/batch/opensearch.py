@@ -5,7 +5,6 @@ from typing import Optional
 import pymysql.cursors
 from cyclopts import App
 
-from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.batch.utils import (
     download_file_from_s3,
     download_files_from_s3,
@@ -14,23 +13,19 @@ from dmpworks.batch.utils import (
     upload_file_to_s3,
 )
 from dmpworks.cli_utils import DMPSubset, LogLevel
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.dmsp.related_works import merge_related_works, MySQLConfig
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
-from dmpworks.opensearch.index import create_index
-from dmpworks.opensearch.sync_dmps import sync_dmps
 from dmpworks.opensearch.sync_works import sync_works
-from dmpworks.opensearch.utils import Date, make_opensearch_client
+from dmpworks.opensearch.utils import Date
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
 
 log = logging.getLogger(__name__)
 
 SQLMESH_DIR = "sqlmesh"
 DMPS_SOURCE_DIR = "dmps"
-
-WORKS_MAPPING_FILE = "works-mapping.json"
-DMPS_MAPPING_FILE = "dmps-mapping.json"
 
 MATCHES_FILE_NAME = "matches.jsonl"
 DMP_WORKS_SEARCH_PATH = "dmp-works-search"
@@ -75,10 +70,6 @@ def sync_works_cmd(
         doi_state_source_uri = s3_uri(bucket_name, SQLMESH_DIR, run_id, "doi_state_export/*")
         download_files_from_s3(doi_state_source_uri, doi_state_export)
 
-        # Create index (if it doesn't exist already)
-        client = make_opensearch_client(client_config)
-        create_index(client, index_name, WORKS_MAPPING_FILE)
-
         # Run process
         sync_works(
             index_name=index_name,
@@ -92,47 +83,6 @@ def sync_works_cmd(
     finally:
         shutil.rmtree(works_index_export, ignore_errors=True)
         shutil.rmtree(doi_state_export, ignore_errors=True)
-
-
-@app.command(name="sync-dmps")
-def sync_dmps_cmd(
-    bucket_name: str,
-    run_id: str,
-    index_name: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
-    sync_config: Optional[OpenSearchSyncConfig] = None,
-    log_level: LogLevel = "INFO",
-):
-    """Sync dmps in Parquet format with OpenSearch.
-
-    Args:
-        bucket_name: DMP Tool S3 bucket name.
-        run_id: a unique ID to represent this run of the job.
-        index_name: the OpenSearch index name.
-        client_config: the OpenSearch client config settings.
-        sync_config: the OpenSearch sync config settings.
-        log_level: Python log level.
-    """
-
-    client_config = OpenSearchClientConfig() if client_config is None else client_config
-    sync_config = OpenSearchSyncConfig() if sync_config is None else sync_config
-    level = logging.getLevelName(log_level)
-    setup_multiprocessing_logging(level)
-
-    export_dir = local_path(DMPS_SOURCE_DIR, run_id)
-    try:
-        # Download Parquet files from S3
-        source_uri = s3_uri(bucket_name, DMPS_SOURCE_DIR, f"{run_id}/transform/parquets/*")
-        download_files_from_s3(source_uri, export_dir)
-
-        # Create index (if it doesn't exist already)
-        client = make_opensearch_client(client_config)
-        create_index(client, index_name, DMPS_MAPPING_FILE)
-
-        # Sync dmps
-        sync_dmps(index_name, export_dir, client_config, sync_config, level)
-    finally:
-        shutil.rmtree(export_dir)
 
 
 @app.command(name="enrich-dmps")

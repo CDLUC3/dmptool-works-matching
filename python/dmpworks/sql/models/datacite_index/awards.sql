@@ -32,7 +32,7 @@ WITH award_ids AS (
     -- OpenAlex
     SELECT dw.doi, award.funder_award_id AS award_id
     FROM datacite_index.works dw
-    INNER JOIN openalex.works ow ON dw.doi = ow.doi, UNNEST(ow.awards) AS item(award)
+    INNER JOIN openalex.openalex_works ow ON dw.doi = ow.doi, UNNEST(ow.awards) AS item(award)
     WHERE award.funder_award_id IS NOT NULL
   )
   GROUP BY doi

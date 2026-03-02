@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 from functools import cached_property
 from typing import Optional
 
@@ -8,7 +7,16 @@ import pendulum
 from pydantic import BaseModel, field_serializer, field_validator
 
 from dmpworks.funders.award_id import AwardID
-from dmpworks.model.common import Author, Funder, Institution, to_camel
+from dmpworks.model.common import (
+    Author,
+    Funder,
+    Institution,
+    parse_pendulum_date,
+    parse_pendulum_datetime,
+    serialize_pendulum_date,
+    serialize_pendulum_datetime,
+    to_camel,
+)
 
 
 class DMPModel(BaseModel):
@@ -19,17 +27,17 @@ class DMPModel(BaseModel):
     }
 
     doi: str
-    created: Optional[pendulum.Date]
-    registered: Optional[pendulum.Date]
-    modified: Optional[pendulum.Date]
+    created: Optional[pendulum.DateTime]
+    registered: Optional[pendulum.DateTime]
+    modified: Optional[pendulum.DateTime]
     title: Optional[str]
-    abstract: Optional[str]
+    abstract_text: Optional[str]
     project_start: Optional[pendulum.Date]
     project_end: Optional[pendulum.Date]
     institutions: list[Institution]
     authors: list[Author]
     funding: list[FundingItem]
-    published_research_outputs: Optional[list[ResearchOutput]] = None
+    published_outputs: Optional[list[ResearchOutput]]
     external_data: Optional[ExternalData] = None
 
     @cached_property
@@ -40,18 +48,23 @@ class DMPModel(BaseModel):
                 funded_dois.add(doi)
         return list(funded_dois)
 
-    @field_validator("created", "registered", "modified", "project_start", "project_end", mode="before")
+    @field_validator("created", "registered", "modified", mode="before")
+    @classmethod
+    def parse_pendulum_datetime(cls, v):
+        return parse_pendulum_datetime(v)
+
+    @field_serializer("created", "registered", "modified")
+    def serialize_pendulum_datetime(self, v: pendulum.DateTime):
+        return serialize_pendulum_datetime(v)
+
+    @field_validator("project_start", "project_end", mode="before")
     @classmethod
     def parse_pendulum_date(cls, v):
-        if isinstance(v, str):
-            return pendulum.parse(v).date()
-        elif isinstance(v, datetime.date):
-            return pendulum.instance(v)
-        return v
+        return parse_pendulum_date(v)
 
-    @field_serializer("created", "registered", "modified", "project_start", "project_end")
+    @field_serializer("project_start", "project_end")
     def serialize_pendulum_date(self, v: pendulum.Date):
-        return v.to_date_string()
+        return serialize_pendulum_date(v)
 
 
 class ResearchOutput(BaseModel):
@@ -78,15 +91,11 @@ class ExternalData(BaseModel):
     @field_validator("updated", mode="before")
     @classmethod
     def parse_pendulum_date(cls, v):
-        if isinstance(v, str):
-            return pendulum.parse(v)
-        elif isinstance(v, datetime.datetime):
-            return pendulum.instance(v)
-        return v
+        return parse_pendulum_date(v)
 
     @field_serializer("updated")
     def serialize_pendulum_date(self, v: pendulum.DateTime):
-        return v.to_iso8601_string()
+        return serialize_pendulum_date(v)
 
 
 class Award(BaseModel):

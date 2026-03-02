@@ -28,6 +28,6 @@ SELECT
     } ORDER BY pos
   ) AS funders
 FROM openalex_index.works_metadata AS owm
-LEFT JOIN openalex.works works ON owm.id = works.id, UNNEST(works.funders) WITH ORDINALITY AS item(funder, pos)
+LEFT JOIN openalex.openalex_works works ON owm.id = works.id, UNNEST(works.funders) WITH ORDINALITY AS item(funder, pos)
 WHERE owm.is_primary_doi = TRUE
 GROUP BY owm.id, owm.doi

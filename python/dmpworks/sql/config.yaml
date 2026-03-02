@@ -20,12 +20,11 @@ gateways:
       # token:
 
 variables:
-  opensearch_path: "/path/to/opensearch/parquets"
-  crossref_metadata_path: "/path/to/crossref_metadata/parquets"
-  datacite_path: "/path/to/datacite/parquets"
-  openalex_funders_path: "/path/to/openalex_funders/parquets"
-  openalex_works_path: "/path/to/openalex_works/parquets"
-  ror_path: "/path/to/ror/parquets"
+  opensearch_path: "/path/to/opensearch"
+  crossref_metadata_path: "/path/to/crossref_metadata"
+  datacite_path: "/path/to/datacite"
+  openalex_works_path: "/path/to/openalex_works"
+  ror_path: "/path/to/ror"
   data_citation_corpus_path: "/path/to/data_citation_corpus"
   works_index_export_path: "/path/to/works_index_export"
   doi_state_export_path: "/path/to/doi_state_export"

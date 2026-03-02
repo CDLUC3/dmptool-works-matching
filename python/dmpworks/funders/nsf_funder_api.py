@@ -5,12 +5,11 @@ import re
 from typing import Optional
 
 import requests
-from bs4 import BeautifulSoup
 from fold_to_ascii import fold
 from rapidfuzz import fuzz
 
-from dmpworks.transforms import clean_string, extract_doi
 from dmpworks.utils import retry_session
+from dmpworks.transform.simdjson_transforms import extract_doi
 
 log = logging.getLogger(__name__)
 
@@ -111,7 +110,7 @@ def find_crossref_doi(
 
             # Accept title if similarity >= threshold
             if fuzz.ratio(title, item_title, processor=preprocess_text) >= threshold:
-                return clean_string(item.get("DOI"))
+                return extract_doi(item.get("DOI"))
 
         return None
     except requests.exceptions.RequestException as e:
@@ -156,7 +155,7 @@ def find_datacite_doi(title: str, threshold: float = 95) -> str | None:
                         doi = related_identifier
                         break
 
-                return clean_string(doi)
+                return extract_doi(doi)
 
         return None
     except requests.exceptions.RequestException as e:

@@ -21,7 +21,7 @@ WITH works_index AS (
     dw.doi,
     dw.title,
     dw.abstract AS abstract_text,
-    COALESCE(datacite_index.types.type, 'OTHER') AS work_type,
+    COALESCE(datacite_index.work_types.work_type, 'OTHER') AS work_type,
     dw.publication_date,
     datacite_index.updated_dates.updated_date,
     dw.publication_venue,
@@ -30,16 +30,16 @@ WITH works_index AS (
     COALESCE(datacite_index.funders.funders, []) AS funders,
     COALESCE(datacite_index.awards.awards, []) AS awards,
     {
-      intra_work_dois := COALESCE(ri.intra_work_dois, []),
-      possible_shared_project_dois := COALESCE(ri.possible_shared_project_dois, []),
-      dataset_citation_dois := COALESCE(ri.dataset_citation_dois, [])
+      'intra_work_dois': COALESCE(ri.intra_work_dois, []),
+      'possible_shared_project_dois': COALESCE(ri.possible_shared_project_dois, []),
+      'dataset_citation_dois': COALESCE(ri.dataset_citation_dois, [])
     } AS relations,
     {
-      name := 'DataCite',
-      url := 'https://commons.datacite.org/doi.org/' || dw.doi
+      'name': 'DataCite',
+      'url': 'https://commons.datacite.org/doi.org/' || dw.doi
     } AS source
   FROM datacite_index.works dw
-  LEFT JOIN datacite_index.types ON dw.doi = datacite_index.types.doi
+  LEFT JOIN datacite_index.work_types ON dw.doi = datacite_index.work_types.doi
   LEFT JOIN datacite_index.updated_dates ON dw.doi = datacite_index.updated_dates.doi
   LEFT JOIN datacite_index.institutions ON dw.doi = datacite_index.institutions.doi
   LEFT JOIN datacite_index.funders ON dw.doi = datacite_index.funders.doi

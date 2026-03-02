@@ -25,10 +25,12 @@ else
   echo "Aborted."
 fi
 
-mkdir -p "${TRANSFORM_DIR}"/{dmps,datacite,openalex_works,crossref_metadata,openalex_funders,ror,opensearch/parquets}
-dmpworks sqlmesh init-doi-state "${TRANSFORM_DIR}/opensearch/parquets/doi_state_00000.parquet"
-dmpworks transform dmps "${SOURCES_DIR}/dmps" "${TRANSFORM_DIR}/dmps"
+mkdir -p "${TRANSFORM_DIR}"/{datacite,openalex_works,crossref_metadata,ror,opensearch,data_citation_corpus}
+dmpworks sqlmesh init-doi-state "${TRANSFORM_DIR}/opensearch/doi_state_00000.parquet"
+echo "Copying ROR"
+cp -r "${SOURCES_DIR}/ror/." "${TRANSFORM_DIR}/ror/"
+echo "Copying Data Citation Corpus"
+cp -r "${SOURCES_DIR}/data_citation_corpus/." "${TRANSFORM_DIR}/data_citation_corpus/"
 dmpworks transform crossref-metadata "${SOURCES_DIR}/crossref_metadata" "${TRANSFORM_DIR}/crossref_metadata"
-dmpworks transform openalex-works "${SOURCES_DIR}/openalex_works" "${TRANSFORM_DIR}/openalex_works" --batch-size=2 --max-file-processes=2
+dmpworks transform openalex-works "${SOURCES_DIR}/openalex_works" "${TRANSFORM_DIR}/openalex_works"
 dmpworks transform datacite "${SOURCES_DIR}/datacite" "${TRANSFORM_DIR}/datacite"
-dmpworks transform ror "${SOURCES_DIR}/ror/v1.63-2025-04-03-ror-data_schema_v2.json" "${TRANSFORM_DIR}/ror"
