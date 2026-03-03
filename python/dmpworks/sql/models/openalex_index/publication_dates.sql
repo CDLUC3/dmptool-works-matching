@@ -16,7 +16,7 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('openalex_index_publication_dates_threads') AS INT64);
 
 SELECT
   owm.doi,

@@ -10,7 +10,7 @@ MODEL (
   kind VIEW
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('opensearch_current_doi_state_threads') AS INT64);
 
 SELECT *
 FROM read_parquet(@VAR('opensearch_path') || '/doi_state_[0-9]*.parquet');

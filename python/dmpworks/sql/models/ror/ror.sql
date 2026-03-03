@@ -11,7 +11,7 @@ MODEL (
   )
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('ror_ror_threads') AS INT64);
 
 -- Rename "all" to "all_ids" as it is a reserved word and seems to interfere with SQLMesh
 SELECT

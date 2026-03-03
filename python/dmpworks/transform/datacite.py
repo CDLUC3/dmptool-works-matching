@@ -15,7 +15,6 @@ from dmpworks.transform.simdjson_transforms import (
     parse_iso8601_calendar_date,
     parse_iso8601_datetime,
     to_optional_string,
-    parse_author_name,
 )
 from dmpworks.transform.utils_file import setup_multiprocessing_logging, yield_objects_from_jsonl
 
@@ -96,6 +95,12 @@ DATACITE_SCHEMA = pa.schema(
 
 def parse_datacite_record(obj: simdjson.Object) -> dict | None:
     doi = extract_doi(obj.get("id"))
+
+    # Break early if no DOI
+    if doi is None:
+        logger.warning(f"Could not extract DOI from id={obj.get('id')}, title={obj.get('title')}")
+        return None
+
     attrs = obj.get("attributes")
     title = parse_title(attrs.get("titles", []))
     abstract = parse_abstract(attrs.get("descriptions", []))
@@ -180,10 +185,10 @@ def parse_authors_and_institutions(
             # Parse authors
             name_identifiers = ensure_array_of_objects(creator_obj.get("nameIdentifiers", []))
             orcid = parse_orcid(name_identifiers)
-            first_initial, given_name, middle_initials, middle_names, surname, full = parse_author_name(
-                to_optional_string(creator_obj.get("givenName")),
-                to_optional_string(creator_obj.get("familyName")),
-                full_name=to_optional_string(creator_obj.get("name")),
+            first_initial, given_name, middle_initials, middle_names, surname, full = parse_name(
+                raw_given_name=to_optional_string(creator_obj.get("givenName")),
+                raw_surname=to_optional_string(creator_obj.get("familyName")),
+                raw_full=to_optional_string(creator_obj.get("name")),
             )
             if any([orcid, first_initial, given_name, middle_initials, middle_names, surname, full]):
                 author = {

@@ -16,7 +16,7 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('datacite_index_works_threads') AS INT64);
 
 SELECT works.*
 FROM datacite.datacite works

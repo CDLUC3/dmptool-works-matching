@@ -7,7 +7,7 @@ MODEL (
   )
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('ror_index_threads') AS INT64);
 
 -- Map ROR IDs to ROR IDs so that ID lookups also resolve ROR IDs
 WITH ror_ids AS (

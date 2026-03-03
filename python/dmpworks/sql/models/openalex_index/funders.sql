@@ -16,18 +16,18 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('openalex_index_funders_threads') AS INT64);
 
 SELECT
   owm.id,
   owm.doi,
-  array_agg(
-    {
-      'name': funder.display_name,
-      'ror': funder.ror
-    } ORDER BY pos
+  list_transform(
+    works.funders,
+    x -> {
+      'name': x.display_name,
+      'ror': x.ror
+    }
   ) AS funders
 FROM openalex_index.works_metadata AS owm
-LEFT JOIN openalex.openalex_works works ON owm.id = works.id, UNNEST(works.funders) WITH ORDINALITY AS item(funder, pos)
-WHERE owm.is_primary_doi = TRUE
-GROUP BY owm.id, owm.doi
+LEFT JOIN openalex.openalex_works works ON owm.id = works.id
+WHERE owm.is_primary_doi = TRUE AND works.funders IS NOT NULL AND ARRAY_LENGTH(works.funders) > 0

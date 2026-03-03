@@ -27,6 +27,7 @@ from dmpworks.cli_utils import DatasetSubset, DMPSubset
 app = App(name="batch-submit", help="Commands to submit AWS Batch jobs.")
 
 EnvTypes = Literal["dev", "stage", "prod"]
+DEFAULT_NUM_WORKERS = 32
 
 
 def run_job_pipeline(
@@ -536,20 +537,13 @@ def process_works_cmd(
             help="The AWS region of the OpenSearch cluster (for sync-works).",
         ),
     ],
-    sqlmesh_duckdb_threads: Annotated[
-        int,
-        Parameter(
-            env_var="SQLMESH_DUCKDB_THREADS",
-            help="Number of threads for DuckDB (for SQLMesh).",
-        ),
-    ] = 32,
     sqlmesh_duckdb_memory_limit: Annotated[
         str,
         Parameter(
             env_var="SQLMESH_DUCKDB_MEMORY_LIMIT",
-            help="Memory limit for DuckDB (e.g., '200GB') (for SQLMesh).",
+            help="Memory limit for DuckDB (e.g., '225GB') (for SQLMesh).",
         ),
-    ] = "200GB",
+    ] = "225GB",
     opensearch_index_name: Annotated[
         str,
         Parameter(
@@ -603,6 +597,251 @@ def process_works_cmd(
             help="The first job to run in the sequence.",
         ),
     ] = PROCESS_WORKS_JOBS[0],
+    crossref_crossref_metadata_threads: Annotated[
+        int,
+        Parameter(
+            env_var="CROSSREF_CROSSREF_METADATA_THREADS",
+            help="Memory limit for SQLMesh DuckDB crossref_crossref_metadata query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    crossref_index_works_metadata_threads: Annotated[
+        int,
+        Parameter(
+            env_var="CROSSREF_INDEX_WORKS_METADATA_THREADS",
+            help="Memory limit for SQLMesh DuckDB crossref_index_works_metadata query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_datacite_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_DATACITE_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_datacite query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_index_awards_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_INDEX_AWARDS_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_index_awards query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_index_datacite_index_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_INDEX_DATACITE_INDEX_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_index_datacite_index query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_index_funders_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_INDEX_FUNDERS_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_index_funders query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_index_institutions_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_INDEX_INSTITUTIONS_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_index_institutions query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_index_updated_dates_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_INDEX_UPDATED_DATES_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_index_updated_dates query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_index_work_types_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_INDEX_WORK_TYPES_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_index_work_types query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_index_works_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_INDEX_WORKS_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_index_works query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    datacite_index_datacite_index_hashes_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATACITE_INDEX_DATACITE_INDEX_HASHES_THREADS",
+            help="Memory limit for SQLMesh DuckDB datacite_index_datacite_index_hashes query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_openalex_works_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_OPENALEX_WORKS_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_openalex_works query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_abstract_stats_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_ABSTRACT_STATS_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_abstract_stats query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_abstracts_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_ABSTRACTS_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_abstracts query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_author_names_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_AUTHOR_NAMES_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_author_names query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_awards_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_AWARDS_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_awards query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_funders_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_FUNDERS_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_funders query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_openalex_index_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_OPENALEX_INDEX_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_openalex_index query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_publication_dates_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_PUBLICATION_DATES_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_publication_dates query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_title_stats_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_TITLE_STATS_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_title_stats query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_titles_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_TITLES_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_titles query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_updated_dates_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_UPDATED_DATES_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_updated_dates query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_works_metadata_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_WORKS_METADATA_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_works_metadata query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    openalex_index_openalex_index_hashes_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENALEX_INDEX_OPENALEX_INDEX_HASHES_THREADS",
+            help="Memory limit for SQLMesh DuckDB openalex_index_openalex_index_hashes query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    opensearch_current_doi_state_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENSEARCH_CURRENT_DOI_STATE_THREADS",
+            help="Memory limit for SQLMesh DuckDB opensearch_current_doi_state query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    opensearch_export_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENSEARCH_EXPORT_THREADS",
+            help="Memory limit for SQLMesh DuckDB opensearch_export query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    opensearch_next_doi_state_threads: Annotated[
+        int,
+        Parameter(
+            env_var="OPENSEARCH_NEXT_DOI_STATE_THREADS",
+            help="Memory limit for SQLMesh DuckDB opensearch_next_doi_state query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    data_citation_corpus_2_threads: Annotated[
+        int,
+        Parameter(
+            env_var="DATA_CITATION_CORPUS_RELATIONS_THREADS",
+            help="Memory limit for SQLMesh DuckDB data_citation_corpus_relations query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    relations_crossref_metadata_threads: Annotated[
+        int,
+        Parameter(
+            env_var="RELATIONS_CROSSREF_METADATA_THREADS",
+            help="Memory limit for SQLMesh DuckDB relations_crossref_metadata query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    relations_data_citation_corpus_threads: Annotated[
+        int,
+        Parameter(
+            env_var="RELATIONS_DATA_CITATION_CORPUS_THREADS",
+            help="Memory limit for SQLMesh DuckDB relations_data_citation_corpus query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    relations_datacite_threads: Annotated[
+        int,
+        Parameter(
+            env_var="RELATIONS_DATACITE_THREADS",
+            help="Memory limit for SQLMesh DuckDB relations_datacite query (e.g., 16).",
+        ),
+    ] = 16,
+    relations_relations_index_threads: Annotated[
+        int,
+        Parameter(
+            env_var="RELATIONS_RELATIONS_INDEX_THREADS",
+            help="Memory limit for SQLMesh DuckDB relations_relations_index query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    ror_index_threads: Annotated[
+        int,
+        Parameter(
+            env_var="ROR_INDEX_THREADS",
+            help="Memory limit for SQLMesh DuckDB ror_index query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    ror_ror_threads: Annotated[
+        int,
+        Parameter(
+            env_var="ROR_ROR_THREADS",
+            help="Memory limit for SQLMesh DuckDB ror_ror query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
+    works_index_export_threads: Annotated[
+        int,
+        Parameter(
+            env_var="WORKS_INDEX_EXPORT_THREADS",
+            help="Memory limit for SQLMesh DuckDB works_index_export query (e.g., 32).",
+        ),
+    ] = DEFAULT_NUM_WORKERS,
 ):
     logging.basicConfig(level=logging.INFO)
 
@@ -618,8 +857,42 @@ def process_works_cmd(
             crossref_metadata_run_id=crossref_metadata_run_id,
             ror_run_id=ror_run_id,
             data_citation_corpus_run_id=data_citation_corpus_run_id,
-            duckdb_threads=sqlmesh_duckdb_threads,
             duckdb_memory_limit=sqlmesh_duckdb_memory_limit,
+            crossref_crossref_metadata_threads=crossref_crossref_metadata_threads,
+            crossref_index_works_metadata_threads=crossref_index_works_metadata_threads,
+            datacite_datacite_threads=datacite_datacite_threads,
+            datacite_index_awards_threads=datacite_index_awards_threads,
+            datacite_index_datacite_index_threads=datacite_index_datacite_index_threads,
+            datacite_index_funders_threads=datacite_index_funders_threads,
+            datacite_index_institutions_threads=datacite_index_institutions_threads,
+            datacite_index_updated_dates_threads=datacite_index_updated_dates_threads,
+            datacite_index_work_types_threads=datacite_index_work_types_threads,
+            datacite_index_works_threads=datacite_index_works_threads,
+            datacite_index_datacite_index_hashes_threads=datacite_index_datacite_index_hashes_threads,
+            openalex_openalex_works_threads=openalex_openalex_works_threads,
+            openalex_index_abstract_stats_threads=openalex_index_abstract_stats_threads,
+            openalex_index_abstracts_threads=openalex_index_abstracts_threads,
+            openalex_index_author_names_threads=openalex_index_author_names_threads,
+            openalex_index_awards_threads=openalex_index_awards_threads,
+            openalex_index_funders_threads=openalex_index_funders_threads,
+            openalex_index_openalex_index_threads=openalex_index_openalex_index_threads,
+            openalex_index_publication_dates_threads=openalex_index_publication_dates_threads,
+            openalex_index_title_stats_threads=openalex_index_title_stats_threads,
+            openalex_index_titles_threads=openalex_index_titles_threads,
+            openalex_index_updated_dates_threads=openalex_index_updated_dates_threads,
+            openalex_index_works_metadata_threads=openalex_index_works_metadata_threads,
+            openalex_index_openalex_index_hashes_threads=openalex_index_openalex_index_hashes_threads,
+            opensearch_current_doi_state_threads=opensearch_current_doi_state_threads,
+            opensearch_export_threads=opensearch_export_threads,
+            opensearch_next_doi_state_threads=opensearch_next_doi_state_threads,
+            data_citation_corpus_relations_threads=data_citation_corpus_relations_threads,
+            relations_crossref_metadata_threads=relations_crossref_metadata_threads,
+            relations_data_citation_corpus_threads=relations_data_citation_corpus_threads,
+            relations_datacite_threads=relations_datacite_threads,
+            relations_relations_index_threads=relations_relations_index_threads,
+            ror_index_threads=ror_index_threads,
+            ror_ror_threads=ror_ror_threads,
+            works_index_export_threads=works_index_export_threads,
         ),
         "sync-works": partial(
             submit_sync_works_job,

@@ -112,6 +112,7 @@ dependencies = [
  "pyo3",
  "serde_json",
  "strip-tags",
+ "unicode-segmentation",
 ]
 
 [[package]]

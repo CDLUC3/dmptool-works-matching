@@ -58,6 +58,10 @@ CROSSREF_METADATA_SCHEMA = pa.schema(
 
 def parse_crossref_metadata_record(obj: simdjson.Object) -> dict | None:
     doi = extract_doi(obj.get("DOI"))
+    if doi is None:
+        logger.warning(f"Could not extract DOI from id={obj.get('DOI')}, title={obj.get('title')}")
+        return None
+
     title = parse_title(obj.get("title", []))
     abstract = parse_abstract(obj.get("abstract"))
     updated_date = parse_updated_date(obj.get("deposited"))

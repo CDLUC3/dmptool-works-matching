@@ -11,7 +11,7 @@ MODEL (
   enabled true
 );
 
-PRAGMA threads=CAST(@VAR('default_threads') AS INT64);
+PRAGMA threads=CAST(@VAR('relations_crossref_metadata_threads') AS INT64);
 
 -- https://www.crossref.org/documentation/schema-library/markup-guide-metadata-segments/relationships/
 
@@ -41,7 +41,6 @@ WITH relations_with_dois AS (
   SELECT
     @extract_doi(cm.doi) AS work_doi,
     @extract_doi(r.relation_id) AS related_doi,
-    r.relation_type,
     CASE
       WHEN r.relation_type IN ('is-expression-of', 'has-expression', 'is-format-of', 'has-format', 'is-identical-to',
                              'is-manifestation-of', 'has-manifestation', 'is-manuscript-of', 'has-manuscript',
@@ -58,13 +57,42 @@ WITH relations_with_dois AS (
   FROM crossref.crossref_metadata cm, UNNEST(cm.relations) AS item(r)
   -- Don't filter on id_type = 'DOI', sometimes id_type is not 'doi' but contains DOIs
   -- hence, we use extract_doi instead and check rd.related_doi IS NOT NULL at the end
+),
+
+bidirectional AS (
+  SELECT
+    rd.work_doi,
+    rd.related_doi,
+    rd.is_intra_work,
+    rd.is_possible_shared_project
+  FROM relations_with_dois rd
+  WHERE rd.work_doi IS NOT NULL AND rd.related_doi IS NOT NULL AND rd.work_doi <> rd.related_doi
+
+  UNION ALL
+
+  SELECT
+    rd.related_doi AS work_doi,
+    rd.work_doi AS related_doi,
+    rd.is_intra_work,
+    rd.is_possible_shared_project
+  FROM relations_with_dois rd
+  WHERE rd.work_doi IS NOT NULL AND rd.related_doi IS NOT NULL AND rd.work_doi <> rd.related_doi
+),
+
+collapsed AS (
+  SELECT
+    work_doi,
+    related_doi,
+    bool_or(is_intra_work) AS is_intra_work,
+    bool_or(is_possible_shared_project) AS is_possible_shared_project
+  FROM bidirectional
+  WHERE is_intra_work OR is_possible_shared_project
+  GROUP BY work_doi, related_doi
 )
 
-SELECT DISTINCT
-  rd.work_doi,
-  rd.related_doi,
-  rd.relation_type,
-  rd.is_intra_work,
-  rd.is_possible_shared_project
-FROM relations_with_dois rd
-WHERE rd.work_doi IS NOT NULL AND rd.related_doi IS NOT NULL AND rd.work_doi <> rd.related_doi
+SELECT
+  work_doi AS doi,
+  COALESCE(ARRAY_AGG(related_doi) FILTER (WHERE is_intra_work), []) AS intra_work_dois,
+  COALESCE(ARRAY_AGG(related_doi) FILTER (WHERE is_possible_shared_project), []) AS possible_shared_project_dois
+FROM collapsed
+GROUP BY work_doi;

@@ -71,7 +71,7 @@ class TestTransformCLI:
             out_dir=out_dir,
             log_level=logging.INFO,
             batch_size=16,
-            row_group_size=250_000,
+            row_group_size=200_000,
             row_groups_per_file=4,
             max_workers=os.cpu_count(),
         )
