@@ -1,19 +1,20 @@
+from collections.abc import Callable, Generator, Iterable
 import csv
+from dataclasses import dataclass
 import json
 import logging
 import pathlib
 import tempfile
-from dataclasses import dataclass
-from typing import Annotated, Any, Callable, Generator, Iterable, List, Optional
+from typing import Annotated, Any
 
-import pymysql.cursors
 from cyclopts import App, Parameter, validators
 from jsonlines import jsonlines
-from opensearchpy import exceptions, OpenSearch
+from opensearchpy import OpenSearch, exceptions
+import pymysql.cursors
 
 from dmpworks.cli_utils import LogLevel, MySQLConfig
 from dmpworks.model.work_model import WorkModel
-from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
+from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
 from dmpworks.transform.simdjson_transforms import extract_doi
 
 app = App(name="related-works", help="DMSP related works utilities.")
@@ -128,8 +129,8 @@ class RelatedWorkReference:
         work_doi: The DOI of the related work.
     """
 
-    plan_id: Optional[str]
-    dmp_id: Optional[str]
+    plan_id: str | None
+    dmp_id: str | None
     work_doi: str
 
 
@@ -141,28 +142,25 @@ def merge_related_works(matches_path: pathlib.Path, conn, batch_size: int = 1000
         conn: Database connection object.
         batch_size: Number of records to process in a batch.
     """
-    with RelatedWorksLoader(conn) as loader:
-        with tempfile.TemporaryDirectory() as tmp:
-            # Create temporary files with consolidated data
-            tmp_dir = pathlib.Path(tmp)
-            work_versions_path = tmp_dir / "work_versions.jsonl"
-            related_works_path = tmp_dir / "related_works.jsonl"
-            create_work_versions(matches_path, work_versions_path)
-            create_related_works(matches_path, related_works_path)
+    with RelatedWorksLoader(conn) as loader, tempfile.TemporaryDirectory() as tmp:
+        # Create temporary files with consolidated data
+        tmp_dir = pathlib.Path(tmp)
+        work_versions_path = tmp_dir / "work_versions.jsonl"
+        related_works_path = tmp_dir / "related_works.jsonl"
+        create_work_versions(matches_path, work_versions_path)
+        create_related_works(matches_path, related_works_path)
 
-            # Load into MySQL and run update procedure
-            loader.prepare_staging_tables()
-            loader.insert_work_versions(
-                yield_jsonlines(work_versions_path, to_sql_work_version_row), batch_size=batch_size
-            )
-            loader.insert_related_works(
-                yield_jsonlines(related_works_path, to_sql_related_work_row, extra_fields={"status": "PENDING"}),
-                batch_size=batch_size,
-            )
-            loader.run_update_procedure(system_matched=True)
+        # Load into MySQL and run update procedure
+        loader.prepare_staging_tables()
+        loader.insert_work_versions(yield_jsonlines(work_versions_path, to_sql_work_version_row), batch_size=batch_size)
+        loader.insert_related_works(
+            yield_jsonlines(related_works_path, to_sql_related_work_row, extra_fields={"status": "PENDING"}),
+            batch_size=batch_size,
+        )
+        loader.run_update_procedure(system_matched=True)
 
 
-def read_related_works_csv(file_path: pathlib.Path) -> List[RelatedWorkReference]:
+def read_related_works_csv(file_path: pathlib.Path) -> list[RelatedWorkReference]:
     """Read related works from a CSV file.
 
     Args:
@@ -172,13 +170,13 @@ def read_related_works_csv(file_path: pathlib.Path) -> List[RelatedWorkReference
         A list of RelatedWorkReference objects.
     """
     results = []
-    with open(file_path, mode='r', encoding='utf-8') as f:
+    with file_path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)
 
         for i, row in enumerate(reader, start=2):
-            plan_id = row.get("plan_id", '').strip() or None
-            dmp_id = row.get("dmp_id", '').strip() or None
-            work_doi = row.get("work_doi", '').strip() or None
+            plan_id = row.get("plan_id", "").strip() or None
+            dmp_id = row.get("dmp_id", "").strip() or None
+            work_doi = row.get("work_doi", "").strip() or None
 
             if not work_doi:
                 logging.warning(f"Row {i}: Skipped (Missing 'work_doi')")
@@ -201,12 +199,29 @@ class RelatedWorksLoader:
     """
 
     def __init__(self, conn):
+        """Initialize the RelatedWorksLoader.
+
+        Args:
+            conn: Database connection object.
+        """
         self.conn = conn
 
     def __enter__(self):
+        """Enter the context manager.
+
+        Returns:
+            self: The RelatedWorksLoader instance.
+        """
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager.
+
+        Args:
+            exc_type: Exception type.
+            exc_val: Exception value.
+            exc_tb: Exception traceback.
+        """
         if self.conn:
             if exc_type:
                 self.conn.rollback()
@@ -222,7 +237,7 @@ class RelatedWorksLoader:
         with self.conn.cursor() as cursor:
             cursor.callproc("create_related_works_staging_tables")
 
-    def insert_work_versions(self, rows_iterator: Iterable[List[Any]], batch_size: int = 1000):
+    def insert_work_versions(self, rows_iterator: Iterable[list[Any]], batch_size: int = 1000):
         """Insert work versions into the staging table.
 
         Args:
@@ -236,7 +251,7 @@ class RelatedWorksLoader:
         with self.conn.cursor() as cursor:
             self.print_table(cursor, "stagingWorkVersions", lambda r: f"doi={r.get('doi')}")
 
-    def insert_related_works(self, rows_iterator: Iterable[List[Any]], batch_size: int = 1000):
+    def insert_related_works(self, rows_iterator: Iterable[list[Any]], batch_size: int = 1000):
         """Insert related works into the staging table.
 
         Args:
@@ -252,7 +267,7 @@ class RelatedWorksLoader:
                 cursor, "stagingRelatedWorks", lambda r: f"dmpDoi={r.get('dmpDoi')}, status={r.get('status')}"
             )
 
-    def _batch_insert(self, sql: str, rows: Iterable[List[Any]], batch_size: int):
+    def _batch_insert(self, sql: str, rows: Iterable[list[Any]], batch_size: int):
         """Execute batch insert.
 
         Args:
@@ -299,7 +314,7 @@ class RelatedWorksLoader:
             logging.info(format_func(row))
 
 
-def fetch_opensearch_work(client: OpenSearch, doi: str, works_index: str = "works-index") -> Optional[WorkModel]:
+def fetch_opensearch_work(client: OpenSearch, doi: str, works_index: str = "works-index") -> WorkModel | None:
     """Fetch a work from OpenSearch by DOI.
 
     Args:
@@ -314,7 +329,7 @@ def fetch_opensearch_work(client: OpenSearch, doi: str, works_index: str = "work
         response = client.get(index=works_index, id=doi)
         return WorkModel.model_validate(response.get("_source", {}), by_name=True, by_alias=False)
     except exceptions.NotFoundError:
-        logging.error(f"Work with doi='{doi}' was not found")
+        logging.exception(f"Work with doi='{doi}' was not found")
         return None
 
 
@@ -342,12 +357,12 @@ def fetch_migration_related_works(conn) -> list[RelatedWorkReference]:
     with conn.cursor() as cursor:
         cursor.execute(sql)
         return [
-            RelatedWorkReference(plan_id=row['plan_id'], dmp_id=row['dmp_id'], work_doi=row['work_doi'])
+            RelatedWorkReference(plan_id=row["plan_id"], dmp_id=row["dmp_id"], work_doi=row["work_doi"])
             for row in cursor.fetchall()
         ]
 
 
-def load_related_works(conn, os_client: OpenSearch, records: List[RelatedWorkReference], batch_size: int = 1000):
+def load_related_works(conn, os_client: OpenSearch, records: list[RelatedWorkReference], batch_size: int = 1000):
     """Load related works into the database.
 
     Args:
@@ -403,8 +418,8 @@ def load_related_works(conn, os_client: OpenSearch, records: List[RelatedWorkRef
 
 
 def yield_jsonlines(
-    input_path: pathlib.Path, transform_func: Callable, extra_fields: dict = None
-) -> Generator[List[Any], None, None]:
+    input_path: pathlib.Path, transform_func: Callable, extra_fields: dict | None = None
+) -> Generator[list[Any], None, None]:
     """Yield transformed rows from a JSONLines file.
 
     Args:
@@ -493,14 +508,13 @@ def create_work_versions(input_path: pathlib.Path, output_path: pathlib.Path):
         output_path: Path to the output file.
     """
     seen = set()
-    with jsonlines.open(input_path) as in_file:
-        with jsonlines.open(output_path, mode='w') as out_file:
-            for row in in_file:
-                work = row["work"]
-                doi = work["doi"]
-                if doi not in seen:
-                    out_file.write(json_work_to_work_version(work))
-                    seen.add(doi)
+    with jsonlines.open(input_path) as in_file, jsonlines.open(output_path, mode="w") as out_file:
+        for row in in_file:
+            work = row["work"]
+            doi = work["doi"]
+            if doi not in seen:
+                out_file.write(json_work_to_work_version(work))
+                seen.add(doi)
 
 
 def json_work_to_work_version(work: dict) -> dict:
@@ -536,26 +550,25 @@ def create_related_works(input_path: pathlib.Path, output_path: pathlib.Path):
         input_path: Path to the input file.
         output_path: Path to the output file.
     """
-    with jsonlines.open(input_path) as in_file:
-        with jsonlines.open(output_path, mode='w') as out_file:
-            for row in in_file:
-                out_file.write(
-                    {
-                        "planId": None,
-                        "dmpDoi": row["dmpDoi"],
-                        "workDoi": row["work"]["doi"],
-                        "hash": row["work"]["hash"],
-                        "sourceType": "SYSTEM_MATCHED",
-                        "score": row["score"],
-                        "scoreMax": row["scoreMax"],
-                        "doiMatch": serialise_json(row["doiMatch"]),
-                        "contentMatch": serialise_json(row["contentMatch"]),
-                        "authorMatches": serialise_json(row["authorMatches"]),
-                        "institutionMatches": serialise_json(row["institutionMatches"]),
-                        "funderMatches": serialise_json(row["funderMatches"]),
-                        "awardMatches": serialise_json(row["awardMatches"]),
-                    }
-                )
+    with jsonlines.open(input_path) as in_file, jsonlines.open(output_path, mode="w") as out_file:
+        for row in in_file:
+            out_file.write(
+                {
+                    "planId": None,
+                    "dmpDoi": row["dmpDoi"],
+                    "workDoi": row["work"]["doi"],
+                    "hash": row["work"]["hash"],
+                    "sourceType": "SYSTEM_MATCHED",
+                    "score": row["score"],
+                    "scoreMax": row["scoreMax"],
+                    "doiMatch": serialise_json(row["doiMatch"]),
+                    "contentMatch": serialise_json(row["contentMatch"]),
+                    "authorMatches": serialise_json(row["authorMatches"]),
+                    "institutionMatches": serialise_json(row["institutionMatches"]),
+                    "funderMatches": serialise_json(row["funderMatches"]),
+                    "awardMatches": serialise_json(row["awardMatches"]),
+                }
+            )
 
 
 def serialise_json(data) -> str:

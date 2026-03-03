@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List, Optional
-
 from pydantic import BaseModel
 
 from dmpworks.model.common import to_camel
@@ -24,7 +22,7 @@ class DoiMatch(BaseModel):
 
     found: bool
     score: float
-    sources: List[DoiMatchSource]
+    sources: list[DoiMatchSource]
 
 
 class DoiMatchSource(BaseModel):
@@ -41,7 +39,7 @@ class DoiMatchSource(BaseModel):
         "populate_by_name": True,
     }
 
-    parent_award_id: Optional[str]
+    parent_award_id: str | None
     award_id: str
     award_url: str
 
@@ -61,8 +59,8 @@ class ContentMatch(BaseModel):
     }
 
     score: float
-    title_highlight: Optional[str]
-    abstract_highlights: List[str]
+    title_highlight: str | None
+    abstract_highlights: list[str]
 
 
 class ItemMatch(BaseModel):
@@ -81,7 +79,7 @@ class ItemMatch(BaseModel):
 
     index: int
     score: float
-    fields: Optional[List[str]] = None
+    fields: list[str] | None = None
 
 
 class RelatedWork(BaseModel):
@@ -114,13 +112,13 @@ class RelatedWork(BaseModel):
     score_max: float
     doi_match: DoiMatch
     content_match: ContentMatch
-    author_matches: List[ItemMatch] = []
-    institution_matches: List[ItemMatch] = []
-    funder_matches: List[ItemMatch] = []
-    award_matches: List[ItemMatch] = []
-    intra_work_doi_matches: List[ItemMatch] = []
-    possible_shared_project_doi_matches: List[ItemMatch] = []
-    dataset_citation_doi_matches: List[ItemMatch] = []
+    author_matches: list[ItemMatch] = []
+    institution_matches: list[ItemMatch] = []
+    funder_matches: list[ItemMatch] = []
+    award_matches: list[ItemMatch] = []
+    intra_work_doi_matches: list[ItemMatch] = []
+    possible_shared_project_doi_matches: list[ItemMatch] = []
+    dataset_citation_doi_matches: list[ItemMatch] = []
 
 
 class RelatedWorkTrainingRow(BaseModel):
@@ -157,7 +155,7 @@ class RelatedWorkTrainingRow(BaseModel):
     # Metadata
     dmp_doi: str
     work_doi: str
-    work_title: Optional[str]
+    work_title: str | None
 
     # Features
     mlt_content: float
@@ -178,7 +176,7 @@ class RelatedWorkTrainingRow(BaseModel):
     dataset_citation_doi_count: int
 
     # Whether the match is valid or not
-    judgement: Optional[int] = None
+    judgement: int | None = None
 
     def to_ranklib(self) -> str:
         """Convert the training row to RankLib format.
@@ -217,7 +215,7 @@ class RelatedWorkTrainingRow(BaseModel):
         return " ".join(combined)
 
 
-def remove_newlines(s: str, replacement: str = "") -> Optional[str]:
+def remove_newlines(s: str, replacement: str = "") -> str | None:
     """Remove newlines from a string.
 
     Args:

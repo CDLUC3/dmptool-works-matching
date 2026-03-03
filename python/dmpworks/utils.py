@@ -1,10 +1,11 @@
+from collections.abc import Generator, Mapping
+from functools import wraps
 import importlib
 import logging
 import os
 import shlex
 import subprocess
-from functools import wraps
-from typing import Generator, Mapping, Optional, TypeVar
+from typing import TypeVar
 
 import pendulum
 import requests
@@ -15,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 def timed(func):
-    """Log execution time of a function"""
+    """Log execution time of a function."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -32,7 +33,7 @@ def timed(func):
 
 def run_process(
     args,
-    env: Optional[Mapping[str, str]] = None,
+    env: Mapping[str, str] | None = None,
 ):
     """Run a shell script.
 
@@ -58,13 +59,37 @@ def run_process(
 
 
 class InstanceOf:
+    """Helper class to check if an object is an instance of a class.
+
+    Attributes:
+        cls: The class to check against.
+    """
+
     def __init__(self, cls):
+        """Initialize the InstanceOf helper.
+
+        Args:
+            cls: The class to check against.
+        """
         self.cls = cls
 
     def __eq__(self, other):
+        """Check if the other object is an instance of the class.
+
+        Args:
+            other: The object to check.
+
+        Returns:
+            bool: True if the object is an instance of the class, False otherwise.
+        """
         return isinstance(other, self.cls)
 
     def __repr__(self):
+        """Return a string representation of the InstanceOf helper.
+
+        Returns:
+            str: The string representation.
+        """
         return f"<any {self.cls.__name__} instance>"
 
 
@@ -168,7 +193,7 @@ def fetch_datacite_aws_credentials() -> tuple[str, str, str]:
         response = requests.get(url, auth=(account_id, password), timeout=30)
         response.raise_for_status()
     except requests.RequestException as e:
-        raise RuntimeError(f"Failed to fetch DataCite credentials: {e}") from e
+        raise RuntimeError("Failed to fetch DataCite credentials") from e
 
     try:
         data = response.json()

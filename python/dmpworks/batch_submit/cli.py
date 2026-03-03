@@ -1,7 +1,8 @@
+from collections.abc import Callable
+from functools import partial
 import inspect
 import logging
-from functools import partial
-from typing import Annotated, Callable, Dict, Literal, Optional
+from typing import Annotated, Literal
 
 from cyclopts import App, Parameter
 
@@ -38,7 +39,7 @@ DEFAULT_NUM_WORKERS = 32
 
 def run_job_pipeline(
     *,
-    task_definitions: Dict[str, Callable],
+    task_definitions: dict[str, Callable],
     task_order: list[str],
     start_task_name: str,
 ):
@@ -55,10 +56,10 @@ def run_job_pipeline(
     # Build list of tasks
     try:
         start_index = task_order.index(start_task_name)
-    except ValueError:
+    except ValueError as e:
         msg = f"Unknown start_task '{start_task_name}'"
-        logging.error(msg)
-        raise ValueError(msg)
+        logging.exception(msg)
+        raise ValueError(msg) from e
     task_names = task_order[start_index:]
 
     # Execute tasks
@@ -73,7 +74,7 @@ def run_job_pipeline(
         task_func = task_definitions[task_name]
         kwargs = {}
         sig = inspect.signature(task_func)
-        if "depends_on" in sig.parameters and len(job_ids):
+        if "depends_on" in sig.parameters and len(job_ids) > 0:
             kwargs["depends_on"] = [job_ids[-1]]
 
         # Call the task
@@ -201,7 +202,7 @@ def crossref_metadata_cmd(
         ),
     ],
     dataset_subset: DatasetSubset = None,
-    config: Optional[CrossrefMetadataTransformConfig] = None,
+    config: CrossrefMetadataTransformConfig | None = None,
     start_job: Annotated[
         Literal[*CROSSREF_METADATA_JOBS],
         Parameter(
@@ -301,7 +302,7 @@ def datacite_cmd(
         ),
     ],
     dataset_subset: DatasetSubset = None,
-    config: Optional[DataCiteTransformConfig] = None,
+    config: DataCiteTransformConfig | None = None,
     start_job: Annotated[
         Literal[*DATACITE_JOBS],
         Parameter(
@@ -399,7 +400,7 @@ def openalex_works_cmd(
         ),
     ],
     dataset_subset: DatasetSubset = None,
-    config: Optional[OpenAlexWorksTransformConfig] = None,
+    config: OpenAlexWorksTransformConfig | None = None,
     start_job: Annotated[
         Literal[*OPENALEX_WORKS_JOBS],
         Parameter(
@@ -591,7 +592,7 @@ def process_works_cmd(
             help="Max retries for failed chunks (for sync-works).",
         ),
     ] = 3,
-    sqlmesh_threads_config: Optional[SQLMeshThreadsConfig] = None,
+    sqlmesh_threads_config: SQLMeshThreadsConfig | None = None,
     start_job: Annotated[
         Literal[*PROCESS_WORKS_JOBS],
         Parameter(

@@ -1,13 +1,12 @@
 import logging
-from typing import Optional
 
 import pendulum
 from tqdm import tqdm
 
 from dmpworks.funders.parser import fetch_funded_dois, parse_award_text
 from dmpworks.model.dmp_model import Award, ExternalData
-from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
 from dmpworks.opensearch.dmp_search import yield_dmps
+from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
 
 log = logging.getLogger(__name__)
 
@@ -17,8 +16,17 @@ def enrich_dmps(
     client_config: OpenSearchClientConfig,
     page_size: int = 500,
     scroll_time: str = "360m",
-    email: Optional[str] = None,
+    email: str | None = None,
 ):
+    """Enrich DMPs with additional metadata from external sources.
+
+    Args:
+        index_name: The name of the DMPs index.
+        client_config: The OpenSearch client configuration.
+        page_size: The number of DMPs to process per batch.
+        scroll_time: The scroll time for the search context.
+        email: The email address to use for external API requests.
+    """
     client = make_opensearch_client(client_config)
     query = {
         "query": {
@@ -52,43 +60,45 @@ def enrich_dmps(
         }
     }
 
-    with tqdm(
-        total=0,
-        desc="Enrich DMPs in OpenSearch",
-        unit="doc",
-    ) as pbar:
-        with yield_dmps(
+    with (
+        tqdm(
+            total=0,
+            desc="Enrich DMPs in OpenSearch",
+            unit="doc",
+        ) as pbar,
+        yield_dmps(
             client,
             index_name,
             query,
             page_size=page_size,
             scroll_time=scroll_time,
-        ) as results:
-            pbar.total = results.total_dmps
+        ) as results,
+    ):
+        pbar.total = results.total_dmps
 
-            for dmp in results.dmps:
-                log.debug(f"Fetch additional metadata for DMP: {dmp.doi}")
-                awards = []
-                for fund in dmp.funding:
-                    # Parse Award IDs, which can be found in both funding_opportunity_id
-                    # and award_id
-                    award_ids = parse_award_text(fund.funder.ror, fund.funding_opportunity_id)
-                    award_ids.extend(parse_award_text(fund.funder.ror, fund.award_id))
-                    award_ids = set(award_ids)
+        for dmp in results.dmps:
+            log.debug(f"Fetch additional metadata for DMP: {dmp.doi}")
+            awards = []
+            for fund in dmp.funding:
+                # Parse Award IDs, which can be found in both funding_opportunity_id
+                # and award_id
+                award_ids = parse_award_text(fund.funder.ror, fund.funding_opportunity_id)
+                award_ids.extend(parse_award_text(fund.funder.ror, fund.award_id))
+                award_ids = set(award_ids)
 
-                    # Fetch additional data for each award ID
-                    for award_id in award_ids:
-                        dois = fetch_funded_dois(award_id, email=email)
-                        awards.append(Award(funder=fund.funder, award_id=award_id, funded_dois=dois))
+                # Fetch additional data for each award ID
+                for award_id in award_ids:
+                    dois = fetch_funded_dois(award_id, email=email)
+                    awards.append(Award(funder=fund.funder, award_id=award_id, funded_dois=dois))
 
-                log.debug(f"Save additional metadata for DMP: {dmp.doi}")
-                external_data = ExternalData(updated=pendulum.now(tz="UTC"), awards=awards).model_dump()
-                response = client.update(
-                    index=index_name,
-                    id=dmp.doi,
-                    body={"doc": {"external_data": external_data}},
-                )
-                result = response.get("result")
-                log.debug(f"Result of saving DMP metadata: {dmp.doi} {result}")
+            log.debug(f"Save additional metadata for DMP: {dmp.doi}")
+            external_data = ExternalData(updated=pendulum.now(tz="UTC"), awards=awards).model_dump()
+            response = client.update(
+                index=index_name,
+                id=dmp.doi,
+                body={"doc": {"external_data": external_data}},
+            )
+            result = response.get("result")
+            log.debug(f"Result of saving DMP metadata: {dmp.doi} {result}")
 
-                pbar.update(1)
+            pbar.update(1)

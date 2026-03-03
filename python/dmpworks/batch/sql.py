@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 import logging
 import os
 import pathlib
-from dataclasses import dataclass
 
 from cyclopts import App
 

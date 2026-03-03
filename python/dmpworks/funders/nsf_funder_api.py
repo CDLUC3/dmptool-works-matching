@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional
 
-import requests
 from fold_to_ascii import fold
 from rapidfuzz import fuzz
+import requests
 
-from dmpworks.utils import retry_session
 from dmpworks.transform.simdjson_transforms import extract_doi
+from dmpworks.utils import retry_session
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ def nsf_fetch_award_publication_dois(
     award_id: str,
     crossref_threshold: float = 95,
     datacite_threshold: float = 99,
-    email: Optional[str] = None,
+    email: str | None = None,
 ) -> list[dict]:
     """Fetch publications associated with an NSF award ID.
 
@@ -72,8 +71,8 @@ def nsf_fetch_award_publication_dois(
 
         return references
 
-    except requests.exceptions.RequestException as e:
-        log.error(f"nsf_fetch_award_publication_dois: an error occurred while fetching data: {e}")
+    except requests.exceptions.RequestException:
+        log.exception("nsf_fetch_award_publication_dois: an error occurred while fetching data")
         raise
 
 
@@ -81,7 +80,7 @@ def find_crossref_doi(
     title: str,
     journal: str,
     threshold: float = 95,
-    email: Optional[str] = None,
+    email: str | None = None,
 ) -> str | None:
     """Find a matching Crossref DOI for a title and journal using fuzzy similarity.
 
@@ -119,8 +118,8 @@ def find_crossref_doi(
                 return extract_doi(item.get("DOI"))
 
         return None
-    except requests.exceptions.RequestException as e:
-        log.error(f"find_crossref_doi: an error occurred while fetching data: {e}")
+    except requests.exceptions.RequestException:
+        log.exception("find_crossref_doi: an error occurred while fetching data")
         raise
 
 
@@ -168,8 +167,8 @@ def find_datacite_doi(title: str, threshold: float = 95) -> str | None:
                 return extract_doi(doi)
 
         return None
-    except requests.exceptions.RequestException as e:
-        log.error(f"find_datacite_doi: an error occurred while fetching data: {e}")
+    except requests.exceptions.RequestException:
+        log.exception("find_datacite_doi: an error occurred while fetching data")
         raise
 
 
@@ -190,10 +189,9 @@ def preprocess_text(text) -> str:
     text = re.sub(
         r"[^\w\s]", "", text
     )  # Remove punctuation: replaces any character that is not a word or whitespace with ""
-    text = re.sub(
+    return re.sub(
         r"\s+", " ", text
     ).strip()  # Normalise spaces by replacing whitespace character with one or more occurrences with a single space
-    return text
 
 
 def parse_reference(reference: str) -> dict:
@@ -231,13 +229,13 @@ def parse_reference(reference: str) -> dict:
         if title is not None and doi is not None:
             break
 
-    return dict(
-        doi=doi,
-        journal=journal,
-        year=year,
-        title=title,
-        reference=reference,
-    )
+    return {
+        "doi": doi,
+        "journal": journal,
+        "year": year,
+        "title": title,
+        "reference": reference,
+    }
 
 
 def nsf_fetch_org_id(award_id: str):
@@ -266,8 +264,8 @@ def nsf_fetch_org_id(award_id: str):
                 org_id = div_abbr if div_abbr != "" else None
                 break
 
-    except requests.exceptions.RequestException as e:
-        log.error(f"nsf_fetch_org_id: an error occurred while fetching data: {e}")
+    except requests.exceptions.RequestException:
+        log.exception("nsf_fetch_org_id: an error occurred while fetching data")
         raise
 
     return org_id

@@ -1,9 +1,8 @@
 import logging
 import shutil
-from typing import Optional
 
-import pymysql.cursors
 from cyclopts import App
+import pymysql.cursors
 
 from dmpworks.batch.utils import (
     download_file_from_s3,
@@ -14,7 +13,7 @@ from dmpworks.batch.utils import (
 )
 from dmpworks.cli_utils import DMPSubset, LogLevel
 from dmpworks.dataset_subset import load_dois, load_institutions
-from dmpworks.dmsp.related_works import merge_related_works, MySQLConfig
+from dmpworks.dmsp.related_works import MySQLConfig, merge_related_works
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
@@ -38,8 +37,8 @@ def sync_works_cmd(
     bucket_name: str,
     run_id: str,
     index_name: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
-    sync_config: Optional[OpenSearchSyncConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
+    sync_config: OpenSearchSyncConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Sync exported works in Parquet format with OpenSearch.
@@ -86,7 +85,7 @@ def sync_works_cmd(
 @app.command(name="enrich-dmps")
 def enrich_dmps_cmd(
     index_name: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Enrich dmps in the OpenSearch DMPs index.
@@ -118,7 +117,7 @@ def dmp_works_search_cmd(
     include_named_queries_score: bool = True,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     dmp_subset: DMPSubset = None,
     start_date: Date = None,
     end_date: Date = None,

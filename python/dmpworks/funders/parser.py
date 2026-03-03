@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Type
 
 from dmpworks.funders.award_id import AwardID
 from dmpworks.funders.nih_award_id import NIHAwardID
@@ -24,28 +23,27 @@ def parse_award_text(funder_id: str, text: str) -> list[AwardID]:
         list[AwardID]: A list of parsed AwardID objects.
     """
     award_ids = set()
-    parser_index: dict[str, Type[AwardID]] = {}
+    parser_index: dict[str, type[AwardID]] = {}
     for id_type in [NIHAwardID, NSFAwardID]:
         for ror_id in id_type.parent_ror_ids:
             parser_index[ror_id] = id_type
     parser = parser_index.get(funder_id)
-    if parser:
-        if text is not None:
-            # Handle cases where multiple awards specified, for example:
-            # U19 AI111143; U19 AI111143
-            # Lead 2126792, 2126793, 2126794, 2126795, 2126796, 2126797, 2126798, 2126799
-            # Then parse each part
-            parts = re.split(r"[;,]", text)
-            for part in parts:
-                award_id = parser.parse(part)
-                if award_id is not None:
-                    award_ids.add(award_id)
+    if parser and text is not None:
+        # Handle cases where multiple awards specified, for example:
+        # U19 AI111143; U19 AI111143
+        # Lead 2126792, 2126793, 2126794, 2126795, 2126796, 2126797, 2126798, 2126799
+        # Then parse each part
+        parts = re.split(r"[;,]", text)
+        for part in parts:
+            award_id = parser.parse(part)
+            if award_id is not None:
+                award_ids.add(award_id)
     return list(award_ids)
 
 
 def fetch_funded_dois(
     award_id: AwardID,
-    email: Optional[str] = None,
+    email: str | None = None,
 ) -> list[str]:
     """Fetch DOIs of works funded by the given award.
 
@@ -70,7 +68,7 @@ def fetch_funded_dois(
     # We only need to get publications for the first award, as all related
     # awards point to the same set of publications
     if isinstance(award_id, NIHAwardID):
-        log.debug(f"NIHAwardID fetch works via application IDs")
+        log.debug("NIHAwardID fetch works via application IDs")
         awards = [award_id]
         awards.extend(award_id.related_awards)
         for award in awards:

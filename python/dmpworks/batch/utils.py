@@ -1,9 +1,9 @@
 import logging
 import pathlib
-from typing import Optional
 from urllib.parse import urlparse
 
 import boto3
+from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
 from dmpworks.utils import run_process
@@ -128,7 +128,7 @@ def parse_s3_uri(s3_uri: str) -> tuple[str, str]:
 def s3_uri_has_files(
     s3_uri: str,
     *,
-    s3_client: Optional[boto3.client] = None,
+    s3_client: BaseClient | None = None,
 ) -> bool:
     """Check if an S3 URI prefix contains any files.
 

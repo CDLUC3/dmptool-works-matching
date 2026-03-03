@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import boto3
 import pendulum
@@ -45,7 +45,7 @@ def get_aws_batch_client():
     """
     global _aws_batch_client
     if _aws_batch_client is None:
-        _aws_batch_client = boto3.client('batch')
+        _aws_batch_client = boto3.client("batch")
     return _aws_batch_client
 
 
@@ -137,11 +137,11 @@ def submit_job(
     run_id: str,
     job_queue: str,
     job_definition: str,
-    vcpus: Optional[int] = None,
-    memory: Optional[int] = None,
-    command: Optional[str] = None,
-    environment: Optional[list[EnvVarDict]] = None,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    vcpus: int | None = None,
+    memory: int | None = None,
+    command: str | None = None,
+    environment: list[EnvVarDict] | None = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submit a job to AWS Batch.
 
@@ -183,7 +183,7 @@ def submit_job(
         dependsOn=depends_on,
         containerOverrides=container_overrides,
     )
-    job_id = response['jobId']
+    job_id = response["jobId"]
     logging.info(f"Submitted job {full_job_name} with ID: {job_id}")
 
     return job_id
@@ -210,7 +210,7 @@ def dataset_subset_job(
     dataset_subset: DatasetSubset,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the create dataset subset job to AWS Batch.
 
@@ -235,7 +235,7 @@ def dataset_subset_job(
         run_id=run_id,
         job_queue=standard_job_queue(env),
         job_definition=standard_job_definition(env),
-        command=f'dmpworks aws-batch $DATASET dataset-subset $BUCKET_NAME $RUN_ID',
+        command="dmpworks aws-batch $DATASET dataset-subset $BUCKET_NAME $RUN_ID",
         environment=make_env(
             {
                 "RUN_ID": run_id,
@@ -346,7 +346,7 @@ def openalex_works_transform_job(
     config: OpenAlexWorksTransformConfig,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the OpenAlex works data transform job to AWS Batch.
 
@@ -441,7 +441,7 @@ def crossref_metadata_transform_job(
     config: CrossrefMetadataTransformConfig,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the Crossref metadata transform job to AWS Batch.
 
@@ -533,7 +533,7 @@ def datacite_transform_job(
     config: DataCiteTransformConfig,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the DataCite data transform job to AWS Batch.
 
@@ -591,7 +591,7 @@ def submit_sqlmesh_job(
     memory: int = VERY_LARGE_MEMORY,
     duckdb_memory_limit: str = "225GB",
     sqlmesh_threads_config: SQLMeshThreadsConfig,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the main SQLMesh transformation job to AWS Batch.
 
@@ -690,7 +690,7 @@ def submit_sync_works_job(
     max_retries: int = 3,
     vcpus: int = MEDIUM_VCPUS,
     memory: int = MEDIUM_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the OpenSearch works-index sync job to AWS Batch.
 
@@ -756,7 +756,7 @@ def submit_sync_dmps_job(
     chunk_size: int = 1000,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the OpenSearch dmps-index sync job to AWS Batch.
 
@@ -814,7 +814,7 @@ def submit_enrich_dmps_job(
     service: str = "es",
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the OpenSearch DMPs enrichment job to AWS Batch.
 
@@ -873,7 +873,7 @@ def submit_dmp_works_search_job(
     dmp_subset: DMPSubset,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the OpenSearch DMP-to-Works search job to AWS Batch.
 
@@ -935,7 +935,7 @@ def submit_merge_related_works_job(
     dmps_run_id: str,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
+    depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Creates a job to merge related works.
 

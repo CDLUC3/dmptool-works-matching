@@ -1,11 +1,11 @@
+from collections.abc import Generator
+from contextlib import contextmanager
+from dataclasses import dataclass
 import logging
 import pathlib
 import shutil
-from contextlib import contextmanager
-from dataclasses import dataclass
-from typing import Any, Generator
+from typing import Any
 
-from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.batch.utils import (
     clean_s3_prefix,
     download_file_from_s3,
@@ -15,6 +15,7 @@ from dmpworks.batch.utils import (
     upload_files_to_s3,
 )
 from dmpworks.cli_utils import DatasetSubset
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.model.common import Institution
 
 log = logging.getLogger(__name__)

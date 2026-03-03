@@ -1,12 +1,11 @@
 import logging
 import os
-from typing import Optional
 
 from cyclopts import App
 
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
 from dmpworks.batch.utils import s3_uri
-from dmpworks.cli_utils import DatasetSubset, DataCiteTransformConfig
+from dmpworks.cli_utils import DataCiteTransformConfig, DatasetSubset
 from dmpworks.transform.datacite import transform_datacite
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -89,7 +88,7 @@ def transform_cmd(
     run_id: str,
     use_subset: bool = False,
     *,
-    config: Optional[DataCiteTransformConfig] = None,
+    config: DataCiteTransformConfig | None = None,
 ):
     """Download DataCite from DMP Tool S3 bucket, transform to Parquet, and upload the result.
 

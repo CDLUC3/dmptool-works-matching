@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
-from typing import List, Optional
+import logging
 
 import requests
 
-from dmpworks.utils import retry_session, to_batches
 from dmpworks.transform.simdjson_transforms import extract_doi
+from dmpworks.utils import retry_session, to_batches
 
 log = logging.getLogger(__name__)
+
+PUBMED_ID_CONVERTER_MAX_IDS = 200  # The maximum number of IDs that can be supplied to the PubMed ID converter at once
 
 
 @dataclass
@@ -21,20 +22,20 @@ class NIHProjectDetails:
         project_num: The project number.
     """
 
-    appl_id: Optional[str] = None
-    project_num: Optional[str] = None
+    appl_id: str | None = None
+    project_num: str | None = None
 
 
 def nih_core_project_to_appl_ids(
-    core_project_num: Optional[str] = None,
-    appl_type_code: Optional[str] = None,
-    activity_code: Optional[str] = None,
-    ic_code: Optional[str] = None,
-    serial_num: Optional[str] = None,
-    support_year: Optional[str] = None,
-    full_support_year: Optional[str] = None,
-    suffix_code: Optional[str] = None,
-) -> List[NIHProjectDetails]:
+    core_project_num: str | None = None,
+    appl_type_code: str | None = None,
+    activity_code: str | None = None,
+    ic_code: str | None = None,
+    serial_num: str | None = None,
+    support_year: str | None = None,
+    full_support_year: str | None = None,
+    suffix_code: str | None = None,
+) -> list[NIHProjectDetails]:
     """Get the NIH Application IDs associated with an NIH Core Project Number.
 
     Args:
@@ -92,19 +93,19 @@ def nih_core_project_to_appl_ids(
             for result in results
         ]
 
-    except requests.exceptions.RequestException as e:
-        log.error(f"nih_fetch_award_publication_dois: an error occurred while fetching data: {e}")
+    except requests.exceptions.RequestException:
+        log.exception("nih_fetch_award_publication_dois: an error occurred while fetching data")
         raise
 
 
 def nih_fetch_award_publication_dois(
     appl_id: str,
-    pubmed_api_email: Optional[str] = None,
+    pubmed_api_email: str | None = None,
 ) -> list[dict]:
     """Fetch the publications associated with an NIH award.
 
     Args:
-        appl_id: The NIH Application ID, a 7‑digit numeric identifier, .e.g 10438547.
+        appl_id: The NIH Application ID, a 7-digit numeric identifier, .e.g 10438547.
         pubmed_api_email: An email address to use when calling the PubMed API.
 
     Returns:
@@ -141,8 +142,8 @@ def nih_fetch_award_publication_dois(
             outputs.extend(pubmed_ids_to_dois(pmc_ids, "pmcid", email=pubmed_api_email))
         return outputs
 
-    except requests.exceptions.RequestException as e:
-        log.error(f"nih_fetch_award_publication_dois: an error occurred while fetching data: {e}")
+    except requests.exceptions.RequestException:
+        log.exception("nih_fetch_award_publication_dois: an error occurred while fetching data")
         raise
 
 
@@ -151,9 +152,9 @@ def pubmed_ids_to_dois(
     idtype: str,
     versions: str | None = "no",
     tool: str = "dmptool-workflow",
-    email: str = None,
+    email: str | None = None,
 ) -> list[dict]:
-    """Call the PubMed ID converter API to convert PubMed IDs and PMC IDs to DOIs: https://pmc.ncbi.nlm.nih.gov/tools/id-converter-api/
+    """Call the PubMed ID converter API to convert PubMed IDs and PMC IDs to DOIs: https://pmc.ncbi.nlm.nih.gov/tools/id-converter-api/.
 
     Args:
         ids: A list of PubMed IDs or PMC IDs.
@@ -176,7 +177,7 @@ def _pubmed_ids_to_dois(
     idtype: str,
     versions: str | None = "no",
     tool="dmptool-match-workflows",
-    email: Optional[str] = None,
+    email: str | None = None,
 ) -> list[dict]:
     """Internal function to convert a batch of PubMed IDs to DOIs.
 
@@ -195,8 +196,8 @@ def _pubmed_ids_to_dois(
         requests.exceptions.RequestException: If the API request fails.
     """
     # Validate parameters
-    if len(ids) > 200:
-        raise ValueError(f"pubmed_id_converter: a maximum of 200 IDs can be supplied at once")
+    if len(ids) > PUBMED_ID_CONVERTER_MAX_IDS:
+        raise ValueError("pubmed_id_converter: a maximum of 200 IDs can be supplied at once")
 
     if idtype not in {"pmcid", "pmid", "mid", "doi"}:
         raise ValueError(
@@ -232,9 +233,9 @@ def _pubmed_ids_to_dois(
             pmcid = str(record.get("pmcid"))
             pmid = record.get("pmid")
             doi = extract_doi(record.get("doi"))
-            outputs.append(dict(pmcid=pmcid, pmid=pmid, doi=doi))
+            outputs.append({"pmcid": pmcid, "pmid": pmid, "doi": doi})
         return outputs
 
-    except requests.exceptions.RequestException as e:
-        log.error(f"pubmed_id_converter: an error occurred while fetching data: {e}")
+    except requests.exceptions.RequestException:
+        log.exception("pubmed_id_converter: an error occurred while fetching data")
         raise

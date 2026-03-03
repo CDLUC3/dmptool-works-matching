@@ -1,8 +1,8 @@
+from collections.abc import Generator
 import gzip
 import logging
-import pathlib
 from multiprocessing.util import log_to_stderr
-from typing import Generator
+import pathlib
 
 import simdjson
 
@@ -48,9 +48,10 @@ def yield_objects_from_jsonl(file_path: pathlib.Path) -> Generator[simdjson.Obje
                 row = parser.parse(line)
                 yield row
             except ValueError:
-                log.error(f"yield_jsonl: error parsing line {line_num} in {file_path}")
+                log.exception(f"yield_jsonl: error parsing line {line_num} in {file_path}")
                 continue
             finally:
+                # Clear original reference for simdjson parser
                 row = None
 
 

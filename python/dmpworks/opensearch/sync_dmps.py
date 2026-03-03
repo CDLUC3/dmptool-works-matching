@@ -1,16 +1,16 @@
-import logging
 from contextlib import closing
+import logging
 
+from opensearchpy.helpers import streaming_bulk
 import pendulum
+from pydantic import ValidationError
 import pymysql
 import pymysql.cursors
-from opensearchpy.helpers import streaming_bulk
-from pydantic import ValidationError
 from tqdm import tqdm
 
 from dmpworks.cli_utils import MySQLConfig
 from dmpworks.opensearch.index import create_index
-from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig
+from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
 from dmpworks.transform.dmp import transform_dmp
 from dmpworks.utils import timed
 
@@ -159,7 +159,14 @@ def sync_dmps(
     opensearch_config: OpenSearchClientConfig = None,
     chunk_size: int = 1000,
 ):
-    """Syncs the DMPs from the MySQL database to OpenSearch"""
+    """Syncs the DMPs from the MySQL database to OpenSearch.
+
+    Args:
+        index_name: The name of the DMPs index.
+        mysql_config: The MySQL configuration.
+        opensearch_config: The OpenSearch client configuration.
+        chunk_size: The number of DMPs to process per batch.
+    """
     if opensearch_config is None:
         opensearch_config = OpenSearchClientConfig()
 
@@ -214,6 +221,14 @@ def sync_dmps(
 
 
 def count_dmps(conn):
+    """Count the number of DMPs in the database.
+
+    Args:
+        conn: The MySQL connection.
+
+    Returns:
+        int: The number of DMPs.
+    """
     with conn.cursor() as count_cursor:
         count_cursor.execute("SELECT COUNT(*) AS total FROM plans WHERE dmpId IS NOT NULL;")
         result = count_cursor.fetchone()
@@ -221,13 +236,23 @@ def count_dmps(conn):
 
 
 def generate_actions(*, conn, dmps_index: str, on_error: callable):
+    """Generate OpenSearch bulk actions from MySQL rows.
+
+    Args:
+        conn: The MySQL connection.
+        dmps_index: The name of the DMPs index.
+        on_error: A callback function to call when an error occurs.
+
+    Yields:
+        dict: An OpenSearch bulk action.
+    """
     with conn.cursor() as stream_cursor:
         stream_cursor.execute(DMPS_QUERY)
         for row in stream_cursor:
             try:
                 dmp = transform_dmp(row)
                 if not dmp.doi:
-                    raise ValueError(f"Missing or invalid DOI")
+                    raise ValueError("Missing or invalid DOI")
                 if dmp.project_start is not None and dmp.project_start <= pendulum.date(1900, 1, 1):
                     raise ValueError(
                         f"Project start date less than 1900-01-01 for DMP: doi={dmp.doi}, project_start={dmp.project_start}"
@@ -240,7 +265,7 @@ def generate_actions(*, conn, dmps_index: str, on_error: callable):
                     "doc": dmp.model_dump(exclude={"external_data"}),
                     "doc_as_upsert": True,
                 }
-            except (ValidationError, ValueError, TypeError) as e:
+            except (ValidationError, ValueError, TypeError):
                 dmp_doi = row.get("doi") or "UNKNOWN DOI"
-                log.warning(f"Skipping invalid DMP: {dmp_doi}. Reason: {e}")
+                log.exception(f"Skipping invalid DMP: {dmp_doi}")
                 on_error()

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Optional, Self, TypeVar
+import logging
+from typing import ClassVar, Self, TypeVar
 
 from dmpworks.utils import import_from_path
 
@@ -23,37 +23,43 @@ class AwardID(ABC):
         related_awards: A list of related AwardID objects.
     """
 
-    parent_ror_ids: list = []  # The funder ROR IDs
+    parent_ror_ids: ClassVar[list[str]] = []  # The funder ROR IDs
 
     def __init__(self, text: str, fields: list[str]):
+        """Initialize the AwardID.
+
+        Args:
+            text: The original text of the award ID.
+            fields: The fields that make up the award ID.
+        """
         self.text: str = text
         self.fields: list[str] = fields
         self.related_awards: list[Self] = []
 
     @abstractmethod
     def fetch_additional_metadata(self):
-        """Fetches additional metadata associated with the award ID"""
+        """Fetches additional metadata associated with the award ID."""
         raise NotImplementedError("Please implement")
 
     @abstractmethod
     def generate_variants(self) -> list[str]:
-        """Generates variants of the funder ID"""
+        """Generates variants of the funder ID."""
         raise NotImplementedError("Please implement")
 
     @staticmethod
     @abstractmethod
-    def parse(text: Optional[str]) -> Optional[T]:
-        """Parses a funder ID"""
+    def parse(text: str | None) -> T | None:
+        """Parses a funder ID."""
         raise NotImplementedError("Please implement")
 
     @abstractmethod
     def identifier_string(self) -> str:
-        """The canonical identifier as a string"""
+        """The canonical identifier as a string."""
         raise NotImplementedError("Please implement")
 
     @abstractmethod
-    def award_url(self) -> Optional[str]:
-        """Returns the URL for the award"""
+    def award_url(self) -> str | None:
+        """Returns the URL for the award."""
         raise NotImplementedError("Please implement")
 
     @cached_property
@@ -89,20 +95,34 @@ class AwardID(ABC):
         return parts
 
     def __eq__(self, other):
+        """Check equality with another object.
+
+        Args:
+            other: The object to compare with.
+
+        Returns:
+            bool: True if equal, False otherwise.
+        """
         if not isinstance(other, self.__class__):
             return False
 
-        for field in self.fields:
-            if getattr(self, field) != getattr(other, field):
-                return False
-
-        return True
+        return all(getattr(self, field) == getattr(other, field) for field in self.fields)
 
     def __hash__(self):
+        """Calculate the hash of the object.
+
+        Returns:
+            int: The hash value.
+        """
         values = [getattr(self, field) for field in self.fields]
         return hash(tuple(values))
 
     def __repr__(self):
+        """Return a string representation of the object.
+
+        Returns:
+            str: The string representation.
+        """
         class_name = self.__class__.__name__
         attrs = ", ".join(f"{field}={getattr(self, field)!r}" for field in self.fields)
         return f"{class_name}({attrs})"

@@ -1,13 +1,12 @@
 import re
-from typing import Any, Optional
+from typing import Any
 
 import pendulum
-import simdjson
-from dmpworks.rust import parse_name, ParsedName, strip_markup
 from pendulum.exceptions import ParserError
+import simdjson
 
 
-def extract_doi(text: Optional[str]) -> Optional[str]:
+def extract_doi(text: str | None) -> str | None:
     """Extract the first DOI found in a string using a regular expression.
 
     The match is case-insensitive and follows the standard DOI pattern
@@ -30,7 +29,7 @@ def extract_doi(text: Optional[str]) -> Optional[str]:
     return None
 
 
-def extract_ror(text: Optional[str]) -> Optional[str]:
+def extract_ror(text: str | None) -> str | None:
     """Extract first ROR ID from string.
 
     Args:
@@ -49,7 +48,7 @@ def extract_ror(text: Optional[str]) -> Optional[str]:
     return None
 
 
-def clean_string(value: Optional[str], lower: bool = False) -> Optional[str]:
+def clean_string(value: str | None, lower: bool = False) -> str | None:
     """Normalize a string by lowercasing and trimming surrounding whitespace.
 
     Args:
@@ -69,7 +68,7 @@ def clean_string(value: Optional[str], lower: bool = False) -> Optional[str]:
     return text.lower() if lower else text
 
 
-def normalise_identifier(identifier: Optional[str]) -> Optional[str]:
+def normalise_identifier(identifier: str | None) -> str | None:
     """Normalize an identifier.
 
     Removes any embedded HTTP(S) URL prefixes and applies standard string cleaning.
@@ -97,7 +96,7 @@ def normalise_identifier(identifier: Optional[str]) -> Optional[str]:
     return clean_string(value, lower=True)
 
 
-def parse_iso8601_calendar_date(date_str: Optional[str]) -> Optional[pendulum.Date]:
+def parse_iso8601_calendar_date(date_str: str | None) -> pendulum.Date | None:
     """Parse an ISO 8601 calendar date string into a `pendulum.Date`.
 
     The input is parsed using `pendulum.parse`, and the date component
@@ -118,7 +117,7 @@ def parse_iso8601_calendar_date(date_str: Optional[str]) -> Optional[pendulum.Da
         return None
 
 
-def parse_iso8601_datetime(datetime_str: Optional[str]) -> Optional[pendulum.DateTime]:
+def parse_iso8601_datetime(datetime_str: str | None) -> pendulum.DateTime | None:
     """Parse an ISO 8601 datetime string into a UTC-normalized, naive `pendulum.DateTime`.
 
     The input is parsed using `pendulum.parse`, converted to UTC, and then
@@ -140,7 +139,7 @@ def parse_iso8601_datetime(datetime_str: Optional[str]) -> Optional[pendulum.Dat
         return None
 
 
-def extract_orcid(text: Optional[str]) -> Optional[str]:
+def extract_orcid(text: str | None) -> str | None:
     """Extract an ORCID ID from a string using a regex.
 
     Args:
@@ -159,7 +158,7 @@ def extract_orcid(text: Optional[str]) -> Optional[str]:
     return None
 
 
-def to_optional_string(value: Any) -> Optional[str]:
+def to_optional_string(value: Any) -> str | None:
     """Convert a value expected to be a string or None into a string.
 
     simdjson may parse some string values as other types (e.g., integers) and
@@ -176,7 +175,7 @@ def to_optional_string(value: Any) -> Optional[str]:
     return str(value)
 
 
-def replace_with_null(value: Optional[str], values: set[str]) -> Optional[str]:
+def replace_with_null(value: str | None, values: set[str]) -> str | None:
     """Strip whitespace and return None if the lowercased value is in `values`.
 
     Args:
@@ -209,7 +208,6 @@ def ensure_array_of_objects(obj: object) -> simdjson.Array | list[simdjson.Objec
     """
     if isinstance(obj, simdjson.Object):
         return [obj]
-    elif isinstance(obj, simdjson.Array):
+    if isinstance(obj, simdjson.Array):
         return obj
-    else:
-        return []
+    return []

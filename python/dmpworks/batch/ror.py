@@ -3,10 +3,9 @@ import logging
 import pathlib
 import shutil
 import zipfile
-from typing import Optional
 
-import pooch
 from cyclopts import App
+import pooch
 
 from dmpworks.batch.tasks import download_source_task
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -29,7 +28,7 @@ def extract_ror(file_path: pathlib.Path) -> pathlib.Path:
     Raises:
         FileNotFoundError: If the ROR JSON file is not found in the archive.
     """
-    with zipfile.ZipFile(file_path, 'r') as file:
+    with zipfile.ZipFile(file_path, "r") as file:
         # Find ROR v2 JSON file in ZIP file
         log.info(f"Files in archive: {file_path}")
         json_file_name = None
@@ -41,7 +40,7 @@ def extract_ror(file_path: pathlib.Path) -> pathlib.Path:
                 break
 
         if json_file_name is None:
-            msg = f"Could not find ROR JSON file"
+            msg = "Could not find ROR JSON file"
             log.error(msg)
             raise FileNotFoundError(msg)
 
@@ -59,13 +58,12 @@ def gzip_file(in_file: pathlib.Path, out_file: pathlib.Path):
         in_file: Path to the input file.
         out_file: Path to the output gzip file.
     """
-    with open(in_file, "rb") as f_in:
-        with gzip.open(out_file, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
+    with in_file.open("rb") as f_in, gzip.open(out_file, "wb") as f_out:
+        shutil.copyfileobj(f_in, f_out)
 
 
 @app.command(name="download")
-def download_cmd(bucket_name: str, run_id: str, download_url: str, hash: Optional[str] = None):
+def download_cmd(bucket_name: str, run_id: str, download_url: str, hash: str | None = None):
     """Download ROR from the Zenodo and upload it to the DMP Tool S3 bucket.
 
     Args:

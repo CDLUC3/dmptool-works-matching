@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional
+from typing import ClassVar
 
 from dmpworks.funders.award_id import AwardID
 from dmpworks.funders.nsf_funder_api import nsf_fetch_org_id
@@ -19,9 +19,9 @@ class NSFAwardID(AwardID):
         award_id: The 7-digit award ID.
     """
 
-    parent_ror_ids: set = {"021nxhr62"}
+    parent_ror_ids: ClassVar[set[str]] = {"021nxhr62"}
 
-    def __init__(self, text: str, org_id: Optional[str] = None, award_id: Optional[str] = None):
+    def __init__(self, text: str, org_id: str | None = None, award_id: str | None = None):
         """Construct an NSF Award ID.
 
         Args:
@@ -60,25 +60,25 @@ class NSFAwardID(AwardID):
             self.org_id = nsf_fetch_org_id(self.award_id)
 
     def identifier_string(self) -> str:
-        """The canonical identifier as a string"""
+        """The canonical identifier as a string."""
         if self.org_id and self.award_id:
             return f"{self.org_id}-{self.award_id}"
 
         return str(self.award_id)
 
-    def award_url(self) -> Optional[str]:
-        """Returns the URL for the award"""
+    def award_url(self) -> str | None:
+        """Returns the URL for the award."""
         if self.award_id is not None:
             return f"https://www.nsf.gov/awardsearch/showAward?AWD_ID={self.award_id}&HistoricalAwards=false"
         return None
 
     @staticmethod
-    def parse(text: Optional[str]) -> Optional[NSFAwardID]:
-        """Parses a funder ID"""
+    def parse(text: str | None) -> NSFAwardID | None:
+        """Parses a funder ID."""
         return parse_nsf_award_id(text)
 
 
-def parse_nsf_award_id(text: Optional[str]) -> Optional[NSFAwardID]:
+def parse_nsf_award_id(text: str | None) -> NSFAwardID | None:
     """Parse an NSF award ID string into an NSFAwardID object.
 
     Args:

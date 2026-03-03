@@ -36,7 +36,7 @@ dev = [
     "black>=25,<26", # code formatting
     "maturin>=1.0,<2.0", # Build system
     "vcrpy>=7,<8", # testing
-    "ruff>=0.11.13,<1" # docstring checking
+    "ruff>=0.11.13,<1" # linting
 ]
 
 [project.scripts]
@@ -65,7 +65,54 @@ log_cli = true
 log_cli_level = "WARNING"
 
 [tool.ruff]
-select = ["D"]
+line-length = 120
+target-version = "py312"
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint]
+select = [
+    "ARG", # flake8-unused-arguments: Detects unused function arguments.
+    "B", # flake8-bugbear: Finds likely bugs and design problems in Python code.
+    "C4", # flake8-comprehensions: Suggests more idiomatic and efficient comprehensions.
+    "D", # pydocstyle: Enforces conventions for Python docstrings.
+    "E", # pycodestyle (errors): Detects PEP 8 style errors.
+    "F", # Pyflakes: Detects unused imports, undefined names, and other logical issues.
+    "I", # isort: Ensures imports are correctly sorted and grouped.
+    "N", # pep8-naming: Enforces naming conventions for variables, functions, classes, and constants.
+    "PERF", # Perflint: Identifies performance anti-patterns and suggests faster alternatives.
+    "PL", # Pylint: Comprehensive checks for code quality, refactoring, and logical errors.
+    "Q", # flake8-quotes: Enforces consistent quote style for strings.
+    "RET", # flake8-return: Improves consistency of return statements.
+    "RUF", # Ruff-specific rules: Additional lint rules implemented directly in Ruff.
+    "S", # flake8-bandit: Detects common security issues and potential vulnerabilities.
+    "SIM", # flake8-simplify: Suggests code simplifications and more idiomatic constructs.
+    "UP", # pyupgrade: Rewrites code to use modern Python syntax and features.
+    "PTH", # pathlib usage
+    "TCH", # typing imports
+    "TRY", # exception handling
+]
+ignore = [
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+    "E501", # Line too long
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments
+    "PLR0915", # Too many statements
+    "PLW0603", # Using the global statement,
+    "TC001",
+    "TC002",
+    "TC003",
+    "TRY003"
+]
+
+[tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"
+multiline-quotes = "double"
+docstring-quotes = "double"
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true

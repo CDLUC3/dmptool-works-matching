@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-import pathlib
 from dataclasses import dataclass
-from typing import Annotated, Literal, Optional
+import pathlib
+from typing import Annotated, Literal
 
+from cyclopts import Parameter, validators
 import pendulum
 import pendulum.parsing
-from cyclopts import Parameter, validators
 
 DEFAULT_DUCKDB_THREADS = 32
 DEFAULT_DUCKDB_RELATIONS_DATACITE_THREADS = 16
 
 
-def validate_date_str(type_, value):
+def validate_date_str(type_, value):  # noqa: ARG001
     """Validate that a string is in YYYY-MM-DD format.
 
     Args:
@@ -24,8 +24,8 @@ def validate_date_str(type_, value):
     """
     try:
         pendulum.from_format(value, "YYYY-MM-DD")
-    except pendulum.parsing.exceptions.ParserError:
-        raise ValueError(f"Invalid date: '{value}'. Must be in YYYY-MM-DD format.")
+    except pendulum.parsing.exceptions.ParserError as e:
+        raise ValueError(f"Invalid date: '{value}'. Must be in YYYY-MM-DD format.") from e
 
 
 Directory = Annotated[
@@ -91,14 +91,14 @@ class DatasetSubset:
         ),
     ] = False
     institutions_s3_path: Annotated[
-        Optional[str],
+        str | None,
         Parameter(
             env_var="DATASET_SUBSET_INSTITUTIONS_S3_PATH",
             help="S3 path (excluding bucket URI) to a list of ROR IDs and institution names. Works authored by researchers from these institutions will be included.",
         ),
     ] = None
     dois_s3_path: Annotated[
-        Optional[str],
+        str | None,
         Parameter(
             env_var="DATASET_SUBSET_DOIS_S3_PATH",
             help="S3 path (excluding bucket URI) to a specific list of Work DOIs to include in the subset.",
@@ -124,14 +124,14 @@ class DMPSubset:
         ),
     ] = False
     institutions_s3_path: Annotated[
-        Optional[str],
+        str | None,
         Parameter(
             env_var="DMP_SUBSET_INSTITUTIONS_S3_PATH",
             help="S3 path (excluding bucket URI) to a list of ROR IDs and institution names. DMPs created by researchers from these institutions will be included.",
         ),
     ] = None
     dois_s3_path: Annotated[
-        Optional[str],
+        str | None,
         Parameter(
             env_var="DMP_SUBSET_DOIS_S3_PATH",
             help="S3 path (excluding bucket URI) to a specific list of DMP DOIs to include in the subset.",

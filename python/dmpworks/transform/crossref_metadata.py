@@ -1,11 +1,10 @@
 import logging
 import pathlib
-from typing import Optional
 
 import pyarrow as pa
 import simdjson
-from dmpworks.rust import strip_markup
 
+from dmpworks.rust import strip_markup
 from dmpworks.transform.pipeline import process_files
 from dmpworks.transform.simdjson_transforms import (
     clean_string,
@@ -56,7 +55,7 @@ CROSSREF_METADATA_SCHEMA = pa.schema(
 )
 
 
-def parse_crossref_metadata_record(obj: simdjson.Object) -> Optional[dict]:
+def parse_crossref_metadata_record(obj: simdjson.Object) -> dict | None:
     """Parse a Crossref Metadata record from a simdjson object.
 
     Args:
@@ -76,17 +75,17 @@ def parse_crossref_metadata_record(obj: simdjson.Object) -> Optional[dict]:
     funders = parse_funders(obj.get("funder", []))
     relations = parse_relations(obj.get("relation", {}))
 
-    return dict(
-        doi=doi,
-        title=title,
-        abstract=abstract,
-        updated_date=updated_date,
-        funders=funders,
-        relations=relations,
-    )
+    return {
+        "doi": doi,
+        "title": title,
+        "abstract": abstract,
+        "updated_date": updated_date,
+        "funders": funders,
+        "relations": relations,
+    }
 
 
-def parse_title(title_array: Optional[simdjson.Array]) -> Optional[str]:
+def parse_title(title_array: simdjson.Array | None) -> str | None:
     """Parse the title from a Crossref Metadata title array.
 
     Args:
@@ -103,7 +102,7 @@ def parse_title(title_array: Optional[simdjson.Array]) -> Optional[str]:
     return None
 
 
-def parse_abstract(text: Optional[str]) -> Optional[str]:
+def parse_abstract(text: str | None) -> str | None:
     """Parse the abstract from a Crossref Metadata abstract string.
 
     Args:

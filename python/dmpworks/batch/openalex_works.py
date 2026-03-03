@@ -1,10 +1,9 @@
 import logging
-from typing import Optional
 
 from cyclopts import App
 
-from dmpworks.batch.utils import s3_uri
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
+from dmpworks.batch.utils import s3_uri
 from dmpworks.cli_utils import DatasetSubset, OpenAlexWorksTransformConfig
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.openalex_works import transform_openalex_works
@@ -76,7 +75,7 @@ def transform_cmd(
     run_id: str,
     use_subset: bool = False,
     *,
-    config: Optional[OpenAlexWorksTransformConfig] = None,
+    config: OpenAlexWorksTransformConfig | None = None,
 ):
     """Download OpenAlex Works from DMP Tool S3 bucket, transform to Parquet, and upload the result.
 

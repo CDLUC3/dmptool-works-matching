@@ -1,11 +1,10 @@
 import logging
 import pathlib
-from typing import Optional
 
 import pyarrow as pa
 import simdjson
-from dmpworks.rust import parse_name, ParsedName, strip_markup
 
+from dmpworks.rust import parse_name, strip_markup
 from dmpworks.transform.pipeline import process_files
 from dmpworks.transform.simdjson_transforms import (
     clean_string,
@@ -94,7 +93,7 @@ DATACITE_SCHEMA = pa.schema(
 )
 
 
-def parse_datacite_record(obj: simdjson.Object) -> Optional[dict]:
+def parse_datacite_record(obj: simdjson.Object) -> dict | None:
     """Parse a DataCite record from a simdjson object.
 
     Args:
@@ -123,22 +122,22 @@ def parse_datacite_record(obj: simdjson.Object) -> Optional[dict]:
     funders = parse_funders(attrs.get("fundingReferences", []))
     relations = parse_relations(attrs.get("relatedIdentifiers", []))
 
-    return dict(
-        doi=doi,
-        title=title,
-        abstract=abstract,
-        work_type=work_type,
-        publication_date=publication_date,
-        updated_date=updated_date,
-        publication_venue=publication_venue,
-        authors=authors,
-        institutions=institutions,
-        funders=funders,
-        relations=relations,
-    )
+    return {
+        "doi": doi,
+        "title": title,
+        "abstract": abstract,
+        "work_type": work_type,
+        "publication_date": publication_date,
+        "updated_date": updated_date,
+        "publication_venue": publication_venue,
+        "authors": authors,
+        "institutions": institutions,
+        "funders": funders,
+        "relations": relations,
+    }
 
 
-def parse_title(title_array: Optional[simdjson.Array]) -> Optional[str]:
+def parse_title(title_array: simdjson.Array | None) -> str | None:
     """Parse the title from a DataCite title array.
 
     Args:
@@ -156,7 +155,7 @@ def parse_title(title_array: Optional[simdjson.Array]) -> Optional[str]:
     return None
 
 
-def parse_abstract(description_array: Optional[simdjson.Array]) -> Optional[str]:
+def parse_abstract(description_array: simdjson.Array | None) -> str | None:
     """Parse the abstract from a DataCite description array.
 
     Args:
@@ -174,7 +173,7 @@ def parse_abstract(description_array: Optional[simdjson.Array]) -> Optional[str]
     return None
 
 
-def parse_orcid(name_identifier_array: simdjson.Array) -> Optional[str]:
+def parse_orcid(name_identifier_array: simdjson.Array) -> str | None:
     """Parse the ORCID from a DataCite name identifier array.
 
     Args:

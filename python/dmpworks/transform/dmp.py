@@ -1,11 +1,9 @@
 import json
 import logging
 import re
-from typing import Optional
-
-from dmpworks.rust import parse_name, ParsedName, strip_markup
 
 from dmpworks.model.dmp_model import DMPModel
+from dmpworks.rust import parse_name, strip_markup
 from dmpworks.transform.simdjson_transforms import (
     clean_string,
     extract_doi,
@@ -58,7 +56,7 @@ AWARD_IDS_EXCLUDE = {
 }
 
 
-def transform_dmp(obj: dict) -> Optional[DMPModel]:
+def transform_dmp(obj: dict) -> DMPModel | None:
     """Transform a raw DMP dictionary into a DMPModel.
 
     Args:
@@ -109,7 +107,7 @@ def transform_dmp(obj: dict) -> Optional[DMPModel]:
     )
 
 
-def parse_doi(obj: Optional[str]) -> Optional[str]:
+def parse_doi(obj: str | None) -> str | None:
     """Parse a DMP Tool DOI string.
 
     Args:
@@ -127,11 +125,11 @@ def parse_doi(obj: Optional[str]) -> Optional[str]:
         return doi
 
     # Fallback  to strip protocol, domain, and any leading slashes
-    cleaned = re.sub(r'^https?://(?:doi\.org/)?', '', clean_string(obj, lower=True))
+    cleaned = re.sub(r"^https?://(?:doi\.org/)?", "", clean_string(obj, lower=True))
 
     # Add DOI prefix if doesn't exist
-    if not cleaned.startswith('10.'):
-        cleaned = f'10.48321/{cleaned}'
+    if not cleaned.startswith("10."):
+        cleaned = f"10.48321/{cleaned}"
 
     # Try to extract DOI
     return extract_doi(cleaned)

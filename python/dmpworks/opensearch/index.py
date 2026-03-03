@@ -1,6 +1,7 @@
+from http import HTTPStatus
+from importlib.resources import files
 import json
 import logging
-from importlib.resources import files
 from typing import Any
 
 import opensearchpy
@@ -48,10 +49,10 @@ def create_index(client: OpenSearch, index_name: str, mapping_filename: str):
         response = client.indices.create(index=index_name, body=mapping)
         logging.info(response)
     except opensearchpy.exceptions.RequestError as e:
-        if e.status_code == 400 and e.error == "resource_already_exists_exception":
+        if e.status_code == HTTPStatus.BAD_REQUEST and e.error == "resource_already_exists_exception":
             logging.warning(f"Index already exists: {index_name}")
         else:
-            raise e
+            raise
 
 
 def update_mapping(client: OpenSearch, index_name: str, mapping_filename: str):

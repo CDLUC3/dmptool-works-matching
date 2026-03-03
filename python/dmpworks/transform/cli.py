@@ -1,11 +1,16 @@
 import logging
 import pathlib
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from cyclopts import App, Parameter, validators
 
-from cli_utils import DataCiteTransformConfig, OpenAlexWorksTransformConfig
-from dmpworks.cli_utils import CrossrefMetadataTransformConfig, Directory, LogLevel
+from dmpworks.cli_utils import (
+    CrossrefMetadataTransformConfig,
+    DataCiteTransformConfig,
+    Directory,
+    LogLevel,
+    OpenAlexWorksTransformConfig,
+)
 from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 from dmpworks.transform.datacite import transform_datacite
@@ -21,7 +26,7 @@ def crossref_metadata_cmd(
     in_dir: Directory,
     out_dir: Directory,
     *,
-    config: Optional[CrossrefMetadataTransformConfig] = None,
+    config: CrossrefMetadataTransformConfig | None = None,
 ):
     """Transform Crossref Metadata to Parquet.
 
@@ -46,7 +51,7 @@ def datacite_cmd(
     in_dir: Directory,
     out_dir: Directory,
     *,
-    config: Optional[DataCiteTransformConfig] = None,
+    config: DataCiteTransformConfig | None = None,
 ):
     """Transform DataCite to Parquet.
 
@@ -70,7 +75,7 @@ def openalex_works_cmd(
     in_dir: Directory,
     out_dir: Directory,
     *,
-    config: Optional[OpenAlexWorksTransformConfig] = None,
+    config: OpenAlexWorksTransformConfig | None = None,
 ):
     """Transform OpenAlex Works to Parquet.
 
@@ -107,7 +112,7 @@ def dataset_subset_cmd(
         ),
     ],
     dois_path: Annotated[
-        Optional[pathlib.Path],
+        pathlib.Path | None,
         Parameter(
             validator=validators.Path(
                 dir_okay=False,

@@ -1,12 +1,11 @@
 import logging
 import pathlib
-from typing import Optional
 
 from cyclopts import App
 
-from dmpworks.batch.utils import s3_uri
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
-from dmpworks.cli_utils import DatasetSubset, CrossrefMetadataTransformConfig
+from dmpworks.batch.utils import s3_uri
+from dmpworks.cli_utils import CrossrefMetadataTransformConfig, DatasetSubset
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -91,7 +90,7 @@ def transform_cmd(
     run_id: str,
     use_subset: bool = False,
     *,
-    config: Optional[CrossrefMetadataTransformConfig] = None,
+    config: CrossrefMetadataTransformConfig | None = None,
 ):
     """Download Crossref Metadata from DMP Tool S3 bucket, transform to Parquet, and upload the result.
 

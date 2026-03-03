@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Generator, Iterator, Optional
 
-import pendulum
 from opensearchpy import OpenSearch
+import pendulum
 
 from dmpworks.model.common import Institution
 from dmpworks.model.dmp_model import DMPModel
@@ -19,12 +19,28 @@ def fetch_dmps(
     dmps_index_name: str,
     scroll_time: str,
     page_size: int,
-    dois: Optional[list[str]] = None,
-    institutions: Optional[list[Institution]] = None,
-    start_date: Optional[pendulum.Date] = None,
-    end_date: Optional[pendulum.Date] = None,
+    dois: list[str] | None = None,
+    institutions: list[Institution] | None = None,
+    start_date: pendulum.Date | None = None,
+    end_date: pendulum.Date | None = None,
     inner_hits_size: int = 50,
 ) -> Generator[ScrollDmps, None, None]:
+    """A context manager for fetching DMPs from OpenSearch.
+
+    Args:
+        client: The OpenSearch client.
+        dmps_index_name: The name of the DMPs index.
+        scroll_time: The scroll time for the search context (e.g., "360m").
+        page_size: The number of results to return per page.
+        dois: A list of DOIs to filter by.
+        institutions: A list of institutions to filter by.
+        start_date: The start date for the project start range filter.
+        end_date: The end date for the project start range filter.
+        inner_hits_size: The size of inner hits to return for nested fields.
+
+    Yields:
+        ScrollDmps: A container with the total number of DMPs and an iterator over the DMPs.
+    """
     query = build_dmps_query(
         dois=dois,
         institutions=institutions,
@@ -45,6 +61,13 @@ def fetch_dmps(
 
 @dataclass(kw_only=True)
 class ScrollDmps:
+    """A container for scrolled DMP results.
+
+    Attributes:
+        total_dmps: The total number of DMPs found.
+        dmps: An iterator over the DMPs.
+    """
+
     total_dmps: str
     dmps: Iterator[DMPModel]
 
@@ -57,7 +80,21 @@ def yield_dmps(
     page_size: int = 500,
     scroll_time: str = "360m",
 ) -> Generator[ScrollDmps, None, None]:
-    scroll_id: Optional[str] = None
+    """A context manager that yields DMPs from an OpenSearch index using the scroll API.
+
+    This is a lower-level function that `fetch_dmps` is built on.
+
+    Args:
+        client: The OpenSearch client.
+        index_name: The name of the index to search.
+        query: The search query body.
+        page_size: The number of results to return per page.
+        scroll_time: The scroll time for the search context.
+
+    Yields:
+        ScrollDmps: A container with the total number of DMPs and an iterator over the DMPs.
+    """
+    scroll_id: str | None = None
 
     try:
         response = client.search(
@@ -76,7 +113,7 @@ def yield_dmps(
 
             while hits:
                 for doc in hits:
-                    source = doc['_source']
+                    source = doc["_source"]
                     yield DMPModel.model_validate(source)
 
                 # Get next batch

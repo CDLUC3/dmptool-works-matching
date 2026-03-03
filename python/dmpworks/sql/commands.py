@@ -1,6 +1,7 @@
-import pathlib
 from importlib.util import find_spec
+import pathlib
 from pathlib import Path
+
 import pyarrow as pa
 import pyarrow.parquet as pq
 from sqlmesh.core.console import configure_console
@@ -42,14 +43,13 @@ def run_plan() -> Plan:
         paths=[sqlmesh_dir()],
         load=True,
     )
-    plan = ctx.plan(
+    return ctx.plan(
         environment="prod",
         run=True,
         ignore_cron=True,
         auto_apply=True,
         no_prompts=True,
     )
-    return plan
 
 
 def run_test() -> ModelTextTestResult:

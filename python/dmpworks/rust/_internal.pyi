@@ -1,19 +1,19 @@
-from typing import Sequence, Tuple, Optional
+from collections.abc import Sequence
 
 __version__: str
 
 def parse_name(
-    raw_given_name: Optional[str] = ...,
-    raw_surname: Optional[str] = ...,
-    raw_full: Optional[str] = ...,
-) -> Tuple[
-    Optional[str],  # first_initial
-    Optional[str],  # given_name
-    Optional[str],  # middle_initials
-    Optional[str],  # middle_names
-    Optional[str],  # surname
-    Optional[str],  # full
+    raw_given_name: str | None = ...,
+    raw_surname: str | None = ...,
+    raw_full: str | None = ...,
+) -> tuple[
+    str | None,  # first_initial
+    str | None,  # given_name
+    str | None,  # middle_initials
+    str | None,  # middle_names
+    str | None,  # surname
+    str | None,  # full
 ]: ...
-def revert_inverted_index(text: Optional[bytes], null_if_equals: Optional[Sequence[str]] = ...) -> Optional[str]: ...
-def strip_markup(text: Optional[str], null_if_equals: Optional[Sequence[str]] = ...) -> Optional[str]: ...
-def has_alphabetic_initials(text: Optional[str]) -> bool: ...
+def revert_inverted_index(text: bytes | None, null_if_equals: Sequence[str] | None = ...) -> str | None: ...
+def strip_markup(text: str | None, null_if_equals: Sequence[str] | None = ...) -> str | None: ...
+def has_alphabetic_initials(text: str | None) -> bool: ...

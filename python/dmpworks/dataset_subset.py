@@ -25,7 +25,7 @@ def load_institutions(file_path: pathlib.Path) -> list[Institution]:
         raise FileNotFoundError(f"Could not load institutions, file does not exist: {file_path}")
 
     try:
-        with open(file_path) as f:
+        with file_path.open() as f:
             json_data = json.load(f)
             institutions_list_adapter = TypeAdapter(list[Institution])
             return institutions_list_adapter.validate_python(json_data)
@@ -50,7 +50,7 @@ def load_dois(file_path: pathlib.Path) -> list[str]:
         raise FileNotFoundError(f"Could not load DOIs, file does not exist: {file_path}")
 
     try:
-        with open(file_path) as f:
+        with file_path.open() as f:
             json_data = json.load(f)
             str_list_adapter = TypeAdapter(list[str])
             return str_list_adapter.validate_python(json_data)

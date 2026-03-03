@@ -1,5 +1,5 @@
+from collections.abc import Callable
 import copy
-from typing import Callable, Optional
 
 import pendulum
 
@@ -8,6 +8,17 @@ from dmpworks.model.dmp_model import Award, DMPModel
 
 
 def get_query_builder(name: str) -> Callable[[DMPModel, int, int, int], dict]:
+    """Get a query builder function by name.
+
+    Args:
+        name: The name of the query builder function.
+
+    Returns:
+        Callable[[DMPModel, int, int, int], dict]: The query builder function.
+
+    Raises:
+        ValueError: If the query builder name is unknown.
+    """
     query_builders = {
         "build_dmp_works_search_baseline_query": build_dmp_works_search_baseline_query,
         "build_dmp_works_search_candidate_query": build_dmp_works_search_candidate_query,
@@ -19,12 +30,24 @@ def get_query_builder(name: str) -> Callable[[DMPModel, int, int, int], dict]:
 
 def build_dmps_query(
     *,
-    dois: Optional[list[str]] = None,
-    institutions: Optional[list[Institution]] = None,
-    start_date: Optional[pendulum.Date] = None,
-    end_date: Optional[pendulum.Date] = None,
+    dois: list[str] | None = None,
+    institutions: list[Institution] | None = None,
+    start_date: pendulum.Date | None = None,
+    end_date: pendulum.Date | None = None,
     inner_hits_size: int = 50,
 ) -> dict:
+    """Build a query for searching DMPs.
+
+    Args:
+        dois: A list of DOIs to filter by.
+        institutions: A list of institutions to filter by.
+        start_date: The start date for the project start range filter.
+        end_date: The end date for the project start range filter.
+        inner_hits_size: The size of inner hits to return for nested fields.
+
+    Returns:
+        dict: The OpenSearch query.
+    """
     should = []
 
     # Filter by DOIs
@@ -42,8 +65,8 @@ def build_dmps_query(
             "institutions.ror",
             "institutions.name",
             institutions,
-            lambda inst: getattr(inst, "ror"),
-            lambda inst: getattr(inst, "name"),
+            lambda inst: inst.ror,
+            lambda inst: inst.name,
             inner_hits_size=inner_hits_size,
             name_slop=3,
         )
@@ -56,7 +79,7 @@ def build_dmps_query(
     if end_date is not None:
         project_start_dict["lte"] = end_date.format("YYYY-MM-DD")
 
-    if len(project_start_dict):
+    if len(project_start_dict) > 0:
         filters.append(
             {
                 "range": {
@@ -84,7 +107,15 @@ def build_dmps_query(
     return query
 
 
-def make_content(dmp: DMPModel) -> Optional[str]:
+def make_content(dmp: DMPModel) -> str | None:
+    """Create a content string from DMP title and abstract.
+
+    Args:
+        dmp: The DMP model.
+
+    Returns:
+        Optional[str]: The content string, or None if no text is available.
+    """
     has_text = dmp.title is not None or dmp.abstract_text is not None
     if has_text:
         return " ".join([text for text in [dmp.title, dmp.abstract_text] if text is not None and text != ""])
@@ -95,7 +126,17 @@ def make_content(dmp: DMPModel) -> Optional[str]:
 def build_dmp_works_search_baseline_query(
     dmp: DMPModel, max_results: int, project_end_buffer_years: int, inner_hits_size: int
 ) -> dict:
-    """Baseline DMP works search query using manually tuned weights"""
+    """Baseline DMP works search query using manually tuned weights.
+
+    Args:
+        dmp: The DMP model.
+        max_results: The maximum number of results to return.
+        project_end_buffer_years: The number of years to buffer the project end date.
+        inner_hits_size: The size of inner hits to return for nested fields.
+
+    Returns:
+        dict: The OpenSearch query.
+    """
     must = []
     should = []
 
@@ -297,6 +338,17 @@ def build_dmp_works_search_baseline_query(
 def build_dmp_works_search_candidate_query(
     dmp: DMPModel, max_results: int, project_end_buffer_years: int, inner_hits_size: int
 ) -> dict:
+    """Build a candidate query for DMP works search.
+
+    Args:
+        dmp: The DMP model.
+        max_results: The maximum number of results to return.
+        project_end_buffer_years: The number of years to buffer the project end date.
+        inner_hits_size: The size of inner hits to return for nested fields.
+
+    Returns:
+        dict: The OpenSearch query.
+    """
     should = []
 
     #
@@ -466,7 +518,7 @@ def build_awards_query(
     path: str,
     awards: list[Award],
     inner_hits_size: int = 50,
-) -> Optional[dict]:
+) -> dict | None:
     """Build a nested OpenSearch query for matching award identifiers.
 
     Uses `dis_max` so that multiple variants of the same award contribute
@@ -480,20 +532,18 @@ def build_awards_query(
     Returns:
         Nested query dict if awards are provided, otherwise None.
     """
-
     award_queries = []
     for award in awards:
-        queries = []
-        for award_id in award.award_id.all_variants:
-            queries.append(
-                {
-                    "constant_score": {
-                        "_name": f"awards.award_id.{award_id}",
-                        "filter": {"term": {"awards.award_id": award_id}},
-                        "boost": 10,
-                    }
+        queries = [
+            {
+                "constant_score": {
+                    "_name": f"awards.award_id.{award_id}",
+                    "filter": {"term": {"awards.award_id": award_id}},
+                    "boost": 10,
                 }
-            )
+            }
+            for award_id in award.award_id.all_variants
+        ]
         award_queries.append(
             {
                 "dis_max": {
@@ -503,7 +553,7 @@ def build_awards_query(
             }
         )
 
-    if len(award_queries):
+    if len(award_queries) > 0:
         return {
             "nested": {
                 "path": path,
@@ -529,19 +579,29 @@ def build_relations_query(
     dois: list[str],
     inner_hits_size: int = 50,
     boost: float = 1.0,
-) -> Optional[dict]:
-    should_queries: list[dict] = []
+) -> dict | None:
+    """Build a nested query for matching related DOIs.
 
-    for doi in dois:
-        should_queries.append(
-            {
-                "constant_score": {
-                    "_name": f"{doi_field}.{doi}",
-                    "filter": {"term": {doi_field: doi}},
-                    "boost": boost,
-                }
+    Args:
+        path: The nested path to search.
+        doi_field: The field containing the DOI.
+        dois: A list of DOIs to match.
+        inner_hits_size: The size of inner hits to return.
+        boost: The boost factor for the query.
+
+    Returns:
+        Optional[dict]: The nested query, or None if no DOIs are provided.
+    """
+    should_queries: list[dict] = [
+        {
+            "constant_score": {
+                "_name": f"{doi_field}.{doi}",
+                "filter": {"term": {doi_field: doi}},
+                "boost": boost,
             }
-        )
+        }
+        for doi in dois
+    ]
 
     if not should_queries:
         return None
@@ -571,11 +631,26 @@ def build_entity_query(
     id_accessor: Callable,
     name_accessor: Callable,
     inner_hits_size: int = 50,
-    name_slop: Optional[int] = None,
-) -> Optional[dict]:
+    name_slop: int | None = None,
+) -> dict | None:
+    """Build a nested query for matching entities (authors, institutions, funders).
+
+    Args:
+        path: The nested path to search.
+        id_field: The field containing the entity ID.
+        name_field: The field containing the entity name.
+        items: A list of items to match.
+        id_accessor: A function to access the ID from an item.
+        name_accessor: A function to access the name from an item.
+        inner_hits_size: The size of inner hits to return.
+        name_slop: The slop for the name match phrase query.
+
+    Returns:
+        Optional[dict]: The nested query, or None if no items match.
+    """
     should_queries = []
 
-    for idx, item in enumerate(items):
+    for item in items:
         entity_queries = []
         entity_id = id_accessor(item)
         entity_name = name_accessor(item)
@@ -636,6 +711,14 @@ def build_entity_query(
 
 
 def build_ltr_features(dmp: DMPModel):
+    """Build features for Learning to Rank.
+
+    Args:
+        dmp: The DMP model.
+
+    Returns:
+        dict: A dictionary of features.
+    """
     published_outputs = dmp.published_outputs if dmp.published_outputs is not None else []
 
     return {
@@ -679,6 +762,17 @@ def build_ltr_features(dmp: DMPModel):
 
 
 def build_sltr_query(dmp: DMPModel, work_ids: list[str], featureset_name: str, max_results: int = 100):
+    """Build a SLTR query for logging features.
+
+    Args:
+        dmp: The DMP model.
+        work_ids: A list of work DOIs to filter by.
+        featureset_name: The name of the featureset.
+        max_results: The maximum number of results to return.
+
+    Returns:
+        dict: The OpenSearch query.
+    """
     params = build_ltr_features(dmp)
 
     return {
@@ -710,6 +804,14 @@ def build_sltr_query(dmp: DMPModel, work_ids: list[str], featureset_name: str, m
 
 
 def build_sltr_awards_query(awards: list[Award]) -> list[dict]:
+    """Build SLTR query components for awards.
+
+    Args:
+        awards: A list of awards.
+
+    Returns:
+        list[dict]: A list of query components.
+    """
     if len(awards) == 0:
         return [{"match_none": {}}]
 
@@ -727,7 +829,17 @@ def build_sltr_awards_query(awards: list[Award]) -> list[dict]:
     return queries
 
 
-def build_sltr_name_queries(name_field: str, names: set[str], name_slop: Optional[int] = None) -> list[dict]:
+def build_sltr_name_queries(name_field: str, names: set[str], name_slop: int | None = None) -> list[dict]:
+    """Build SLTR query components for names.
+
+    Args:
+        name_field: The field to match against.
+        names: A set of names to match.
+        name_slop: The slop for the match phrase query.
+
+    Returns:
+        list[dict]: A list of query components.
+    """
     if len(names) == 0:
         return [{"match_none": {}}]
 
@@ -757,6 +869,17 @@ def build_dmp_works_search_rerank_query(
     max_results: int,
     model_name: str,
 ) -> dict:
+    """Build a rerank query using a Learning to Rank model.
+
+    Args:
+        dmp: The DMP model.
+        base_query: The base query to rescore.
+        max_results: The window size for rescoring.
+        model_name: The name of the LTR model.
+
+    Returns:
+        dict: The OpenSearch query with rescoring.
+    """
     ltr_query = copy.deepcopy(base_query)
     ltr_features = build_ltr_features(dmp)
     ltr_query["rescore"] = {
