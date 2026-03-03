@@ -1,6 +1,6 @@
 import json
 
-from dmpworks.rust import parse_name, revert_inverted_index, strip_markup, has_meaningful_initials
+from dmpworks.rust import parse_name, revert_inverted_index, strip_markup, has_alphabetic_initials
 
 
 class TestParseName:
@@ -100,24 +100,24 @@ class TestParseName:
         assert parsed.surname == "Петров"
         assert parsed.full == "Иван Петров"
 
-    def test_has_meaningful_initials(self):
+    def test_has_alphabetic_initials(self):
         # Alphabetic / Meaningful
-        assert has_meaningful_initials("John") is True
-        assert has_meaningful_initials("Élise") is True  # Accented
-        assert has_meaningful_initials("Иван") is True  # Cyrillic
-        assert has_meaningful_initials("محمد") is True  # Arabic
+        assert has_alphabetic_initials("John") is True
+        assert has_alphabetic_initials("Élise") is True  # Accented
+        assert has_alphabetic_initials("Иван") is True  # Cyrillic
+        assert has_alphabetic_initials("محمد") is True  # Arabic
 
         # CJK / Non-meaningful initials
-        assert has_meaningful_initials("김") is False  # Korean
-        assert has_meaningful_initials("가은") is False  # Korean
-        assert has_meaningful_initials("李") is False  # Chinese
-        assert has_meaningful_initials("田中") is False  # Japanese
+        assert has_alphabetic_initials("김") is False  # Korean
+        assert has_alphabetic_initials("가은") is False  # Korean
+        assert has_alphabetic_initials("李") is False  # Chinese
+        assert has_alphabetic_initials("田中") is False  # Japanese
 
         # Symbols / Numbers / Empty
-        assert has_meaningful_initials("1234") is False
-        assert has_meaningful_initials("🚀") is False
-        assert has_meaningful_initials("") is False
-        assert has_meaningful_initials(None) is False
+        assert has_alphabetic_initials("1234") is False
+        assert has_alphabetic_initials("🚀") is False
+        assert has_alphabetic_initials("") is False
+        assert has_alphabetic_initials(None) is False
 
     def test_none_or_empty(self):
         for val in [None, "", "   "]:

@@ -38,7 +38,7 @@ fn fallback_parse_name(text: &str) -> (Option<String>, Option<String>, String) {
 /// Checks if a string starts with a character that makes sense as an initial.
 /// Returns true for alphabetic scripts (Latin, Cyrillic, Greek, Arabic, etc.)
 /// and explicitly excludes CJK (Chinese, Japanese, Korean) ideographs/syllables.
-pub fn has_meaningful_initials(text: &str) -> bool {
+pub fn has_alphabetic_initials(text: &str) -> bool {
     let Some(c) = text.chars().next() else {
         return false;
     };
@@ -75,7 +75,7 @@ pub fn parse_name(
 
     // If both given and surname are provided, build the final struct straight away
     if let (Some(g), Some(s)) = (given, surname) {
-        let first_initial = if has_meaningful_initials(g) {
+        let first_initial = if has_alphabetic_initials(g) {
             g.graphemes(true).next().map(|grapheme| grapheme.to_uppercase())
         } else {
             None
