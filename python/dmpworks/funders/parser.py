@@ -14,6 +14,15 @@ log = logging.getLogger(__name__)
 
 
 def parse_award_text(funder_id: str, text: str) -> list[AwardID]:
+    """Parse award text into a list of AwardID objects.
+
+    Args:
+        funder_id: The ROR ID of the funder.
+        text: The text containing award IDs.
+
+    Returns:
+        list[AwardID]: A list of parsed AwardID objects.
+    """
     award_ids = set()
     parser_index: dict[str, Type[AwardID]] = {}
     for id_type in [NIHAwardID, NSFAwardID]:
@@ -38,6 +47,15 @@ def fetch_funded_dois(
     award_id: AwardID,
     email: Optional[str] = None,
 ) -> list[str]:
+    """Fetch DOIs of works funded by the given award.
+
+    Args:
+        award_id: The AwardID object.
+        email: Optional email for API requests.
+
+    Returns:
+        list[str]: A list of funded DOIs.
+    """
     log.debug(f"Fetching data for award {award_id.text}")
 
     log.debug(f"Fetching additional metadata for award {award_id.text}")

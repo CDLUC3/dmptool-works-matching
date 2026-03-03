@@ -21,11 +21,6 @@ MAX_BACKOFF = 600
 MAX_ERROR_SAMPLES = 50
 
 
-def validate_chunk_size(type_, value):
-    if value <= 0:
-        raise ValueError("Chunk size must be greater than zero.")
-
-
 def parse_date(type_, tokens: Sequence[Token]) -> pendulum.Date:
     value = tokens[0].value
     try:
@@ -35,7 +30,6 @@ def parse_date(type_, tokens: Sequence[Token]) -> pendulum.Date:
 
 
 Mode = Literal["local", "aws"]
-ChunkSize = Annotated[int, Parameter(validator=validate_chunk_size)]
 Date = Annotated[Optional[pendulum.Date], Parameter(converter=parse_date)]
 QueryBuilder = Literal["build_dmp_works_search_baseline_query", "build_dmp_works_search_candidate_query"]
 

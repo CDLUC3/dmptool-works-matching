@@ -2,46 +2,41 @@ import gzip
 import logging
 import os
 import pathlib
-import re
 from concurrent.futures import as_completed, ProcessPoolExecutor
 from multiprocessing import current_process
-from typing import Literal, Optional
+from typing import Literal
 
 import simdjson
 from tqdm import tqdm
 
 from dmpworks.model.common import Institution
-from dmpworks.transform.simdjson_transforms import extract_doi, to_optional_string
+from dmpworks.transform.simdjson_transforms import (
+    clean_string,
+    ensure_array_of_objects,
+    extract_doi,
+    normalise_identifier,
+    to_optional_string,
+)
 from dmpworks.utils import timed
 
 Dataset = Literal["crossref-metadata", "datacite", "openalex-works"]
 
 
-def normalise_affiliations(affiliations) -> Optional[simdjson.Array | list]:
-    if isinstance(affiliations, simdjson.Object):
-        return [affiliations]
-    elif isinstance(affiliations, simdjson.Array):
-        return affiliations
-    else:
-        return []
-
-
-def normalise_identifier(value: Optional[str]) -> Optional[str]:
-    if value is None:
-        return None
-    return re.sub(r"(?i)https?://[^/]+/", "", value).strip().lower()
-
-
-def normalise_name(name: Optional[str]) -> Optional[str]:
-    if not name:
-        return None
-    cleaned = name.strip().lower()
-    return cleaned or None
-
-
 def keep_record(
     dataset: Dataset, institution_rors: set[str], institution_names: set[str], dois: set[str], record: simdjson.Object
 ) -> bool:
+    """Determine whether to keep a record based on filtering criteria.
+
+    Args:
+        dataset: The dataset type.
+        institution_rors: Set of institution RORs to keep.
+        institution_names: Set of institution names to keep.
+        dois: Set of DOIs to keep.
+        record: The record to check.
+
+    Returns:
+        bool: True if the record should be kept, False otherwise.
+    """
     if dataset == "openalex-works":
         # Check DOI
         doi = extract_doi(to_optional_string(record.get("doi")))
@@ -52,7 +47,7 @@ def keep_record(
         for authorship in record.get("authorships", []):
             for inst in authorship.get("institutions", []):
                 identifier = to_optional_string(inst.get("ror"))
-                name = normalise_name(to_optional_string(inst.get("display_name")))
+                name = clean_string(to_optional_string(inst.get("display_name")), lower=True)
                 if normalise_identifier(identifier) in institution_rors or name in institution_names:
                     return True
         return False
@@ -65,9 +60,9 @@ def keep_record(
 
         # Check institutions
         for creator in record.get("attributes", {}).get("creators", []):
-            for affiliation in normalise_affiliations(creator.get("affiliation", [])):
+            for affiliation in ensure_array_of_objects(creator.get("affiliation", [])):
                 identifier = to_optional_string(affiliation.get("affiliationIdentifier"))
-                name = normalise_name(to_optional_string(affiliation.get("name")))
+                name = clean_string(to_optional_string(affiliation.get("name")), lower=True)
                 if normalise_identifier(identifier) in institution_rors or name in institution_names:
                     return True
         return False
@@ -81,7 +76,7 @@ def keep_record(
         # Check institutions
         for author in record.get("author", []):
             for affiliation in author.get("affiliation", []):
-                name = normalise_name(to_optional_string(affiliation.get("name")))
+                name = clean_string(to_optional_string(affiliation.get("name")), lower=True)
                 if name in institution_names:
                     return True
 
@@ -96,6 +91,14 @@ def keep_record(
 
 
 def get_file_glob(dataset: Dataset) -> str:
+    """Get the file glob pattern for a dataset.
+
+    Args:
+        dataset: The dataset type.
+
+    Returns:
+        str: The file glob pattern.
+    """
     if dataset == "openalex-works":
         return "**/*.gz"
     elif dataset == "datacite":
@@ -107,6 +110,11 @@ def get_file_glob(dataset: Dataset) -> str:
 
 
 def init_process_logs(level: int):
+    """Initialize logging for a worker process.
+
+    Args:
+        level: The logging level.
+    """
     logging.basicConfig(level=level, format="[%(asctime)s] [%(levelname)s] [%(processName)s] %(message)s")
 
 
@@ -118,6 +126,19 @@ def filter_dataset(
     file_in: pathlib.Path,
     out_dir: pathlib,
 ):
+    """Filter a dataset file and write matching records to an output file.
+
+    Args:
+        dataset: The dataset type.
+        institution_rors: Set of institution RORs to keep.
+        institution_names: Set of institution names to keep.
+        dois: Set of DOIs to keep.
+        file_in: Path to the input file.
+        out_dir: Path to the output directory.
+
+    Returns:
+        int: The number of records filtered.
+    """
     logging.debug(f"start filtering {file_in}")
 
     worker_id = current_process()._identity[0]
@@ -159,6 +180,16 @@ def create_dataset_subset(
     dois: list[str],
     log_level: int = logging.INFO,
 ):
+    """Create a subset of a dataset based on institutions and DOIs.
+
+    Args:
+        dataset: The dataset type.
+        in_dir: Path to the input directory.
+        out_dir: Path to the output directory.
+        institutions: List of institutions to filter by.
+        dois: List of DOIs to filter by.
+        log_level: Logging level.
+    """
     is_empty = next(out_dir.iterdir(), None) is None
     if not is_empty:
         raise Exception(f"Output directory is not empty: {out_dir}")
@@ -167,7 +198,7 @@ def create_dataset_subset(
     files = list(pathlib.Path(in_dir).glob(file_glob))
     futures = []
     institution_rors = set([inst.ror for inst in institutions if inst.ror is not None])
-    institution_names = set([val for inst in institutions if (val := normalise_name(inst.name)) is not None])
+    institution_names = set([val for inst in institutions if (val := clean_string(inst.name, lower=True)) is not None])
     dois_set = set([extract_doi(doi) for doi in dois])
 
     logging.info(f"institutions: {institutions}")

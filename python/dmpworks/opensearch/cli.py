@@ -43,7 +43,6 @@ def create_index_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -68,7 +67,6 @@ def update_mapping_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -99,7 +97,6 @@ def sync_works_cmd(
         sync_config: OpenSearch sync settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -138,7 +135,6 @@ def sync_dmps_cmd(
         chunk_size: OpenSearch bulk indexing chunk size.
         log_level: Python log level (e.g., INFO).
     """
-
     if opensearch_config is None:
         opensearch_config = OpenSearchClientConfig()
 
@@ -160,15 +156,13 @@ def enrich_dmps_cmd(
     client_config: Optional[OpenSearchClientConfig] = None,
     log_level: LogLevel = "INFO",
 ):
-    """Enrich DMPs in OpenSearch, including fetching publications that can be
-    found on funder award pages.
+    """Enrich DMPs in OpenSearch with publications found on funder award pages.
 
     Args:
         dmps_index_name: Name of the DMP index to update.
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -254,7 +248,6 @@ def dmp_works_search_cmd(
         end_date: Return DMPs with project start dates on before this date.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -347,7 +340,6 @@ def rank_metrics_cmd(
         ks: The top K breakpoints to compute for each metric.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -386,7 +378,6 @@ def create_featureset_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -446,7 +437,6 @@ def upload_ranklib_model_cmd(
         client_config: The OpenSearch client config.
         log_level: The Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -500,8 +490,9 @@ def generate_training_dataset_cmd(
     inner_hits_size: int = 50,
     log_level: LogLevel = "INFO",
 ):
-    """Generates a RankLib training dataset based on a baseline DMP works search,
-    a featureset and a ground truth file.
+    """Generate a RankLib training dataset from search results and ground truth.
+
+    Uses the baseline DMP works search, a featureset and a ground truth file.
 
     Args:
         ground_truth_file: Path to the ground truth data file
@@ -519,7 +510,6 @@ def generate_training_dataset_cmd(
         inner_hits_size: Maximum number of inner hits returned for each matched work.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 

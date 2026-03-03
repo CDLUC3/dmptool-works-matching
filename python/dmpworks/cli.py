@@ -20,6 +20,10 @@ cli.command(batch_submit_app)
 
 
 def main() -> None:
+    """Entry point for the dmpworks command line interface.
+
+    Loads environment variables and invokes the CLI application.
+    """
     env = load_dotenv(dotenv_path='.env.aws-batch', override=True)
     cli()
 

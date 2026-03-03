@@ -28,6 +28,14 @@ def load_migration_related_works(
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
+    """Load related works from the migration database.
+
+    Args:
+        mysql_config: MySQL connection configuration.
+        opensearch_config: OpenSearch connection configuration.
+        batch_size: Number of records to process in a batch.
+        log_level: Logging level.
+    """
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
@@ -54,6 +62,15 @@ def load_ground_truth_related_works(
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
+    """Load ground truth related works from a CSV file.
+
+    Args:
+        matches_path: Path to the CSV file containing matches.
+        mysql_config: MySQL connection configuration.
+        opensearch_config: OpenSearch connection configuration.
+        batch_size: Number of records to process in a batch.
+        log_level: Logging level.
+    """
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
@@ -79,6 +96,14 @@ def merge_related_works_cmd(
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
+    """Merge related works from a file into the database.
+
+    Args:
+        matches_path: Path to the file containing matches.
+        mysql_config: MySQL connection configuration.
+        batch_size: Number of records to process in a batch.
+        log_level: Logging level.
+    """
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
@@ -95,12 +120,27 @@ def merge_related_works_cmd(
 
 @dataclass
 class RelatedWorkReference:
+    """Represents a reference to a related work.
+
+    Attributes:
+        plan_id: The ID of the plan.
+        dmp_id: The ID of the DMP.
+        work_doi: The DOI of the related work.
+    """
+
     plan_id: Optional[str]
     dmp_id: Optional[str]
     work_doi: str
 
 
 def merge_related_works(matches_path: pathlib.Path, conn, batch_size: int = 1000):
+    """Merge related works data into the database.
+
+    Args:
+        matches_path: Path to the file containing matches.
+        conn: Database connection object.
+        batch_size: Number of records to process in a batch.
+    """
     with RelatedWorksLoader(conn) as loader:
         with tempfile.TemporaryDirectory() as tmp:
             # Create temporary files with consolidated data
@@ -123,6 +163,14 @@ def merge_related_works(matches_path: pathlib.Path, conn, batch_size: int = 1000
 
 
 def read_related_works_csv(file_path: pathlib.Path) -> List[RelatedWorkReference]:
+    """Read related works from a CSV file.
+
+    Args:
+        file_path: Path to the CSV file.
+
+    Returns:
+        A list of RelatedWorkReference objects.
+    """
     results = []
     with open(file_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -146,6 +194,12 @@ def read_related_works_csv(file_path: pathlib.Path) -> List[RelatedWorkReference
 
 
 class RelatedWorksLoader:
+    """Helper class for loading related works into the database.
+
+    Attributes:
+        conn: Database connection object.
+    """
+
     def __init__(self, conn):
         self.conn = conn
 
@@ -163,11 +217,18 @@ class RelatedWorksLoader:
             self.conn.close()
 
     def prepare_staging_tables(self):
+        """Prepare staging tables in the database."""
         logging.info("Preparing staging tables...")
         with self.conn.cursor() as cursor:
             cursor.callproc("create_related_works_staging_tables")
 
     def insert_work_versions(self, rows_iterator: Iterable[List[Any]], batch_size: int = 1000):
+        """Insert work versions into the staging table.
+
+        Args:
+            rows_iterator: Iterator yielding rows to insert.
+            batch_size: Number of rows to insert per batch.
+        """
         logging.info("Loading Work Versions...")
         sql = "INSERT INTO stagingWorkVersions (doi,hash,workType,publicationDate,title,abstractText,authors,institutions,funders,awards,publicationVenue,sourceName,sourceUrl) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         self._batch_insert(sql, rows_iterator, batch_size)
@@ -176,6 +237,12 @@ class RelatedWorksLoader:
             self.print_table(cursor, "stagingWorkVersions", lambda r: f"doi={r.get('doi')}")
 
     def insert_related_works(self, rows_iterator: Iterable[List[Any]], batch_size: int = 1000):
+        """Insert related works into the staging table.
+
+        Args:
+            rows_iterator: Iterator yielding rows to insert.
+            batch_size: Number of rows to insert per batch.
+        """
         logging.info("Loading Related Works...")
         sql = "INSERT INTO stagingRelatedWorks (planId,dmpDoi,workDoi,hash,sourceType,score,scoreMax,status,doiMatch,contentMatch,authorMatches,institutionMatches,funderMatches,awardMatches) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         self._batch_insert(sql, rows_iterator, batch_size)
@@ -186,6 +253,13 @@ class RelatedWorksLoader:
             )
 
     def _batch_insert(self, sql: str, rows: Iterable[List[Any]], batch_size: int):
+        """Execute batch insert.
+
+        Args:
+            sql: SQL insert statement.
+            rows: Iterator yielding rows to insert.
+            batch_size: Number of rows to insert per batch.
+        """
         batch = []
         with self.conn.cursor() as cursor:
             for row in rows:
@@ -197,6 +271,11 @@ class RelatedWorksLoader:
                 cursor.executemany(sql, batch)
 
     def run_update_procedure(self, system_matched=True):
+        """Run the stored procedure to update related works.
+
+        Args:
+            system_matched: Boolean indicating if the matches are system generated.
+        """
         logging.info("Running update procedure...")
         with self.conn.cursor() as cursor:
             cursor.callproc("batch_update_related_works", [system_matched])
@@ -205,6 +284,14 @@ class RelatedWorksLoader:
             self.print_table(cursor, "relatedWorks", format_func=lambda r: f"id={r.get('id')}")
 
     def print_table(self, cursor, table_name: str, format_func: Callable, limit: int = 10):
+        """Print rows from a table for debugging.
+
+        Args:
+            cursor: Database cursor.
+            table_name: Name of the table to print.
+            format_func: Function to format each row.
+            limit: Maximum number of rows to print.
+        """
         logging.info(f"Table: {table_name}")
         cursor.execute(f"SELECT * FROM {table_name} LIMIT {limit}")
         results = cursor.fetchall()
@@ -213,6 +300,16 @@ class RelatedWorksLoader:
 
 
 def fetch_opensearch_work(client: OpenSearch, doi: str, works_index: str = "works-index") -> Optional[WorkModel]:
+    """Fetch a work from OpenSearch by DOI.
+
+    Args:
+        client: OpenSearch client.
+        doi: The DOI of the work to fetch.
+        works_index: The name of the OpenSearch index.
+
+    Returns:
+        A WorkModel object if found, otherwise None.
+    """
     try:
         response = client.get(index=works_index, id=doi)
         return WorkModel.model_validate(response.get("_source", {}), by_name=True, by_alias=False)
@@ -222,7 +319,14 @@ def fetch_opensearch_work(client: OpenSearch, doi: str, works_index: str = "work
 
 
 def fetch_migration_related_works(conn) -> list[RelatedWorkReference]:
-    """Returns valid related works from migration table."""
+    """Returns valid related works from migration table.
+
+    Args:
+        conn: Database connection object.
+
+    Returns:
+        A list of RelatedWorkReference objects.
+    """
     sql = """
     SELECT DISTINCT p.id AS plan_id, TRIM(REPLACE(LOWER(p.dmpId), 'https://doi.org/', '')) AS dmp_id, LOWER(TRIM(rw.value)) AS work_doi
     FROM migration.related_works rw
@@ -244,6 +348,14 @@ def fetch_migration_related_works(conn) -> list[RelatedWorkReference]:
 
 
 def load_related_works(conn, os_client: OpenSearch, records: List[RelatedWorkReference], batch_size: int = 1000):
+    """Load related works into the database.
+
+    Args:
+        conn: Database connection object.
+        os_client: OpenSearch client.
+        records: List of RelatedWorkReference objects to load.
+        batch_size: Number of records to process in a batch.
+    """
     logging.info(f"Processing {len(records)} migration records...")
 
     seen = set()
@@ -293,6 +405,16 @@ def load_related_works(conn, os_client: OpenSearch, records: List[RelatedWorkRef
 def yield_jsonlines(
     input_path: pathlib.Path, transform_func: Callable, extra_fields: dict = None
 ) -> Generator[List[Any], None, None]:
+    """Yield transformed rows from a JSONLines file.
+
+    Args:
+        input_path: Path to the JSONLines file.
+        transform_func: Function to transform each row.
+        extra_fields: Dictionary of extra fields to add to each row.
+
+    Yields:
+        Transformed rows.
+    """
     if extra_fields is None:
         extra_fields = {}
 
@@ -303,6 +425,14 @@ def yield_jsonlines(
 
 
 def to_sql_work_version_row(row: dict) -> list:
+    """Convert a work version dictionary to a list suitable for SQL insertion.
+
+    Args:
+        row: Dictionary containing work version data.
+
+    Returns:
+        A list of values.
+    """
     row_hash = row["hash"]
     if isinstance(row_hash, str):
         row_hash = bytes.fromhex(row_hash)
@@ -325,6 +455,14 @@ def to_sql_work_version_row(row: dict) -> list:
 
 
 def to_sql_related_work_row(row: dict) -> list:
+    """Convert a related work dictionary to a list suitable for SQL insertion.
+
+    Args:
+        row: Dictionary containing related work data.
+
+    Returns:
+        A list of values.
+    """
     row_hash = row["hash"]
     if isinstance(row_hash, str):
         row_hash = bytes.fromhex(row_hash)
@@ -348,6 +486,12 @@ def to_sql_related_work_row(row: dict) -> list:
 
 
 def create_work_versions(input_path: pathlib.Path, output_path: pathlib.Path):
+    """Extract unique work versions from input file and write to output file.
+
+    Args:
+        input_path: Path to the input file.
+        output_path: Path to the output file.
+    """
     seen = set()
     with jsonlines.open(input_path) as in_file:
         with jsonlines.open(output_path, mode='w') as out_file:
@@ -360,6 +504,14 @@ def create_work_versions(input_path: pathlib.Path, output_path: pathlib.Path):
 
 
 def json_work_to_work_version(work: dict) -> dict:
+    """Convert a JSON work dictionary to a work version dictionary.
+
+    Args:
+        work: Dictionary containing work data.
+
+    Returns:
+        A dictionary representing the work version.
+    """
     return {
         "doi": work["doi"],
         "hash": work["hash"],
@@ -378,6 +530,12 @@ def json_work_to_work_version(work: dict) -> dict:
 
 
 def create_related_works(input_path: pathlib.Path, output_path: pathlib.Path):
+    """Extract related works from input file and write to output file.
+
+    Args:
+        input_path: Path to the input file.
+        output_path: Path to the output file.
+    """
     with jsonlines.open(input_path) as in_file:
         with jsonlines.open(output_path, mode='w') as out_file:
             for row in in_file:
@@ -401,6 +559,14 @@ def create_related_works(input_path: pathlib.Path, output_path: pathlib.Path):
 
 
 def serialise_json(data) -> str:
+    """Serialize data to a JSON string.
+
+    Args:
+        data: The data to serialize.
+
+    Returns:
+        A JSON string representation of the data.
+    """
     if isinstance(data, str):
         return data
     return json.dumps(data, sort_keys=True, separators=(",", ":"))

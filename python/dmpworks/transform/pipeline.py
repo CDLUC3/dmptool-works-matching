@@ -24,7 +24,6 @@ SHARED_ABORT_EVENT: Optional[mp.Event] = None
 
 def init_process_logs(shared_files_processed: mp.Value, shared_lock: mp.Lock, abort_event: mp.Event, level: int):
     """Initialize global logging and shared multiprocessing objects for a worker process."""
-
     global SHARED_FILES_PROCESSED, SHARED_COUNTER_LOCK, SHARED_ABORT_EVENT
 
     logging.basicConfig(level=level, format="[%(asctime)s] [%(levelname)s] [%(processName)s] %(message)s")
@@ -49,8 +48,7 @@ def process_files(
     file_prefix: Optional[str] = None,
     log_level: int = logging.INFO,
 ):
-    """
-    Transform JSON-based input files (e.g. gzipped JSON Lines) into Parquet.
+    """Transform JSON-based input files (e.g. gzipped JSON Lines) into Parquet.
 
     Streams rows from one or more JSON inputs, applies a transformation
     function to each row, and writes the results to Parquet.
@@ -66,8 +64,21 @@ def process_files(
     Row groups are buffered fully in memory before being flushed to disk.
     Increasing `max_workers`, `row_group_size`, or `row_groups_per_file`
     will increase memory pressure and should be tuned accordingly.
-    """
 
+    Args:
+        files: List of input file paths.
+        output_dir: Directory to write Parquet files to.
+        batch_size: Number of files to process per batch.
+        row_group_size: Number of rows per Parquet row group.
+        row_groups_per_file: Number of row groups per Parquet file.
+        schema: PyArrow schema for the output Parquet files.
+        read_func: Function to read JSON objects from a file.
+        transform_func: Function to transform a JSON object into a dictionary.
+        tqdm_description: Description for the progress bar.
+        max_workers: Maximum number of worker processes.
+        file_prefix: Optional prefix for output filenames.
+        log_level: Logging level.
+    """
     log.debug("running process files")
 
     total_files = len(files)
@@ -148,8 +159,7 @@ def process_files(
 
 
 def output_file_name(batch_index: int, file_index: int, file_prefix: Optional[str] = None) -> str:
-    """
-    Generate a Parquet output filename using batch and file indices.
+    """Generate a Parquet output filename using batch and file indices.
 
     Because files may be written concurrently by multiple processes, each
     filename is namespaced by a `batch_index` to avoid collisions. The
@@ -164,7 +174,6 @@ def output_file_name(batch_index: int, file_index: int, file_prefix: Optional[st
     Returns: the generated Parquet filename as a string.
 
     """
-
     parts = []
     if file_prefix is not None:
         parts.append(file_prefix)
@@ -184,8 +193,7 @@ def transform_json_to_parquet(
     transform_func: Callable[[simdjson.Object], dict | None],
     file_prefix: Optional[str] = None,
 ):
-    """
-    Process a batch of input files, transforming and writing them to Parquet format.
+    """Process a batch of input files, transforming and writing them to Parquet format.
 
     Iterates through the provided batch of input files, applies the transformation
     function to each record, and accumulates rows in memory.
@@ -196,8 +204,18 @@ def transform_json_to_parquet(
     - Multiple Row Groups are written to a single Parquet file until the count
       reaches `row_groups_per_file`. Once reached, the current file is closed,
       and a new file is started (incrementing the file part index).
-    """
 
+    Args:
+        batch_index: Index of the current batch.
+        batch: List of input file paths in the batch.
+        output_dir: Directory to write Parquet files to.
+        schema: PyArrow schema for the output Parquet files.
+        row_group_size: Number of rows per row group.
+        row_groups_per_file: Number of row groups per file.
+        read_func: Function to read JSON objects from a file.
+        transform_func: Function to transform a JSON object into a dictionary.
+        file_prefix: Optional prefix for output filenames.
+    """
     file_index = 0
     num_row_groups = 0
     row_buffer = []
@@ -285,7 +303,6 @@ def transform_json_to_parquet(
 
 def debug_arrow_type_error(row_buffer: list[dict], schema: pa.Schema) -> None:
     """Iterates through a buffer of rows to find and logs the row causing a PyArrow ArrowTypeError."""
-
     for row in row_buffer:
         try:
             pa.Table.from_pylist([row], schema=schema)

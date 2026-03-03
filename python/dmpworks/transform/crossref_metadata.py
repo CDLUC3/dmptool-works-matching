@@ -56,7 +56,15 @@ CROSSREF_METADATA_SCHEMA = pa.schema(
 )
 
 
-def parse_crossref_metadata_record(obj: simdjson.Object) -> dict | None:
+def parse_crossref_metadata_record(obj: simdjson.Object) -> Optional[dict]:
+    """Parse a Crossref Metadata record from a simdjson object.
+
+    Args:
+        obj: The simdjson object representing a Crossref Metadata record.
+
+    Returns:
+        Optional[dict]: A dictionary containing the parsed record, or None if parsing fails.
+    """
     doi = extract_doi(obj.get("DOI"))
     if doi is None:
         logger.warning(f"Could not extract DOI from id={obj.get('DOI')}, title={obj.get('title')}")
@@ -79,6 +87,14 @@ def parse_crossref_metadata_record(obj: simdjson.Object) -> dict | None:
 
 
 def parse_title(title_array: Optional[simdjson.Array]) -> Optional[str]:
+    """Parse the title from a Crossref Metadata title array.
+
+    Args:
+        title_array: The simdjson array of titles.
+
+    Returns:
+        Optional[str]: The parsed title, or None if not found.
+    """
     for obj in title_array:
         if obj is not None:
             title = strip_markup(str(obj))
@@ -88,18 +104,42 @@ def parse_title(title_array: Optional[simdjson.Array]) -> Optional[str]:
 
 
 def parse_abstract(text: Optional[str]) -> Optional[str]:
+    """Parse the abstract from a Crossref Metadata abstract string.
+
+    Args:
+        text: The abstract string.
+
+    Returns:
+        Optional[str]: The parsed abstract, or None if not found.
+    """
     if text is not None:
         return strip_markup(str(text))
     return None
 
 
 def parse_updated_date(date_time_obj: simdjson.Object):
+    """Parse the updated date from a Crossref Metadata date-time object.
+
+    Args:
+        date_time_obj: The simdjson object containing the date-time.
+
+    Returns:
+        datetime: The parsed datetime object.
+    """
     # https://github.com/crossref/rest-api-doc/blob/master/api_format.md see deposited
     date_time = date_time_obj.get("date-time")
     return parse_iso8601_datetime(date_time)
 
 
 def parse_funders(funder_array: simdjson.Array) -> list[dict]:
+    """Parse funders from a Crossref Metadata funder array.
+
+    Args:
+        funder_array: The simdjson array of funders.
+
+    Returns:
+        list[dict]: A list of parsed funders.
+    """
     funders = []
     for obj in funder_array:
         funder_doi = extract_doi(obj.get("DOI"))
@@ -121,6 +161,14 @@ def parse_funders(funder_array: simdjson.Array) -> list[dict]:
 
 
 def parse_relations(relation_obj: simdjson.Object) -> list[dict]:
+    """Parse relations from a Crossref Metadata relation object.
+
+    Args:
+        relation_obj: The simdjson object containing relations.
+
+    Returns:
+        list[dict]: A list of parsed relations.
+    """
     relations = []
 
     for relation_type, sub_relation_array in relation_obj.items():
@@ -152,6 +200,17 @@ def transform_crossref_metadata(
     max_workers: int,
     log_level: int = logging.INFO,
 ):
+    """Transform Crossref Metadata JSONL files to Parquet format.
+
+    Args:
+        in_dir: Input directory containing Crossref Metadata JSONL files.
+        out_dir: Output directory for Parquet files.
+        batch_size: Number of files to process in a batch.
+        row_group_size: Number of rows per row group in Parquet files.
+        row_groups_per_file: Number of row groups per Parquet file.
+        max_workers: Maximum number of worker processes.
+        log_level: Logging level.
+    """
     setup_multiprocessing_logging(log_level)
     files = list(in_dir.glob("**/*.jsonl.gz"))
     process_files(

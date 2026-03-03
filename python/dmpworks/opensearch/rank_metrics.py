@@ -16,7 +16,6 @@ from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientCo
 
 def load_qrels_dict(file_path: pathlib.Path) -> dict:
     """Load query relevance judgments dict"""
-
     qrels_dict = defaultdict(dict)
     with open(file_path, mode="r") as f:
         reader = csv.DictReader(f)
@@ -32,7 +31,6 @@ def load_qrels_dict(file_path: pathlib.Path) -> dict:
 
 def load_run_dict(related_works: Iterable[RelatedWork], dmp_dois: Optional[set[str]] = None) -> dict:
     """Load the Run dict which stores the relevance scores estimated by the model under evaluation"""
-
     run_dict = defaultdict(dict)
     for related_work in related_works:
         if dmp_dois is None or related_work.dmp_doi in dmp_dois:

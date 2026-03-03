@@ -5,8 +5,7 @@ from cyclopts import App
 
 from dmpworks.batch.utils import s3_uri
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
-from dmpworks.cli_utils import DatasetSubset
-from dmpworks.transform.cli import OpenAlexWorksConfig
+from dmpworks.cli_utils import DatasetSubset, OpenAlexWorksTransformConfig
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.openalex_works import transform_openalex_works
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -20,15 +19,13 @@ app = App(name="openalex-works", help="OpenAlex Works AWS Batch pipeline.")
 
 @app.command(name="download")
 def download_cmd(bucket_name: str, run_id: str, openalex_bucket_name: str):
-    """Download OpenAlex Works from the OpenAlex S3 bucket and upload it to
-    the DMP Tool S3 bucket.
+    """Download OpenAlex Works from the OpenAlex S3 bucket and upload to the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
         openalex_bucket_name: the name of the OpenAlex AWS S3 bucket.
     """
-
     setup_multiprocessing_logging(logging.INFO)
 
     with download_source_task(bucket_name, DATASET, run_id) as ctx:
@@ -49,14 +46,13 @@ def dataset_subset_cmd(
     run_id: str,
     dataset_subset: DatasetSubset = None,
 ):
-    """Create a subset of DataCite.
+    """Create a subset of OpenAlex Works.
 
     Args:
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
         dataset_subset: settings for creating the subset of works
     """
-
     setup_multiprocessing_logging(logging.INFO)
 
     with dataset_subset_task(
@@ -80,10 +76,9 @@ def transform_cmd(
     run_id: str,
     use_subset: bool = False,
     *,
-    config: Optional[OpenAlexWorksConfig] = None,
+    config: Optional[OpenAlexWorksTransformConfig] = None,
 ):
-    """Download OpenAlex Works from the DMP Tool S3 bucket, transform it to
-    Parquet format, and upload the results to same bucket.
+    """Download OpenAlex Works from DMP Tool S3 bucket, transform to Parquet, and upload the result.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
@@ -91,8 +86,7 @@ def transform_cmd(
         use_subset: whether to use a subset of the dataset or the full dataset.
         config: optional configuration parameters.
     """
-
-    config = OpenAlexWorksConfig() if config is None else config
+    config = OpenAlexWorksTransformConfig() if config is None else config
     setup_multiprocessing_logging(logging.INFO)
 
     with transform_parquets_task(bucket_name, DATASET, run_id, use_subset=use_subset) as ctx:

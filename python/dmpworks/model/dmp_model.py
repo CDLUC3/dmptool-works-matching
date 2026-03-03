@@ -20,6 +20,24 @@ from dmpworks.model.common import (
 
 
 class DMPModel(BaseModel):
+    """Represents a Data Management Plan (DMP).
+
+    Attributes:
+        doi: The DOI of the DMP.
+        created: The creation date and time.
+        registered: The registration date and time.
+        modified: The modification date and time.
+        title: The title of the DMP.
+        abstract_text: The abstract text of the DMP.
+        project_start: The project start date.
+        project_end: The project end date.
+        institutions: A list of associated institutions.
+        authors: A list of authors.
+        funding: A list of funding items.
+        published_outputs: A list of published outputs.
+        external_data: External data associated with the DMP.
+    """
+
     model_config = {
         "arbitrary_types_allowed": True,
         "alias_generator": to_camel,
@@ -42,6 +60,11 @@ class DMPModel(BaseModel):
 
     @cached_property
     def funded_dois(self) -> list[str]:
+        """Get a list of funded DOIs from external data.
+
+        Returns:
+            list[str]: A list of unique funded DOIs.
+        """
         funded_dois = set()
         for award in self.external_data.awards:
             for doi in award.funded_dois:
@@ -68,10 +91,25 @@ class DMPModel(BaseModel):
 
 
 class ResearchOutput(BaseModel):
+    """Represents a research output.
+
+    Attributes:
+        doi: The DOI of the research output.
+    """
+
     doi: str
 
 
 class FundingItem(BaseModel):
+    """Represents a funding item.
+
+    Attributes:
+        funder: The funder.
+        funding_opportunity_id: The funding opportunity ID.
+        status: The status of the funding.
+        award_id: The award ID.
+    """
+
     funder: Optional[Funder]
     funding_opportunity_id: Optional[str]
     status: Optional[str]
@@ -79,6 +117,13 @@ class FundingItem(BaseModel):
 
 
 class ExternalData(BaseModel):
+    """Represents external data associated with a DMP.
+
+    Attributes:
+        updated: The date and time the external data was updated.
+        awards: A list of awards.
+    """
+
     model_config = {
         "arbitrary_types_allowed": True,
         "alias_generator": to_camel,
@@ -99,6 +144,15 @@ class ExternalData(BaseModel):
 
 
 class Award(BaseModel):
+    """Represents an award in external data.
+
+    Attributes:
+        funder: The funder.
+        award_id: The award ID object.
+        funded_dois: A list of DOIs funded by this award.
+        award_url: The URL of the award.
+    """
+
     model_config = {
         "arbitrary_types_allowed": True,
         "alias_generator": to_camel,
@@ -109,10 +163,6 @@ class Award(BaseModel):
     award_id: Optional[AwardID]
     funded_dois: list[str]
     award_url: Optional[str] = None
-
-    @cached_property
-    def funded_dois_set(self) -> frozenset[str]:
-        return frozenset(self.funded_dois)
 
     @field_validator("award_id", mode="before")
     @classmethod

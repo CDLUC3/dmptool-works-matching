@@ -4,7 +4,7 @@ from typing import Callable, Optional
 import pendulum
 
 from dmpworks.model.common import Institution
-from dmpworks.model.dmp_model import Award, DMPModel, ResearchOutput
+from dmpworks.model.dmp_model import Award, DMPModel
 
 
 def get_query_builder(name: str) -> Callable[[DMPModel, int, int, int], dict]:
@@ -96,7 +96,6 @@ def build_dmp_works_search_baseline_query(
     dmp: DMPModel, max_results: int, project_end_buffer_years: int, inner_hits_size: int
 ) -> dict:
     """Baseline DMP works search query using manually tuned weights"""
-
     must = []
     should = []
 
@@ -468,8 +467,19 @@ def build_awards_query(
     awards: list[Award],
     inner_hits_size: int = 50,
 ) -> Optional[dict]:
-    """The dis_max ensures that all the variants of a single award only contribute
-    a maximum score of 10."""
+    """Build a nested OpenSearch query for matching award identifiers.
+
+    Uses `dis_max` so that multiple variants of the same award contribute
+    only a single score (boost 10) rather than accumulating scores.
+
+    Args:
+        path: Nested document path for awards.
+        awards: List of award objects containing identifier variants.
+        inner_hits_size: Maximum number of matching nested documents to return.
+
+    Returns:
+        Nested query dict if awards are provided, otherwise None.
+    """
 
     award_queries = []
     for award in awards:

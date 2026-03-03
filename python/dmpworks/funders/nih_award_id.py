@@ -11,6 +11,31 @@ log = logging.getLogger(__name__)
 
 
 class NIHAwardID(AwardID):
+    """Represents an NIH Award ID.
+
+    Details derived from:
+     * https://www.era.nih.gov/files/Deciphering_NIH_Application.pdf
+     * https://grants.nih.gov/funding/activity-codes
+     * https://pmc.ncbi.nlm.nih.gov/articles/PMC3495907/
+
+    Attributes:
+        parent_ror_ids: The parent funder ROR IDs.
+        text: The original text that the ID was parsed from.
+        application_type: Classifies funding requests based on their purpose, such as new projects, renewals,
+            revisions, extensions, continuations, and administrative changes like transfers between institutions, organizations,
+            or NIH institutes.
+        activity_code: NIH uses three-character activity codes to categorize research-related programs, with the
+            first character indicating the funding type (e.g., "R" for research, "T" for training), though their use may vary
+            by institute or center.
+        institute_code: The NIH institution code.
+        serial_number: Six‐digit number assigned within an Institute/Center.
+        support_year: Two‐digit number indicating segment or budget period of a project.
+        other_suffixes: "A" and related number identifies the amendment number (e.g. A1 = resubmission); "S" and
+            related number identifies the revision record and follows the grant year or the amendment designation to which
+            additional funds have been awarded.
+        appl_id: The application ID.
+    """
+
     parent_ror_ids = {"01cwqze88"}
 
     def __init__(
@@ -24,26 +49,18 @@ class NIHAwardID(AwardID):
         other_suffixes: Optional[str] = None,
         appl_id: Optional[str] = None,
     ):
-        """Construct an NIH Award ID. Details in docstrings derived from
-         * https://www.era.nih.gov/files/Deciphering_NIH_Application.pdf
-         * https://grants.nih.gov/funding/activity-codes
-         * https://pmc.ncbi.nlm.nih.gov/articles/PMC3495907/
+        """Construct an NIH Award ID.
 
-        :param text: the original text that the ID was parsed from.
-        :param application_type: classifies funding requests based on their purpose, such as new projects, renewals,
-        revisions, extensions, continuations, and administrative changes like transfers between institutions, organizations,
-        or NIH institutes.
-        :param activity_code: NIH uses three-character activity codes to categorize research-related programs, with the
-        first character indicating the funding type (e.g., "R" for research, "T" for training), though their use may vary
-        by institute or center.
-        :param institute_code: the NIH institution code.
-        :param serial_number: six‐digit number assigned within an Institute/Center.
-        :param support_year: two‐digit number indicating segment or budget period of a project.
-        :param other_suffixes: "A" and related number identifies the amendment number (e.g. A1 = resubmission); "S" and
-        related number identifies the revision record and follows the grant year or the amendment designation to which
-        additional funds have been awarded.
+        Args:
+            text: The original text.
+            application_type: The application type code.
+            activity_code: The activity code.
+            institute_code: The institution code.
+            serial_number: The serial number.
+            support_year: The support year.
+            other_suffixes: Other suffixes (amendments/revisions).
+            appl_id: The application ID.
         """
-
         super().__init__(
             text,
             [
@@ -68,7 +85,6 @@ class NIHAwardID(AwardID):
 
     def identifier_string(self) -> str:
         """The canonical identifier as a string"""
-
         parts = []
         if self.application_type:
             parts.append(self.application_type)
@@ -94,11 +110,13 @@ class NIHAwardID(AwardID):
         return "".join(parts)
 
     def award_url(self) -> Optional[str]:
+        """Returns the URL for the award"""
         if self.appl_id is not None:
             return f"https://reporter.nih.gov/project-details/{self.appl_id}"
         return None
 
     def generate_variants(self) -> list[str]:
+        """Generates variants of the funder ID"""
         all_award_ids = [self] + self.related_awards
         variants = set()
         for award_id in all_award_ids:
@@ -106,6 +124,7 @@ class NIHAwardID(AwardID):
         return list(variants)
 
     def fetch_additional_metadata(self):
+        """Fetches additional metadata associated with the award ID"""
         # Fetch award info and related awards
         nih_project_details = nih_core_project_to_appl_ids(
             appl_type_code=self.application_type,
@@ -123,16 +142,19 @@ class NIHAwardID(AwardID):
 
     @staticmethod
     def parse(text: Optional[str]) -> Optional[NIHAwardID]:
+        """Parses a funder ID"""
         return parse_nih_award_id(text)
 
 
 def parse_nih_award_id(text: Optional[str]) -> Optional[NIHAwardID]:
     """Parse an NIH award ID string into an NIHAwardID object.
 
-    :param text: the text containing the NIH award ID.
-    :return: the NIHAwardID object or None if an award ID could not be matched.
-    """
+    Args:
+        text: The text containing the NIH award ID.
 
+    Returns:
+        The NIHAwardID object or None if an award ID could not be matched.
+    """
     original_text = text
 
     # Return None if None or empty string
@@ -211,10 +233,12 @@ def parse_nih_award_id(text: Optional[str]) -> Optional[NIHAwardID]:
 def nih_awards_generate_variants(award_id: NIHAwardID) -> Set[str]:
     """Generates different string representations of an NIH Award ID.
 
-    :param award_id: the NIH Award ID.
-    :return: variants.
-    """
+    Args:
+        award_id: The NIH Award ID.
 
+    Returns:
+        A set of variants.
+    """
     base = f"{award_id.institute_code} {award_id.serial_number}"
     variants = {base.replace(" ", ""), base}  # Include "AI176039" and "AI 176039"
 

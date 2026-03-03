@@ -14,6 +14,15 @@ T = TypeVar("T", bound="AwardID")
 
 
 class AwardID(ABC):
+    """Abstract base class for Award IDs.
+
+    Attributes:
+        parent_ror_ids: The parent funder ROR IDs.
+        text: The original text of the award ID.
+        fields: The fields that make up the award ID.
+        related_awards: A list of related AwardID objects.
+    """
+
     parent_ror_ids: list = []  # The funder ROR IDs
 
     def __init__(self, text: str, fields: list[str]):
@@ -49,6 +58,11 @@ class AwardID(ABC):
 
     @cached_property
     def all_variants(self) -> list[str]:
+        """Get all variants of the award ID, including related awards.
+
+        Returns:
+            list[str]: A list of all variant strings.
+        """
         award_ids = set()
 
         # Award IDs for this award
@@ -63,7 +77,11 @@ class AwardID(ABC):
         return list(award_ids)
 
     def parts(self) -> list[IdentifierPart]:
-        """The parts that make up the ID"""
+        """The parts that make up the ID.
+
+        Returns:
+            list[IdentifierPart]: A list of IdentifierPart objects.
+        """
         parts = []
         for field in self.fields:
             value = getattr(self, field)
@@ -91,8 +109,17 @@ class AwardID(ABC):
 
     @classmethod
     def from_dict(cls, dict_: dict) -> AwardID:
-        """Construct an AwardID from a dict, you must pass the correct subclass"""
+        """Construct an AwardID from a dict.
 
+        Args:
+            dict_: The dictionary containing award ID data.
+
+        Returns:
+            AwardID: An instance of AwardID or a subclass.
+
+        Raises:
+            TypeError: If the class specified in the dict is not a subclass of AwardID.
+        """
         cls_ = cls
         if cls == AwardID:
             # Fallback to class path stored in dict_
@@ -112,8 +139,11 @@ class AwardID(ABC):
         return obj
 
     def to_dict(self) -> dict:
-        """Converts the Award ID into a dict"""
+        """Converts the Award ID into a dict.
 
+        Returns:
+            dict: A dictionary representation of the AwardID.
+        """
         return {
             "class": f"{self.__class__.__module__}.{self.__class__.__name__}",
             "parts": [part.to_dict() for part in self.parts()],
@@ -123,17 +153,37 @@ class AwardID(ABC):
 
 @dataclass
 class Identifier:
+    """Represents an identifier.
+
+    Attributes:
+        id: The identifier string.
+        type: The type of the identifier.
+    """
+
     id: str
     type: str
 
     @classmethod
     def from_dict(cls, dict_) -> Identifier:
+        """Create an Identifier from a dictionary.
+
+        Args:
+            dict_: The dictionary containing identifier data.
+
+        Returns:
+            Identifier: An Identifier object.
+        """
         return Identifier(
             dict_.get("id"),
             dict_.get("type"),
         )
 
     def to_dict(self) -> dict:
+        """Convert the Identifier to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the Identifier.
+        """
         return {
             "id": self.id,
             "type": self.type,
@@ -142,17 +192,37 @@ class Identifier:
 
 @dataclass
 class IdentifierPart:
+    """Represents a part of an identifier.
+
+    Attributes:
+        value: The value of the part.
+        type: The type of the part.
+    """
+
     value: str
     type: str
 
     @classmethod
     def from_dict(cls, dict_) -> IdentifierPart:
+        """Create an IdentifierPart from a dictionary.
+
+        Args:
+            dict_: The dictionary containing identifier part data.
+
+        Returns:
+            IdentifierPart: An IdentifierPart object.
+        """
         return IdentifierPart(
             dict_.get("value"),
             dict_.get("type"),
         )
 
     def to_dict(self) -> dict:
+        """Convert the IdentifierPart to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the IdentifierPart.
+        """
         return {
             "value": self.value,
             "type": self.type,

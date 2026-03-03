@@ -22,13 +22,15 @@ def nsf_fetch_award_publication_dois(
 ) -> list[dict]:
     """Fetch publications associated with an NSF award ID.
 
-    :param award_id: the NSF award ID.
-    :param crossref_threshold: the minimum title matching threshold when no DOI is specified and Crossref Metadata is queried.
-    :param datacite_threshold: the minimum title matching threshold when no DOI is specified and DataCite is queried.
-    :param email: email to supply to Crossref Metadata API.
-    :return: a list of works.
-    """
+    Args:
+        award_id: the NSF award ID.
+        crossref_threshold: the minimum title matching threshold when no DOI is specified and Crossref Metadata is queried.
+        datacite_threshold: the minimum title matching threshold when no DOI is specified and DataCite is queried.
+        email: email to supply to Crossref Metadata API.
 
+    Returns:
+        A list of works.
+    """
     base_url = "https://www.research.gov/awardapi-service/v1/awards.json"
     params = {"id": award_id, "printFields": "publicationResearch"}
 
@@ -81,16 +83,20 @@ def find_crossref_doi(
     threshold: float = 95,
     email: Optional[str] = None,
 ) -> str | None:
-    """Given an academic work title and a journal name, fetch a list of candidate DOIs from Crossref Metadata
-    and accept the title with a similarity greater than or equal to the threshold.
+    """Find a matching Crossref DOI for a title and journal using fuzzy similarity.
 
-    :param title: the title.
-    :param journal: the journal name.
-    :param threshold: the minimum threshold for accepting a match.
-    :param email: email address.
-    :return: the DOI or None.
+    Queries the Crossref API for candidate works and returns the DOI of the
+    first title whose similarity score meets or exceeds the threshold.
+
+    Args:
+        title: The work title.
+        journal: The journal name.
+        threshold: Minimum similarity score required to accept a match.
+        email: Optional email address for Crossref API etiquette.
+
+    Returns:
+        The matched DOI, or None if no match is found.
     """
-
     base_url = "https://api.crossref.org/works"
     params = {"query.title": title, "query.container-title": journal}
     if email is not None:
@@ -119,14 +125,18 @@ def find_crossref_doi(
 
 
 def find_datacite_doi(title: str, threshold: float = 95) -> str | None:
-    """Given an academic work title, fetch a list of candidate DOIs from DataCite
-    and accept the title with a similarity greater than or equal to the threshold.
+    """Find a matching DataCite DOI for a work title using fuzzy similarity.
 
-    :param title: the title.
-    :param threshold: the minimum threshold for accepting a match.
-    :return: the DOI or None.
+    Queries the DataCite API for candidate titles and returns the DOI of the
+    first match whose similarity score meets or exceeds the threshold.
+
+    Args:
+        title: The work title.
+        threshold: Minimum similarity score required to accept a match.
+
+    Returns:
+        The matched DOI, or None if no match is found.
     """
-
     base_url = "https://api.datacite.org/dois"
     title_quoted = title.replace('"', '\\"')
     params = {"query": f'titles.title:"{title_quoted}"', "sort": "relevance"}
@@ -164,13 +174,17 @@ def find_datacite_doi(title: str, threshold: float = 95) -> str | None:
 
 
 def preprocess_text(text) -> str:
-    """Pre-process text before similarity matching. Converts to lower case, folds non-ASCII characters into ASCII
-    characters, removes punctuation and normalises spaces.
+    """Preprocess text for similarity matching.
 
-    :param text: the text to preprocess.
-    :return: the preprocessed text.
+    Converts to lowercase, folds non-ASCII characters to ASCII, removes
+    punctuation, and normalizes whitespace.
+
+    Args:
+        text: The text to preprocess.
+
+    Returns:
+        The preprocessed text.
     """
-
     text = text.lower()  # Convert to lowercase
     text = fold(text)  # Fold non-ASCII characters into ASCII
     text = re.sub(
@@ -185,10 +199,12 @@ def preprocess_text(text) -> str:
 def parse_reference(reference: str) -> dict:
     """Parse an NSF award publication reference.
 
-    :param reference: the reference string.
-    :return: a dictionary with doi, journal, year, title and reference set.
-    """
+    Args:
+        reference: the reference string.
 
+    Returns:
+        A dictionary with doi, journal, year, title and reference set.
+    """
     # Split on ~
     parts = reference.split("~")
 
@@ -225,6 +241,17 @@ def parse_reference(reference: str) -> dict:
 
 
 def nsf_fetch_org_id(award_id: str):
+    """Fetch the NSF organization ID for a given award ID.
+
+    Args:
+        award_id: The NSF award ID.
+
+    Returns:
+        str: The organization ID if found, otherwise None.
+
+    Raises:
+        requests.exceptions.RequestException: If the API request fails.
+    """
     base_url = "https://www.research.gov/awardapi-service/v1/awards.json"
     params = {"id": award_id}
     org_id = None

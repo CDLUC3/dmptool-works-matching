@@ -14,6 +14,12 @@ def to_camel(string: str) -> str:
 
 
 class Institution(BaseModel):
+    """Represents an institution.
+
+    Attributes:
+        name: The name of the institution.
+        ror: The ROR ID of the institution.
+    """
     model_config = {
         "alias_generator": to_camel,
         "populate_by_name": True,
@@ -24,6 +30,17 @@ class Institution(BaseModel):
 
 
 class Author(BaseModel):
+    """Represents an author.
+
+    Attributes:
+        orcid: The ORCID of the author.
+        first_initial: The first initial of the author.
+        given_name: The given name of the author.
+        middle_initials: The middle initials of the author.
+        middle_names: The middle names of the author.
+        surname: The surname of the author.
+        full: The full name of the author.
+    """
     model_config = {
         "alias_generator": to_camel,
         "populate_by_name": True,
@@ -39,6 +56,12 @@ class Author(BaseModel):
 
 
 class Funder(BaseModel):
+    """Represents a funder.
+
+    Attributes:
+        name: The name of the funder.
+        ror: The ROR ID of the funder.
+    """
     model_config = {
         "alias_generator": to_camel,
         "populate_by_name": True,
@@ -49,6 +72,11 @@ class Funder(BaseModel):
 
 
 class Award(BaseModel):
+    """Represents an award.
+
+    Attributes:
+        award_id: The ID of the award.
+    """
     model_config = {
         "alias_generator": to_camel,
         "populate_by_name": True,
@@ -58,6 +86,11 @@ class Award(BaseModel):
 
 
 class Relation(BaseModel):
+    """Represents a relation to another work.
+
+    Attributes:
+        doi: The DOI of the related work.
+    """
     model_config = {
         "alias_generator": to_camel,
         "populate_by_name": True,
@@ -67,6 +100,13 @@ class Relation(BaseModel):
 
 
 class Relations(BaseModel):
+    """Represents a collection of relations.
+
+    Attributes:
+        intra_work_dois: DOIs of intra-work relations.
+        possible_shared_project_dois: DOIs of possible shared project relations.
+        dataset_citation_dois: DOIs of dataset citation relations.
+    """
     model_config = {
         "alias_generator": to_camel,
         "populate_by_name": True,
@@ -78,6 +118,12 @@ class Relations(BaseModel):
 
 
 class Source(BaseModel):
+    """Represents a source.
+
+    Attributes:
+        name: The name of the source.
+        url: The URL of the source.
+    """
     model_config = {
         "alias_generator": to_camel,
         "populate_by_name": True,

@@ -14,6 +14,13 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class NIHProjectDetails:
+    """Details of an NIH project.
+
+    Attributes:
+        appl_id: The application ID.
+        project_num: The project number.
+    """
+
     appl_id: Optional[str] = None
     project_num: Optional[str] = None
 
@@ -30,17 +37,19 @@ def nih_core_project_to_appl_ids(
 ) -> List[NIHProjectDetails]:
     """Get the NIH Application IDs associated with an NIH Core Project Number.
 
-    :param core_project_num: the NIH Core Project Number, e.g. 5UG1HD078437-07.
-    :param appl_type_code:
-    :param activity_code:
-    :param ic_code:
-    :param serial_num:
-    :param support_year:
-    :param full_support_year:
-    :param suffix_code:
-    :return: the list of NIH Application IDs.
-    """
+    Args:
+        core_project_num: The NIH Core Project Number, e.g. 5UG1HD078437-07.
+        appl_type_code: The application type code.
+        activity_code: The activity code.
+        ic_code: The institute code.
+        serial_num: The serial number.
+        support_year: The support year.
+        full_support_year: The full support year.
+        suffix_code: The suffix code.
 
+    Returns:
+        List[NIHProjectDetails]: The list of NIH Application IDs.
+    """
     criteria = {"fiscal_years": []}
     if core_project_num is not None:
         # Search with core_project_num
@@ -94,11 +103,13 @@ def nih_fetch_award_publication_dois(
 ) -> list[dict]:
     """Fetch the publications associated with an NIH award.
 
-    :param appl_id: the NIH Application ID, a 7‑digit numeric identifier, .e.g 10438547.
-    :param pubmed_api_email: an email address to use when calling the PubMed API.
-    :return: a list of publication DOIs.
-    """
+    Args:
+        appl_id: The NIH Application ID, a 7‑digit numeric identifier, .e.g 10438547.
+        pubmed_api_email: An email address to use when calling the PubMed API.
 
+    Returns:
+        list[dict]: A list of publication DOIs.
+    """
     base_url = "https://reporter.nih.gov/services/Projects/Publications"
     params = {
         "projectId": appl_id,
@@ -144,14 +155,16 @@ def pubmed_ids_to_dois(
 ) -> list[dict]:
     """Call the PubMed ID converter API to convert PubMed IDs and PMC IDs to DOIs: https://pmc.ncbi.nlm.nih.gov/tools/id-converter-api/
 
-    :param ids: a list of PubMed IDs or PMC IDs.
-    :param idtype: what type of IDs are supplied: "pmcid", "pmid", "mid", or "doi".
-    :param versions: whether to return version information.
-    :param tool: the name of the tool.
-    :param email: an email address to set in the PubMed API.
-    :return:
-    """
+    Args:
+        ids: A list of PubMed IDs or PMC IDs.
+        idtype: What type of IDs are supplied: "pmcid", "pmid", "mid", or "doi".
+        versions: Whether to return version information.
+        tool: The name of the tool.
+        email: An email address to set in the PubMed API.
 
+    Returns:
+        list[dict]: A list of dictionaries containing converted IDs.
+    """
     outputs = []
     for batch in to_batches(ids, 200):
         outputs.extend(_pubmed_ids_to_dois(batch, idtype, versions, tool, email))
@@ -165,6 +178,22 @@ def _pubmed_ids_to_dois(
     tool="dmptool-match-workflows",
     email: Optional[str] = None,
 ) -> list[dict]:
+    """Internal function to convert a batch of PubMed IDs to DOIs.
+
+    Args:
+        ids: List of IDs to convert.
+        idtype: Type of IDs provided.
+        versions: Whether to include version information.
+        tool: Name of the tool making the request.
+        email: Email address for API contact.
+
+    Returns:
+        list[dict]: List of converted ID dictionaries.
+
+    Raises:
+        ValueError: If parameters are invalid.
+        requests.exceptions.RequestException: If the API request fails.
+    """
     # Validate parameters
     if len(ids) > 200:
         raise ValueError(f"pubmed_id_converter: a maximum of 200 IDs can be supplied at once")

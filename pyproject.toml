@@ -36,6 +36,7 @@ dev = [
     "black>=25,<26", # code formatting
     "maturin>=1.0,<2.0", # Build system
     "vcrpy>=7,<8", # testing
+    "ruff>=0.11.13,<1" # docstring checking
 ]
 
 [project.scripts]
@@ -62,3 +63,9 @@ exclude = '''
 [tool.pytest.ini_options]
 log_cli = true
 log_cli_level = "WARNING"
+
+[tool.ruff]
+select = ["D"]
+
+[tool.ruff.pydocstyle]
+convention = "google"

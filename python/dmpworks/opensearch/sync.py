@@ -67,6 +67,16 @@ def stream_parquet_batches(
     columns: Optional[list[str]] = None,
     batch_size: Optional[int] = None,
 ) -> Iterator[pa.RecordBatch]:
+    """Yield batches from a parquet file.
+
+    Args:
+        source: Path to the parquet file.
+        columns: List of columns to read.
+        batch_size: Number of rows per batch.
+
+    Yields:
+        pa.RecordBatch: A batch of records.
+    """
     # Yield batches from a parquet file
     with pq.ParquetFile(source) as parquet_file:
         for batch in parquet_file.iter_batches(batch_size=batch_size, columns=columns):
@@ -82,6 +92,17 @@ def init_process(
     create_open_search: bool,
     level: int,
 ):
+    """Initialize a worker process.
+
+    Args:
+        config: OpenSearch client configuration.
+        success_value: Shared counter for successful operations.
+        failure_value: Shared counter for failed operations.
+        lock: Shared lock for counters.
+        chunk_sizes: Shared queue for chunk sizes.
+        create_open_search: Whether to create an OpenSearch client.
+        level: Logging level.
+    """
     global open_search, success_counter, failure_counter, counter_lock, chunk_sizes_queue
     logging.basicConfig(level=level, format="[%(asctime)s] [%(levelname)s] [%(processName)s] %(message)s")
     logging.getLogger("opensearch").setLevel(logging.WARNING)
@@ -94,6 +115,14 @@ def init_process(
 
 
 def measure_chunk_bytes(chunk):
+    """Measure the size of a chunk in bytes.
+
+    Args:
+        chunk: A list of documents.
+
+    Returns:
+        int: The size of the chunk in bytes.
+    """
     payload = "\n".join(json.dumps(doc, separators=(",", ":")) for doc in chunk) + "\n"
     return len(payload.encode("utf-8"))
 
@@ -103,6 +132,13 @@ def collect_completed_futures(
     error_map: ErrorMap,
     max_error_samples: int = MAX_ERROR_SAMPLES,
 ):
+    """Collect results from completed futures and update the error map.
+
+    Args:
+        futures: List of futures to check.
+        error_map: Dictionary to store error summaries.
+        max_error_samples: Maximum number of error samples to keep.
+    """
     finished = []
     for fut in futures:
         if fut.done():
@@ -129,6 +165,18 @@ def update_progress_bar(
     total: int,
     postfix_extra: Optional[dict] = None,
 ):
+    """Update the progress bar.
+
+    Args:
+        pbar: The tqdm progress bar.
+        success_count: Number of successful operations.
+        failure_count: Number of failed operations.
+        total: Total number of operations processed so far.
+        postfix_extra: Extra information to display in the progress bar.
+
+    Returns:
+        int: The new total count.
+    """
     new_total = success_count + failure_count
     delta = new_total - total
     pbar.update(delta)
@@ -148,6 +196,20 @@ def collect_chunk_sizes(
     drain_queue: bool = False,
     timeout_seconds: int = 1,
 ):
+    """Collect chunk sizes from the queue.
+
+    Args:
+        chunk_sizes: The queue containing chunk sizes.
+        min_chunk_size: Current minimum chunk size.
+        max_chunk_size: Current maximum chunk size.
+        sum_chunk_size: Current sum of chunk sizes.
+        total_chunks: Current total number of chunks.
+        drain_queue: Whether to drain the queue completely.
+        timeout_seconds: Timeout for getting items from the queue.
+
+    Returns:
+        tuple: Updated (min_chunk_size, max_chunk_size, sum_chunk_size, total_chunks).
+    """
     start_time = time.monotonic()
     while drain_queue or (time.monotonic() - start_time < timeout_seconds):
         try:
@@ -166,6 +228,11 @@ def collect_chunk_sizes(
 
 
 def default_error() -> ErrorSummary:
+    """Create a default error summary.
+
+    Returns:
+        ErrorSummary: A default error summary dictionary.
+    """
     return {"count": 0, "samples": []}
 
 
@@ -178,6 +245,20 @@ def stream_actions(
     initial_backoff: int,
     max_backoff: int,
 ):
+    """Stream actions to OpenSearch using the bulk API.
+
+    Args:
+        client: The OpenSearch client.
+        actions: Iterator of actions to perform.
+        chunk_size: Number of actions per chunk.
+        max_chunk_bytes: Maximum size of a chunk in bytes.
+        max_retries: Maximum number of retries.
+        initial_backoff: Initial backoff time in seconds.
+        max_backoff: Maximum backoff time in seconds.
+
+    Returns:
+        ErrorMap: A map of errors encountered.
+    """
     errors: ErrorMap = defaultdict(default_error)
 
     for ok, info in streaming_bulk(
@@ -205,6 +286,14 @@ def stream_actions(
 
 
 def info_to_error_map(info: dict) -> ErrorMap:
+    """Convert bulk API info to an error map.
+
+    Args:
+        info: The info dictionary returned by the bulk API.
+
+    Returns:
+        ErrorMap: An error map containing the error details.
+    """
     update = info.get("update", {})
     doc_id: str = update.get("_id")
     status: int = update.get("status")
@@ -227,6 +316,13 @@ def merge_error_maps(
     new_errors: ErrorMap,
     max_error_samples: int = MAX_ERROR_SAMPLES,
 ):
+    """Merge new errors into an existing error map.
+
+    Args:
+        merged_errors: The existing error map.
+        new_errors: The new errors to merge.
+        max_error_samples: Maximum number of error samples to keep.
+    """
     for status, error_summary in new_errors.items():
         merged_summary = merged_errors[status]
         merged_summary["count"] += error_summary["count"]
@@ -241,6 +337,12 @@ def measure_chunks(
     actions: Iterator[dict],
     chunk_size: int,
 ):
+    """Measure chunk sizes without sending them to OpenSearch.
+
+    Args:
+        actions: Iterator of actions.
+        chunk_size: Number of actions per chunk.
+    """
     chunk = []
     for action in actions:
         chunk.append(action)
@@ -261,6 +363,11 @@ def measure_chunks(
 def dry_run_actions(
     actions: Iterator[dict],
 ):
+    """Consume actions without performing any operations.
+
+    Args:
+        actions: Iterator of actions.
+    """
     for _ in actions:
         with counter_lock:
             success_counter.value += 1
@@ -268,6 +375,11 @@ def dry_run_actions(
 
 @lru_cache(maxsize=None)
 def wait_first_run(proc_idx: int):
+    """Wait for a staggered start based on the process index.
+
+    Args:
+        proc_idx: The process index.
+    """
     # Runs once per process in a ProcessPoolExecutor. The return value is
     # cached so the function body is executed only the first time it is called
     # in each process.
@@ -277,6 +389,11 @@ def wait_first_run(proc_idx: int):
 
 
 def get_process_index() -> int:
+    """Get the index of the current process.
+
+    Returns:
+        int: The process index.
+    """
     proc = current_process()
     if proc._identity:
         idx = proc._identity[0]
@@ -304,6 +421,25 @@ def index_file(
     measure_chunk_size: bool = False,
     staggered_start: bool = False,
 ):
+    """Index a file into OpenSearch.
+
+    Args:
+        file_path: Path to the file to index.
+        index_name: Name of the OpenSearch index.
+        batch_to_actions_func: Function to convert a batch to actions.
+        columns: List of columns to read from the file.
+        chunk_size: Number of actions per chunk.
+        max_chunk_bytes: Maximum size of a chunk in bytes.
+        max_retries: Maximum number of retries.
+        initial_backoff: Initial backoff time in seconds.
+        max_backoff: Maximum backoff time in seconds.
+        dry_run: Whether to perform a dry run.
+        measure_chunk_size: Whether to measure chunk sizes.
+        staggered_start: Whether to stagger the start of indexing.
+
+    Returns:
+        ErrorMap: A map of errors encountered (if not dry run or measure chunk size).
+    """
     if staggered_start:
         log.debug("Staggered start")
         idx = get_process_index()
@@ -338,6 +474,14 @@ def index_file(
 
 
 def bytes_to_mb(n):
+    """Convert bytes to megabytes.
+
+    Args:
+        n: Number of bytes.
+
+    Returns:
+        float: Number of megabytes.
+    """
     return n / 1024 / 1024
 
 
@@ -354,6 +498,19 @@ def delete_docs(
     initial_backoff: int = INITIAL_BACKOFF,
     max_backoff: int = MAX_BACKOFF,
 ):
+    """Delete documents from OpenSearch based on DOI state.
+
+    Args:
+        index_name: Name of the OpenSearch index.
+        doi_state_dir: Directory containing DOI state parquet files.
+        run_id: Run ID (date string) to filter records.
+        client_config: OpenSearch client configuration.
+        chunk_size: Number of actions per chunk.
+        max_chunk_bytes: Maximum size of a chunk in bytes.
+        max_retries: Maximum number of retries.
+        initial_backoff: Initial backoff time in seconds.
+        max_backoff: Maximum backoff time in seconds.
+    """
     try:
         updated_date = pendulum.parse(run_id, strict=True)
     except Exception as e:
@@ -430,6 +587,15 @@ def yield_delete_actions(
     index_name: str,
     batch: list[dict],
 ):
+    """Yield delete actions for a batch of records.
+
+    Args:
+        index_name: Name of the OpenSearch index.
+        batch: List of records containing DOIs.
+
+    Yields:
+        dict: A delete action dictionary.
+    """
     for row in batch:
         doi = row.get("doi")
         if doi is not None:
@@ -451,6 +617,17 @@ def sync_docs(
     sync_config: OpenSearchSyncConfig,
     log_level: int = logging.INFO,
 ):
+    """Sync documents from parquet files to OpenSearch.
+
+    Args:
+        index_name: Name of the OpenSearch index.
+        in_dir: Directory containing parquet files.
+        batch_to_actions_func: Function to convert batches to actions.
+        include_columns: List of columns to read from parquet files.
+        client_config: OpenSearch client configuration.
+        sync_config: Sync configuration.
+        log_level: Logging level.
+    """
     parquet_files = list(in_dir.rglob("*.parquet"))
     log.info("Counting records...")
     total_records = count_records(in_dir)

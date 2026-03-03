@@ -59,6 +59,14 @@ AWARD_IDS_EXCLUDE = {
 
 
 def transform_dmp(obj: dict) -> Optional[DMPModel]:
+    """Transform a raw DMP dictionary into a DMPModel.
+
+    Args:
+        obj: The raw DMP dictionary.
+
+    Returns:
+        Optional[DMPModel]: The transformed DMPModel, or None if transformation fails.
+    """
     doi = parse_doi(obj.get("doi"))
 
     # Convert JSON lists into Python lists of dicts
@@ -102,6 +110,14 @@ def transform_dmp(obj: dict) -> Optional[DMPModel]:
 
 
 def parse_doi(obj: Optional[str]) -> Optional[str]:
+    """Parse a DMP Tool DOI string.
+
+    Args:
+        obj: The DOI string to parse.
+
+    Returns:
+        Optional[str]: The parsed DOI, or None if invalid.
+    """
     if obj is None:
         return None
 
@@ -122,6 +138,14 @@ def parse_doi(obj: Optional[str]) -> Optional[str]:
 
 
 def parse_institutions(objects: list[dict]) -> list[dict]:
+    """Parse a list of institution dictionaries.
+
+    Args:
+        objects: A list of institution dictionaries.
+
+    Returns:
+        list[dict]: A list of parsed institution dictionaries.
+    """
     institutions = []
     seen = set()
 
@@ -145,6 +169,14 @@ def parse_institutions(objects: list[dict]) -> list[dict]:
 
 
 def parse_authors(objects: list[dict]) -> list[dict]:
+    """Parse a list of author dictionaries.
+
+    Args:
+        objects: A list of author dictionaries.
+
+    Returns:
+        list[dict]: A list of parsed author dictionaries.
+    """
     authors = []
     seen = set()
 
@@ -180,6 +212,14 @@ def parse_authors(objects: list[dict]) -> list[dict]:
 
 
 def parse_funding(objects: list[dict]) -> list[dict]:
+    """Parse a list of funding dictionaries.
+
+    Args:
+        objects: A list of funding dictionaries.
+
+    Returns:
+        list[dict]: A list of parsed funding dictionaries.
+    """
     funding = []
     seen = set()
 
@@ -212,6 +252,14 @@ def parse_funding(objects: list[dict]) -> list[dict]:
 
 
 def parse_published_outputs(objects: list[dict]) -> list[dict]:
+    """Parse a list of published output dictionaries.
+
+    Args:
+        objects: A list of published output dictionaries.
+
+    Returns:
+        list[dict]: A list of parsed published output dictionaries.
+    """
     outputs = []
     for obj in objects:
         doi = extract_doi(obj.get("doi"))

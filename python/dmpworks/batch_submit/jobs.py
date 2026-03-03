@@ -4,7 +4,14 @@ from typing import Optional, TypedDict
 import boto3
 import pendulum
 
-from dmpworks.cli_utils import DatasetSubset, DMPSubset
+from dmpworks.cli_utils import (
+    CrossrefMetadataTransformConfig,
+    DataCiteTransformConfig,
+    DatasetSubset,
+    DMPSubset,
+    OpenAlexWorksTransformConfig,
+    SQLMeshThreadsConfig,
+)
 from dmpworks.transform.dataset_subset import Dataset
 
 # CPU and memory groups
@@ -31,6 +38,11 @@ _aws_batch_client = None
 
 
 def get_aws_batch_client():
+    """Get the AWS Batch client, creating it if it doesn't exist.
+
+    Returns:
+        boto3.client: The AWS Batch client.
+    """
     global _aws_batch_client
     if _aws_batch_client is None:
         _aws_batch_client = boto3.client('batch')
@@ -38,31 +50,84 @@ def get_aws_batch_client():
 
 
 class EnvVarDict(TypedDict):
+    """Type definition for an environment variable dictionary.
+
+    Attributes:
+        name: The name of the environment variable.
+        value: The value of the environment variable.
+    """
+
     name: str
     value: str
 
 
 class DependsOnDict(TypedDict):
+    """Type definition for a job dependency dictionary.
+
+    Attributes:
+        jobId: The ID of the job to depend on.
+    """
+
     jobId: str
 
 
 def format_date(date: pendulum.Date):
+    """Format a date as YYYY-MM-DD.
+
+    Args:
+        date: The date to format.
+
+    Returns:
+        str: The formatted date string.
+    """
     return date.format("YYYY-MM-DD")
 
 
 def standard_job_definition(env: str) -> str:
+    """Get the standard job definition name for the given environment.
+
+    Args:
+        env: The environment name (e.g., 'dev', 'prod').
+
+    Returns:
+        str: The job definition name.
+    """
     return f"dmp-tool-{env}-batch-dmpworks-job"
 
 
 def datacite_download_job_definition(env: str) -> str:
+    """Get the DataCite download job definition name for the given environment.
+
+    Args:
+        env: The environment name.
+
+    Returns:
+        str: The job definition name.
+    """
     return f"dmp-tool-{env}-batch-dmpworks-datacite-download-job"
 
 
 def standard_job_queue(env: str) -> str:
+    """Get the standard job queue name for the given environment.
+
+    Args:
+        env: The environment name.
+
+    Returns:
+        str: The job queue name.
+    """
     return f"dmp-tool-{env}-batch-job-queue"
 
 
 def database_job_definition(env: str) -> str:
+    """Get the database job definition name for the given environment.
+
+    Args:
+        env: The environment name.
+
+    Returns:
+        str: The job definition name.
+    """
     return f"dmp-tool-{env}-batch-dmpworks-database-job"
 
 
@@ -78,6 +143,22 @@ def submit_job(
     environment: Optional[list[EnvVarDict]] = None,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
+    """Submit a job to AWS Batch.
+
+    Args:
+        job_name: The name of the job.
+        run_id: The unique run identifier.
+        job_queue: The job queue to submit to.
+        job_definition: The job definition to use.
+        vcpus: The number of vCPUs to request.
+        memory: The amount of memory to request (in MiB).
+        command: The command to run.
+        environment: A list of environment variables.
+        depends_on: A list of job dependencies.
+
+    Returns:
+        str: The ID of the submitted job.
+    """
     # Create container overrides
     container_overrides = {}
     if vcpus is not None:
@@ -109,6 +190,14 @@ def submit_job(
 
 
 def make_env(env_vars: dict[str, str | None]) -> list[EnvVarDict]:
+    """Create a list of environment variable dictionaries from a dictionary.
+
+    Args:
+        env_vars: A dictionary of environment variables.
+
+    Returns:
+        list[EnvVarDict]: A list of environment variable dictionaries.
+    """
     return [{"name": k, "value": str(v)} for k, v in env_vars.items() if v is not None]
 
 
@@ -123,8 +212,7 @@ def dataset_subset_job(
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the create dataset subset job to AWS Batch.
+    """Submits the create dataset subset job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -139,7 +227,6 @@ def dataset_subset_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     logging.info("Creating dataset subset")
     logging.info(f"dataset_subset: {dataset_subset}")
 
@@ -167,50 +254,6 @@ def dataset_subset_job(
     )
 
 
-def dmps_transform_job(
-    *,
-    env: str,
-    bucket_name: str,
-    run_id: str,
-    vcpus: int = NANO_VCPUS,
-    memory: int = NANO_MEMORY,
-    depends_on: Optional[list[DependsOnDict]] = None,
-) -> str:
-    """
-    Submits the DMPs transform job to AWS Batch.
-
-    Args:
-        env: environment, i.e., dev, stage, prod.
-        bucket_name: S3 bucket containing the raw data.
-        run_id: a unique ID to represent this run of the job.
-        vcpus: number of vCPUs for the job.
-        memory: memory (in MiB) for the job.
-        depends_on: optional list of job dependencies.
-
-    Returns:
-        str: the job ID of the submitted AWS Batch job.
-    """
-
-    return submit_job(
-        job_name="dmps-transform",
-        run_id=run_id,
-        job_queue=standard_job_queue(env),
-        job_definition=standard_job_definition(env),
-        vcpus=vcpus,
-        memory=memory,
-        command="dmpworks aws-batch dmps transform $BUCKET_NAME $RUN_ID",
-        environment=make_env(
-            {
-                "RUN_ID": run_id,
-                "BUCKET_NAME": bucket_name,
-                "TQDM_POSITION": TQDM_POSITION,
-                "TQDM_MININTERVAL": TQDM_MININTERVAL,
-            }
-        ),
-        depends_on=depends_on,
-    )
-
-
 def ror_download_job(
     *,
     env: str,
@@ -221,8 +264,7 @@ def ror_download_job(
     vcpus: int = NANO_VCPUS,
     memory: int = NANO_MEMORY,
 ) -> str:
-    """
-    Submits the ROR data download job to AWS Batch.
+    """Submits the ROR data download job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -236,7 +278,6 @@ def ror_download_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="ror-download",
         run_id=run_id,
@@ -265,8 +306,7 @@ def openalex_works_download_job(
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
-    """
-    Submits the OpenAlex works data download job to AWS Batch.
+    """Submits the OpenAlex works data download job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -279,7 +319,6 @@ def openalex_works_download_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="openalex-works-download",
         run_id=run_id,
@@ -304,22 +343,19 @@ def openalex_works_transform_job(
     bucket_name: str,
     run_id: str,
     use_subset: bool = False,
-    max_file_processes: int = 8,
-    batch_size: int = 8,
+    config: OpenAlexWorksTransformConfig,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the OpenAlex works data transform job to AWS Batch.
+    """Submits the OpenAlex works data transform job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket containing the raw data.
         run_id: a unique ID to represent this run of the job.
         use_subset: whether to use a subset of the dataset or the full dataset.
-        max_file_processes: max number of files to read in parallel.
-        batch_size: number of records to process in a batch.
+        config: configuration for the transform job.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -327,7 +363,6 @@ def openalex_works_transform_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="openalex-works-transform",
         run_id=run_id,
@@ -335,12 +370,17 @@ def openalex_works_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET",
+        command="dmpworks aws-batch openalex-works transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET --batch-size=$BATCH_SIZE --row-group-size=$ROW_GROUP_SIZE --row-groups-per-file=$ROW_GROUPS_PER_FILE --max-workers=$MAX_WORKERS log-level=$LOG_LEVEL",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "USE_SUBSET": str(use_subset).lower(),
+                "BATCH_SIZE": str(config.batch_size),
+                "ROW_GROUP_SIZE": str(config.row_group_size),
+                "ROW_GROUPS_PER_FILE": str(config.row_groups_per_file),
+                "MAX_WORKERS": str(config.max_workers),
+                "LOG_LEVEL": config.log_level,
                 "TQDM_POSITION": TQDM_POSITION,
                 "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
@@ -359,8 +399,7 @@ def crossref_metadata_download_job(
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
-    """
-    Submits the Crossref metadata download job to AWS Batch.
+    """Submits the Crossref metadata download job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -374,7 +413,6 @@ def crossref_metadata_download_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="crossref-metadata-download",
         run_id=run_id,
@@ -400,18 +438,19 @@ def crossref_metadata_transform_job(
     bucket_name: str,
     run_id: str,
     use_subset: bool = False,
+    config: CrossrefMetadataTransformConfig,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the Crossref metadata transform job to AWS Batch.
+    """Submits the Crossref metadata transform job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket containing the raw data.
         run_id: a unique ID to represent this run of the job.
         use_subset: whether to use a subset of the dataset or the full dataset.
+        config: configuration for the transform job.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -419,7 +458,6 @@ def crossref_metadata_transform_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="crossref-metadata-transform",
         run_id=run_id,
@@ -427,12 +465,17 @@ def crossref_metadata_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch crossref-metadata transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET",
+        command="dmpworks aws-batch crossref-metadata transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET --batch-size=$BATCH_SIZE --row-group-size=$ROW_GROUP_SIZE --row-groups-per-file=$ROW_GROUPS_PER_FILE --max-workers=$MAX_WORKERS --log-level=$LOG_LEVEL",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "USE_SUBSET": str(use_subset).lower(),
+                "BATCH_SIZE": str(config.batch_size),
+                "ROW_GROUP_SIZE": str(config.row_group_size),
+                "ROW_GROUPS_PER_FILE": str(config.row_groups_per_file),
+                "MAX_WORKERS": str(config.max_workers),
+                "LOG_LEVEL": config.log_level,
                 "TQDM_POSITION": TQDM_POSITION,
                 "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
@@ -450,8 +493,7 @@ def datacite_download_job(
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
 ) -> str:
-    """
-    Submits the DataCite data download job to AWS Batch.
+    """Submits the DataCite data download job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -464,7 +506,6 @@ def datacite_download_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="datacite-download",
         run_id=run_id,
@@ -472,7 +513,7 @@ def datacite_download_job(
         job_definition=datacite_download_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch datacite download $BUCKET_NAME $RUN_ID $ALLOCATION_ID $DATACITE_BUCKET_NAME",
+        command="dmpworks aws-batch datacite download $BUCKET_NAME $RUN_ID $DATACITE_BUCKET_NAME",
         environment=make_env(
             {
                 "RUN_ID": run_id,
@@ -489,18 +530,19 @@ def datacite_transform_job(
     bucket_name: str,
     run_id: str,
     use_subset: bool = False,
+    config: DataCiteTransformConfig,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the DataCite data transform job to AWS Batch.
+    """Submits the DataCite data transform job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
         bucket_name: S3 bucket containing the raw data.
         run_id: a unique ID to represent this run of the job.
         use_subset: whether to use a subset of the dataset or the full dataset.
+        config: configuration for the transform job.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -508,7 +550,6 @@ def datacite_transform_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="datacite-transform",
         run_id=run_id,
@@ -516,12 +557,17 @@ def datacite_transform_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch datacite transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET",
+        command="dmpworks aws-batch datacite transform $BUCKET_NAME $RUN_ID --use-subset=$USE_SUBSET --batch-size=$BATCH_SIZE --row-group-size=$ROW_GROUP_SIZE --row-groups-per-file=$ROW_GROUPS_PER_FILE --max-workers=$MAX_WORKERS --log-level=$LOG_LEVEL",
         environment=make_env(
             {
                 "RUN_ID": run_id,
                 "BUCKET_NAME": bucket_name,
                 "USE_SUBSET": str(use_subset).lower(),
+                "BATCH_SIZE": str(config.batch_size),
+                "ROW_GROUP_SIZE": str(config.row_group_size),
+                "ROW_GROUPS_PER_FILE": str(config.row_groups_per_file),
+                "MAX_WORKERS": str(config.max_workers),
+                "LOG_LEVEL": config.log_level,
                 "TQDM_POSITION": TQDM_POSITION,
                 "TQDM_MININTERVAL": TQDM_MININTERVAL,
             }
@@ -544,45 +590,10 @@ def submit_sqlmesh_job(
     vcpus: int = VERY_LARGE_VCPUS,
     memory: int = VERY_LARGE_MEMORY,
     duckdb_memory_limit: str = "225GB",
-    crossref_crossref_metadata_threads: int = VERY_LARGE_VCPUS,
-    crossref_index_works_metadata_threads: int = VERY_LARGE_VCPUS,
-    datacite_datacite_threads: int = VERY_LARGE_VCPUS,
-    datacite_index_awards_threads: int = VERY_LARGE_VCPUS,
-    datacite_index_datacite_index_threads: int = VERY_LARGE_VCPUS,
-    datacite_index_funders_threads: int = VERY_LARGE_VCPUS,
-    datacite_index_institutions_threads: int = VERY_LARGE_VCPUS,
-    datacite_index_updated_dates_threads: int = VERY_LARGE_VCPUS,
-    datacite_index_work_types_threads: int = VERY_LARGE_VCPUS,
-    datacite_index_works_threads: int = VERY_LARGE_VCPUS,
-    datacite_index_datacite_index_hashes_threads: int = VERY_LARGE_VCPUS,
-    openalex_openalex_works_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_abstract_stats_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_abstracts_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_author_names_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_awards_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_funders_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_openalex_index_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_publication_dates_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_title_stats_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_titles_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_updated_dates_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_works_metadata_threads: int = VERY_LARGE_VCPUS,
-    openalex_index_openalex_index_hashes_threads: int = VERY_LARGE_VCPUS,
-    opensearch_current_doi_state_threads: int = VERY_LARGE_VCPUS,
-    opensearch_export_threads: int = VERY_LARGE_VCPUS,
-    opensearch_next_doi_state_threads: int = VERY_LARGE_VCPUS,
-    data_citation_corpus_relations_threads: int = VERY_LARGE_VCPUS,
-    relations_crossref_metadata_threads: int = VERY_LARGE_VCPUS,
-    relations_data_citation_corpus_threads: int = VERY_LARGE_VCPUS,
-    relations_datacite_threads: int = VERY_LARGE_VCPUS,
-    relations_relations_index_threads: int = VERY_LARGE_VCPUS,
-    ror_index_threads: int = VERY_LARGE_VCPUS,
-    ror_ror_threads: int = VERY_LARGE_VCPUS,
-    works_index_export_threads: int = VERY_LARGE_VCPUS,
+    sqlmesh_threads_config: SQLMeshThreadsConfig,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the main SQLMesh transformation job to AWS Batch.
+    """Submits the main SQLMesh transformation job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -597,12 +608,12 @@ def submit_sqlmesh_job(
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         duckdb_memory_limit: Memory limit for DuckDB (e.g., "225GB").
+        sqlmesh_threads_config: Config for SQLMesh threads.
         depends_on: optional list of job dependencies.
 
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="sqlmesh",
         run_id=run_id,
@@ -622,41 +633,41 @@ def submit_sqlmesh_job(
                 "ROR_RUN_ID": ror_run_id,
                 "DATA_CITATION_CORPUS_RUN_ID": data_citation_corpus_run_id,
                 "SQLMESH__GATEWAYS__DUCKDB__CONNECTION__CONNECTOR_CONFIG__MEMORY_LIMIT": duckdb_memory_limit,
-                "SQLMESH__VARIABLES__CROSSREF_CROSSREF_METADATA_THREADS": crossref_crossref_metadata_threads,
-                "SQLMESH__VARIABLES__CROSSREF_INDEX_WORKS_METADATA_THREADS": crossref_index_works_metadata_threads,
-                "SQLMESH__VARIABLES__DATACITE_DATACITE_THREADS": datacite_datacite_threads,
-                "SQLMESH__VARIABLES__DATACITE_INDEX_AWARDS_THREADS": datacite_index_awards_threads,
-                "SQLMESH__VARIABLES__DATACITE_INDEX_DATACITE_INDEX_THREADS": datacite_index_datacite_index_threads,
-                "SQLMESH__VARIABLES__DATACITE_INDEX_FUNDERS_THREADS": datacite_index_funders_threads,
-                "SQLMESH__VARIABLES__DATACITE_INDEX_INSTITUTIONS_THREADS": datacite_index_institutions_threads,
-                "SQLMESH__VARIABLES__DATACITE_INDEX_UPDATED_DATES_THREADS": datacite_index_updated_dates_threads,
-                "SQLMESH__VARIABLES__DATACITE_INDEX_WORK_TYPES_THREADS": datacite_index_work_types_threads,
-                "SQLMESH__VARIABLES__DATACITE_INDEX_WORKS_THREADS": datacite_index_works_threads,
-                "SQLMESH__VARIABLES__DATACITE_INDEX_DATACITE_INDEX_HASHES_THREADS": datacite_index_datacite_index_hashes_threads,
-                "SQLMESH__VARIABLES__OPENALEX_OPENALEX_WORKS_THREADS": openalex_openalex_works_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_ABSTRACT_STATS_THREADS": openalex_index_abstract_stats_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_ABSTRACTS_THREADS": openalex_index_abstracts_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_AUTHOR_NAMES_THREADS": openalex_index_author_names_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_AWARDS_THREADS": openalex_index_awards_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_FUNDERS_THREADS": openalex_index_funders_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_OPENALEX_INDEX_THREADS": openalex_index_openalex_index_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_PUBLICATION_DATES_THREADS": openalex_index_publication_dates_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_TITLE_STATS_THREADS": openalex_index_title_stats_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_TITLES_THREADS": openalex_index_titles_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_UPDATED_DATES_THREADS": openalex_index_updated_dates_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_WORKS_METADATA_THREADS": openalex_index_works_metadata_threads,
-                "SQLMESH__VARIABLES__OPENALEX_INDEX_OPENALEX_INDEX_HASHES_THREADS": openalex_index_openalex_index_hashes_threads,
-                "SQLMESH__VARIABLES__OPENSEARCH_CURRENT_DOI_STATE_THREADS": opensearch_current_doi_state_threads,
-                "SQLMESH__VARIABLES__OPENSEARCH_EXPORT_THREADS": opensearch_export_threads,
-                "SQLMESH__VARIABLES__OPENSEARCH_NEXT_DOI_STATE_THREADS": opensearch_next_doi_state_threads,
-                "SQLMESH__VARIABLES__DATA_CITATION_CORPUS_RELATIONS_THREADS": data_citation_corpus_relations_threads,
-                "SQLMESH__VARIABLES__RELATIONS_CROSSREF_METADATA_THREADS": relations_crossref_metadata_threads,
-                "SQLMESH__VARIABLES__RELATIONS_DATA_CITATION_CORPUS_THREADS": relations_data_citation_corpus_threads,
-                "SQLMESH__VARIABLES__RELATIONS_DATACITE_THREADS": relations_datacite_threads,
-                "SQLMESH__VARIABLES__RELATIONS_RELATIONS_INDEX_THREADS": relations_relations_index_threads,
-                "SQLMESH__VARIABLES__ROR_INDEX_THREADS": ror_index_threads,
-                "SQLMESH__VARIABLES__ROR_ROR_THREADS": ror_ror_threads,
-                "SQLMESH__VARIABLES__WORKS_INDEX_EXPORT_THREADS": works_index_export_threads,
+                "SQLMESH__VARIABLES__CROSSREF_CROSSREF_METADATA_THREADS": sqlmesh_threads_config.crossref_crossref_metadata,
+                "SQLMESH__VARIABLES__CROSSREF_INDEX_WORKS_METADATA_THREADS": sqlmesh_threads_config.crossref_index_works_metadata,
+                "SQLMESH__VARIABLES__DATACITE_DATACITE_THREADS": sqlmesh_threads_config.datacite_datacite,
+                "SQLMESH__VARIABLES__DATACITE_INDEX_AWARDS_THREADS": sqlmesh_threads_config.datacite_index_awards,
+                "SQLMESH__VARIABLES__DATACITE_INDEX_DATACITE_INDEX_THREADS": sqlmesh_threads_config.datacite_index_datacite_index,
+                "SQLMESH__VARIABLES__DATACITE_INDEX_FUNDERS_THREADS": sqlmesh_threads_config.datacite_index_funders,
+                "SQLMESH__VARIABLES__DATACITE_INDEX_INSTITUTIONS_THREADS": sqlmesh_threads_config.datacite_index_institutions,
+                "SQLMESH__VARIABLES__DATACITE_INDEX_UPDATED_DATES_THREADS": sqlmesh_threads_config.datacite_index_updated_dates,
+                "SQLMESH__VARIABLES__DATACITE_INDEX_WORK_TYPES_THREADS": sqlmesh_threads_config.datacite_index_work_types,
+                "SQLMESH__VARIABLES__DATACITE_INDEX_WORKS_THREADS": sqlmesh_threads_config.datacite_index_works,
+                "SQLMESH__VARIABLES__DATACITE_INDEX_DATACITE_INDEX_HASHES_THREADS": sqlmesh_threads_config.datacite_index_datacite_index_hashes,
+                "SQLMESH__VARIABLES__OPENALEX_OPENALEX_WORKS_THREADS": sqlmesh_threads_config.openalex_openalex_works,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_ABSTRACT_STATS_THREADS": sqlmesh_threads_config.openalex_index_abstract_stats,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_ABSTRACTS_THREADS": sqlmesh_threads_config.openalex_index_abstracts,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_AUTHOR_NAMES_THREADS": sqlmesh_threads_config.openalex_index_author_names,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_AWARDS_THREADS": sqlmesh_threads_config.openalex_index_awards,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_FUNDERS_THREADS": sqlmesh_threads_config.openalex_index_funders,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_OPENALEX_INDEX_THREADS": sqlmesh_threads_config.openalex_index_openalex_index,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_PUBLICATION_DATES_THREADS": sqlmesh_threads_config.openalex_index_publication_dates,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_TITLE_STATS_THREADS": sqlmesh_threads_config.openalex_index_title_stats,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_TITLES_THREADS": sqlmesh_threads_config.openalex_index_titles,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_UPDATED_DATES_THREADS": sqlmesh_threads_config.openalex_index_updated_dates,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_WORKS_METADATA_THREADS": sqlmesh_threads_config.openalex_index_works_metadata,
+                "SQLMESH__VARIABLES__OPENALEX_INDEX_OPENALEX_INDEX_HASHES_THREADS": sqlmesh_threads_config.openalex_index_openalex_index_hashes,
+                "SQLMESH__VARIABLES__OPENSEARCH_CURRENT_DOI_STATE_THREADS": sqlmesh_threads_config.opensearch_current_doi_state,
+                "SQLMESH__VARIABLES__OPENSEARCH_EXPORT_THREADS": sqlmesh_threads_config.opensearch_export,
+                "SQLMESH__VARIABLES__OPENSEARCH_NEXT_DOI_STATE_THREADS": sqlmesh_threads_config.opensearch_next_doi_state,
+                "SQLMESH__VARIABLES__DATA_CITATION_CORPUS_RELATIONS_THREADS": sqlmesh_threads_config.data_citation_corpus_relations,
+                "SQLMESH__VARIABLES__RELATIONS_CROSSREF_METADATA_THREADS": sqlmesh_threads_config.relations_crossref_metadata,
+                "SQLMESH__VARIABLES__RELATIONS_DATA_CITATION_CORPUS_THREADS": sqlmesh_threads_config.relations_data_citation_corpus,
+                "SQLMESH__VARIABLES__RELATIONS_DATACITE_THREADS": sqlmesh_threads_config.relations_datacite,
+                "SQLMESH__VARIABLES__RELATIONS_RELATIONS_INDEX_THREADS": sqlmesh_threads_config.relations_relations_index,
+                "SQLMESH__VARIABLES__ROR_INDEX_THREADS": sqlmesh_threads_config.ror_index,
+                "SQLMESH__VARIABLES__ROR_ROR_THREADS": sqlmesh_threads_config.ror_ror,
+                "SQLMESH__VARIABLES__WORKS_INDEX_EXPORT_THREADS": sqlmesh_threads_config.works_index_export,
             }
         ),
         depends_on=depends_on,
@@ -681,8 +692,7 @@ def submit_sync_works_job(
     memory: int = MEDIUM_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the OpenSearch works-index sync job to AWS Batch.
+    """Submits the OpenSearch works-index sync job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -704,7 +714,6 @@ def submit_sync_works_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="opensearch-sync-works",
         run_id=sqlmesh_run_id,
@@ -749,8 +758,7 @@ def submit_sync_dmps_job(
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the OpenSearch dmps-index sync job to AWS Batch.
+    """Submits the OpenSearch dmps-index sync job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -769,7 +777,6 @@ def submit_sync_dmps_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="opensearch-sync-dmps",
         run_id=dmps_run_id,
@@ -809,8 +816,7 @@ def submit_enrich_dmps_job(
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the OpenSearch DMPs enrichment job to AWS Batch.
+    """Submits the OpenSearch DMPs enrichment job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -828,7 +834,6 @@ def submit_enrich_dmps_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="opensearch-enrich-dmps",
         run_id=dmps_run_id,
@@ -870,8 +875,7 @@ def submit_dmp_works_search_job(
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Submits the OpenSearch DMP-to-Works search job to AWS Batch.
+    """Submits the OpenSearch DMP-to-Works search job to AWS Batch.
 
     Args:
         env: environment, i.e., dev, stage, prod.
@@ -892,7 +896,6 @@ def submit_dmp_works_search_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     environment = {
         "BUCKET_NAME": bucket_name,
         "RUN_ID": dmps_run_id,
@@ -934,16 +937,15 @@ def submit_merge_related_works_job(
     memory: int = SMALL_MEMORY,
     depends_on: Optional[list[DependsOnDict]] = None,
 ) -> str:
-    """
-    Creates a job to merge related works.
+    """Creates a job to merge related works.
 
     The database parameters are set in the job defintion and read by the Cyclopts
     built command line interface as environment variables.
 
     Args:
         env: environment, i.e., dev, stage, prod.
-        dmps_run_id: the run_id of the DMPs data to use.
         bucket_name: S3 bucket containing search results to merge.
+        dmps_run_id: the run_id of the DMPs data to use.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -951,7 +953,6 @@ def submit_merge_related_works_job(
     Returns:
         str: the job ID of the submitted AWS Batch job.
     """
-
     return submit_job(
         job_name="opensearch-merge-related-works",
         run_id=dmps_run_id,

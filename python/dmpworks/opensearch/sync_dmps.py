@@ -160,7 +160,6 @@ def sync_dmps(
     chunk_size: int = 1000,
 ):
     """Syncs the DMPs from the MySQL database to OpenSearch"""
-
     if opensearch_config is None:
         opensearch_config = OpenSearchClientConfig()
 
