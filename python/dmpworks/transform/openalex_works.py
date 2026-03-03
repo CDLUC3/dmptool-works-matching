@@ -1,12 +1,10 @@
 import logging
 import pathlib
-from typing import Optional
 
 import pyarrow as pa
 import simdjson
-from dmpworks.rust import parse_name, revert_inverted_index, strip_markup
 
-from dmpworks.transform.dataset_subset import normalise_identifier
+from dmpworks.rust import parse_name, revert_inverted_index, strip_markup
 from dmpworks.transform.pipeline import process_files
 from dmpworks.transform.simdjson_transforms import (
     clean_string,
@@ -108,6 +106,14 @@ OPENALEX_WORKS_SCHEMA = pa.schema(
 
 
 def parse_openalex_works_record(obj: simdjson.Object) -> dict | None:
+    """Parse an OpenAlex Works record from a simdjson object.
+
+    Args:
+        obj: The simdjson object representing an OpenAlex Works record.
+
+    Returns:
+        Optional[dict]: A dictionary containing the parsed record, or None if parsing fails.
+    """
     doi = extract_doi(obj.get("doi"))
     is_xpac = obj.get("is_xpac")
 
@@ -145,7 +151,15 @@ def parse_openalex_works_record(obj: simdjson.Object) -> dict | None:
     }
 
 
-def parse_ids(ids_obj: Optional[simdjson.Object]) -> dict:
+def parse_ids(ids_obj: simdjson.Object | None) -> dict:
+    """Parse IDs from an OpenAlex IDs object.
+
+    Args:
+        ids_obj: The simdjson object containing IDs.
+
+    Returns:
+        dict: A dictionary of parsed IDs.
+    """
     ids = {"doi": extract_doi(ids_obj.get("doi"))}
     for key in ["mag", "openalex", "pmid", "pmcid"]:
         value = ids_obj.get(key)
@@ -153,13 +167,29 @@ def parse_ids(ids_obj: Optional[simdjson.Object]) -> dict:
     return ids
 
 
-def parse_title(text: Optional[str]) -> Optional[str]:
+def parse_title(text: str | None) -> str | None:
+    """Parse and clean the title.
+
+    Args:
+        text: The raw title string.
+
+    Returns:
+        Optional[str]: The cleaned title, or None.
+    """
     if text is not None:
         return strip_markup(str(text))
     return None
 
 
-def parse_abstract(inverted_index_obj: Optional[simdjson.Object]) -> Optional[str]:
+def parse_abstract(inverted_index_obj: simdjson.Object | None) -> str | None:
+    """Reconstruct the abstract from an inverted index.
+
+    Args:
+        inverted_index_obj: The simdjson object representing the inverted index.
+
+    Returns:
+        Optional[str]: The reconstructed abstract, or None.
+    """
     if inverted_index_obj is None:
         return None
     inverted_index_bytes = inverted_index_obj.mini
@@ -197,7 +227,15 @@ def parse_abstract(inverted_index_obj: Optional[simdjson.Object]) -> Optional[st
     )
 
 
-def parse_publication_venue(primary_location_obj: Optional[simdjson.Object]) -> Optional[str]:
+def parse_publication_venue(primary_location_obj: simdjson.Object | None) -> str | None:
+    """Parse the publication venue from the primary location object.
+
+    Args:
+        primary_location_obj: The simdjson object representing the primary location.
+
+    Returns:
+        Optional[str]: The publication venue name, or None.
+    """
     if primary_location_obj is None:
         return None
 
@@ -211,7 +249,14 @@ def parse_publication_venue(primary_location_obj: Optional[simdjson.Object]) -> 
 def parse_authors_and_institutions(
     authorships_array: simdjson.Array | list[simdjson.Object],
 ) -> tuple[list[dict], list[dict]]:
+    """Parse authors and institutions from the authorships array.
 
+    Args:
+        authorships_array: The simdjson array of authorships.
+
+    Returns:
+        tuple[list[dict], list[dict]]: A tuple containing a list of authors and a list of institutions.
+    """
     authors = []
     authors_seen = set()
     institutions = []
@@ -240,9 +285,9 @@ def parse_authors_and_institutions(
 
         # Parse institutions
         author_institutions = obj.get("institutions", [])
-        for inst in author_institutions:
-            inst_name = to_optional_string(inst.get("display_name"))
-            inst_ror = normalise_identifier(inst.get("ror"))
+        for inst_obj in author_institutions:
+            inst_name = to_optional_string(inst_obj.get("display_name"))
+            inst_ror = normalise_identifier(inst_obj.get("ror"))
             if any([inst_name, inst_ror]):
                 inst = {
                     "name": inst_name,
@@ -257,6 +302,14 @@ def parse_authors_and_institutions(
 
 
 def parse_funders(funders_array: simdjson.Array | list[simdjson.Object]) -> list[dict]:
+    """Parse funders from the funders array.
+
+    Args:
+        funders_array: The simdjson array of funders.
+
+    Returns:
+        list[dict]: A list of parsed funders.
+    """
     funders = []
     for obj in funders_array:
         funder_id = normalise_identifier(obj.get("id"))
@@ -274,6 +327,14 @@ def parse_funders(funders_array: simdjson.Array | list[simdjson.Object]) -> list
 
 
 def parse_awards(awards_array: simdjson.Array | list[simdjson.Object]) -> list[dict]:
+    """Parse awards from the awards array.
+
+    Args:
+        awards_array: The simdjson array of awards.
+
+    Returns:
+        list[dict]: A list of parsed awards.
+    """
     awards = []
     for obj in awards_array:
         award_id = normalise_identifier(obj.get("id"))
@@ -310,6 +371,17 @@ def transform_openalex_works(
     max_workers: int,
     log_level: int = logging.INFO,
 ):
+    """Transform OpenAlex Works JSONL files to Parquet format.
+
+    Args:
+        in_dir: Input directory containing OpenAlex Works JSONL files.
+        out_dir: Output directory for Parquet files.
+        batch_size: Number of files to process in a batch.
+        row_group_size: Number of rows per row group in Parquet files.
+        row_groups_per_file: Number of row groups per Parquet file.
+        max_workers: Maximum number of worker processes.
+        log_level: Logging level.
+    """
     setup_multiprocessing_logging(log_level)
     files = list(in_dir.glob("**/*.gz"))
     process_files(

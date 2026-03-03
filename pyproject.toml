@@ -11,9 +11,9 @@ dynamic = ["version"]
 dependencies = [
     "pendulum>=3,<4",
     "tqdm>=4,<5",
-    "opensearch-py>=2.8.0,<3",
-    "pyarrow>=19,<21",
-    "sqlmesh==0.230.1",
+    "opensearch-py>=2.8.0,<4",
+    "pyarrow>=19,<24",
+    "sqlmesh==0.231.0",
     "cyclopts>=3,<4",
     "pooch>=1,<2",
     "boto3>=1,<2",
@@ -24,18 +24,18 @@ dependencies = [
     "duckdb>=1.4.0,<2",
     "pymysql[rsa]>=1.1.2,<2",
     "ranx>=0.3.21,<0.4",
-    "numpy>=1.22,<2.4.0",
+    "numpy>=1.22,<2.5.0",
     "scipy>=1.16.3,<2",
     "pysimdjson>=7.0.2,<8",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8,<9", # testing
+    "pytest>=8,<10", # testing
     "pytest-mock>=3,<4", # testing
-    "black>=25,<26", # code formatting
-    "maturin>=1.0,<2.0", # Build system
-    "vcrpy>=7,<8", # testing
+    "black>=25,<27", # code formatting
+    "vcrpy>=7,<9", # testing
+    "ruff>=0.11.13,<1" # linting
 ]
 
 [project.scripts]
@@ -62,3 +62,56 @@ exclude = '''
 [tool.pytest.ini_options]
 log_cli = true
 log_cli_level = "WARNING"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "ARG", # flake8-unused-arguments: Detects unused function arguments.
+    "B", # flake8-bugbear: Finds likely bugs and design problems in Python code.
+    "C4", # flake8-comprehensions: Suggests more idiomatic and efficient comprehensions.
+    "D", # pydocstyle: Enforces conventions for Python docstrings.
+    "E", # pycodestyle (errors): Detects PEP 8 style errors.
+    "F", # Pyflakes: Detects unused imports, undefined names, and other logical issues.
+    "I", # isort: Ensures imports are correctly sorted and grouped.
+    "N", # pep8-naming: Enforces naming conventions for variables, functions, classes, and constants.
+    "PERF", # Perflint: Identifies performance anti-patterns and suggests faster alternatives.
+    "PL", # Pylint: Comprehensive checks for code quality, refactoring, and logical errors.
+    "Q", # flake8-quotes: Enforces consistent quote style for strings.
+    "RET", # flake8-return: Improves consistency of return statements.
+    "RUF", # Ruff-specific rules: Additional lint rules implemented directly in Ruff.
+    "S", # flake8-bandit: Detects common security issues and potential vulnerabilities.
+    "SIM", # flake8-simplify: Suggests code simplifications and more idiomatic constructs.
+    "UP", # pyupgrade: Rewrites code to use modern Python syntax and features.
+    "PTH", # flake8-use-pathlib: Encourages use of pathlib instead of os.path and open().
+    "TCH", # flake8-type-checking: Ensures imports used only for typing are placed inside TYPE_CHECKING blocks.
+    "TRY", # tryceratops: Improves exception handling patterns and logging in try/except blocks.
+]
+ignore = [
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+    "E501", # Line too long
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments
+    "PLR0915", # Too many statements
+    "PLW0603", # Using the global statement,
+    "TC001", # flake8-type-checking: Move application imports used only for typing into TYPE_CHECKING blocks
+    "TC002", # flake8-type-checking: Move third-party imports used only for typing into TYPE_CHECKING blocks
+    "TC003", # flake8-type-checking: Move standard library imports used only for typing into TYPE_CHECKING blocks
+    "TRY003", # tryceratops: Avoid long or complex exception messages defined directly in raise statements
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"
+multiline-quotes = "double"
+docstring-quotes = "double"
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true

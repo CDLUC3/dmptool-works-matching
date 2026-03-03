@@ -1,14 +1,13 @@
 import re
-from typing import Any, Optional
+from typing import Any
 
 import pendulum
-from dmpworks.rust import parse_name, ParsedName, strip_markup
 from pendulum.exceptions import ParserError
+import simdjson
 
 
-def extract_doi(text: Optional[str]) -> Optional[str]:
-    """
-    Extract the first DOI found in a string using a regular expression.
+def extract_doi(text: str | None) -> str | None:
+    """Extract the first DOI found in a string using a regular expression.
 
     The match is case-insensitive and follows the standard DOI pattern
     beginning with "10.". If a DOI is found, it is normalized using
@@ -20,7 +19,6 @@ def extract_doi(text: Optional[str]) -> Optional[str]:
     Returns:
         The normalized DOI if found, otherwise None.
     """
-
     if text is None:
         return None
 
@@ -31,17 +29,15 @@ def extract_doi(text: Optional[str]) -> Optional[str]:
     return None
 
 
-def extract_ror(text: Optional[str]) -> Optional[str]:
-    """
-    Extract first ROR ID from string.
+def extract_ror(text: str | None) -> str | None:
+    """Extract first ROR ID from string.
 
     Args:
-        text:
+        text: The text to search for a ROR ID.
 
     Returns:
         The normalised ROR ID if found, otherwise None.
     """
-
     if text is None:
         return None
 
@@ -52,9 +48,8 @@ def extract_ror(text: Optional[str]) -> Optional[str]:
     return None
 
 
-def clean_string(value: Optional[str], lower: bool = False) -> Optional[str]:
-    """
-    Normalize a string by lowercasing and trimming surrounding whitespace.
+def clean_string(value: str | None, lower: bool = False) -> str | None:
+    """Normalize a string by lowercasing and trimming surrounding whitespace.
 
     Args:
         value: Input string to normalize.
@@ -63,7 +58,6 @@ def clean_string(value: Optional[str], lower: bool = False) -> Optional[str]:
     Returns:
         The normalized string, or None if the input is None.
     """
-
     if value is None:
         return None
 
@@ -74,10 +68,10 @@ def clean_string(value: Optional[str], lower: bool = False) -> Optional[str]:
     return text.lower() if lower else text
 
 
-def normalise_identifier(identifier: Optional[str]) -> Optional[str]:
-    """
-    Normalize an identifier by removing any embedded HTTP(S) URL prefixes
-    and applying standard string cleaning.
+def normalise_identifier(identifier: str | None) -> str | None:
+    """Normalize an identifier.
+
+    Removes any embedded HTTP(S) URL prefixes and applies standard string cleaning.
 
     All occurrences of patterns matching "http(s)://<domain>/" are removed,
     not just a leading prefix. The resulting value is then passed to
@@ -89,7 +83,6 @@ def normalise_identifier(identifier: Optional[str]) -> Optional[str]:
     Returns:
         The normalized identifier string, or None if the input is None.
     """
-
     if identifier is None:
         return None
 
@@ -103,9 +96,8 @@ def normalise_identifier(identifier: Optional[str]) -> Optional[str]:
     return clean_string(value, lower=True)
 
 
-def parse_iso8601_calendar_date(date_str: Optional[str]) -> Optional[pendulum.Date]:
-    """
-    Parse an ISO 8601 calendar date string into a `pendulum.Date`.
+def parse_iso8601_calendar_date(date_str: str | None) -> pendulum.Date | None:
+    """Parse an ISO 8601 calendar date string into a `pendulum.Date`.
 
     The input is parsed using `pendulum.parse`, and the date component
     is returned. If `date_str` is None or cannot be parsed, None is returned.
@@ -116,7 +108,6 @@ def parse_iso8601_calendar_date(date_str: Optional[str]) -> Optional[pendulum.Da
     Returns:
         A `pendulum.Date` if parsing succeeds, otherwise None.
     """
-
     if date_str is None:
         return None
 
@@ -126,9 +117,8 @@ def parse_iso8601_calendar_date(date_str: Optional[str]) -> Optional[pendulum.Da
         return None
 
 
-def parse_iso8601_datetime(datetime_str: Optional[str]) -> Optional[pendulum.DateTime]:
-    """
-    Parse an ISO 8601 datetime string into a UTC-normalized, naive `pendulum.DateTime`.
+def parse_iso8601_datetime(datetime_str: str | None) -> pendulum.DateTime | None:
+    """Parse an ISO 8601 datetime string into a UTC-normalized, naive `pendulum.DateTime`.
 
     The input is parsed using `pendulum.parse`, converted to UTC, and then
     made timezone-naive. If `datetime_str` is None or cannot be parsed,
@@ -140,7 +130,6 @@ def parse_iso8601_datetime(datetime_str: Optional[str]) -> Optional[pendulum.Dat
     Returns:
         A naive `pendulum.DateTime` in UTC if parsing succeeds, otherwise None.
     """
-
     if datetime_str is None:
         return None
 
@@ -150,13 +139,15 @@ def parse_iso8601_datetime(datetime_str: Optional[str]) -> Optional[pendulum.Dat
         return None
 
 
-def extract_orcid(text: Optional[str]) -> Optional[str]:
+def extract_orcid(text: str | None) -> str | None:
     """Extract an ORCID ID from a string using a regex.
 
-    :param text: the text.
-    :return: the ORCID ID or None if no ORCID was found.
-    """
+    Args:
+        text: the text.
 
+    Returns:
+        Optional[str]: the ORCID ID or None if no ORCID was found.
+    """
     if text is None:
         return None
 
@@ -167,10 +158,11 @@ def extract_orcid(text: Optional[str]) -> Optional[str]:
     return None
 
 
-def to_optional_string(value: Any) -> Optional[str]:
-    """Converts a value that should be either a string or None into a string.
-    Sometimes values that should be strings are read by simdjson as other types,
-    such as integers.
+def to_optional_string(value: Any) -> str | None:
+    """Convert a value expected to be a string or None into a string.
+
+    simdjson may parse some string values as other types (e.g., integers) and
+    these may need to be converted to strings.
 
     Args:
         value: a value.
@@ -178,21 +170,44 @@ def to_optional_string(value: Any) -> Optional[str]:
     Returns: a string or None.
 
     """
-
     if value is None:
         return None
     return str(value)
 
 
-def replace_with_null(value: Optional[str], values: set[str]) -> Optional[str]:
-    """
-    Strip whitespace and return None if the lowercased value matches any entry
-    in `values`.
-    """
+def replace_with_null(value: str | None, values: set[str]) -> str | None:
+    """Strip whitespace and return None if the lowercased value is in `values`.
 
+    Args:
+        value: The value to check.
+        values: A set of values to replace with None.
+
+    Returns:
+        The stripped value, or None if it matches an entry in `values`.
+    """
     if value is None:
         return None
 
     stripped = str(value).strip()
 
     return None if stripped.lower() in values else stripped
+
+
+def ensure_array_of_objects(obj: object) -> simdjson.Array | list[simdjson.Object]:
+    """Ensure that the input is an array of objects.
+
+    When fields that should be arrays are sometimes objects, they need to be
+    converted into arrays of objects. This occurs, for example, in DataCite.
+
+    Args:
+        obj: The object to check.
+
+    Returns:
+        The input object wrapped in a list if it is a single object,
+        the object itself if it is already an array, or an empty list otherwise.
+    """
+    if isinstance(obj, simdjson.Object):
+        return [obj]
+    if isinstance(obj, simdjson.Array):
+        return obj
+    return []

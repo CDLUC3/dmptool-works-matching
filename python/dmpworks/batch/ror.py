@@ -3,10 +3,9 @@ import logging
 import pathlib
 import shutil
 import zipfile
-from typing import Optional
 
-import pooch
 from cyclopts import App
+import pooch
 
 from dmpworks.batch.tasks import download_source_task
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -18,7 +17,18 @@ app = App(name="ror", help="ROR AWS Batch pipeline.")
 
 
 def extract_ror(file_path: pathlib.Path) -> pathlib.Path:
-    with zipfile.ZipFile(file_path, 'r') as file:
+    """Extract the ROR JSON file from a ZIP archive.
+
+    Args:
+        file_path: Path to the ZIP file.
+
+    Returns:
+        Path to the extracted JSON file.
+
+    Raises:
+        FileNotFoundError: If the ROR JSON file is not found in the archive.
+    """
+    with zipfile.ZipFile(file_path, "r") as file:
         # Find ROR v2 JSON file in ZIP file
         log.info(f"Files in archive: {file_path}")
         json_file_name = None
@@ -30,7 +40,7 @@ def extract_ror(file_path: pathlib.Path) -> pathlib.Path:
                 break
 
         if json_file_name is None:
-            msg = f"Could not find ROR JSON file"
+            msg = "Could not find ROR JSON file"
             log.error(msg)
             raise FileNotFoundError(msg)
 
@@ -42,13 +52,18 @@ def extract_ror(file_path: pathlib.Path) -> pathlib.Path:
 
 
 def gzip_file(in_file: pathlib.Path, out_file: pathlib.Path):
-    with open(in_file, "rb") as f_in:
-        with gzip.open(out_file, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
+    """Compress a file using gzip.
+
+    Args:
+        in_file: Path to the input file.
+        out_file: Path to the output gzip file.
+    """
+    with in_file.open("rb") as f_in, gzip.open(out_file, "wb") as f_out:
+        shutil.copyfileobj(f_in, f_out)
 
 
 @app.command(name="download")
-def download_cmd(bucket_name: str, run_id: str, download_url: str, hash: Optional[str] = None):
+def download_cmd(bucket_name: str, run_id: str, download_url: str, hash: str | None = None):
     """Download ROR from the Zenodo and upload it to the DMP Tool S3 bucket.
 
     Args:
@@ -57,7 +72,6 @@ def download_cmd(bucket_name: str, run_id: str, download_url: str, hash: Optiona
         download_url: the Zenodo download URL for a specific ROR ID, e.g. https://zenodo.org/records/15731450/files/v1.67-2025-06-24-ror-data.zip?download=1.
         hash: the MD5 sum of the file.
     """
-
     setup_multiprocessing_logging(logging.INFO)
 
     with download_source_task(bucket_name, DATASET, run_id) as ctx:

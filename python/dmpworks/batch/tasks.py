@@ -1,11 +1,11 @@
+from collections.abc import Generator
+from contextlib import contextmanager
+from dataclasses import dataclass
 import logging
 import pathlib
 import shutil
-from contextlib import contextmanager
-from dataclasses import dataclass
-from typing import Any, Generator
+from typing import Any
 
-from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.batch.utils import (
     clean_s3_prefix,
     download_file_from_s3,
@@ -15,6 +15,7 @@ from dmpworks.batch.utils import (
     upload_files_to_s3,
 )
 from dmpworks.cli_utils import DatasetSubset
+from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.model.common import Institution
 
 log = logging.getLogger(__name__)
@@ -22,12 +23,32 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class DownloadTaskContext:
+    """Context for a download task.
+
+    Attributes:
+        download_dir: The local directory where files are downloaded.
+        target_uri: The S3 URI where files will be uploaded.
+    """
+
     download_dir: pathlib.Path
     target_uri: str
 
 
 @contextmanager
 def download_source_task(bucket_name: str, dataset: str, run_id: str) -> Generator[DownloadTaskContext, Any, None]:
+    """Context manager for downloading source data.
+
+    Prepares the download directory and target S3 URI.
+    Cleans up the download directory after the task is complete.
+
+    Args:
+        bucket_name: The name of the S3 bucket.
+        dataset: The name of the dataset.
+        run_id: The unique identifier for the run.
+
+    Yields:
+        A DownloadTaskContext object.
+    """
     target_uri = s3_uri(bucket_name, dataset, run_id, "download/")
     download_dir = local_path(dataset, run_id, "download")
 
@@ -49,6 +70,16 @@ def download_source_task(bucket_name: str, dataset: str, run_id: str) -> Generat
 
 @dataclass
 class DatasetSubsetTaskContext:
+    """Context for a dataset subset task.
+
+    Attributes:
+        download_dir: The local directory where source files are downloaded.
+        subset_dir: The local directory where the subset will be created.
+        target_uri: The S3 URI where the subset will be uploaded.
+        institutions: A list of institutions to filter by.
+        dois: A list of DOIs to filter by.
+    """
+
     download_dir: pathlib.Path
     subset_dir: pathlib.Path
     target_uri: str
@@ -64,6 +95,22 @@ def dataset_subset_task(
     run_id: str,
     dataset_subset: DatasetSubset,
 ) -> Generator[DatasetSubsetTaskContext, Any, None]:
+    """Context manager for creating a dataset subset.
+
+    Downloads institutions and DOIs for filtering.
+    Downloads source files from S3.
+    Yields a context for processing the subset.
+    Uploads the subset to S3 and cleans up local files.
+
+    Args:
+        bucket_name: The name of the S3 bucket.
+        dataset: The name of the dataset.
+        run_id: The unique identifier for the run.
+        dataset_subset: Configuration for the dataset subset.
+
+    Yields:
+        A DatasetSubsetTaskContext object.
+    """
     meta_dir = local_path(dataset, run_id, "meta")
     download_dir = local_path(dataset, run_id, "download")
     subset_dir = local_path(dataset, run_id, "subset")
@@ -110,6 +157,14 @@ def dataset_subset_task(
 
 @dataclass
 class TransformTaskContext:
+    """Context for a transform task.
+
+    Attributes:
+        download_dir: The local directory where source files are downloaded.
+        transform_dir: The local directory where transformed files are saved.
+        target_uri: The S3 URI where transformed files will be uploaded.
+    """
+
     download_dir: pathlib.Path
     transform_dir: pathlib.Path
     target_uri: str
@@ -119,6 +174,21 @@ class TransformTaskContext:
 def transform_parquets_task(
     bucket_name: str, dataset: str, run_id: str, use_subset: bool = False
 ) -> Generator[TransformTaskContext, Any, None]:
+    """Context manager for transforming Parquet files.
+
+    Downloads source files (either full dataset or subset).
+    Yields a context for transformation.
+    Uploads transformed Parquet files to S3 and cleans up local files.
+
+    Args:
+        bucket_name: The name of the S3 bucket.
+        dataset: The name of the dataset.
+        run_id: The unique identifier for the run.
+        use_subset: Whether to use the subset of the dataset.
+
+    Yields:
+        A TransformTaskContext object.
+    """
     download_dir = local_path(dataset, run_id, "subset" if use_subset else "download")
     transform_dir = local_path(dataset, run_id, "transform")
     target_uri = s3_uri(bucket_name, dataset, run_id, "transform/")

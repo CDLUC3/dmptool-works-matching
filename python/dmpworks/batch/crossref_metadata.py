@@ -1,13 +1,11 @@
 import logging
 import pathlib
-from typing import Optional
 
 from cyclopts import App
 
-from dmpworks.batch.utils import s3_uri
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
-from dmpworks.cli_utils import DatasetSubset
-from dmpworks.transform.cli import CrossrefMetadataConfig
+from dmpworks.batch.utils import s3_uri
+from dmpworks.cli_utils import CrossrefMetadataTransformConfig, DatasetSubset
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -21,8 +19,7 @@ app = App(name="crossref-metadata", help="Crossref Metadata AWS Batch pipeline."
 
 @app.command(name="download")
 def download_cmd(bucket_name: str, run_id: str, file_name: str, crossref_bucket_name: str):
-    """Download Crossref Metadata from the Crossref Metadata requestor pays S3
-    bucket and upload it to the DMP Tool S3 bucket.
+    """Download Crossref Metadata from the Crossref Metadata requestor pays S3 bucket and upload to the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
@@ -30,7 +27,6 @@ def download_cmd(bucket_name: str, run_id: str, file_name: str, crossref_bucket_
         file_name: Name of the Crossref Metadata Public Datafile, e.g. April_2025_Public_Data_File_from_Crossref.tar.
         crossref_bucket_name: Name of the Crossref AWS S3 bucket.
     """
-
     setup_multiprocessing_logging(logging.INFO)
 
     with download_source_task(bucket_name, DATASET, run_id) as ctx:
@@ -71,7 +67,6 @@ def dataset_subset_cmd(
         run_id: a unique ID to represent this run of the job.
         dataset_subset: settings for creating the subset of works
     """
-
     setup_multiprocessing_logging(logging.INFO)
 
     with dataset_subset_task(
@@ -95,10 +90,9 @@ def transform_cmd(
     run_id: str,
     use_subset: bool = False,
     *,
-    config: Optional[CrossrefMetadataConfig] = None,
+    config: CrossrefMetadataTransformConfig | None = None,
 ):
-    """Download Crossref Metadata from the DMP Tool S3 bucket, transform it to
-    Parquet format, and upload the results to same bucket.
+    """Download Crossref Metadata from DMP Tool S3 bucket, transform to Parquet, and upload the result.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
@@ -106,8 +100,7 @@ def transform_cmd(
         use_subset: whether to use a subset of the dataset or the full dataset.
         config: optional configuration parameters.
     """
-
-    config = CrossrefMetadataConfig() if config is None else config
+    config = CrossrefMetadataTransformConfig() if config is None else config
     setup_multiprocessing_logging(logging.INFO)
 
     with transform_parquets_task(bucket_name, DATASET, run_id, use_subset=use_subset) as ctx:

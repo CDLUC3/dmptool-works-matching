@@ -2,48 +2,12 @@
 The system can be run locally with a dataset subset composed of a subset of 
 OpenAlex, DataCite and Crossref Metadata.
 
-## 1. Local Setup
-This section covers the setup required to build and run the system locally, 
-including cloning repositories and preparing the Python and Rust build environment.
-
-### 1.1. Dependencies
-Clone dmsp_api_prototype repo:
-```bash
-git clone git@github.com:CDLUC3/dmptool-works-matching.git
-```
-
-### 1.2. Python & Rust Build Environment
-Make a Python virtual environment:
-```bash
-python -m venv .venv
-```
-
-Activate the Python virtual environment:
-```bash
-source .venv/activate
-```
-
-Install maturin:
-```bash
-pip install maturin
-```
-
-Install Rust:
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-Build Rust extensions and install Python package into local environment:
-```bash
-RUSTFLAGS="-C target-cpu=native" maturin develop --release --extras dev
-```
-
-## 2. Runtime Configuration
+## 1. Runtime Configuration
 This section walks through how to configure the local runtime environment, 
 including environment variables, local services, and test execution needed 
 before working with data or OpenSearch.
 
-### 2.1. Environment Variables
+### 1.1. Environment Variables
 Create a `.env.local` file based on the `.env.local.example` file.
 
 Source environment variables:
@@ -51,7 +15,7 @@ Source environment variables:
 set -a && source .env.local && set +a
 ```
 
-### 2.2. Local OpenSearch Stack
+### 1.2. Local OpenSearch Stack
 Run OpenSearch locally:
 ```bash
 docker compose up
@@ -60,13 +24,7 @@ docker compose up
 To view OpenSearch Dashboards go to:
 http://localhost:5601
 
-### 2.3. Tests
-Run Python tests:
-```bash
-pytest
-```
-
-### 2.4. Help
+### 1.3. Help
 To view detailed descriptions for a `dmpworks` command you may append `--help` 
 to the command, for example:
 ```bash
@@ -92,11 +50,11 @@ Run SQLMesh unit tests:
 dmpworks sqlmesh test
 ```
 
-## 3. Dataset Subset Preparation
+## 2. Dataset Subset Preparation
 This section describes how to generate a subset of the source datasets used for 
 development and testing.
 
-### 3.1 Download Datasets
+### 2.1 Download Datasets
 Download datasets into a folder on your computer, including:
 * Crossref Metadata: https://www.crossref.org/learning/public-data-file/
 * Data Citation Corpus: https://zenodo.org/records/16901115
@@ -115,25 +73,25 @@ following subfolders and copy specific portions of the datasets to them:
 * `openalex/openalex-snapshot/data/works`: works folder from snapshot should be on this path.
 * `ror`: gzip the extracted json file, e.g. with `gzip v2.3-2026-02-24-ror-data.json`, this matches how the AWS batch process prepares this file.
 
-### 3.2. Create Dataset Subsets
+### 2.2. Create Dataset Subsets
 Run the following bash script to create a subset of Crossref Metadata, DataCite 
 and OpenAlex Works for local use:
 ```bash
 ./bin/dataset-subsets.sh
 ```
 
-## 4. Dataset Normalisation & Transformation
+## 3. Dataset Normalisation & Transformation
 This section covers how to convert raw source datasets into normalised Parquet 
 files and produces a unified works index using SQLMesh.
 
-### 4.1. Normalise Source Datasets
+### 3.1. Normalise Source Datasets
 Run the following bash script to normalise and transform source datasets into 
 Parquet files:
 ```bash
 ./bin/transform-datasets.sh
 ```
 
-### 4.2. Transform into Parquet Works Index
+### 3.2. Transform into Parquet Works Index
 SQLMesh is used to transform the input Parquet files into a unified works
 index that is then loaded into OpenSearch.
 
@@ -154,11 +112,11 @@ duckdb ${SQLMESH__GATEWAYS__DUCKDB__CONNECTION__DATABASE} -ui
 
 To view the DuckDB database: http://localhost:4213.
 
-## 5. OpenSearch Index Setup
+## 4. OpenSearch Index Setup
 This section shows how to create and populates the OpenSearch indexes used for
 DMP and works search, including enrichment steps required for downstream matching.
 
-### 5.1. Create OpenSearch Indexes
+### 4.1. Create OpenSearch Indexes
 Create the OpenSearch DMPs index:
 ```bash
 dmpworks opensearch create-index dmps-index dmps-mapping.json
@@ -169,7 +127,7 @@ Create the OpenSearch works index:
 dmpworks opensearch create-index works-index works-mapping.json
 ```
 
-### 5.2. DMPs Index
+### 4.2. DMPs Index
 Before creating the DMPs index and syncing DMPs with OpenSearch, make sure you 
 have a connection to the MySQL database and configure the MySQL environment 
 variables as explained in `.env.local.example`, then run:
@@ -182,17 +140,17 @@ Enrich the DMPs index with additional data:
 dmpworks opensearch enrich-dmps dmps-index
 ```
 
-### 5.3. Works Index
+### 4.3. Works Index
 Sync the works index export with the OpenSearch works index:
 ```bash
 dmpworks opensearch sync-works works-index ${DATA_DIR}/sqlmesh_export
 ```
 
-## 6. Baseline DMP Works Search
+## 5. Baseline DMP Works Search
 This section runs the baseline DMP-to-works search, producing an initial set of 
 candidate matches without Learning to Rank re-scoring.
 
-### 6.1. Run DMP Works Search
+### 5.1. Run DMP Works Search
 To search for works associated with DMPs:
 ```bash
 dmpworks opensearch dmp-works-search dmps-index works-index ${DATA_DIR}/matches/matches-2025-12-22.jsonl \
@@ -200,11 +158,11 @@ dmpworks opensearch dmp-works-search dmps-index works-index ${DATA_DIR}/matches/
          --institutions-file=${DATA_DIR}/meta/dmp_institutions.json
 ```
 
-## 7. Learning to Rank
+## 6. Learning to Rank
 This section outlines how to train, upload, and evaluate a Learning to Rank 
 (LTR) model in OpenSearch to improve DMP-to-works ranking quality.
 
-### 7.1. Pre-requisites
+### 6.1. Pre-requisites
 The following steps must be completed before working with LTR.
 
 In the OpenSearch console, initialise the LTR plugin:
@@ -243,14 +201,14 @@ feature to include when training the model.
 16
 ```
 
-### 7.2. Create Feature Set
+### 6.2. Create Feature Set
 Create the feature set in OpenSearch:
 ```bash
 dmpworks opensearch create-featureset \
                     dmpworks
 ```
 
-### 7.3. Generate Training Dataset
+### 6.3. Generate Training Dataset
 Generate the training dataset and save in RankLib format:
 ```bash
 dmpworks opensearch generate-training-dataset \
@@ -263,7 +221,7 @@ dmpworks opensearch generate-training-dataset \
                     --max-results=1000 
 ```
 
-### 7.4. Train LTR Model
+### 6.4. Train LTR Model
 ```bash
 java -jar ./bin/RankLib-2.18.jar \
           -train ${LTR_TRAIN_FILE} \
@@ -284,7 +242,7 @@ Options:
 * `-reg 0.01`: regularization parameter.
 * `-save ${LTR_MODEL_FILE}`: the path to the file where the model will be saved.
 
-### 7.5. Upload LTR model to OpenSearch
+### 6.5. Upload LTR model to OpenSearch
 Upload the LTR model to OpenSearch. At this step, the mean and standard 
 deviation are computed for each feature (to match Z-score model normalisation) 
 and supplied as feature normalisation data in the uploaded OpenSearch Learning 
@@ -298,7 +256,7 @@ dmpworks opensearch upload-ranklib-model \
                     ${LTR_TRAIN_FILE}
 ```
 
-### 7.6. Compute Ranking Metrics
+### 6.6. Compute Ranking Metrics
 Compute ranking metrics:
 ```bash
 dmpworks opensearch rank-metrics \
@@ -331,7 +289,7 @@ See the table below for a description of each column in the dataset.
 | `precision@k` | Precision at cutoff `k`. Proportion of the top-`k` ranked outputs that are relevant.                                                                                 |
 | `recall@k`    | Recall at cutoff `k`. Proportion of all relevant outputs that appear within the top-`k` ranked results.                                                              |
 
-### 7.7. DMP Search
+### 6.7. DMP Search
 To re-run the DMP works search with LTR re-ranking add the `rerank-model-name` 
 parameter:
 ```bash

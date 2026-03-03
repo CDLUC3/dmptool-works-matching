@@ -1,7 +1,8 @@
+from collections.abc import Callable
+from functools import partial
 import inspect
 import logging
-from functools import partial
-from typing import Annotated, Callable, Dict, Literal
+from typing import Annotated, Literal
 
 from cyclopts import App, Parameter
 
@@ -11,7 +12,6 @@ from dmpworks.batch_submit.jobs import (
     datacite_download_job,
     datacite_transform_job,
     dataset_subset_job,
-    dmps_transform_job,
     openalex_works_download_job,
     openalex_works_transform_job,
     ror_download_job,
@@ -22,7 +22,14 @@ from dmpworks.batch_submit.jobs import (
     submit_sync_dmps_job,
     submit_sync_works_job,
 )
-from dmpworks.cli_utils import DatasetSubset, DMPSubset
+from dmpworks.cli_utils import (
+    CrossrefMetadataTransformConfig,
+    DataCiteTransformConfig,
+    DatasetSubset,
+    DMPSubset,
+    OpenAlexWorksTransformConfig,
+    SQLMeshThreadsConfig,
+)
 
 app = App(name="batch-submit", help="Commands to submit AWS Batch jobs.")
 
@@ -32,17 +39,27 @@ DEFAULT_NUM_WORKERS = 32
 
 def run_job_pipeline(
     *,
-    task_definitions: Dict[str, Callable],
+    task_definitions: dict[str, Callable],
     task_order: list[str],
     start_task_name: str,
 ):
+    """Run a pipeline of AWS Batch jobs.
+
+    Args:
+        task_definitions: A dictionary mapping task names to callable job submission functions.
+        task_order: A list of task names defining the execution order.
+        start_task_name: The name of the task to start the pipeline from.
+
+    Raises:
+        ValueError: If the start task is unknown or a task definition is missing.
+    """
     # Build list of tasks
     try:
         start_index = task_order.index(start_task_name)
-    except ValueError:
+    except ValueError as e:
         msg = f"Unknown start_task '{start_task_name}'"
-        logging.error(msg)
-        raise ValueError(msg)
+        logging.exception(msg)
+        raise ValueError(msg) from e
     task_names = task_order[start_index:]
 
     # Execute tasks
@@ -57,65 +74,13 @@ def run_job_pipeline(
         task_func = task_definitions[task_name]
         kwargs = {}
         sig = inspect.signature(task_func)
-        if "depends_on" in sig.parameters and len(job_ids):
+        if "depends_on" in sig.parameters and len(job_ids) > 0:
             kwargs["depends_on"] = [job_ids[-1]]
 
         # Call the task
         job_id = task_func(**kwargs)
         if job_id is not None:
             job_ids.append({"jobId": str(job_id)})
-
-
-DMPS_JOBS: tuple[str, ...] = ("transform",)
-
-
-@app.command(name="dmps")
-def dmps_cmd(
-    env: Annotated[
-        EnvTypes,
-        Parameter(
-            env_var="ENV",
-            help="Environment (e.g., dev, stage, prod)",
-        ),
-    ],
-    run_id: Annotated[
-        str,
-        Parameter(
-            env_var="DMPS_RUN_ID",
-            help="A unique ID to represent this run of the job.",
-        ),
-    ],
-    bucket_name: Annotated[
-        str,
-        Parameter(
-            env_var="BUCKET_NAME",
-            help="S3 bucket name for job I/O.",
-        ),
-    ],
-    start_job: Annotated[
-        Literal[*DMPS_JOBS],
-        Parameter(
-            env_var="DMPS_START_JOB",
-            help="The first job to run in the sequence.",
-        ),
-    ] = DMPS_JOBS[0],
-):
-    logging.basicConfig(level=logging.INFO)
-
-    task_definitions = {
-        "transform": partial(
-            dmps_transform_job,
-            env=env,
-            bucket_name=bucket_name,
-            run_id=run_id,
-        ),
-    }
-
-    run_job_pipeline(
-        task_definitions=task_definitions,
-        task_order=list(CROSSREF_METADATA_JOBS),
-        start_task_name=start_job,
-    )
 
 
 ROR_JOBS: tuple[str, ...] = ("download",)
@@ -166,6 +131,16 @@ def ror_cmd(
         ),
     ] = ROR_JOBS[0],
 ):
+    """Submit ROR processing jobs.
+
+    Args:
+        env: Environment (e.g., dev, stage, prod).
+        run_id: A unique ID to represent this run of the job.
+        bucket_name: S3 bucket name for job I/O.
+        download_url: The Zenodo download URL for the ROR data file.
+        hash: The expected hash of the data file.
+        start_job: The first job to run in the sequence.
+    """
     logging.basicConfig(level=logging.INFO)
 
     task_definitions = {
@@ -227,6 +202,7 @@ def crossref_metadata_cmd(
         ),
     ],
     dataset_subset: DatasetSubset = None,
+    config: CrossrefMetadataTransformConfig | None = None,
     start_job: Annotated[
         Literal[*CROSSREF_METADATA_JOBS],
         Parameter(
@@ -235,8 +211,21 @@ def crossref_metadata_cmd(
         ),
     ] = CROSSREF_METADATA_JOBS[0],
 ):
+    """Submit Crossref Metadata processing jobs.
+
+    Args:
+        env: Environment (e.g., dev, stage, prod).
+        run_id: A unique ID to represent this run of the job.
+        bucket_name: S3 bucket name for job I/O.
+        file_name: The name of the Crossref metadata file to download.
+        crossref_bucket_name: Name of the Crossref AWS S3 bucket.
+        dataset_subset: Configuration for creating a subset of the dataset.
+        config: Configuration for the transform job.
+        start_job: The first job to run in the sequence.
+    """
     logging.basicConfig(level=logging.INFO)
     use_subset = dataset_subset is not None and dataset_subset.enable
+    config = CrossrefMetadataTransformConfig() if config is None else config
 
     task_definitions = {
         "download": partial(
@@ -253,6 +242,7 @@ def crossref_metadata_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             use_subset=use_subset,
+            config=config,
         ),
     }
 
@@ -312,6 +302,7 @@ def datacite_cmd(
         ),
     ],
     dataset_subset: DatasetSubset = None,
+    config: DataCiteTransformConfig | None = None,
     start_job: Annotated[
         Literal[*DATACITE_JOBS],
         Parameter(
@@ -320,8 +311,20 @@ def datacite_cmd(
         ),
     ] = DATACITE_JOBS[0],
 ):
+    """Submit DataCite processing jobs.
+
+    Args:
+        env: Environment (e.g., dev, stage, prod).
+        run_id: A unique ID to represent this run of the job.
+        bucket_name: S3 bucket name for job I/O.
+        datacite_bucket_name: Name of the DataCite AWS S3 bucket.
+        dataset_subset: Configuration for creating a subset of the dataset.
+        config: Configuration for the transform job.
+        start_job: The first job to run in the sequence.
+    """
     logging.basicConfig(level=logging.INFO)
     use_subset = dataset_subset is not None and dataset_subset.enable
+    config = DataCiteTransformConfig() if config is None else config
 
     task_definitions = {
         "download": partial(
@@ -337,6 +340,7 @@ def datacite_cmd(
             bucket_name=bucket_name,
             run_id=run_id,
             use_subset=use_subset,
+            config=config,
         ),
     }
 
@@ -395,21 +399,8 @@ def openalex_works_cmd(
             help="Name of the OpenAlex AWS S3 bucket.",
         ),
     ],
-    max_file_processes: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_MAX_FILE_PROCESSES",
-            help="The max number of files to read in parallel.",
-        ),
-    ] = 8,
-    batch_size: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_BATCH_SIZE",
-            help="Number of records to process in a batch.",
-        ),
-    ] = 8,
     dataset_subset: DatasetSubset = None,
+    config: OpenAlexWorksTransformConfig | None = None,
     start_job: Annotated[
         Literal[*OPENALEX_WORKS_JOBS],
         Parameter(
@@ -418,8 +409,20 @@ def openalex_works_cmd(
         ),
     ] = OPENALEX_WORKS_JOBS[0],
 ):
+    """Submit OpenAlex Works processing jobs.
+
+    Args:
+        env: Environment (e.g., dev, stage, prod).
+        run_id: A unique ID to represent this run of the job.
+        bucket_name: S3 bucket name.
+        openalex_bucket_name: Name of the OpenAlex AWS S3 bucket.
+        dataset_subset: Configuration for creating a subset of the dataset.
+        config: Configuration for the transform job.
+        start_job: The first job to run in the sequence.
+    """
     logging.basicConfig(level=logging.INFO)
     use_subset = dataset_subset is not None and dataset_subset.enable
+    config = OpenAlexWorksTransformConfig() if config is None else config
 
     task_definitions = {
         "download": partial(
@@ -434,9 +437,8 @@ def openalex_works_cmd(
             env=env,
             bucket_name=bucket_name,
             run_id=run_id,
-            max_file_processes=max_file_processes,
-            batch_size=batch_size,
             use_subset=use_subset,
+            config=config,
         ),
     }
     # Add dataset subset task
@@ -590,6 +592,7 @@ def process_works_cmd(
             help="Max retries for failed chunks (for sync-works).",
         ),
     ] = 3,
+    sqlmesh_threads_config: SQLMeshThreadsConfig | None = None,
     start_job: Annotated[
         Literal[*PROCESS_WORKS_JOBS],
         Parameter(
@@ -597,253 +600,35 @@ def process_works_cmd(
             help="The first job to run in the sequence.",
         ),
     ] = PROCESS_WORKS_JOBS[0],
-    crossref_crossref_metadata_threads: Annotated[
-        int,
-        Parameter(
-            env_var="CROSSREF_CROSSREF_METADATA_THREADS",
-            help="Memory limit for SQLMesh DuckDB crossref_crossref_metadata query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    crossref_index_works_metadata_threads: Annotated[
-        int,
-        Parameter(
-            env_var="CROSSREF_INDEX_WORKS_METADATA_THREADS",
-            help="Memory limit for SQLMesh DuckDB crossref_index_works_metadata query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_datacite_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_DATACITE_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_datacite query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_index_awards_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_INDEX_AWARDS_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_index_awards query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_index_datacite_index_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_INDEX_DATACITE_INDEX_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_index_datacite_index query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_index_funders_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_INDEX_FUNDERS_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_index_funders query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_index_institutions_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_INDEX_INSTITUTIONS_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_index_institutions query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_index_updated_dates_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_INDEX_UPDATED_DATES_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_index_updated_dates query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_index_work_types_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_INDEX_WORK_TYPES_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_index_work_types query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_index_works_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_INDEX_WORKS_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_index_works query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    datacite_index_datacite_index_hashes_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATACITE_INDEX_DATACITE_INDEX_HASHES_THREADS",
-            help="Memory limit for SQLMesh DuckDB datacite_index_datacite_index_hashes query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_openalex_works_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_OPENALEX_WORKS_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_openalex_works query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_abstract_stats_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_ABSTRACT_STATS_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_abstract_stats query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_abstracts_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_ABSTRACTS_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_abstracts query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_author_names_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_AUTHOR_NAMES_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_author_names query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_awards_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_AWARDS_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_awards query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_funders_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_FUNDERS_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_funders query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_openalex_index_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_OPENALEX_INDEX_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_openalex_index query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_publication_dates_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_PUBLICATION_DATES_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_publication_dates query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_title_stats_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_TITLE_STATS_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_title_stats query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_titles_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_TITLES_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_titles query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_updated_dates_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_UPDATED_DATES_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_updated_dates query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_works_metadata_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_WORKS_METADATA_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_works_metadata query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    openalex_index_openalex_index_hashes_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENALEX_INDEX_OPENALEX_INDEX_HASHES_THREADS",
-            help="Memory limit for SQLMesh DuckDB openalex_index_openalex_index_hashes query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    opensearch_current_doi_state_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENSEARCH_CURRENT_DOI_STATE_THREADS",
-            help="Memory limit for SQLMesh DuckDB opensearch_current_doi_state query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    opensearch_export_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENSEARCH_EXPORT_THREADS",
-            help="Memory limit for SQLMesh DuckDB opensearch_export query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    opensearch_next_doi_state_threads: Annotated[
-        int,
-        Parameter(
-            env_var="OPENSEARCH_NEXT_DOI_STATE_THREADS",
-            help="Memory limit for SQLMesh DuckDB opensearch_next_doi_state query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    data_citation_corpus_2_threads: Annotated[
-        int,
-        Parameter(
-            env_var="DATA_CITATION_CORPUS_RELATIONS_THREADS",
-            help="Memory limit for SQLMesh DuckDB data_citation_corpus_relations query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    relations_crossref_metadata_threads: Annotated[
-        int,
-        Parameter(
-            env_var="RELATIONS_CROSSREF_METADATA_THREADS",
-            help="Memory limit for SQLMesh DuckDB relations_crossref_metadata query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    relations_data_citation_corpus_threads: Annotated[
-        int,
-        Parameter(
-            env_var="RELATIONS_DATA_CITATION_CORPUS_THREADS",
-            help="Memory limit for SQLMesh DuckDB relations_data_citation_corpus query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    relations_datacite_threads: Annotated[
-        int,
-        Parameter(
-            env_var="RELATIONS_DATACITE_THREADS",
-            help="Memory limit for SQLMesh DuckDB relations_datacite query (e.g., 16).",
-        ),
-    ] = 16,
-    relations_relations_index_threads: Annotated[
-        int,
-        Parameter(
-            env_var="RELATIONS_RELATIONS_INDEX_THREADS",
-            help="Memory limit for SQLMesh DuckDB relations_relations_index query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    ror_index_threads: Annotated[
-        int,
-        Parameter(
-            env_var="ROR_INDEX_THREADS",
-            help="Memory limit for SQLMesh DuckDB ror_index query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    ror_ror_threads: Annotated[
-        int,
-        Parameter(
-            env_var="ROR_ROR_THREADS",
-            help="Memory limit for SQLMesh DuckDB ror_ror query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
-    works_index_export_threads: Annotated[
-        int,
-        Parameter(
-            env_var="WORKS_INDEX_EXPORT_THREADS",
-            help="Memory limit for SQLMesh DuckDB works_index_export query (e.g., 32).",
-        ),
-    ] = DEFAULT_NUM_WORKERS,
 ):
+    """Submit Process Works jobs (SQLMesh and Sync Works).
+
+    Args:
+        env: Environment (e.g., dev, stage, prod).
+        bucket_name: S3 bucket name for job I/O.
+        prev_run_id: A unique ID for the previous SQLMesh run.
+        run_id: A unique ID for this SQLMesh run.
+        openalex_works_run_id: The run_id of the OpenAlex works data to use.
+        datacite_run_id: The run_id of the DataCite data to use.
+        crossref_metadata_run_id: The run_id of the Crossref metadata to use.
+        ror_run_id: The run_id of the ROR data to use.
+        data_citation_corpus_run_id: The run_id of the Data Citation Corpus data to use.
+        opensearch_host: The OpenSearch host URL.
+        opensearch_region: The AWS region of the OpenSearch cluster.
+        sqlmesh_duckdb_memory_limit: Memory limit for DuckDB.
+        opensearch_index_name: The name of the OpenSearch index to sync to.
+        opensearch_mode: Client connection mode.
+        opensearch_port: OpenSearch connection port.
+        opensearch_service: OpenSearch service name.
+        sync_max_processes: Max number of processes for the sync job.
+        sync_chunk_size: Number of documents per sync chunk.
+        sync_max_retries: Max retries for failed chunks.
+        sqlmesh_threads_config: SQLMesh threads configuration.
+        start_job: The first job to run in the sequence.
+    """
     logging.basicConfig(level=logging.INFO)
+
+    sqlmesh_threads_config = SQLMeshThreadsConfig() if sqlmesh_threads_config is None else sqlmesh_threads_config
 
     task_definitions = {
         "sqlmesh-transform": partial(
@@ -858,41 +643,7 @@ def process_works_cmd(
             ror_run_id=ror_run_id,
             data_citation_corpus_run_id=data_citation_corpus_run_id,
             duckdb_memory_limit=sqlmesh_duckdb_memory_limit,
-            crossref_crossref_metadata_threads=crossref_crossref_metadata_threads,
-            crossref_index_works_metadata_threads=crossref_index_works_metadata_threads,
-            datacite_datacite_threads=datacite_datacite_threads,
-            datacite_index_awards_threads=datacite_index_awards_threads,
-            datacite_index_datacite_index_threads=datacite_index_datacite_index_threads,
-            datacite_index_funders_threads=datacite_index_funders_threads,
-            datacite_index_institutions_threads=datacite_index_institutions_threads,
-            datacite_index_updated_dates_threads=datacite_index_updated_dates_threads,
-            datacite_index_work_types_threads=datacite_index_work_types_threads,
-            datacite_index_works_threads=datacite_index_works_threads,
-            datacite_index_datacite_index_hashes_threads=datacite_index_datacite_index_hashes_threads,
-            openalex_openalex_works_threads=openalex_openalex_works_threads,
-            openalex_index_abstract_stats_threads=openalex_index_abstract_stats_threads,
-            openalex_index_abstracts_threads=openalex_index_abstracts_threads,
-            openalex_index_author_names_threads=openalex_index_author_names_threads,
-            openalex_index_awards_threads=openalex_index_awards_threads,
-            openalex_index_funders_threads=openalex_index_funders_threads,
-            openalex_index_openalex_index_threads=openalex_index_openalex_index_threads,
-            openalex_index_publication_dates_threads=openalex_index_publication_dates_threads,
-            openalex_index_title_stats_threads=openalex_index_title_stats_threads,
-            openalex_index_titles_threads=openalex_index_titles_threads,
-            openalex_index_updated_dates_threads=openalex_index_updated_dates_threads,
-            openalex_index_works_metadata_threads=openalex_index_works_metadata_threads,
-            openalex_index_openalex_index_hashes_threads=openalex_index_openalex_index_hashes_threads,
-            opensearch_current_doi_state_threads=opensearch_current_doi_state_threads,
-            opensearch_export_threads=opensearch_export_threads,
-            opensearch_next_doi_state_threads=opensearch_next_doi_state_threads,
-            data_citation_corpus_relations_threads=data_citation_corpus_relations_threads,
-            relations_crossref_metadata_threads=relations_crossref_metadata_threads,
-            relations_data_citation_corpus_threads=relations_data_citation_corpus_threads,
-            relations_datacite_threads=relations_datacite_threads,
-            relations_relations_index_threads=relations_relations_index_threads,
-            ror_index_threads=ror_index_threads,
-            ror_ror_threads=ror_ror_threads,
-            works_index_export_threads=works_index_export_threads,
+            sqlmesh_threads_config=sqlmesh_threads_config,
         ),
         "sync-works": partial(
             submit_sync_works_job,
@@ -1002,6 +753,23 @@ def process_dmps_cmd(
         ),
     ] = PROCESS_DMPS_JOBS[0],
 ):
+    """Submit Process DMPs jobs (Sync, Enrich, Search, Merge).
+
+    Args:
+        env: Environment (e.g., dev, stage, prod).
+        bucket_name: S3 bucket name for job I/O.
+        dmps_run_id: A unique ID of the run containing the DMPs file.
+        opensearch_host: The OpenSearch host URL.
+        opensearch_region: The AWS region of the OpenSearch cluster.
+        opensearch_dmps_index_name: The name of the OpenSearch DMPs index.
+        opensearch_works_index_name: The name of the OpenSearch works index.
+        opensearch_mode: Client connection mode.
+        opensearch_port: OpenSearch connection port.
+        opensearch_service: OpenSearch service name.
+        sync_chunk_size: Number of documents per chunk for the sync-dmps job.
+        dmp_subset: Configuration for creating a subset of DMPs.
+        start_job: The first job to run in the sequence.
+    """
     logging.basicConfig(level=logging.INFO)
 
     task_definitions = {

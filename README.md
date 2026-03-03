@@ -15,6 +15,8 @@ DMP Tool Python package that matches DMPs to their published outputs.
 ## Documentation
 See the below pages for in depth documentation.
 
-* [Architecture](docs/architecture.md)
+* [Development](docs/development.md)
 * [Running Locally with Dataset Subset](docs/running-locally.md)
 * [Submitting AWS Batch Jobs](docs/aws-batch.md)
+* [Architecture](docs/architecture.md)
+* [Troubleshooting](docs/troubleshooting.md)
