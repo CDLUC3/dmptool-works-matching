@@ -4,7 +4,9 @@ from typing import Callable, Optional
 import pendulum
 
 from dmpworks.model.common import Institution
-from dmpworks.model.dmp_model import Award, DMPModel, ResearchOutput
+from dmpworks.model.dmp_model import Award, DMPModel
+
+MIN_START_DATE = pendulum.date(1990, 1, 1)
 
 
 def get_query_builder(name: str) -> Callable[[DMPModel, int, int, int], dict]:
@@ -229,19 +231,21 @@ def build_dmp_works_search_baseline_query(
             },
         }
     ]
-    if dmp.project_start is not None and dmp.project_start >= pendulum.date(1990, 1, 1):
-        gte = dmp.project_start.format("YYYY-MM-DD")
-        lte = dmp.project_end.add(years=project_end_buffer_years).format("YYYY-MM-DD")
-        filters.append(
-            {
-                "range": {
-                    "publication_date": {
-                        "gte": gte,
-                        "lte": lte,
-                    },
-                }
-            }
-        )
+
+    # Setup date filter
+    start_date = dmp.project_start if dmp.project_start is not None else MIN_START_DATE
+    date_range = {
+        "gte": start_date.format("YYYY-MM-DD"),
+    }
+    if dmp.project_end is not None:
+        date_range["lte"] = dmp.project_end.add(years=project_end_buffer_years).format("YYYY-MM-DD")
+    filters.append(
+        {
+            "range": {
+                "publication_date": date_range,
+            },
+        }
+    )
 
     query = {
         "size": max_results,

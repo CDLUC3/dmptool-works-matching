@@ -91,11 +91,13 @@ def parse_pendulum_datetime(v: Any) -> Optional[pendulum.DateTime]:
     """Parse a value into a pendulum DateTime object."""
     if v is None:
         return None
-    elif isinstance(v, pendulum.DateTime):
+    if isinstance(v, pendulum.DateTime):
         return v
-    elif isinstance(v, datetime.datetime):
+    if isinstance(v, datetime.datetime):
         return pendulum.instance(v)
-    elif isinstance(v, str):
+    if isinstance(v, (pendulum.Date, datetime.date)):
+        return pendulum.datetime(v.year, v.month, v.day)
+    if isinstance(v, str):
         try:
             parsed = pendulum.parse(v)
             if isinstance(parsed, pendulum.DateTime):
@@ -117,7 +119,7 @@ def serialize_pendulum_datetime(v: Any) -> Optional[str]:
     """Serialize a pendulum DateTime object to an ISO 8601 string."""
     if v is None:
         return None
-    elif isinstance(v, pendulum.DateTime):
+    if isinstance(v, pendulum.DateTime):
         return v.to_iso8601_string()
     raise TypeError(f"Expected pendulum.DateTime, got {type(v).__name__}")
 
@@ -126,19 +128,19 @@ def parse_pendulum_date(v: Any) -> Optional[pendulum.Date]:
     """Parse a value into a pendulum Date object."""
     if v is None:
         return None
-    elif isinstance(v, pendulum.Date):
-        return v
-    elif isinstance(v, (pendulum.DateTime, datetime.datetime)):
+    if isinstance(v, (pendulum.DateTime, datetime.datetime)):
         return pendulum.instance(v).date()
-    elif isinstance(v, datetime.date):
+    if isinstance(v, pendulum.Date):
+        return v
+    if isinstance(v, datetime.date):
         return pendulum.date(v.year, v.month, v.day)
-    elif isinstance(v, str):
+    if isinstance(v, str):
         try:
             parsed = pendulum.parse(v)
-            if isinstance(parsed, pendulum.Date):
-                return parsed
             if isinstance(parsed, pendulum.DateTime):
                 return parsed.date()
+            if isinstance(parsed, pendulum.Date):
+                return parsed
             else:
                 raise ValueError(f"Parsed value is not a date: {v}")
         except Exception as e:
