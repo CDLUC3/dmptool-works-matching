@@ -86,9 +86,9 @@ select = [
     "S", # flake8-bandit: Detects common security issues and potential vulnerabilities.
     "SIM", # flake8-simplify: Suggests code simplifications and more idiomatic constructs.
     "UP", # pyupgrade: Rewrites code to use modern Python syntax and features.
-    "PTH", # pathlib usage
-    "TCH", # typing imports
-    "TRY", # exception handling
+    "PTH", # flake8-use-pathlib: Encourages use of pathlib instead of os.path and open().
+    "TCH", # flake8-type-checking: Ensures imports used only for typing are placed inside TYPE_CHECKING blocks.
+    "TRY", # tryceratops: Improves exception handling patterns and logging in try/except blocks.
 ]
 ignore = [
     "D100", # Missing docstring in public module
@@ -99,10 +99,10 @@ ignore = [
     "PLR0913", # Too many arguments
     "PLR0915", # Too many statements
     "PLW0603", # Using the global statement,
-    "TC001",
-    "TC002",
-    "TC003",
-    "TRY003"
+    "TC001", # flake8-type-checking: Move application imports used only for typing into TYPE_CHECKING blocks
+    "TC002", # flake8-type-checking: Move third-party imports used only for typing into TYPE_CHECKING blocks
+    "TC003", # flake8-type-checking: Move standard library imports used only for typing into TYPE_CHECKING blocks
+    "TRY003", # tryceratops: Avoid long or complex exception messages defined directly in raise statements
 ]
 
 [tool.ruff.lint.pydocstyle]
