@@ -90,12 +90,12 @@ class ExternalData(BaseModel):
 
     @field_validator("updated", mode="before")
     @classmethod
-    def parse_pendulum_date(cls, v):
-        return parse_pendulum_date(v)
+    def parse_pendulum_datetime(cls, v):
+        return parse_pendulum_datetime(v)
 
     @field_serializer("updated")
-    def serialize_pendulum_date(self, v: pendulum.DateTime):
-        return serialize_pendulum_date(v)
+    def serialize_pendulum_datetime(self, v: pendulum.DateTime):
+        return serialize_pendulum_datetime(v)
 
 
 class Award(BaseModel):
