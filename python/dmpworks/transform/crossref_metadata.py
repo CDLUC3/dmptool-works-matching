@@ -172,9 +172,19 @@ def parse_relations(relation_obj: simdjson.Object) -> list[dict]:
 
     for relation_type, sub_relation_array in relation_obj.items():
         for obj in sub_relation_array:
-            relation_id = normalise_identifier(obj.get("id"))
+            relation_id = to_optional_string(obj.get("id"))
             id_type = to_optional_string(obj.get("id-type"))
             asserted_by = to_optional_string(obj.get("asserted-by"))
+
+            # Remove url prefix from DOIs
+            doi = extract_doi(relation_id)
+            if doi is not None:
+                relation_id = doi
+                id_type = "doi"
+            else:
+                relation_id = normalise_identifier(relation_id)
+                if id_type == "doi":
+                    id_type = None
 
             if any([relation_type, relation_id, id_type, asserted_by]):
                 relations.append(

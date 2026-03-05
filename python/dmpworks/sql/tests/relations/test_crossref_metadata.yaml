@@ -1,213 +1,203 @@
 test_relations_crossref_metadata:
   model: relations.crossref_metadata
   inputs:
-    crossref.crossref_metadata:
+    relations.crossref_metadata_degrees:
       rows:
         # intra-work is true
-        - doi: "10.9999/test.0001"
-          relations:
-            - relation_id: "10.1234/test.0001"
-              relation_type: "is-expression-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0002"
-          relations:
-            - relation_id: "10.1234/test.0002"
-              relation_type: "has-expression"
-              id_type: "doi"
-        - doi: "10.9999/test.0003"
-          relations:
-            - relation_id: "10.1234/test.0003"
-              relation_type: "is-expression-of"
-              id_type: "url"
-        - doi: "10.9999/test.0004"
-          relations:
-            - relation_id: "10.1234/test.0004"
-              relation_type: "is-expression-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0005"
-          relations:
-            - relation_id: "10.1234/test.0005"
-              relation_type: "is-format-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0006"
-          relations:
-            - relation_id: "10.1234/test.0006"
-              relation_type: "has-format"
-              id_type: "doi"
-        - doi: "10.9999/test.0007"
-          relations:
-            - relation_id: "10.1234/test.0007"
-              relation_type: "is-identical-to"
-              id_type: "doi"
-        - doi: "10.9999/test.0008"
-          relations:
-            - relation_id: "10.1234/test.0008"
-              relation_type: "is-manifestation-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0009"
-          relations:
-            - relation_id: "10.1234/test.0009"
-              relation_type: "has-manifestation"
-              id_type: "doi"
-        - doi: "10.9999/test.0010"
-          relations:
-            - relation_id: "10.1234/test.0010"
-              relation_type: "is-manuscript-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0011"
-          relations:
-            - relation_id: "10.1234/test.0011"
-              relation_type: "has-manuscript"
-              id_type: "doi"
-        - doi: "10.9999/test.0012"
-          relations:
-            - relation_id: "10.1234/test.0012"
-              relation_type: "is-preprint-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0013"
-          relations:
-            - relation_id: "10.1234/test.0013"
-              relation_type: "has-preprint"
-              id_type: "doi"
-        - doi: "10.9999/test.0014"
-          relations:
-            - relation_id: "10.1234/test.0014"
-              relation_type: "is-replaced-by"
-              id_type: "doi"
-        - doi: "10.9999/test.0015"
-          relations:
-            - relation_id: "10.1234/test.0015"
-              relation_type: "replaces"
-              id_type: "doi"
-        - doi: "10.9999/test.0016"
-          relations:
-            - relation_id: "10.1234/test.0016"
-              relation_type: "is-translation-of"
-              id_type: "url"
-        - doi: "10.9999/test.0017"
-          relations:
-            - relation_id: "10.1234/test.0017"
-              relation_type: "has-translation"
-              id_type: "doi"
-        - doi: "10.9999/test.0018"
-          relations:
-            - relation_id: "10.1234/test.0018"
-              relation_type: "is-variant-form-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0019"
-          relations:
-            - relation_id: "10.1234/test.0019"
-              relation_type: "is-original-form-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0020"
-          relations:
-            - relation_id: "10.1234/test.0020"
-              relation_type: "is-version-of"
-              id_type: "doi"
+        - work_doi: "10.9999/test.0001"
+          related_doi: "10.1234/test.0001"
+          relation_type: "is-expression-of"
+          out_degree: 42
+          in_degree: 12
+        - work_doi: "10.9999/test.0002"
+          related_doi: "10.1234/test.0002"
+          relation_type: "has-expression"
+          out_degree: 88
+          in_degree: 3
+        - work_doi: "10.9999/test.0003"
+          related_doi: "10.1234/test.0003"
+          relation_type: "is-expression-of"
+          out_degree: 25
+          in_degree: 67
+        - work_doi: "10.9999/test.0004"
+          related_doi: "10.1234/test.0004"
+          relation_type: "is-expression-of"
+          out_degree: 99
+          in_degree: 1
+        - work_doi: "10.9999/test.0005"
+          related_doi: "10.1234/test.0005"
+          relation_type: "is-format-of"
+          out_degree: 15
+          in_degree: 75
+        - work_doi: "10.9999/test.0006"
+          related_doi: "10.1234/test.0006"
+          relation_type: "has-format"
+          out_degree: 33
+          in_degree: 33
+        - work_doi: "10.9999/test.0007"
+          related_doi: "10.1234/test.0007"
+          relation_type: "is-identical-to"
+          out_degree: 7
+          in_degree: 92
+        - work_doi: "10.9999/test.0008"
+          related_doi: "10.1234/test.0008"
+          relation_type: "is-manifestation-of"
+          out_degree: 55
+          in_degree: 44
+        - work_doi: "10.9999/test.0009"
+          related_doi: "10.1234/test.0009"
+          relation_type: "has-manifestation"
+          out_degree: 21
+          in_degree: 81
+        - work_doi: "10.9999/test.0010"
+          related_doi: "10.1234/test.0010"
+          relation_type: "is-manuscript-of"
+          out_degree: 60
+          in_degree: 40
+        - work_doi: "10.9999/test.0011"
+          related_doi: "10.1234/test.0011"
+          relation_type: "has-manuscript"
+          out_degree: 11
+          in_degree: 11
+        - work_doi: "10.9999/test.0012"
+          related_doi: "10.1234/test.0012"
+          relation_type: "is-preprint-of"
+          out_degree: 77
+          in_degree: 22
+        - work_doi: "10.9999/test.0013"
+          related_doi: "10.1234/test.0013"
+          relation_type: "has-preprint"
+          out_degree: 36
+          in_degree: 63
+        - work_doi: "10.9999/test.0014"
+          related_doi: "10.1234/test.0014"
+          relation_type: "is-replaced-by"
+          out_degree: 9
+          in_degree: 90
+        - work_doi: "10.9999/test.0015"
+          related_doi: "10.1234/test.0015"
+          relation_type: "replaces"
+          out_degree: 48
+          in_degree: 52
+        - work_doi: "10.9999/test.0016"
+          related_doi: "10.1234/test.0016"
+          relation_type: "is-translation-of"
+          out_degree: 19
+          in_degree: 80
+        - work_doi: "10.9999/test.0017"
+          related_doi: "10.1234/test.0017"
+          relation_type: "has-translation"
+          out_degree: 72
+          in_degree: 27
+        - work_doi: "10.9999/test.0018"
+          related_doi: "10.1234/test.0018"
+          relation_type: "is-variant-form-of"
+          out_degree: 5
+          in_degree: 95
+        - work_doi: "10.9999/test.0019"
+          related_doi: "10.1234/test.0019"
+          relation_type: "is-original-form-of"
+          out_degree: 85
+          in_degree: 14
+        - work_doi: "10.9999/test.0020"
+          related_doi: "10.1234/test.0020"
+          relation_type: "is-version-of"
+          out_degree: 30
+          in_degree: 70
 
         # inter-work
-        - doi: "10.9999/test.0100"
-          relations:
-            - relation_id: "10.1234/test.0100"
-              relation_type: "is-derived-from"
-              id_type: "doi"
-        - doi: "10.9999/test.0101"
-          relations:
-            - relation_id: "10.1234/test.0101"
-              relation_type: "has-derivation"
-              id_type: "doi"
-        - doi: "10.9999/test.0102"
-          relations:
-            - relation_id: "10.1234/test.0102"
-              relation_type: "is-basis-for"
-              id_type: "doi"
-        - doi: "10.9999/test.0103"
-          relations:
-            - relation_id: "10.1234/test.0103"
-              relation_type: "is-based-on"
-              id_type: "url"
-        - doi: "10.9999/test.0104"
-          relations:
-            - relation_id: "10.1234/test.0104"
-              relation_type: "is-supplement-to"
-              id_type: "doi"
-        - doi: "10.9999/test.0105"
-          relations:
-            - relation_id: "10.1234/test.0105"
-              relation_type: "is-supplemented-by"
-              id_type: "doi"
-        - doi: "10.9999/test.0106"
-          relations:
-            - relation_id: "10.1234/test.0106"
-              relation_type: "documents"
-              id_type: "doi"
-        - doi: "10.9999/test.0107"
-          relations:
-            - relation_id: "10.1234/test.0107"
-              relation_type: "is-documented-by"
-              id_type: "doi"
-        - doi: "10.9999/test.0108"
-          relations:
-            - relation_id: "10.1234/test.0108"
-              relation_type: "has-part"
-              id_type: "doi"
-        - doi: "10.9999/test.0109"
-          relations:
-            - relation_id: "10.1234/test.0109"
-              relation_type: "is-part-of"
-              id_type: "doi"
-        - doi: "10.9999/test.0110"
-          relations:
-            - relation_id: "10.1234/test.0110"
-              relation_type: "continues"
-              id_type: "doi"
-        - doi: "10.9999/test.0111"
-          relations:
-            - relation_id: "10.1234/test.0111"
-              relation_type: "is-continued-by"
-              id_type: "doi"
-        - doi: "10.9999/test.0112"
-          relations:
-            - relation_id: "10.1234/test.0112"
-              relation_type: "compiles"
-              id_type: "url"
-        - doi: "10.9999/test.0113"
-          relations:
-            - relation_id: "10.1234/test.0113"
-              relation_type: "is-compiled-by"
-              id_type: "doi"
-        - doi: "10.9999/test.0114"
-          relations:
-            - relation_id: "10.1234/test.0114"
-              relation_type: "is-related-material"
-              id_type: "doi"
-        - doi: "10.9999/test.0115"
-          relations:
-            - relation_id: "10.1234/test.0115"
-              relation_type: "has-related-material"
-              id_type: "doi"
+        - work_doi: "10.9999/test.0100"
+          related_doi: "10.1234/test.0100"
+          relation_type: "is-derived-from"
+          out_degree: 45
+          in_degree: 55
+        - work_doi: "10.9999/test.0101"
+          related_doi: "10.1234/test.0101"
+          relation_type: "has-derivation"
+          out_degree: 65
+          in_degree: 35
+        - work_doi: "10.9999/test.0102"
+          related_doi: "10.1234/test.0102"
+          relation_type: "is-basis-for"
+          out_degree: 20
+          in_degree: 80
+        - work_doi: "10.9999/test.0103"
+          related_doi: "10.1234/test.0103"
+          relation_type: "is-based-on"
+          out_degree: 90
+          in_degree: 10
+        - work_doi: "10.9999/test.0104"
+          related_doi: "10.1234/test.0104"
+          relation_type: "is-supplement-to"
+          out_degree: 10
+          in_degree: 90
+        - work_doi: "10.9999/test.0105"
+          related_doi: "10.1234/test.0105"
+          relation_type: "is-supplemented-by"
+          out_degree: 50
+          in_degree: 50
+        - work_doi: "10.9999/test.0106"
+          related_doi: "10.1234/test.0106"
+          relation_type: "documents"
+          out_degree: 33
+          in_degree: 66
+        - work_doi: "10.9999/test.0107"
+          related_doi: "10.1234/test.0107"
+          relation_type: "is-documented-by"
+          out_degree: 66
+          in_degree: 33
+        - work_doi: "10.9999/test.0108"
+          related_doi: "10.1234/test.0108"
+          relation_type: "has-part"
+          out_degree: 25
+          in_degree: 75
+        - work_doi: "10.9999/test.0109"
+          related_doi: "10.1234/test.0109"
+          relation_type: "is-part-of"
+          out_degree: 75
+          in_degree: 25
+        - work_doi: "10.9999/test.0110"
+          related_doi: "10.1234/test.0110"
+          relation_type: "continues"
+          out_degree: 40
+          in_degree: 60
+        - work_doi: "10.9999/test.0111"
+          related_doi: "10.1234/test.0111"
+          relation_type: "is-continued-by"
+          out_degree: 60
+          in_degree: 40
+        - work_doi: "10.9999/test.0112"
+          related_doi: "10.1234/test.0112"
+          relation_type: "compiles"
+          out_degree: 15
+          in_degree: 85
+        - work_doi: "10.9999/test.0113"
+          related_doi: "10.1234/test.0113"
+          relation_type: "is-compiled-by"
+          out_degree: 85
+          in_degree: 15
+        - work_doi: "10.9999/test.0114"
+          related_doi: "10.1234/test.0114"
+          relation_type: "is-related-material"
+          out_degree: 55
+          in_degree: 45
+        - work_doi: "10.9999/test.0115"
+          related_doi: "10.1234/test.0115"
+          relation_type: "has-related-material"
+          out_degree: 45
+          in_degree: 55
 
-        # others that should be filtered out
-        - doi: "10.9999/test.0200"
-          relations:
-            - relation_id: "10.1234/test.0200"
-              relation_type: "is-cited-by"
-              id_type: "doi"
-        - doi: "10.9999/test.0201"
-          relations:
-            - relation_id: "https://example.org/fulltext/0201"
-              relation_type: "is-expression-of"
-              id_type: "url"
-        - doi: "10.9999/test.0202"
-          relations:
-            - relation_id: "https://example.org/dataset/0202"
-              relation_type: "is-derived-from"
-              id_type: "url"
-        - doi: "10.9999/test.0203"
-          relations:
-            - relation_id: "https://example.org/not-a-doi"
-              relation_type: "is-expression-of"
-              id_type: "doi"
+        # filtered out due to high degree
+        - work_doi: "10.9999/test.0300"
+          related_doi: "10.1234/test.0300"
+          relation_type: "is-expression-of"
+          out_degree: 101
+          in_degree: 50
+        - work_doi: "10.9999/test.0301"
+          related_doi: "10.1234/test.0301"
+          relation_type: "is-expression-of"
+          out_degree: 50
+          in_degree: 101
 
   outputs:
     query:

@@ -27,8 +27,8 @@ DATACITE_SCHEMA = pa.schema(
         pa.field("title", pa.string(), nullable=True),
         pa.field("abstract", pa.string(), nullable=True),
         pa.field("work_type", pa.string(), nullable=True),
-        pa.field("publication_date", pa.date32(), nullable=True),  # TODO CHECK
-        pa.field("updated_date", pa.timestamp("us"), nullable=True),  # TODO CHECK
+        pa.field("publication_date", pa.date32(), nullable=True),
+        pa.field("updated_date", pa.timestamp("us"), nullable=True),
         pa.field("publication_venue", pa.string(), nullable=True),
         pa.field(
             "authors",
@@ -311,6 +311,8 @@ def parse_relations(related_identifier_array: simdjson.Array | list[simdjson.Obj
             related_identifier_type = "DOI"
         else:
             related_identifier = normalise_identifier(related_identifier)
+            if related_identifier_type == "DOI":
+                related_identifier_type = None
 
         if any([relation_type, related_identifier, related_identifier_type]):
             relations.append(

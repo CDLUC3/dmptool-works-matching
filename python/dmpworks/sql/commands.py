@@ -30,43 +30,54 @@ def sqlmesh_dir(module_name: str = "dmpworks.sql") -> pathlib.Path:
     return Path(spec.origin).parent
 
 
-def run_plan() -> Plan:
+def run_plan() -> Plan | None:
     """Run the SQLMesh plan command.
 
     Configures the console and executes a plan in the 'prod' environment.
 
     Returns:
-        The executed Plan object.
+        The executed Plan object or None.
     """
     configure_console(ignore_warnings=False)
     ctx = Context(
         paths=[sqlmesh_dir()],
         load=True,
     )
-    return ctx.plan(
-        environment="prod",
-        run=True,
-        ignore_cron=True,
-        auto_apply=True,
-        no_prompts=True,
-    )
+
+    try:
+        return ctx.plan(
+            environment="prod",
+            run=True,
+            ignore_cron=True,
+            auto_apply=True,
+            no_prompts=True,
+        )
+    finally:
+        # Need to close otherwise DuckDB database is not closed properly
+        # and we end up with a db.db.wal and views not always written out
+        ctx.close()
 
 
-def run_test() -> ModelTextTestResult:
+def run_test() -> ModelTextTestResult | None:
     """Run SQLMesh tests.
 
     Configures the console and runs tests with very verbose output.
 
     Returns:
-        The result of the tests.
+        The result of the tests or None.
     """
     configure_console(ignore_warnings=False)
     ctx = Context(
         paths=[sqlmesh_dir()],
         load=True,
     )
-    test_results: ModelTextTestResult = ctx.test(verbosity=Verbosity.VERY_VERBOSE)
-    return test_results
+    try:
+        test_results: ModelTextTestResult = ctx.test(verbosity=Verbosity.VERY_VERBOSE)
+        return test_results
+    finally:
+        # Need to close otherwise DuckDB database is not closed properly
+        # and we end up with a db.db.wal and views not always written out
+        ctx.close()
 
 
 def init_doi_state(file_path: pathlib.Path):

@@ -1,323 +1,324 @@
 test_relations_datacite:
   model: relations.datacite
   inputs:
-    datacite.datacite:
+    relations.datacite_degrees:
       rows:
         # intra-work is true
-        - doi: "10.9999/test.0001"
-          relations:
-            - related_identifier: "10.1234/test.0001"
-              relation_type: "IsIdenticalTo"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0002"
-          relations:
-            - related_identifier: "10.1234/test.0002"
-              relation_type: "IsObsoletedBy"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0003"
-          relations:
-            - related_identifier: "10.1234/test.0003"
-              relation_type: "Obsoletes"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0004"
-          relations:
-            - related_identifier: "10.1234/test.0004"
-              relation_type: "IsPartOf"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0005"
-          relations:
-            - related_identifier: "10.1234/test.0005"
-              relation_type: "HasPart"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0006"
-          relations:
-            - related_identifier: "10.1234/test.0006"
-              relation_type: "IsPublishedIn"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0007"
-          relations:
-            - related_identifier: "10.1234/test.0007"
-              relation_type: "IsTranslationOf"
-              related_identifier_type: "URL"
-        - doi: "10.9999/test.0008"
-          relations:
-            - related_identifier: "10.1234/test.0008"
-              relation_type: "HasTranslation"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0009"
-          relations:
-            - related_identifier: "10.1234/test.0009"
-              relation_type: "IsVariantFormOf"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0010"
-          relations:
-            - related_identifier: "10.1234/test.0010"
-              relation_type: "IsOriginalFormOf"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0011"
-          relations:
-            - related_identifier: "10.1234/test.0011"
-              relation_type: "HasVersion"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0012"
-          relations:
-            - related_identifier: "10.1234/test.0012"
-              relation_type: "IsVersionOf"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0013"
-          relations:
-            - related_identifier: "10.1234/test.0013"
-              relation_type: "IsNewVersionOf"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0014"
-          relations:
-            - related_identifier: "10.1234/test.0014"
-              relation_type: "IsPreviousVersionOf"
-              related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0001"
+          related_doi: "10.1234/test.0001"
+          relation_type: "IsIdenticalTo"
+          out_degree: 42
+          in_degree: 12
+        - work_doi: "10.9999/test.0002"
+          related_doi: "10.1234/test.0002"
+          relation_type: "IsObsoletedBy"
+          out_degree: 88
+          in_degree: 3
+        - work_doi: "10.9999/test.0003"
+          related_doi: "10.1234/test.0003"
+          relation_type: "Obsoletes"
+          out_degree: 25
+          in_degree: 67
+        - work_doi: "10.9999/test.0004"
+          related_doi: "10.1234/test.0004"
+          relation_type: "IsPartOf"
+          out_degree: 99
+          in_degree: 1
+        - work_doi: "10.9999/test.0005"
+          related_doi: "10.1234/test.0005"
+          relation_type: "HasPart"
+          out_degree: 15
+          in_degree: 75
+        - work_doi: "10.9999/test.0006"
+          related_doi: "10.1234/test.0006"
+          relation_type: "IsPublishedIn"
+          out_degree: 33
+          in_degree: 33
+        - work_doi: "10.9999/test.0007"
+          related_doi: "10.1234/test.0007"
+          relation_type: "IsTranslationOf"
+          out_degree: 7
+          in_degree: 92
+        - work_doi: "10.9999/test.0008"
+          related_doi: "10.1234/test.0008"
+          relation_type: "HasTranslation"
+          out_degree: 55
+          in_degree: 44
+        - work_doi: "10.9999/test.0009"
+          related_doi: "10.1234/test.0009"
+          relation_type: "IsVariantFormOf"
+          out_degree: 21
+          in_degree: 81
+        - work_doi: "10.9999/test.0010"
+          related_doi: "10.1234/test.0010"
+          relation_type: "IsOriginalFormOf"
+          out_degree: 60
+          in_degree: 40
+        - work_doi: "10.9999/test.0011"
+          related_doi: "10.1234/test.0011"
+          relation_type: "HasVersion"
+          out_degree: 11
+          in_degree: 11
+        - work_doi: "10.9999/test.0012"
+          related_doi: "10.1234/test.0012"
+          relation_type: "IsVersionOf"
+          out_degree: 77
+          in_degree: 22
+        - work_doi: "10.9999/test.0013"
+          related_doi: "10.1234/test.0013"
+          relation_type: "IsNewVersionOf"
+          out_degree: 36
+          in_degree: 63
+        - work_doi: "10.9999/test.0014"
+          related_doi: "10.1234/test.0014"
+          relation_type: "IsPreviousVersionOf"
+          out_degree: 9
+          in_degree: 90
 
         # is_possible_shared_project is true
-        - doi: "10.9999/test.0100"
-          relations:
-            - related_identifier: "10.1234/test.0100"
-              relation_type: "Compiles"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0101"
-          relations:
-            - related_identifier: "10.1234/test.0101"
-              relation_type: "IsCompiledBy"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0102"
-          relations:
-            - related_identifier: "10.1234/test.0102"
-              relation_type: "Continues"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0103"
-          relations:
-            - related_identifier: "10.1234/test.0103"
-              relation_type: "IsContinuedBy"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0104"
-          relations:
-            - related_identifier: "10.1234/test.0104"
-              relation_type: "IsDerivedFrom"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0105"
-          relations:
-            - related_identifier: "10.1234/test.0105"
-              relation_type: "IsSourceOf"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0106"
-          relations:
-            - related_identifier: "10.1234/test.0106"
-              relation_type: "Describes"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0107"
-          relations:
-            - related_identifier: "10.1234/test.0107"
-              relation_type: "IsDescribedBy"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0108"
-          relations:
-            - related_identifier: "10.1234/test.0108"
-              relation_type: "Documents"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0109"
-          relations:
-            - related_identifier: "10.1234/test.0109"
-              relation_type: "IsDocumentedBy"
-              related_identifier_type: "URL"
-        - doi: "10.9999/test.0110"
-          relations:
-            - related_identifier: "10.1234/test.0110"
-              relation_type: "IsSupplementTo"
-              related_identifier_type: "DOI"
-        - doi: "10.9999/test.0111"
-          relations:
-            - related_identifier: "10.1234/test.0111"
-              relation_type: "IsSupplementedBy"
-              related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0100"
+          related_doi: "10.1234/test.0100"
+          relation_type: "Compiles"
+          out_degree: 48
+          in_degree: 52
+        - work_doi: "10.9999/test.0101"
+          related_doi: "10.1234/test.0101"
+          relation_type: "IsCompiledBy"
+
+          out_degree: 19
+          in_degree: 80
+        - work_doi: "10.9999/test.0102"
+          related_doi: "10.1234/test.0102"
+          relation_type: "Continues"
+          out_degree: 72
+          in_degree: 27
+        - work_doi: "10.9999/test.0103"
+          related_doi: "10.1234/test.0103"
+          relation_type: "IsContinuedBy"
+          out_degree: 5
+          in_degree: 95
+        - work_doi: "10.9999/test.0104"
+          related_doi: "10.1234/test.0104"
+          relation_type: "IsDerivedFrom"
+          out_degree: 85
+          in_degree: 14
+        - work_doi: "10.9999/test.0105"
+          related_doi: "10.1234/test.0105"
+          relation_type: "IsSourceOf"
+          out_degree: 30
+          in_degree: 70
+        - work_doi: "10.9999/test.0106"
+          related_doi: "10.1234/test.0106"
+          relation_type: "Describes"
+          out_degree: 45
+          in_degree: 55
+        - work_doi: "10.9999/test.0107"
+          related_doi: "10.1234/test.0107"
+          relation_type: "IsDescribedBy"
+          out_degree: 65
+          in_degree: 35
+        - work_doi: "10.9999/test.0108"
+          related_doi: "10.1234/test.0108"
+          relation_type: "Documents"
+          out_degree: 20
+          in_degree: 80
+        - work_doi: "10.9999/test.0109"
+          related_doi: "10.1234/test.0109"
+          relation_type: "IsDocumentedBy"
+          out_degree: 90
+          in_degree: 10
+        - work_doi: "10.9999/test.0110"
+          related_doi: "10.1234/test.0110"
+          relation_type: "IsSupplementTo"
+          out_degree: 10
+          in_degree: 90
+        - work_doi: "10.9999/test.0111"
+          related_doi: "10.1234/test.0111"
+          relation_type: "IsSupplementedBy"
+          out_degree: 50
+          in_degree: 50
 
         # Types not included will still be present
-        - doi: "10.9999/test.0200"
-          relations:
-            - related_identifier: "10.1234/test.0200"
-              relation_type: "IsCitedBy"
-              related_identifier_type: "DOI"
+        - work_doi: "10.9999/test.0200"
+          related_doi: "10.1234/test.0200"
+          relation_type: "IsCitedBy"
+          out_degree: 33
+          in_degree: 66
 
-        # Works without DOIs won't be present
-        - doi: "10.9999/test.0201"
-          relations:
-            - related_identifier: "https://example.org/fulltext/0201"
-              relation_type: "IsIdenticalTo"
-              related_identifier_type: "URL"
-        - doi: "10.9999/test.0202"
-          relations:
-            - related_identifier: "https://example.org/dataset/0202"
-              relation_type: "IsDerivedFrom"
-              related_identifier_type: "URL"
+        # filtered out due to high degree
+        - work_doi: "10.9999/test.0300"
+          related_doi: "10.1234/test.0300"
+          relation_type: "IsIdenticalTo"
+          out_degree: 101
+          in_degree: 50
+        - work_doi: "10.9999/test.0301"
+          related_doi: "10.1234/test.0301"
+          relation_type: "IsIdenticalTo"
+          out_degree: 50
+          in_degree: 101
 
   outputs:
     query:
       rows:
         # is_intra_work true
         - doi: "10.9999/test.0001"
-          intra_work_dois: ["10.1234/test.0001"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0001" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0001"
-          intra_work_dois: ["10.9999/test.0001"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0001" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0002"
-          intra_work_dois: ["10.1234/test.0002"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0002" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0002"
-          intra_work_dois: ["10.9999/test.0002"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0002" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0003"
-          intra_work_dois: ["10.1234/test.0003"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0003" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0003"
-          intra_work_dois: ["10.9999/test.0003"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0003" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0004"
-          intra_work_dois: ["10.1234/test.0004"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0004" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0004"
-          intra_work_dois: ["10.9999/test.0004"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0004" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0005"
-          intra_work_dois: ["10.1234/test.0005"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0005" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0005"
-          intra_work_dois: ["10.9999/test.0005"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0005" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0006"
-          intra_work_dois: ["10.1234/test.0006"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0006" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0006"
-          intra_work_dois: ["10.9999/test.0006"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0006" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0007"
-          intra_work_dois: ["10.1234/test.0007"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0007" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0007"
-          intra_work_dois: ["10.9999/test.0007"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0007" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0008"
-          intra_work_dois: ["10.1234/test.0008"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0008" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0008"
-          intra_work_dois: ["10.9999/test.0008"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0008" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0009"
-          intra_work_dois: ["10.1234/test.0009"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0009" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0009"
-          intra_work_dois: ["10.9999/test.0009"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0009" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0010"
-          intra_work_dois: ["10.1234/test.0010"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0010" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0010"
-          intra_work_dois: ["10.9999/test.0010"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0010" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0011"
-          intra_work_dois: ["10.1234/test.0011"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0011" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0011"
-          intra_work_dois: ["10.9999/test.0011"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0011" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0012"
-          intra_work_dois: ["10.1234/test.0012"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0012" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0012"
-          intra_work_dois: ["10.9999/test.0012"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0012" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0013"
-          intra_work_dois: ["10.1234/test.0013"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0013" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0013"
-          intra_work_dois: ["10.9999/test.0013"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0013" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.9999/test.0014"
-          intra_work_dois: ["10.1234/test.0014"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.1234/test.0014" ]
+          possible_shared_project_dois: [ ]
         - doi: "10.1234/test.0014"
-          intra_work_dois: ["10.9999/test.0014"]
-          possible_shared_project_dois: []
+          intra_work_dois: [ "10.9999/test.0014" ]
+          possible_shared_project_dois: [ ]
 
         # is_possible_shared_project true
         - doi: "10.9999/test.0100"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0100"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0100" ]
         - doi: "10.1234/test.0100"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0100"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0100" ]
         - doi: "10.9999/test.0101"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0101"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0101" ]
         - doi: "10.1234/test.0101"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0101"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0101" ]
         - doi: "10.9999/test.0102"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0102"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0102" ]
         - doi: "10.1234/test.0102"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0102"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0102" ]
         - doi: "10.9999/test.0103"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0103"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0103" ]
         - doi: "10.1234/test.0103"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0103"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0103" ]
         - doi: "10.9999/test.0104"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0104"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0104" ]
         - doi: "10.1234/test.0104"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0104"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0104" ]
         - doi: "10.9999/test.0105"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0105"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0105" ]
         - doi: "10.1234/test.0105"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0105"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0105" ]
         - doi: "10.9999/test.0106"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0106"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0106" ]
         - doi: "10.1234/test.0106"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0106"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0106" ]
         - doi: "10.9999/test.0107"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0107"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0107" ]
         - doi: "10.1234/test.0107"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0107"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0107" ]
         - doi: "10.9999/test.0108"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0108"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0108" ]
         - doi: "10.1234/test.0108"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0108"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0108" ]
         - doi: "10.9999/test.0109"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0109"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0109" ]
         - doi: "10.1234/test.0109"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0109"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0109" ]
         - doi: "10.9999/test.0110"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0110"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0110" ]
         - doi: "10.1234/test.0110"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0110"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0110" ]
         - doi: "10.9999/test.0111"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.1234/test.0111"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.1234/test.0111" ]
         - doi: "10.1234/test.0111"
-          intra_work_dois: []
-          possible_shared_project_dois: ["10.9999/test.0111"]
+          intra_work_dois: [ ]
+          possible_shared_project_dois: [ "10.9999/test.0111" ]
 
         # neither flag set (still present)
 #        - doi: "10.9999/test.0200"

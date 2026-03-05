@@ -5,7 +5,7 @@ gateways:
       # https://sqlmesh.readthedocs.io/en/stable/reference/configuration/#connections
       # https://sqlmesh.readthedocs.io/en/stable/integrations/engines/duckdb/#connection-options
       type: duckdb
-      database: /path/to/db.db
+      database: {{ env_var('DUCKDB_DATABASE') }}
       # concurrent_tasks: 1
       # register_comments: True
       # pre_ping: False
@@ -13,63 +13,72 @@ gateways:
       # catalogs:
       # extensions:
       connector_config:
-        threads: 1
-        memory_limit: '225GB'
+        threads: {{ env_var('DUCKDB_THREADS') }}
+        memory_limit: {{ env_var('DUCKDB_MEMORY_LIMIT') }}
         preserve_insertion_order: 'false'
       # secrets:
       # token:
 
 variables:
-  opensearch_path: "/path/to/opensearch"
-  crossref_metadata_path: "/path/to/crossref_metadata"
-  datacite_path: "/path/to/datacite"
-  openalex_works_path: "/path/to/openalex_works"
-  ror_path: "/path/to/ror"
-  data_citation_corpus_path: "/path/to/data_citation_corpus"
-  works_index_export_path: "/path/to/works_index_export"
-  doi_state_export_path: "/path/to/doi_state_export"
-  audit_crossref_metadata_works_threshold: 167008747
-  audit_datacite_works_threshold: 72019576
-  audit_openalex_works_threshold: 264675126
+  # Data paths
+  crossref_metadata_path: {{ env_var('CROSSREF_METADATA_PATH') }}
+  data_citation_corpus_path: {{ env_var('DATA_CITATION_CORPUS_PATH') }}
+  datacite_path: {{ env_var('DATACITE_PATH') }}
+  doi_state_export_path: {{ env_var('DOI_STATE_EXPORT_PATH') }}
+  openalex_works_path: {{ env_var('OPENALEX_WORKS_PATH') }}
+  opensearch_path: {{ env_var('OPENSEARCH_PATH') }}
+  ror_path: {{ env_var('ROR_PATH') }}
+  works_index_export_path: {{ env_var('WORKS_INDEX_EXPORT_PATH') }}
 
-  crossref_crossref_metadata_threads: 32
-  crossref_index_works_metadata_threads: 32
-  datacite_datacite_threads: 32
-  datacite_index_awards_threads: 32
-  datacite_index_datacite_index_threads: 32
-  datacite_index_funders_threads: 32
-  datacite_index_institutions_threads: 32
-  datacite_index_updated_dates_threads: 32
-  datacite_index_work_types_threads: 32
-  datacite_index_works_threads: 32
-  datacite_index_datacite_index_hashes_threads: 32
-  openalex_openalex_works_threads: 32
-  openalex_index_abstract_stats_threads: 32
-  openalex_index_abstracts_threads: 32
-  openalex_index_author_names_threads: 32
-  openalex_index_awards_threads: 32
-  openalex_index_funders_threads: 32
-  openalex_index_openalex_index_threads: 32
-  openalex_index_publication_dates_threads: 32
-  openalex_index_title_stats_threads: 32
-  openalex_index_titles_threads: 32
-  openalex_index_updated_dates_threads: 32
-  openalex_index_works_metadata_threads: 32
-  openalex_index_openalex_index_hashes_threads: 32
-  opensearch_current_doi_state_threads: 32
-  opensearch_export_threads: 32
-  opensearch_next_doi_state_threads: 32
-  data_citation_corpus_relations_threads: 32
-  relations_crossref_metadata_threads: 32
-  relations_data_citation_corpus_threads: 32
-  relations_datacite_threads: 16
-  relations_relations_index_threads: 32
-  ror_index_threads: 32
-  ror_ror_threads: 32
-  works_index_export_threads: 32
+  # Audits
+  audit_crossref_metadata_works_threshold: {{ env_var('AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD') }}
+  audit_datacite_works_threshold: {{ env_var('AUDIT_DATACITE_WORKS_THRESHOLD') }}
+  audit_nested_object_limit: {{ env_var('AUDIT_NESTED_OBJECT_LIMIT') }}
+  audit_openalex_works_threshold: {{ env_var('AUDIT_OPENALEX_WORKS_THRESHOLD') }}
 
-  max_doi_states: 3
+  # Other settings
+  max_doi_states: {{ env_var('MAX_DOI_STATES') }}
+  max_relation_degrees: {{ env_var('MAX_RELATION_DEGREES') }}
   process_works_run_id: {{ env_var('PROCESS_WORKS_RUN_ID') }}
+
+  # Threads
+  crossref_crossref_metadata_threads: {{ env_var('CROSSREF_CROSSREF_METADATA_THREADS') }}
+  crossref_index_works_metadata_threads: {{ env_var('CROSSREF_INDEX_WORKS_METADATA_THREADS') }}
+  data_citation_corpus_relations_threads: {{ env_var('DATA_CITATION_CORPUS_RELATIONS_THREADS') }}
+  datacite_datacite_threads: {{ env_var('DATACITE_DATACITE_THREADS') }}
+  datacite_index_awards_threads: {{ env_var('DATACITE_INDEX_AWARDS_THREADS') }}
+  datacite_index_datacite_index_hashes_threads: {{ env_var('DATACITE_INDEX_DATACITE_INDEX_HASHES_THREADS') }}
+  datacite_index_datacite_index_threads: {{ env_var('DATACITE_INDEX_DATACITE_INDEX_THREADS') }}
+  datacite_index_funders_threads: {{ env_var('DATACITE_INDEX_FUNDERS_THREADS') }}
+  datacite_index_institutions_threads: {{ env_var('DATACITE_INDEX_INSTITUTIONS_THREADS') }}
+  datacite_index_updated_dates_threads: {{ env_var('DATACITE_INDEX_UPDATED_DATES_THREADS') }}
+  datacite_index_work_types_threads: {{ env_var('DATACITE_INDEX_WORK_TYPES_THREADS') }}
+  datacite_index_works_threads: {{ env_var('DATACITE_INDEX_WORKS_THREADS') }}
+  openalex_index_abstract_stats_threads: {{ env_var('OPENALEX_INDEX_ABSTRACT_STATS_THREADS') }}
+  openalex_index_abstracts_threads: {{ env_var('OPENALEX_INDEX_ABSTRACTS_THREADS') }}
+  openalex_index_author_names_threads: {{ env_var('OPENALEX_INDEX_AUTHOR_NAMES_THREADS') }}
+  openalex_index_awards_threads: {{ env_var('OPENALEX_INDEX_AWARDS_THREADS') }}
+  openalex_index_funders_threads: {{ env_var('OPENALEX_INDEX_FUNDERS_THREADS') }}
+  openalex_index_openalex_index_hashes_threads: {{ env_var('OPENALEX_INDEX_OPENALEX_INDEX_HASHES_THREADS') }}
+  openalex_index_openalex_index_threads: {{ env_var('OPENALEX_INDEX_OPENALEX_INDEX_THREADS') }}
+  openalex_index_publication_dates_threads: {{ env_var('OPENALEX_INDEX_PUBLICATION_DATES_THREADS') }}
+  openalex_index_title_stats_threads: {{ env_var('OPENALEX_INDEX_TITLE_STATS_THREADS') }}
+  openalex_index_titles_threads: {{ env_var('OPENALEX_INDEX_TITLES_THREADS') }}
+  openalex_index_updated_dates_threads: {{ env_var('OPENALEX_INDEX_UPDATED_DATES_THREADS') }}
+  openalex_index_works_metadata_threads: {{ env_var('OPENALEX_INDEX_WORKS_METADATA_THREADS') }}
+  openalex_openalex_works_threads: {{ env_var('OPENALEX_OPENALEX_WORKS_THREADS') }}
+  opensearch_current_doi_state_threads: {{ env_var('OPENSEARCH_CURRENT_DOI_STATE_THREADS') }}
+  opensearch_export_threads: {{ env_var('OPENSEARCH_EXPORT_THREADS') }}
+  opensearch_next_doi_state_threads: {{ env_var('OPENSEARCH_NEXT_DOI_STATE_THREADS') }}
+  relations_crossref_metadata_degrees_threads: {{ env_var('RELATIONS_CROSSREF_METADATA_DEGREES_THREADS') }}
+  relations_crossref_metadata_threads: {{ env_var('RELATIONS_CROSSREF_METADATA_THREADS') }}
+  relations_data_citation_corpus_threads: {{ env_var('RELATIONS_DATA_CITATION_CORPUS_THREADS') }}
+  relations_datacite_degrees_threads: {{ env_var('RELATIONS_DATACITE_DEGREES_THREADS') }}
+  relations_datacite_threads: {{ env_var('RELATIONS_DATACITE_THREADS') }}
+  relations_relations_index_threads: {{ env_var('RELATIONS_RELATIONS_INDEX_THREADS') }}
+  ror_index_threads: {{ env_var('ROR_INDEX_THREADS') }}
+  ror_ror_threads: {{ env_var('ROR_ROR_THREADS') }}
+  works_index_export_threads: {{ env_var('WORKS_INDEX_EXPORT_THREADS') }}
 
 default_gateway: duckdb
 
