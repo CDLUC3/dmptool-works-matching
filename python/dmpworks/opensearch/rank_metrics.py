@@ -8,11 +8,12 @@ from typing import Any
 
 from ranx import Qrels, Run, evaluate
 
+from dmpworks.cli_utils import OpenSearchClientConfig, QueryBuilder
 from dmpworks.model.related_work_model import RelatedWork
 from dmpworks.opensearch.dmp_search import fetch_dmps
 from dmpworks.opensearch.dmp_works_search import search_dmp_works
 from dmpworks.opensearch.query_builder import get_query_builder
-from dmpworks.opensearch.utils import OpenSearchClientConfig, QueryBuilder, make_opensearch_client
+from dmpworks.opensearch.utils import make_opensearch_client
 
 
 def load_qrels_dict(file_path: pathlib.Path) -> dict:

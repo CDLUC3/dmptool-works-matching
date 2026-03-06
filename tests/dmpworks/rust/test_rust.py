@@ -1,6 +1,6 @@
 import json
 
-from dmpworks.rust import parse_name, revert_inverted_index, strip_markup, has_alphabetic_initials
+from dmpworks.rust import has_alphabetic_initials, parse_name, revert_inverted_index, strip_markup
 
 
 class TestParseName:

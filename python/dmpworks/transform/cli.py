@@ -11,12 +11,7 @@ from dmpworks.cli_utils import (
     LogLevel,
     OpenAlexWorksTransformConfig,
 )
-from dmpworks.dataset_subset import load_dois, load_institutions
-from dmpworks.transform.crossref_metadata import transform_crossref_metadata
-from dmpworks.transform.datacite import transform_datacite
-from dmpworks.transform.dataset_subset import create_dataset_subset
-from dmpworks.transform.openalex_works import transform_openalex_works
-from dmpworks.utils import copy_dict
+from dmpworks.transform.utils_file import setup_multiprocessing_logging
 
 app = App(name="transform", help="Transformation utilities.")
 
@@ -27,6 +22,7 @@ def crossref_metadata_cmd(
     out_dir: Directory,
     *,
     config: CrossrefMetadataTransformConfig | None = None,
+    log_level: LogLevel = "INFO",
 ):
     """Transform Crossref Metadata to Parquet.
 
@@ -34,15 +30,19 @@ def crossref_metadata_cmd(
         in_dir: Path to the input Crossref Metadata directory (e.g., /path/to/March 2025 Public Data File from Crossref).
         out_dir: Path to the output directory for transformed Parquet files (e.g. /path/to/crossref_metadata).
         config: optional configuration parameters.
+        log_level: Python log level.
     """
-    config = CrossrefMetadataTransformConfig() if config is None else config
+    from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 
-    log_level = logging.getLevelName(config.log_level)
+    config = CrossrefMetadataTransformConfig() if config is None else config
+    level = logging.getLevelName(log_level)
+    setup_multiprocessing_logging(level)
+
     transform_crossref_metadata(
         in_dir=in_dir,
         out_dir=out_dir,
-        log_level=log_level,
-        **copy_dict(vars(config), ["log_level"]),
+        **vars(config),
+        log_level=level,
     )
 
 
@@ -52,6 +52,7 @@ def datacite_cmd(
     out_dir: Directory,
     *,
     config: DataCiteTransformConfig | None = None,
+    log_level: LogLevel = "INFO",
 ):
     """Transform DataCite to Parquet.
 
@@ -59,14 +60,19 @@ def datacite_cmd(
         in_dir: Path to the input DataCite dois directory (e.g., /path/to/DataCite_Public_Data_File_2024/dois).
         out_dir: Path to the output directory for transformed Parquet files (e.g. /path/to/datacite).
         config: optional configuration parameters.
+        log_level: Python log level.
     """
+    from dmpworks.transform.datacite import transform_datacite
+
     config = DataCiteTransformConfig() if config is None else config
-    log_level = logging.getLevelName(config.log_level)
+    level = logging.getLevelName(log_level)
+    setup_multiprocessing_logging(level)
+
     transform_datacite(
         in_dir=in_dir,
         out_dir=out_dir,
-        log_level=log_level,
-        **copy_dict(vars(config), ["log_level"]),
+        **vars(config),
+        log_level=level,
     )
 
 
@@ -76,6 +82,7 @@ def openalex_works_cmd(
     out_dir: Directory,
     *,
     config: OpenAlexWorksTransformConfig | None = None,
+    log_level: LogLevel = "INFO",
 ):
     """Transform OpenAlex Works to Parquet.
 
@@ -83,14 +90,19 @@ def openalex_works_cmd(
         in_dir: Path to the OpenAlex works directory (e.g. /path/to/openalex_snapshot/data/works).
         out_dir: "Path to the output directory (e.g. /path/to/openalex_works)."
         config: optional configuration parameters.
+        log_level: Python log level.
     """
+    from dmpworks.transform.openalex_works import transform_openalex_works
+
     config = OpenAlexWorksTransformConfig() if config is None else config
-    log_level = logging.getLevelName(config.log_level)
+    level = logging.getLevelName(log_level)
+    setup_multiprocessing_logging(level)
+
     transform_openalex_works(
         in_dir=in_dir,
         out_dir=out_dir,
-        log_level=log_level,
-        **copy_dict(vars(config), ["log_level"]),
+        **vars(config),
+        log_level=level,
     )
 
 
@@ -135,8 +147,12 @@ def dataset_subset_cmd(
         dois_path: Path to a JSON file with specific list of Work DOIs to include in the subset, e.g. `["10.0000/abc", "10.0000/123"]`.
         log_level: Python log level.
     """
+    from dmpworks.dataset_subset import load_dois, load_institutions
+    from dmpworks.transform.dataset_subset import create_dataset_subset
+
     level = logging.getLevelName(log_level)
-    logging.basicConfig(level=level)
+    setup_multiprocessing_logging(level)
+
     institutions = load_institutions(institutions_path)
     dois = load_dois(dois_path) if dois_path is not None else []
 

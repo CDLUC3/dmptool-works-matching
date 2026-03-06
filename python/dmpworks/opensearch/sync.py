@@ -24,19 +24,17 @@ import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from tqdm import tqdm
 
-from dmpworks.opensearch.utils import (
-    CHUNK_SIZE,
-    INITIAL_BACKOFF,
-    MAX_BACKOFF,
-    MAX_CHUNK_BYTES,
-    MAX_ERROR_SAMPLES,
-    MAX_RETRIES,
-    OpenSearchClientConfig,
-    OpenSearchSyncConfig,
-    count_records,
-    make_opensearch_client,
-)
+from dmpworks.cli_utils import OpenSearchClientConfig, OpenSearchSyncConfig
+from dmpworks.opensearch.utils import count_records, make_opensearch_client
 from dmpworks.utils import timed
+
+CHUNK_SIZE = 1000
+INITIAL_BACKOFF = 2
+MAX_BACKOFF = 600
+MAX_CHUNK_BYTES = 100 * 1024 * 1024
+MAX_ERROR_SAMPLES = 50
+MAX_RETRIES = 10
+
 
 log = logging.getLogger(__name__)
 

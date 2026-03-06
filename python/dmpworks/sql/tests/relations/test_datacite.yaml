@@ -1,5 +1,7 @@
 test_relations_datacite:
   model: relations.datacite
+  vars:
+    max_relation_degrees: 100
   inputs:
     relations.datacite_degrees:
       rows:

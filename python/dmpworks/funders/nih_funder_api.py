@@ -140,11 +140,12 @@ def nih_fetch_award_publication_dois(
             outputs.extend(pubmed_ids_to_dois(pm_ids, "pmid", email=pubmed_api_email))
         if len(pmc_ids) > 0:
             outputs.extend(pubmed_ids_to_dois(pmc_ids, "pmcid", email=pubmed_api_email))
-        return outputs
 
     except requests.exceptions.RequestException:
         log.exception("nih_fetch_award_publication_dois: an error occurred while fetching data")
         raise
+    else:
+        return outputs
 
 
 def pubmed_ids_to_dois(
@@ -234,8 +235,9 @@ def _pubmed_ids_to_dois(
             pmid = record.get("pmid")
             doi = extract_doi(record.get("doi"))
             outputs.append({"pmcid": pmcid, "pmid": pmid, "doi": doi})
-        return outputs
 
     except requests.exceptions.RequestException:
         log.exception("pubmed_id_converter: an error occurred while fetching data")
         raise
+    else:
+        return outputs

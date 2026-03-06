@@ -5,11 +5,10 @@ import pathlib
 import pyarrow as pa
 import pyarrow.compute as pc
 
+from dmpworks.cli_utils import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.sync import delete_docs, sync_docs
 from dmpworks.opensearch.utils import (
-    OpenSearchClientConfig,
-    OpenSearchSyncConfig,
     force_index_refresh,
     make_opensearch_client,
     update_refresh_interval,

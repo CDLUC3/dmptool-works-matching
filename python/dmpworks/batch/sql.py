@@ -1,107 +1,122 @@
-from dataclasses import dataclass
 import logging
 import os
 import pathlib
 
-from cyclopts import App
-
 from dmpworks.batch.utils import download_files_from_s3, local_path, s3_uri, upload_files_to_s3
-from dmpworks.cli_utils import DateString, LogLevel
+from dmpworks.cli_utils import RunIdentifiers, SQLMeshConfig
 from dmpworks.sql.commands import run_plan
-from dmpworks.transform.utils_file import setup_multiprocessing_logging
 
 log = logging.getLogger(__name__)
 
 DATASET = "sqlmesh"
-app = App(name="sqlmesh", help="SQLMesh AWS Batch pipeline.")
 
 
-@dataclass
-class ReleaseDates:
-    """Release dates for various datasets.
-
-    Attributes:
-        openalex_works: Release date for OpenAlex works.
-        datacite: Release date for DataCite.
-        crossref_metadata: Release date for Crossref metadata.
-        ror: Release date for ROR.
-        data_citation_corpus: Release date for Data Citation Corpus.
-    """
-
-    openalex_works: DateString
-    datacite: DateString
-    crossref_metadata: DateString
-    ror: DateString
-    data_citation_corpus: DateString
-
-
-@app.command(name="plan")
 def plan(
+    *,
     bucket_name: str,
-    prev_run_id: str,
-    run_id: str,
-    release_dates: ReleaseDates,
-    log_level: LogLevel = "INFO",
+    run_identifiers: RunIdentifiers,
+    sqlmesh_config: SQLMeshConfig,
 ):
     """Run the SQLMesh plan.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        prev_run_id: a unique ID to represent this previous run of the job.
-        run_id: a unique ID to represent this run of the job.
-        release_dates: the release dates of each dataset.
-        log_level: Python log level.
-    """
-    setup_multiprocessing_logging(logging.getLevelName(log_level))
 
-    # Download Parquet files for each dataset from S3.
+        run_identifiers: the release dates of each dataset.
+        sqlmesh_config: the SQLMesh config.
+    """
+    # Download Parquet files for each dataset from S3 and set env vars for datasets.
     datasets = [
-        ("openalex_works", release_dates.openalex_works, "transform/*"),
-        ("crossref_metadata", release_dates.crossref_metadata, "transform/*"),
-        ("datacite", release_dates.datacite, "transform/*"),
-        ("ror", release_dates.ror, "download/*"),
-        ("data_citation_corpus", release_dates.data_citation_corpus, "download/*"),
+        ("crossref_metadata", run_identifiers.crossref_metadata, "transform/*", "CROSSREF_METADATA_PATH"),
+        ("data_citation_corpus", run_identifiers.data_citation_corpus, "download/*", "DATA_CITATION_CORPUS_PATH"),
+        ("datacite", run_identifiers.datacite, "transform/*", "DATACITE_PATH"),
+        ("openalex_works", run_identifiers.openalex_works, "transform/*", "OPENALEX_WORKS_PATH"),
+        ("ror", run_identifiers.ror, "download/*", "ROR_PATH"),
     ]
-    for dataset, release_date, folder in datasets:
-        source_uri = s3_uri(bucket_name, dataset, release_date, folder)
-        transform_dir = local_path(dataset, release_date, "transform")
+    for dataset, run_id, folder, env_var_name in datasets:
+        # Download
+        source_uri = s3_uri(bucket_name, dataset, run_id, folder)
+        transform_dir = local_path(dataset, run_id, "transform")
         download_files_from_s3(source_uri, transform_dir)
 
-    # Download previous DOI state
-    prev_sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / prev_run_id / "doi_state_export"
-    target_uri = s3_uri(bucket_name, "sqlmesh", prev_run_id, "doi_state_export/*")
-    download_files_from_s3(target_uri, prev_sqlmesh_data_dir)
+        # Set env var
+        os.environ[env_var_name] = str(transform_dir)
 
-    # Configure SQL Mesh environment
-    sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / run_id
+    # Download previous DOI state
+    doi_state_export_prev_dir = (
+        pathlib.Path("/data") / "sqlmesh" / run_identifiers.run_id_process_works_prev / "doi_state_export"
+    )
+    target_uri = s3_uri(bucket_name, "sqlmesh", run_identifiers.run_id_process_works_prev, "doi_state_export/*")
+    download_files_from_s3(target_uri, doi_state_export_prev_dir)
+    os.environ["DOI_STATE_EXPORT_PREV_PATH"] = str(doi_state_export_prev_dir)
+
+    # Create other paths and directories
+    sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / run_identifiers.run_id_process_works
     duckdb_dir = sqlmesh_data_dir / "duckdb" / "db.db"
     works_index_export_dir = sqlmesh_data_dir / "works_index_export"
     doi_state_export_dir = sqlmesh_data_dir / "doi_state_export"
     duckdb_dir.parent.mkdir(parents=True, exist_ok=True)
     works_index_export_dir.mkdir(parents=True, exist_ok=True)
     doi_state_export_dir.mkdir(parents=True, exist_ok=True)
-    os.environ["SQLMESH__GATEWAYS__DUCKDB__CONNECTION__DATABASE"] = str(duckdb_dir)
-    for dataset, release_date, _ in datasets:
-        parquet_path = local_path(dataset, release_date, "transform")
-        os.environ[f"SQLMESH__VARIABLES__{dataset.upper()}_PATH"] = str(parquet_path)
+    os.environ["WORKS_INDEX_EXPORT_PATH"] = str(works_index_export_dir)
+    os.environ["DOI_STATE_EXPORT_PATH"] = str(doi_state_export_dir)
 
-    os.environ["SQLMESH__VARIABLES__PROCESS_WORKS_RUN_ID"] = str(run_id)
-    os.environ["SQLMESH__VARIABLES__OPENSEARCH_PATH"] = str(prev_sqlmesh_data_dir)
-    os.environ["SQLMESH__VARIABLES__WORKS_INDEX_EXPORT_PATH"] = str(works_index_export_dir)
-    os.environ["SQLMESH__VARIABLES__DOI_STATE_EXPORT_PATH"] = str(doi_state_export_dir)
-
-    # TODO: only set if in dev environment
-    os.environ["SQLMESH__VARIABLES__AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD"] = "1"
-    os.environ["SQLMESH__VARIABLES__AUDIT_DATACITE_WORKS_THRESHOLD"] = "1"
-    os.environ["SQLMESH__VARIABLES__AUDIT_OPENALEX_WORKS_THRESHOLD"] = "1"
+    # Remaining SQLMesh settings
+    os.environ["RUN_ID_PROCESS_WORKS"] = str(run_identifiers.run_id_process_works)
+    os.environ["DUCKDB_DATABASE"] = str(duckdb_dir)
+    os.environ["DUCKDB_THREADS"] = str(sqlmesh_config.duckdb_threads)
+    os.environ["DUCKDB_MEMORY_LIMIT"] = str(sqlmesh_config.duckdb_memory_limit)
+    os.environ["AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD"] = str(sqlmesh_config.audit_crossref_metadata_works_threshold)
+    os.environ["AUDIT_DATACITE_WORKS_THRESHOLD"] = str(sqlmesh_config.audit_datacite_works_threshold)
+    os.environ["AUDIT_NESTED_OBJECT_LIMIT"] = str(sqlmesh_config.audit_nested_object_limit)
+    os.environ["AUDIT_OPENALEX_WORKS_THRESHOLD"] = str(sqlmesh_config.audit_openalex_works_threshold)
+    os.environ["MAX_DOI_STATES"] = str(sqlmesh_config.max_doi_states)
+    os.environ["MAX_RELATION_DEGREES"] = str(sqlmesh_config.max_relation_degrees)
+    os.environ["CROSSREF_CROSSREF_METADATA_THREADS"] = str(sqlmesh_config.crossref_crossref_metadata)
+    os.environ["CROSSREF_INDEX_WORKS_METADATA_THREADS"] = str(sqlmesh_config.crossref_index_works_metadata)
+    os.environ["DATA_CITATION_CORPUS_THREADS"] = str(sqlmesh_config.data_citation_corpus_relations)
+    os.environ["DATACITE_DATACITE_THREADS"] = str(sqlmesh_config.datacite_datacite)
+    os.environ["DATACITE_INDEX_AWARDS_THREADS"] = str(sqlmesh_config.datacite_index_awards)
+    os.environ["DATACITE_INDEX_DATACITE_INDEX_HASHES_THREADS"] = str(
+        sqlmesh_config.datacite_index_datacite_index_hashes
+    )
+    os.environ["DATACITE_INDEX_DATACITE_INDEX_THREADS"] = str(sqlmesh_config.datacite_index_datacite_index)
+    os.environ["DATACITE_INDEX_FUNDERS_THREADS"] = str(sqlmesh_config.datacite_index_funders)
+    os.environ["DATACITE_INDEX_INSTITUTIONS_THREADS"] = str(sqlmesh_config.datacite_index_institutions)
+    os.environ["DATACITE_INDEX_UPDATED_DATES_THREADS"] = str(sqlmesh_config.datacite_index_updated_dates)
+    os.environ["DATACITE_INDEX_WORK_TYPES_THREADS"] = str(sqlmesh_config.datacite_index_work_types)
+    os.environ["DATACITE_INDEX_WORKS_THREADS"] = str(sqlmesh_config.datacite_index_works)
+    os.environ["OPENALEX_INDEX_ABSTRACT_STATS_THREADS"] = str(sqlmesh_config.openalex_index_abstract_stats)
+    os.environ["OPENALEX_INDEX_ABSTRACTS_THREADS"] = str(sqlmesh_config.openalex_index_abstracts)
+    os.environ["OPENALEX_INDEX_AUTHOR_NAMES_THREADS"] = str(sqlmesh_config.openalex_index_author_names)
+    os.environ["OPENALEX_INDEX_AWARDS_THREADS"] = str(sqlmesh_config.openalex_index_awards)
+    os.environ["OPENALEX_INDEX_FUNDERS_THREADS"] = str(sqlmesh_config.openalex_index_funders)
+    os.environ["OPENALEX_INDEX_OPENALEX_INDEX_HASHES_THREADS"] = str(
+        sqlmesh_config.openalex_index_openalex_index_hashes
+    )
+    os.environ["OPENALEX_INDEX_OPENALEX_INDEX_THREADS"] = str(sqlmesh_config.openalex_index_openalex_index)
+    os.environ["OPENALEX_INDEX_PUBLICATION_DATES_THREADS"] = str(sqlmesh_config.openalex_index_publication_dates)
+    os.environ["OPENALEX_INDEX_TITLE_STATS_THREADS"] = str(sqlmesh_config.openalex_index_title_stats)
+    os.environ["OPENALEX_INDEX_TITLES_THREADS"] = str(sqlmesh_config.openalex_index_titles)
+    os.environ["OPENALEX_INDEX_UPDATED_DATES_THREADS"] = str(sqlmesh_config.openalex_index_updated_dates)
+    os.environ["OPENALEX_INDEX_WORKS_METADATA_THREADS"] = str(sqlmesh_config.openalex_index_works_metadata)
+    os.environ["OPENALEX_OPENALEX_WORKS_THREADS"] = str(sqlmesh_config.openalex_openalex_works)
+    os.environ["OPENSEARCH_CURRENT_DOI_STATE_THREADS"] = str(sqlmesh_config.opensearch_current_doi_state)
+    os.environ["OPENSEARCH_EXPORT_THREADS"] = str(sqlmesh_config.opensearch_export)
+    os.environ["OPENSEARCH_NEXT_DOI_STATE_THREADS"] = str(sqlmesh_config.opensearch_next_doi_state)
+    os.environ["RELATIONS_CROSSREF_METADATA_DEGREES_THREADS"] = str(sqlmesh_config.relations_crossref_metadata_degrees)
+    os.environ["RELATIONS_CROSSREF_METADATA_THREADS"] = str(sqlmesh_config.relations_crossref_metadata)
+    os.environ["RELATIONS_DATA_CITATION_CORPUS_THREADS"] = str(sqlmesh_config.relations_data_citation_corpus)
+    os.environ["RELATIONS_DATACITE_DEGREES_THREADS"] = str(sqlmesh_config.relations_datacite_degrees)
+    os.environ["RELATIONS_DATACITE_THREADS"] = str(sqlmesh_config.relations_datacite)
+    os.environ["RELATIONS_RELATIONS_INDEX_THREADS"] = str(sqlmesh_config.relations_relations_index)
+    os.environ["ROR_INDEX_THREADS"] = str(sqlmesh_config.ror_index)
+    os.environ["ROR_ROR_THREADS"] = str(sqlmesh_config.ror_ror)
+    os.environ["WORKS_INDEX_EXPORT_THREADS"] = str(sqlmesh_config.works_index_export)
 
     # Run SQL Mesh
     run_plan()
 
     # Upload exported Parquet files
-    sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{run_id}/"
+    sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{run_identifiers.run_id_process_works}/"
     upload_files_to_s3(sqlmesh_data_dir, sql_mesh_s3_uri, "*")
-
-
-if __name__ == "__main__":
-    app()

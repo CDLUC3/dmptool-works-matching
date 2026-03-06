@@ -192,7 +192,7 @@ def create_dataset_subset(
     """
     is_empty = next(out_dir.iterdir(), None) is None
     if not is_empty:
-        raise Exception(f"Output directory is not empty: {out_dir}")
+        raise OSError(f"Output directory is not empty: {out_dir}")
 
     file_glob = get_file_glob(dataset)
     files = list(pathlib.Path(in_dir).glob(file_glob))

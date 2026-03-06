@@ -98,11 +98,11 @@ ignore = [
     "PLR0913", # Too many arguments
     "PLR0915", # Too many statements
     "PLW0603", # Using the global statement,
-    "TC001", # flake8-type-checking: Move application imports used only for typing into TYPE_CHECKING blocks
-    "TC002", # flake8-type-checking: Move third-party imports used only for typing into TYPE_CHECKING blocks
-    "TC003", # flake8-type-checking: Move standard library imports used only for typing into TYPE_CHECKING blocks
     "TRY003", # tryceratops: Avoid long or complex exception messages defined directly in raise statements
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"**/cli.py" = ["PLC0415"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

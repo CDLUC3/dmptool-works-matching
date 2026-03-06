@@ -1,7 +1,7 @@
 from collections.abc import Generator
 import gzip
 import logging
-from multiprocessing.util import log_to_stderr
+from multiprocessing import log_to_stderr
 import pathlib
 
 import simdjson

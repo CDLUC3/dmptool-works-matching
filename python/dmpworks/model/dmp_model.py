@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from functools import cached_property
+from typing import TYPE_CHECKING
 
-import pendulum
 from pydantic import BaseModel, field_serializer, field_validator
 
 from dmpworks.funders.award_id import AwardID
@@ -16,6 +16,9 @@ from dmpworks.model.common import (
     serialize_pendulum_datetime,
     to_camel,
 )
+
+if TYPE_CHECKING:
+    import pendulum
 
 
 class DMPModel(BaseModel):

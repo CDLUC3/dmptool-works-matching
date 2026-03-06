@@ -7,6 +7,56 @@ This section walks through how to configure the local runtime environment,
 including environment variables, local services, and test execution needed 
 before working with data or OpenSearch.
 
+
+# Path to the source data directory with raw datasets. See below for expected
+# structure of source datasets.
+# .
+# ├── crossref_metadata
+# │         └── March 2025 Public Data File from Crossref
+# │             ├── 0.jsonl.gz
+# │             ├── 10000.jsonl.gz
+# │             ├── 10001.jsonl.gz
+# │             ...
+# ├── datacite
+# │         └── DataCite_Public_Data_File_2024
+# │                   ├── dois
+# │                   │         ├── updated_2011-03
+# │                   │         │         ├── 2011-03.csv.gz
+# │                   │         │         └── part_0000.jsonl.gz
+# │                   │         ├── updated_2011-04
+# │                   │         │         ├── 2011-04.csv.gz
+# │                   │         │         └── part_0000.jsonl.gz
+# │                   │         ...
+# │                   │
+# │                   ├── MANIFEST
+# │                   └── README
+# │
+# ├── openalex
+# │         └── openalex-snapshot
+# │             ├── browse.html
+# │             ├── data
+# │             │         ├── funders
+# │             │         │         ├── manifest
+# │             │         │         ├── updated_date=2024-02-07
+# │             │         │         │         └── part_000.gz
+# │             │         │         ├── updated_date=2024-03-19
+# │             │         │         │         └── part_000.gz
+# │             │         │         ...
+# │             │         └── works
+# │             │             ├── manifest
+# │             │             ├── updated_date=2023-05-17
+# │             │             │         └── part_000.gz
+# │             │             ├── updated_date=2023-05-29
+# │             │             │         └── part_000.gz
+# │             │             ...
+# │             ├── LICENSE.txt
+# │             ├── README.txt
+# │             └── RELEASE_NOTES.txt
+# └── ror
+#     └──  v1.63-2025-04-03-ror-data_schema_v2.json.gz
+#
+
+
 ### 1.1. Environment Variables
 Create a `.env.local` file based on the `.env.local.example` file.
 
@@ -161,6 +211,28 @@ dmpworks opensearch dmp-works-search dmps-index works-index ${DATA_DIR}/matches/
 ## 6. Learning to Rank
 This section outlines how to train, upload, and evaluate a Learning to Rank 
 (LTR) model in OpenSearch to improve DMP-to-works ranking quality.
+
+
+########################################################################
+# Env vars for docs/running-locally.md
+########################################################################
+
+#
+OPENSEARCH_MATCHES=${DATA_DIR}/matches/matches-YYYY-MM-DD.jsonl
+
+# The path to the ground truth data file
+LTR_GROUND_TRUTH_FILE=${DATA_DIR}/ltr/ground-truth-YYYY-MM-DD.csv
+
+# The the path to the file where the RankLib training dataset will be saved.
+LTR_TRAIN_FILE=${DATA_DIR}/ltr/train-YYYY-MM-DD.txt
+
+# The the path to the file where the RankLib training dataset will be saved.
+LTR_FEATURES_FILE=${DATA_DIR}/ltr/features.txt
+
+LTR_MODEL_FILE=${DATA_DIR}/ltr/model-coordinate-ascent-YYYY-MM-DD.txt
+LTR_MODEL_NAME=model-coordinate-ascent-YYYY-MM-DD
+LTR_METRICS_FILE=${DATA_DIR}/ltr/metrics-ca-YYYY-MM-DD.csv
+
 
 ### 6.1. Pre-requisites
 The following steps must be completed before working with LTR.

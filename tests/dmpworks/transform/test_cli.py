@@ -2,17 +2,14 @@ import logging
 import os
 import pathlib
 
-import pytest
-
 from dmpworks.cli import cli
-
-CLI_MODULE = "dmpworks.transform.cli"
+import pytest
 
 
 class TestTransformCLI:
     @pytest.fixture
     def mock_transform_crossref_metadata(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.transform_crossref_metadata")
+        return mocker.patch("dmpworks.transform.crossref_metadata.transform_crossref_metadata")
 
     def test_transform_crossref_metadata(self, mock_transform_crossref_metadata, tmp_path: pathlib.Path):
         in_dir = tmp_path / "input"
@@ -34,7 +31,7 @@ class TestTransformCLI:
 
     @pytest.fixture
     def mock_transform_datacite(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.transform_datacite")
+        return mocker.patch("dmpworks.transform.datacite.transform_datacite")
 
     def test_transform_datacite(self, mock_transform_datacite, tmp_path: pathlib.Path):
         in_dir = tmp_path / "input"
@@ -56,7 +53,7 @@ class TestTransformCLI:
 
     @pytest.fixture
     def mock_transform_openalex_works(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.transform_openalex_works")
+        return mocker.patch("dmpworks.transform.openalex_works.transform_openalex_works")
 
     def test_transform_openalex_works(self, mock_transform_openalex_works, tmp_path: pathlib.Path):
         in_dir = tmp_path / "input"
@@ -78,18 +75,18 @@ class TestTransformCLI:
 
     @pytest.fixture
     def mock_create_dataset_subset(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.create_dataset_subset")
+        return mocker.patch("dmpworks.transform.dataset_subset.create_dataset_subset")
 
     @pytest.fixture
     def mock_load_institutions(self, mocker):
         return mocker.patch(
-            f"{CLI_MODULE}.load_institutions",
+            "dmpworks.dataset_subset.load_institutions",
             return_value=[{"name": "University of California, Berkeley", "ror": "01an7q238"}],
         )
 
     @pytest.fixture
     def mock_load_dois(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.load_dois", return_value=["10.0000/abc"])
+        return mocker.patch("dmpworks.dataset_subset.load_dois", return_value=["10.0000/abc"])
 
     def test_dataset_subset_with_dois(
         self,

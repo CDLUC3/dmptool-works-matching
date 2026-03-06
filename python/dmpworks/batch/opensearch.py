@@ -1,7 +1,7 @@
 import logging
 import shutil
 
-from cyclopts import App
+import pendulum
 import pymysql.cursors
 
 from dmpworks.batch.utils import (
@@ -11,34 +11,24 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_file_to_s3,
 )
-from dmpworks.cli_utils import DMPSubset, LogLevel
+from dmpworks.cli_utils import DMPSubset, LogLevel, MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.dataset_subset import load_dois, load_institutions
-from dmpworks.dmsp.related_works import MySQLConfig, merge_related_works
-from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
-from dmpworks.opensearch.dmp_works_search import dmp_works_search
-from dmpworks.opensearch.enrich_dmps import enrich_dmps
-from dmpworks.opensearch.sync_works import sync_works
-from dmpworks.opensearch.utils import Date
-from dmpworks.transform.utils_file import setup_multiprocessing_logging
 
 log = logging.getLogger(__name__)
 
 SQLMESH_DIR = "sqlmesh"
-
 MATCHES_FILE_NAME = "matches.jsonl"
 DMP_WORKS_SEARCH_PATH = "dmp-works-search"
-
 DATASET = "opensearch"
-app = App(name="opensearch", help="OpenSearch AWS Batch pipeline.")
 
 
-@app.command(name="sync-works")
 def sync_works_cmd(
+    *,
     bucket_name: str,
     run_id: str,
     index_name: str,
-    client_config: OpenSearchClientConfig | None = None,
-    sync_config: OpenSearchSyncConfig | None = None,
+    client_config: OpenSearchClientConfig,
+    sync_config: OpenSearchSyncConfig,
     log_level: LogLevel = "INFO",
 ):
     """Sync exported works in Parquet format with OpenSearch.
@@ -51,10 +41,9 @@ def sync_works_cmd(
         sync_config: the OpenSearch sync config settings.
         log_level: Python log level.
     """
-    client_config = OpenSearchClientConfig() if client_config is None else client_config
-    sync_config = OpenSearchSyncConfig() if sync_config is None else sync_config
+    from dmpworks.opensearch.sync_works import sync_works  # noqa: PLC0415
+
     level = logging.getLevelName(log_level)
-    setup_multiprocessing_logging(level)
 
     works_index_export = local_path(SQLMESH_DIR, run_id, "works_index_export")
     doi_state_export = local_path(SQLMESH_DIR, run_id, "doi_state_export")
@@ -82,29 +71,26 @@ def sync_works_cmd(
         shutil.rmtree(doi_state_export, ignore_errors=True)
 
 
-@app.command(name="enrich-dmps")
 def enrich_dmps_cmd(
+    *,
     index_name: str,
-    client_config: OpenSearchClientConfig | None = None,
-    log_level: LogLevel = "INFO",
+    client_config: OpenSearchClientConfig,
 ):
     """Enrich dmps in the OpenSearch DMPs index.
 
     Args:
         index_name: the OpenSearch index name.
         client_config: the OpenSearch client config settings.
-        log_level: Python log level.
     """
-    client_config = OpenSearchClientConfig() if client_config is None else client_config
-    level = logging.getLevelName(log_level)
-    logging.basicConfig(level=level)
+    from dmpworks.opensearch.enrich_dmps import enrich_dmps  # noqa: PLC0415
+
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
     enrich_dmps(index_name, client_config)
 
 
-@app.command(name="dmp-works-search")
 def dmp_works_search_cmd(
+    *,
     bucket_name: str,
     run_id: str,
     dmps_index_name: str,
@@ -119,9 +105,8 @@ def dmp_works_search_cmd(
     max_concurrent_shard_requests: int = 12,
     client_config: OpenSearchClientConfig | None = None,
     dmp_subset: DMPSubset = None,
-    start_date: Date = None,
-    end_date: Date = None,
-    log_level: LogLevel = "INFO",
+    start_date: pendulum.Date | None = None,
+    end_date: pendulum.Date | None = None,
 ):
     """Run the DMP Works Search process to find matching works for DMPs.
 
@@ -145,10 +130,9 @@ def dmp_works_search_cmd(
         dmp_subset: settings for including a subset of DMPs.
         start_date: return DMPs with project start dates on or after this date.
         end_date: return DMPs with project start dates on before this date.
-        log_level: Python log level.
     """
-    level = logging.getLevelName(log_level)
-    logging.basicConfig(level=level)
+    from dmpworks.opensearch.dmp_works_search import dmp_works_search  # noqa: PLC0415
+
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
     out_file = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
@@ -206,13 +190,12 @@ def dmp_works_search_cmd(
         out_file.unlink(missing_ok=True)
 
 
-@app.command(name="merge-related-works")
 def merge_related_works_cmd(
+    *,
     bucket_name: str,
     run_id: str,
     mysql_config: MySQLConfig,
     batch_size: int = 1000,
-    log_level: LogLevel = "INFO",
 ):
     """Merge related works from S3 into the MySQL database.
 
@@ -221,10 +204,8 @@ def merge_related_works_cmd(
         run_id: a unique ID to represent this run of the job.
         mysql_config: MySQL connection configuration.
         batch_size: Number of records to process in a batch.
-        log_level: Python log level.
     """
-    level = logging.getLevelName(log_level)
-    logging.basicConfig(level=level)
+    from dmpworks.dmsp.related_works import merge_related_works  # noqa: PLC0415
 
     matches_path = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
     try:
@@ -248,7 +229,3 @@ def merge_related_works_cmd(
         )
     finally:
         matches_path.unlink(missing_ok=True)
-
-
-if __name__ == "__main__":
-    app()

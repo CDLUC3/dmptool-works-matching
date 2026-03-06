@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
-import pathlib
+from typing import TYPE_CHECKING
 
 from pydantic import TypeAdapter
 
 from dmpworks.model.common import Institution
+
+if TYPE_CHECKING:
+    import pathlib
 
 
 def load_institutions(file_path: pathlib.Path) -> list[Institution]:

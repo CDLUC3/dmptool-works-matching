@@ -1,43 +1,81 @@
 #!/usr/bin/env bash
 
 # Generates a subset of Crossref Metadata, DataCite and OpenAlex Works,
-# by copying records associated with a specific ROR ID or institution
-# name.
+# by copying records associated with specific ROR IDs, institution names,
+# or DOIs.
 #
 # Required environment variables:
-#   SOURCE_DIR: path to the source data directory with raw datasets.
-#   DATA_DIR: path to the data directory, the dataset subset will be saved inside the 'sources' folder within this directory.
-#   DATASET_SUBSET_INSTITUTIONS_PATH: Path to a JSON file containing a list of ROR IDs and institution names, e.g. [{"name": "University of California, San Diego", "ror": "0168r3w48"}]. Works authored by researchers from these institutions will be included.
-#   DATASET_SUBSET_DOIS_PATH: Path to a JSON file with specific list of Work DOIs to include in the subset, e.g. ["10.0000/abc", "10.0000/123"].
+#   DATA_DIR: Working data directory. Subsets are written to ${DATA_DIR}/sources/
+#     using the standardised dataset layout.
+#   UPSTREAM_CROSSREF_METADATA: Path to the upstream Crossref Metadata dataset.
+#   UPSTREAM_DATACITE: Path to the upstream DataCite dataset.
+#   UPSTREAM_OPENALEX_WORKS: Path to the upstream OpenAlex Works dataset.
+#   UPSTREAM_ROR: Path to the upstream ROR dataset.
+#   UPSTREAM_DATA_CITATION_CORPUS: Path to the upstream Data Citation Corpus.
+#   DATASET_SUBSET_INSTITUTIONS_PATH: Path to a JSON file containing a list of
+#     ROR IDs and institution names, e.g.
+#     [{"name": "University of California, San Diego", "ror": "0168r3w48"}]
+#   DATASET_SUBSET_DOIS_PATH: Path to a JSON file with a list of Work DOIs to
+#     include in the subset, e.g. ["10.0000/abc", "10.0000/123"]
 
-for var in SOURCE_DIR DATA_DIR DATASET_SUBSET_INSTITUTIONS_PATH DATASET_SUBSET_DOIS_PATH; do
-  if [ -z "${!var}" ]; then
-    echo "Environment variable $var is not set"
+set -euo pipefail
+
+REQUIRED_VARS=(
+  DATA_DIR
+  UPSTREAM_CROSSREF_METADATA
+  UPSTREAM_DATACITE
+  UPSTREAM_OPENALEX_WORKS
+  UPSTREAM_ROR
+  UPSTREAM_DATA_CITATION_CORPUS
+  DATASET_SUBSET_INSTITUTIONS_PATH
+  DATASET_SUBSET_DOIS_PATH
+)
+
+for var in "${REQUIRED_VARS[@]}"; do
+  if [ -z "${!var:-}" ]; then
+    echo "Error: environment variable $var is not set" >&2
     exit 1
   fi
 done
 
-# Clean demo sources directory
-DEMO_SOURCES_DIR="${DATA_DIR}/sources"
-echo "Clean demo sources directory..."
-read -p "Are you sure you want to delete the demo sources directory '$DEMO_SOURCES_DIR'? [y/N] " confirm
-if [[ "$confirm" == [yY] ]]; then
-  rm -rf "${DEMO_SOURCES_DIR}"
-  echo "Deleted ${DEMO_SOURCES_DIR}"
-else
-  echo "Aborted."
+SOURCES_DIR="${DATA_DIR}/sources"
+
+if [ -d "${SOURCES_DIR}" ]; then
+  SYMLINK_COUNT=$(find "${SOURCES_DIR}" -maxdepth 1 -type l | wc -l)
+  if [ "${SYMLINK_COUNT}" -gt 0 ]; then
+    echo "Sources directory contains symlinks (likely created by link-upstream.sh):"
+    find "${SOURCES_DIR}" -maxdepth 1 -type l -printf "  %f -> %l\n"
+    read -p "Remove symlinks and replace with subset copies? [y/N] " confirm
+  else
+    read -p "Delete contents of '${SOURCES_DIR}' and regenerate subsets? [y/N] " confirm
+  fi
+
+  if [[ "$confirm" == [yY] ]]; then
+    find "${SOURCES_DIR}" -maxdepth 1 -type l -delete
+    find "${SOURCES_DIR}" -mindepth 1 -maxdepth 1 ! -type l -exec rm -rf {} +
+    echo "Cleaned ${SOURCES_DIR}"
+  else
+    echo "Aborted."
+    exit 0
+  fi
 fi
 
 mkdir -p "${DATA_DIR}/duckdb"
-
-mkdir -p "${DEMO_SOURCES_DIR}"/{datacite/dois,openalex/openalex-snapshot/data/works,crossref_metadata,ror,data_citation_corpus}
+mkdir -p "${SOURCES_DIR}"/{crossref_metadata,datacite,openalex_works,ror,data_citation_corpus}
 
 echo "Copying ROR"
-cp -r "${SOURCE_DIR}/ror/." "${DATA_DIR}/sources/ror/"
+cp -r "${UPSTREAM_ROR}/." "${SOURCES_DIR}/ror/"
 
 echo "Copying Data Citation Corpus"
-cp -r "${SOURCE_DIR}/data_citation_corpus/." "${DATA_DIR}/sources/data_citation_corpus/"
+cp -r "${UPSTREAM_DATA_CITATION_CORPUS}/." "${SOURCES_DIR}/data_citation_corpus/"
 
-dmpworks transform dataset-subset crossref-metadata "${SOURCE_DIR}/crossref_metadata" "${DATA_DIR}/sources/crossref_metadata"
-dmpworks transform dataset-subset datacite "${SOURCE_DIR}/datacite/dois" "${DATA_DIR}/sources/datacite/dois"
-dmpworks transform dataset-subset openalex-works "${SOURCE_DIR}/openalex/openalex-snapshot/data/works" "${DATA_DIR}/sources/openalex/openalex-snapshot/data/works"
+echo "Subsetting Crossref Metadata"
+dmpworks transform dataset-subset crossref-metadata "${UPSTREAM_CROSSREF_METADATA}" "${SOURCES_DIR}/crossref_metadata"
+
+echo "Subsetting DataCite"
+dmpworks transform dataset-subset datacite "${UPSTREAM_DATACITE}" "${SOURCES_DIR}/datacite"
+
+echo "Subsetting OpenAlex Works"
+dmpworks transform dataset-subset openalex-works "${UPSTREAM_OPENALEX_WORKS}" "${SOURCES_DIR}/openalex_works"
+
+echo "Done. Subsets written to ${SOURCES_DIR}"

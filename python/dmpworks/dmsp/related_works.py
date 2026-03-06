@@ -5,118 +5,17 @@ import json
 import logging
 import pathlib
 import tempfile
-from typing import Annotated, Any
+from typing import Any
 
-from cyclopts import App, Parameter, validators
 from jsonlines import jsonlines
 from opensearchpy import OpenSearch, exceptions
-import pymysql.cursors
 
-from dmpworks.cli_utils import LogLevel, MySQLConfig
 from dmpworks.model.work_model import WorkModel
-from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
 from dmpworks.transform.simdjson_transforms import extract_doi
-
-app = App(name="related-works", help="DMSP related works utilities.")
 
 log = logging.getLogger(__name__)
 
-
-@app.command(name="load-migration")
-def load_migration_related_works(
-    mysql_config: MySQLConfig,
-    opensearch_config: OpenSearchClientConfig,
-    batch_size: int = 1000,
-    log_level: LogLevel = "INFO",
-):
-    """Load related works from the migration database.
-
-    Args:
-        mysql_config: MySQL connection configuration.
-        opensearch_config: OpenSearch connection configuration.
-        batch_size: Number of records to process in a batch.
-        log_level: Logging level.
-    """
-    level = logging.getLevelName(log_level)
-    logging.basicConfig(level=level)
-
-    conn = pymysql.connect(
-        host=mysql_config.mysql_host,
-        port=mysql_config.mysql_tcp_port,
-        user=mysql_config.mysql_user,
-        password=mysql_config.mysql_pwd,
-        database=mysql_config.mysql_database,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
-    os_client = make_opensearch_client(opensearch_config)
-    records = fetch_migration_related_works(conn)
-    load_related_works(conn, os_client, records, batch_size)
-
-
-@app.command(name="load-ground-truth")
-def load_ground_truth_related_works(
-    matches_path: Annotated[
-        pathlib.Path, Parameter(validator=validators.Path(dir_okay=False, file_okay=True, exists=True))
-    ],
-    mysql_config: MySQLConfig,
-    opensearch_config: OpenSearchClientConfig,
-    batch_size: int = 1000,
-    log_level: LogLevel = "INFO",
-):
-    """Load ground truth related works from a CSV file.
-
-    Args:
-        matches_path: Path to the CSV file containing matches.
-        mysql_config: MySQL connection configuration.
-        opensearch_config: OpenSearch connection configuration.
-        batch_size: Number of records to process in a batch.
-        log_level: Logging level.
-    """
-    level = logging.getLevelName(log_level)
-    logging.basicConfig(level=level)
-
-    conn = pymysql.connect(
-        host=mysql_config.mysql_host,
-        port=mysql_config.mysql_tcp_port,
-        user=mysql_config.mysql_user,
-        password=mysql_config.mysql_pwd,
-        database=mysql_config.mysql_database,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
-    os_client = make_opensearch_client(opensearch_config)
-    records = read_related_works_csv(matches_path)
-    load_related_works(conn, os_client, records, batch_size)
-
-
-@app.command(name="merge")
-def merge_related_works_cmd(
-    matches_path: Annotated[
-        pathlib.Path, Parameter(validator=validators.Path(dir_okay=False, file_okay=True, exists=True))
-    ],
-    mysql_config: MySQLConfig,
-    batch_size: int = 1000,
-    log_level: LogLevel = "INFO",
-):
-    """Merge related works from a file into the database.
-
-    Args:
-        matches_path: Path to the file containing matches.
-        mysql_config: MySQL connection configuration.
-        batch_size: Number of records to process in a batch.
-        log_level: Logging level.
-    """
-    level = logging.getLevelName(log_level)
-    logging.basicConfig(level=level)
-
-    conn = pymysql.connect(
-        host=mysql_config.mysql_host,
-        port=mysql_config.mysql_tcp_port,
-        user=mysql_config.mysql_user,
-        password=mysql_config.mysql_pwd,
-        database=mysql_config.mysql_database,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
-    merge_related_works(matches_path, conn, batch_size=batch_size)
+ALLOWED_TABLES = {"works", "workVersions", "relatedWorks", "stagingWorkVersions", "stagingRelatedWorks"}
 
 
 @dataclass
@@ -306,9 +205,16 @@ class RelatedWorksLoader:
             table_name: Name of the table to print.
             format_func: Function to format each row.
             limit: Maximum number of rows to print.
+
+        Raises:
+            ValueError: If table_name is not in the allowed list.
         """
+        if table_name not in ALLOWED_TABLES:
+            raise ValueError(f"Invalid table name: {table_name!r}. Must be one of: {sorted(ALLOWED_TABLES)}")
+
         logging.info(f"Table: {table_name}")
-        cursor.execute(f"SELECT * FROM {table_name} LIMIT {limit}")
+        # table_name is checked against ALLOWED_TABLES before adding to query
+        cursor.execute(f"SELECT * FROM {table_name} LIMIT %s", (limit,))  # noqa: S608
         results = cursor.fetchall()
         for row in results:
             logging.info(format_func(row))
@@ -583,7 +489,3 @@ def serialise_json(data) -> str:
     if isinstance(data, str):
         return data
     return json.dumps(data, sort_keys=True, separators=(",", ":"))
-
-
-if __name__ == "__main__":
-    app()
