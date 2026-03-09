@@ -5,9 +5,9 @@ from typing import Annotated
 from cyclopts import App, Parameter, validators
 
 from dmpworks.cli_utils import (
-    Date,
     Directory,
     DMPSubsetLocal,
+    DMPWorksSearchConfig,
     LogLevel,
     MySQLConfig,
     OpenSearchClientConfig,
@@ -29,7 +29,7 @@ def load_dmp_subset_local(
     Returns:
         tuple[list | None, list[str] | None]: Loaded institutions and DOIs, or None if not configured.
     """
-    from dmpworks.dataset_subset import load_dois, load_institutions  # noqa: PLC0415
+    from dmpworks.dataset_subset import load_dois, load_institutions
 
     use_subset = dmp_subset is not None and dmp_subset.enable
     institutions = None
@@ -226,20 +226,9 @@ def dmp_works_search_cmd(
             )
         ),
     ],
-    query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
-    rerank_model_name: str | None = None,
-    scroll_time: str = "360m",
-    batch_size: int = 250,
-    max_results: int = 100,
-    project_end_buffer_years: int = 3,
-    parallel_search: bool = False,
-    include_named_queries_score: bool = True,
-    max_concurrent_searches: int = 125,
-    max_concurrent_shard_requests: int = 12,
     client_config: OpenSearchClientConfig | None = None,
     dmp_subset: DMPSubsetLocal | None = None,
-    dmps_start_date: Date = None,
-    dmps_end_date: Date = None,
+    search_config: DMPWorksSearchConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Run the DMP works search, returning candidate matches for each DMP.
@@ -248,26 +237,17 @@ def dmp_works_search_cmd(
         dmps_index_name: Name of the DMP index in OpenSearch.
         works_index_name: Name of the works index in OpenSearch.
         out_dir: The output directory where search result Parquet files will be written.
-        query_builder_name: Name of the query builder to use.
-        rerank_model_name: Name of the re-ranking model to use. If nothing is supplied then no re-ranking will occur.
-        scroll_time: The length of time the OpenSearch scroll used to iterate through DMPs will stay active. Set it to a value greater than the length of this process.
-        batch_size: The number of searches run in parallel when include_scores is False.
-        max_results: The maximum number of matches per DMP.
-        project_end_buffer_years: The number of years to add to the end of the project end date when searching for works.
-        parallel_search: Whether to run parallel search or not.
-        include_named_queries_score: Whether to include scores for subqueries.
-        max_concurrent_searches: The maximum number of concurrent searches.
-        max_concurrent_shard_requests: The maximum number of shards searched per node.
         client_config: OpenSearch client settings.
         dmp_subset: Settings for including a subset of DMPs.
-        dmps_start_date: Return DMPs with project start dates on or after this date.
-        dmps_end_date: Return DMPs with project start dates on or before this date.
+        search_config: DMP works search settings.
         log_level: Python log level (e.g., INFO).
     """
     from dmpworks.opensearch.dmp_works_search import dmp_works_search
 
     if client_config is None:
         client_config = OpenSearchClientConfig()
+    if search_config is None:
+        search_config = DMPWorksSearchConfig()
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
@@ -281,20 +261,23 @@ def dmp_works_search_cmd(
         works_index_name,
         out_dir,
         client_config,
-        query_builder_name=query_builder_name,
-        rerank_model_name=rerank_model_name,
-        scroll_time=scroll_time,
-        batch_size=batch_size,
-        max_results=max_results,
-        project_end_buffer_years=project_end_buffer_years,
-        parallel_search=parallel_search,
-        include_named_queries_score=include_named_queries_score,
-        max_concurrent_searches=max_concurrent_searches,
-        max_concurrent_shard_requests=max_concurrent_shard_requests,
+        query_builder_name=search_config.query_builder_name,
+        rerank_model_name=search_config.rerank_model_name,
+        scroll_time=search_config.scroll_time,
+        batch_size=search_config.batch_size,
+        max_results=search_config.max_results,
+        project_end_buffer_years=search_config.project_end_buffer_years,
+        parallel_search=search_config.parallel_search,
+        include_named_queries_score=search_config.include_named_queries_score,
+        max_concurrent_searches=search_config.max_concurrent_searches,
+        max_concurrent_shard_requests=search_config.max_concurrent_shard_requests,
         institutions=institutions,
         dois=dois,
-        start_date=dmps_start_date,
-        end_date=dmps_end_date,
+        dmps_start_date=search_config.dmps_start_date,
+        dmps_end_date=search_config.dmps_end_date,
+        inner_hits_size=search_config.inner_hits_size,
+        row_group_size=search_config.row_group_size,
+        row_groups_per_file=search_config.row_groups_per_file,
     )
 
 

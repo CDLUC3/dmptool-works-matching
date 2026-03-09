@@ -692,6 +692,137 @@ class OpenSearchSyncConfig:
 
 
 @dataclass
+class DMPWorksSearchConfig:
+    """Cyclopts configuration for the DMP Works Search.
+
+    Attributes:
+        query_builder_name: Name of the query builder to use.
+        rerank_model_name: Name of the re-ranking model to use.
+        scroll_time: Length of time the OpenSearch scroll context remains active.
+        batch_size: Number of DMPs processed per batch.
+        max_results: Maximum number of works to return per DMP.
+        project_end_buffer_years: Years added to project end date when searching for works.
+        parallel_search: Whether to run parallel search (msearch).
+        include_named_queries_score: Whether to include scores for subqueries.
+        max_concurrent_searches: Maximum number of concurrent searches.
+        max_concurrent_shard_requests: Maximum number of shards searched per node per request.
+        inner_hits_size: Maximum number of inner hits returned per matched work.
+        row_group_size: Parquet row group size for output files.
+        row_groups_per_file: Number of row groups per output Parquet file.
+        dmps_start_date: Return DMPs with project start dates on or after this date.
+        dmps_end_date: Return DMPs with project start dates on or before this date.
+    """
+
+    query_builder_name: Annotated[
+        QueryBuilder,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_QUERY_BUILDER",
+            help="Name of the query builder to use.",
+        ),
+    ] = "build_dmp_works_search_baseline_query"
+    rerank_model_name: Annotated[
+        str | None,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_RERANK_MODEL",
+            help="Name of the re-ranking model to use. If not supplied, no re-ranking occurs.",
+        ),
+    ] = None
+    scroll_time: Annotated[
+        str,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_SCROLL_TIME",
+            help="Length of time the OpenSearch scroll context remains active.",
+        ),
+    ] = "360m"
+    batch_size: Annotated[
+        int,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_BATCH_SIZE",
+            help="Number of DMPs processed per batch.",
+        ),
+    ] = 250
+    max_results: Annotated[
+        int,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_MAX_RESULTS",
+            help="Maximum number of works to return per DMP.",
+        ),
+    ] = 100
+    project_end_buffer_years: Annotated[
+        int,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_PROJECT_END_BUFFER_YEARS",
+            help="Years added to project end date when searching for works.",
+        ),
+    ] = 3
+    parallel_search: Annotated[
+        bool,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_PARALLEL_SEARCH",
+            help="Whether to run parallel search (msearch).",
+        ),
+    ] = False
+    include_named_queries_score: Annotated[
+        bool,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_INCLUDE_NAMED_QUERIES_SCORE",
+            help="Whether to include scores for subqueries.",
+        ),
+    ] = True
+    max_concurrent_searches: Annotated[
+        int,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_MAX_CONCURRENT_SEARCHES",
+            help="Maximum number of concurrent searches.",
+        ),
+    ] = 125
+    max_concurrent_shard_requests: Annotated[
+        int,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_MAX_CONCURRENT_SHARD_REQUESTS",
+            help="Maximum number of shards searched per node per request.",
+        ),
+    ] = 12
+    inner_hits_size: Annotated[
+        int,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_INNER_HITS_SIZE",
+            help="Maximum number of inner hits returned per matched work.",
+        ),
+    ] = 50
+    row_group_size: Annotated[
+        int,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_ROW_GROUP_SIZE",
+            help="Parquet row group size for output files.",
+        ),
+    ] = 50_000
+    row_groups_per_file: Annotated[
+        int,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE",
+            help="Number of row groups per output Parquet file.",
+        ),
+    ] = 4
+    dmps_start_date: Annotated[
+        pendulum.Date | None,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_START_DATE",
+            converter=parse_date,
+            help="Return DMPs with project start dates on or after this date (YYYY-MM-DD).",
+        ),
+    ] = None
+    dmps_end_date: Annotated[
+        pendulum.Date | None,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_END_DATE",
+            converter=parse_date,
+            help="Return DMPs with project start dates on or before this date (YYYY-MM-DD).",
+        ),
+    ] = None
+
+
+@dataclass
 class SQLMeshConfig:
     """Cyclopts configuration for SQLMesh threads."""
 

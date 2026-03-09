@@ -11,15 +11,15 @@ import pymysql
 import pymysql.cursors
 from tqdm import tqdm
 
-from dmpworks.cli_utils import MySQLConfig
-from dmpworks.model.dmp_model import DMPModel
 from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
 from dmpworks.transform.dmp import transform_dmp
 from dmpworks.utils import timed
 
 if TYPE_CHECKING:
+    from dmpworks.cli_utils import MySQLConfig
     from dmpworks.model.common import Institution
+    from dmpworks.model.dmp_model import DMPModel
 
 log = logging.getLogger(__name__)
 

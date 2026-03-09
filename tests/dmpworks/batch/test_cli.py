@@ -423,18 +423,9 @@ class TestOpenSearchCLI:
             run_id="run-123",
             dmps_index_name="dmps-index",
             works_index_name="works-index",
-            scroll_time="360m",
-            batch_size=250,
-            max_results=100,
-            project_end_buffer_years=3,
-            parallel_search=False,
-            include_named_queries_score=True,
-            max_concurrent_searches=125,
-            max_concurrent_shard_requests=12,
             client_config=OpenSearchClientConfig(),
             dmp_subset=None,
-            start_date=None,
-            end_date=None,
+            dmp_works_search_config=None,
         )
 
     def test_merge_related_works(self, monkeypatch, mock_merge_related_works):

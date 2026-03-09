@@ -1,7 +1,6 @@
 import logging
 import shutil
 
-import pendulum
 import pymysql.cursors
 
 from dmpworks.batch.utils import (
@@ -11,7 +10,14 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_files_to_s3,
 )
-from dmpworks.cli_utils import DMPSubsetAWS, LogLevel, MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
+from dmpworks.cli_utils import (
+    DMPSubsetAWS,
+    DMPWorksSearchConfig,
+    LogLevel,
+    MySQLConfig,
+    OpenSearchClientConfig,
+    OpenSearchSyncConfig,
+)
 from dmpworks.dataset_subset import load_dois, load_institutions
 
 log = logging.getLogger(__name__)
@@ -187,18 +193,9 @@ def dmp_works_search_cmd(
     run_id: str,
     dmps_index_name: str,
     works_index_name: str,
-    scroll_time: str = "360m",
-    batch_size: int = 250,
-    max_results: int = 100,
-    project_end_buffer_years: int = 3,
-    parallel_search: bool = False,
-    include_named_queries_score: bool = True,
-    max_concurrent_searches: int = 125,
-    max_concurrent_shard_requests: int = 12,
     client_config: OpenSearchClientConfig | None = None,
     dmp_subset: DMPSubsetAWS = None,
-    start_date: pendulum.Date | None = None,
-    end_date: pendulum.Date | None = None,
+    dmp_works_search_config: DMPWorksSearchConfig | None = None,
 ):
     """Run the DMP Works Search process to find matching works for DMPs.
 
@@ -207,25 +204,16 @@ def dmp_works_search_cmd(
         run_id: a unique ID to represent this run of the job.
         dmps_index_name: the name of the DMP index in OpenSearch.
         works_index_name: the name of the works index in OpenSearch.
-        scroll_time: the length of time the OpenSearch scroll used to iterate
-            through DMPs will stay active. Set it to a value greater than the
-            length of this process.
-        batch_size: the number of searches run in parallel when include_scores=False.
-        max_results: the maximum number of matches per DMP.
-        project_end_buffer_years: the number of years to add to the end of the
-            project end date when searching for works.
-        parallel_search: whether to run parallel search or not.
-        include_named_queries_score: whether to include scores for subqueries.
-        max_concurrent_searches: the maximum number of concurrent searches.
-        max_concurrent_shard_requests: the maximum number of shards searched per node.
         client_config: OpenSearch client settings.
         dmp_subset: settings for including a subset of DMPs.
-        start_date: return DMPs with project start dates on or after this date.
-        end_date: return DMPs with project start dates on before this date.
+        dmp_works_search_config: DMP works search settings.
     """
     from dmpworks.opensearch.dmp_works_search import dmp_works_search  # noqa: PLC0415
 
     logging.getLogger("opensearch").setLevel(logging.WARNING)
+
+    if dmp_works_search_config is None:
+        dmp_works_search_config = DMPWorksSearchConfig()
 
     out_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -241,18 +229,23 @@ def dmp_works_search_cmd(
             works_index_name,
             out_dir,
             client_config,
-            scroll_time=scroll_time,
-            batch_size=batch_size,
-            max_results=max_results,
-            project_end_buffer_years=project_end_buffer_years,
-            parallel_search=parallel_search,
-            include_named_queries_score=include_named_queries_score,
-            max_concurrent_searches=max_concurrent_searches,
-            max_concurrent_shard_requests=max_concurrent_shard_requests,
+            query_builder_name=dmp_works_search_config.query_builder_name,
+            rerank_model_name=dmp_works_search_config.rerank_model_name,
+            scroll_time=dmp_works_search_config.scroll_time,
+            batch_size=dmp_works_search_config.batch_size,
+            max_results=dmp_works_search_config.max_results,
+            project_end_buffer_years=dmp_works_search_config.project_end_buffer_years,
+            parallel_search=dmp_works_search_config.parallel_search,
+            include_named_queries_score=dmp_works_search_config.include_named_queries_score,
+            max_concurrent_searches=dmp_works_search_config.max_concurrent_searches,
+            max_concurrent_shard_requests=dmp_works_search_config.max_concurrent_shard_requests,
             institutions=institutions,
             dois=dois,
-            start_date=start_date,
-            end_date=end_date,
+            dmps_start_date=dmp_works_search_config.dmps_start_date,
+            dmps_end_date=dmp_works_search_config.dmps_end_date,
+            inner_hits_size=dmp_works_search_config.inner_hits_size,
+            row_group_size=dmp_works_search_config.row_group_size,
+            row_groups_per_file=dmp_works_search_config.row_groups_per_file,
         )
 
         # Upload all Parquet files to S3

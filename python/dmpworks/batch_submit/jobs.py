@@ -11,6 +11,7 @@ from dmpworks.cli_utils import (
     DataCiteTransformConfig,
     DatasetSubsetAWS,
     DMPSubsetAWS,
+    DMPWorksSearchConfig,
     OpenAlexWorksTransformConfig,
     OpenSearchClientConfig,
     OpenSearchSyncConfig,
@@ -842,6 +843,7 @@ def submit_dmp_works_search_job(
     dmps_index_name: str = "dmps-index",
     works_index_name: str = "works-index",
     dmp_subset: DMPSubsetAWS,
+    dmp_works_search_config: DMPWorksSearchConfig | None = None,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: list[DependsOnDict] | None = None,
@@ -856,6 +858,7 @@ def submit_dmp_works_search_job(
         dmps_index_name: The name of the OpenSearch DMPs index.
         works_index_name: The name of the OpenSearch Works index.
         dmp_subset: settings for including a subset of DMPs.
+        dmp_works_search_config: DMP works search settings.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -865,6 +868,8 @@ def submit_dmp_works_search_job(
     """
     if os_client_config is None:
         os_client_config = OpenSearchClientConfig()
+    if dmp_works_search_config is None:
+        dmp_works_search_config = DMPWorksSearchConfig()
 
     env_vars = {
         "BUCKET_NAME": bucket_name,
@@ -875,6 +880,7 @@ def submit_dmp_works_search_job(
         "TQDM_MININTERVAL": TQDM_MININTERVAL,
     }
     env_vars.update(get_env_var_dict(os_client_config))
+    env_vars.update(get_env_var_dict(dmp_works_search_config))
 
     if dmp_subset is not None:
         env_vars.update(get_env_var_dict(dmp_subset))

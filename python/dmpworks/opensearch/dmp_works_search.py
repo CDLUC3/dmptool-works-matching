@@ -87,8 +87,8 @@ def dmp_works_search(
     max_concurrent_shard_requests: int = 12,
     institutions: list[Institution] | None = None,
     dois: list[str] | None = None,
-    start_date: pendulum.Date | None = None,  # TODO: Claude rename to dmps_start_date
-    end_date: pendulum.Date | None = None,  # TODO: Claude rename to dmps_end_date
+    dmps_start_date: pendulum.Date | None = None,
+    dmps_end_date: pendulum.Date | None = None,
     inner_hits_size: int = 50,
     row_group_size: int = 50_000,
     row_groups_per_file: int = 4,
@@ -112,8 +112,8 @@ def dmp_works_search(
         max_concurrent_shard_requests: The maximum number of concurrent shard requests for msearch.
         institutions: A list of institutions to filter DMPs by.
         dois: A list of DOIs to filter DMPs by.
-        start_date: Return DMPs with project start dates on or after this date.
-        end_date: Return DMPs with project start dates on before this date.
+        dmps_start_date: Return DMPs with project start dates on or after this date.
+        dmps_end_date: Return DMPs with project start dates on before this date.
         inner_hits_size: The size of inner hits to return for nested fields.
         row_group_size: Number of rows per Parquet row group.
         row_groups_per_file: Number of row groups per output file before rotating.
@@ -134,8 +134,8 @@ def dmp_works_search(
             page_size=batch_size,
             dois=dois,
             institutions=institutions,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=dmps_start_date,
+            end_date=dmps_end_date,
             inner_hits_size=inner_hits_size,
         ) as results,
         ParquetBatchWriter(

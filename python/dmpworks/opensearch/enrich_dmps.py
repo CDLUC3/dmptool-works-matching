@@ -72,8 +72,9 @@ def build_enrich_query(
         if ror_ids:
             institution_queries.append({"terms": {"institutions.ror": ror_ids}})
         names = [inst.name for inst in institutions if inst.name]
-        for name in names:
-            institution_queries.append({"match_phrase": {"institutions.name": {"query": name, "slop": 3}}})
+        institution_queries.extend(
+            {"match_phrase": {"institutions.name": {"query": name, "slop": 3}}} for name in names
+        )
         if institution_queries:
             subset_filters.append(
                 {
