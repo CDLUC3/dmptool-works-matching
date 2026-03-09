@@ -47,7 +47,7 @@ def datacite_download_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import datacite
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
     datacite.download(
@@ -73,7 +73,7 @@ def datacite_dataset_subset_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import datacite
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
     datacite.dataset_subset(
@@ -102,7 +102,7 @@ def datacite_transform_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import datacite
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     config = DataCiteTransformConfig() if config is None else config
     level = logging.getLevelName(log_level)
@@ -137,7 +137,7 @@ def openalex_works_download_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import openalex_works
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
     openalex_works.download(
@@ -163,7 +163,7 @@ def openalex_works_dataset_subset_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import openalex_works
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
     openalex_works.dataset_subset(
@@ -192,7 +192,7 @@ def openalex_works_transform_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import openalex_works
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     config = OpenAlexWorksTransformConfig() if config is None else config
     level = logging.getLevelName(log_level)
@@ -224,7 +224,7 @@ def crossref_metadata_download_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import crossref_metadata
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
     crossref_metadata.download(
@@ -251,7 +251,7 @@ def crossref_metadata_dataset_subset_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import crossref_metadata
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
     crossref_metadata.dataset_subset(bucket_name=bucket_name, run_id=run_id, dataset_subset=dataset_subset)
@@ -276,7 +276,7 @@ def crossref_metadata_transform_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import crossref_metadata
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     config = CrossrefMetadataTransformConfig() if config is None else config
     level = logging.getLevelName(log_level)
@@ -304,7 +304,7 @@ def ror_download_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import ror
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
     ror.download(bucket_name=bucket_name, run_id=run_id, download_url=download_url, hash=hash)
@@ -326,7 +326,7 @@ def sqlmesh_plan_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import sql
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     sqlmesh_config = SQLMeshConfig() if sqlmesh_config is None else sqlmesh_config
     setup_multiprocessing_logging(logging.getLevelName(log_level))
@@ -357,7 +357,7 @@ def opensearch_sync_works_cmd(
         log_level: Python log level.
     """
     from dmpworks.batch import opensearch
-    from dmpworks.transform.utils_file import setup_multiprocessing_logging
+    from dmpworks.utils import setup_multiprocessing_logging
 
     client_config = OpenSearchClientConfig() if client_config is None else client_config
     sync_config = OpenSearchSyncConfig() if sync_config is None else sync_config

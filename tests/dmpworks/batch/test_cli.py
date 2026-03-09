@@ -3,7 +3,7 @@ import logging
 from dmpworks.cli import cli
 import pytest
 
-SETUP_LOGGING = "dmpworks.transform.utils_file.setup_multiprocessing_logging"
+SETUP_LOGGING = "dmpworks.utils.setup_multiprocessing_logging"
 
 CROSSREF_TRANSFORM_VARS = [
     "CROSSREF_METADATA_TRANSFORM_BATCH_SIZE",
@@ -67,7 +67,7 @@ MYSQL_VARS = [
 ]
 
 
-def _clear_env(monkeypatch, *var_groups):
+def clear_env(monkeypatch, *var_groups):
     for group in var_groups:
         for var in group:
             monkeypatch.delenv(var, raising=False)
@@ -80,7 +80,7 @@ class TestCrossrefMetadataCLI:
 
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
-        _clear_env(monkeypatch, CROSSREF_TRANSFORM_VARS)
+        clear_env(monkeypatch, CROSSREF_TRANSFORM_VARS)
 
     @pytest.fixture
     def mock_download(self, mocker):
@@ -168,7 +168,7 @@ class TestDataCiteCLI:
 
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
-        _clear_env(monkeypatch, DATACITE_TRANSFORM_VARS)
+        clear_env(monkeypatch, DATACITE_TRANSFORM_VARS)
 
     @pytest.fixture
     def mock_download(self, mocker):
@@ -217,7 +217,7 @@ class TestOpenAlexWorksCLI:
 
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
-        _clear_env(monkeypatch, OPENALEX_TRANSFORM_VARS)
+        clear_env(monkeypatch, OPENALEX_TRANSFORM_VARS)
 
     @pytest.fixture
     def mock_download(self, mocker):
@@ -316,7 +316,7 @@ class TestSQLMeshCLI:
 
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
-        _clear_env(monkeypatch, RUN_ID_VARS)
+        clear_env(monkeypatch, RUN_ID_VARS)
         # Clear a representative sample of SQLMesh config vars
         for var in ["DUCKDB_THREADS", "DUCKDB_MEMORY_LIMIT"]:
             monkeypatch.delenv(var, raising=False)
@@ -351,7 +351,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
-        _clear_env(
+        clear_env(
             monkeypatch,
             OPENSEARCH_CLIENT_VARS,
             OPENSEARCH_SYNC_VARS,

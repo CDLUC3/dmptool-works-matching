@@ -10,11 +10,10 @@ import random
 import time
 
 import pyarrow as pa
-import pyarrow.parquet as pq
 import simdjson
 from tqdm import tqdm
 
-from dmpworks.utils import to_batches
+from dmpworks.utils import ParquetBatchWriter, to_batches
 
 log = logging.getLogger(__name__)
 
@@ -162,29 +161,6 @@ def process_files(
     log.debug("finished process files")
 
 
-def output_file_name(batch_index: int, file_index: int, file_prefix: str | None = None) -> str:
-    """Generate a Parquet output filename using batch and file indices.
-
-    Because files may be written concurrently by multiple processes, each
-    filename is namespaced by a `batch_index` to avoid collisions. The
-    `file_index` distinguishes multiple output files produced within the
-    same batch.
-
-    Args:
-        batch_index: integer identifying the process-specific batch.
-        file_index: integer identifying the file within the batch.
-        file_prefix: an optional file prefix.
-
-    Returns: the generated Parquet filename as a string.
-
-    """
-    parts = []
-    if file_prefix is not None:
-        parts.append(file_prefix)
-    parts.append(f"batch_{batch_index:05d}_part_{file_index:05d}.parquet")
-    return "".join(parts)
-
-
 def transform_json_to_parquet(
     *,
     batch_index: int,
@@ -220,76 +196,39 @@ def transform_json_to_parquet(
         transform_func: Function to transform a JSON object into a dictionary.
         file_prefix: Optional prefix for output filenames.
     """
-    file_index = 0
-    num_row_groups = 0
-    row_buffer = []
-    writer = None
     current_input_file: pathlib.Path | None = None
 
     try:
-        for input_file in batch:
-            for obj in read_func(input_file):
-                if SHARED_ABORT_EVENT.is_set():
-                    break
+        with ParquetBatchWriter(
+            output_dir=output_dir,
+            schema=schema,
+            row_group_size=row_group_size,
+            row_groups_per_file=row_groups_per_file,
+            batch_index=batch_index,
+            file_prefix=file_prefix,
+        ) as writer:
+            for input_file in batch:
+                for obj in read_func(input_file):
+                    if SHARED_ABORT_EVENT.is_set():
+                        break
 
-                transformed_obj = transform_func(obj)
+                    transformed_obj = transform_func(obj)
 
-                # Clear original reference for simdjson parser
-                obj = None  # noqa: PLW2901
+                    # Clear original reference for simdjson parser
+                    obj = None  # noqa: PLW2901
 
-                if transformed_obj is not None:
-                    row_buffer.append(transformed_obj)
+                    if transformed_obj is not None:
+                        writer.write_rows([transformed_obj])
 
-                if len(row_buffer) >= row_group_size:
-                    # Only create writer when we have data
-                    if writer is None:
-                        output_file = output_dir / output_file_name(
-                            batch_index,
-                            file_index,
-                            file_prefix=file_prefix,
-                        )
-                        writer = pq.ParquetWriter(output_file, schema=schema, compression="snappy")
+                # Increment file counter
+                with SHARED_COUNTER_LOCK:
+                    SHARED_FILES_PROCESSED.value += 1
 
-                    try:
-                        table = pa.Table.from_pylist(row_buffer, schema=schema)
-                    except pa.lib.ArrowTypeError:
-                        debug_arrow_type_error(row_buffer, schema)
-                        raise
-                    writer.write_table(table)
-                    row_buffer.clear()
-                    num_row_groups += 1
-
-                    # Check if the current file has reached its row group limit
-                    if num_row_groups >= row_groups_per_file:
-                        writer.close()
-                        writer = None
-                        file_index += 1
-                        num_row_groups = 0
-
-            # Increment file counter
-            with SHARED_COUNTER_LOCK:
-                SHARED_FILES_PROCESSED.value += 1
-
-        if SHARED_ABORT_EVENT.is_set():
-            log.warning(f"Batch {batch_index} aborted.{' Flushing remaining buffer to disk.' if row_buffer else ''}")
-
-        # Flush any remaining data in the buffer after all files are processed
-        if row_buffer:
-            if writer is None:
-                output_file = output_dir / output_file_name(
-                    batch_index,
-                    file_index,
-                    file_prefix=file_prefix,
+            if SHARED_ABORT_EVENT.is_set():
+                log.warning(
+                    f"Batch {batch_index} aborted."
+                    f"{' Flushing remaining buffer to disk.' if writer.has_buffered_rows else ''}"
                 )
-                writer = pq.ParquetWriter(output_file, schema=schema, compression="snappy")
-
-            try:
-                table = pa.Table.from_pylist(row_buffer, schema=schema)
-            except pa.lib.ArrowTypeError:
-                debug_arrow_type_error(row_buffer, schema)
-                raise
-            writer.write_table(table)
-            row_buffer.clear()
 
     except Exception:
         # This logs a full traceback from inside the worker process
@@ -299,18 +238,3 @@ def transform_json_to_parquet(
             str(current_input_file) if current_input_file else None,
         )
         raise
-    finally:
-        # Ensure last writer was closed
-        if writer is not None:
-            writer.close()
-
-
-def debug_arrow_type_error(row_buffer: list[dict], schema: pa.Schema) -> None:
-    """Iterates through a buffer of rows to find and logs the row causing a PyArrow ArrowTypeError."""
-    for row in row_buffer:
-        try:
-            pa.Table.from_pylist([row], schema=schema)
-        except pa.lib.ArrowTypeError:
-            log.exception("PyArrow Type Error")
-            log.exception(f"Offending Row Data: {row}")
-            break

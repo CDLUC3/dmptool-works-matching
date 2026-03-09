@@ -110,14 +110,14 @@ class TestOpenSearchCLI:
         return mocker.patch("dmpworks.opensearch.dmp_works_search.dmp_works_search")
 
     def test_opensearch_dmp_works_search(self, mock_dmp_works_search, tmp_path: pathlib.Path):
-        out_file = tmp_path / "results.json"
+        out_dir = tmp_path / "results"
 
-        cli(["opensearch", "dmp-works-search", "dmps-index", "works-index", str(out_file)])
+        cli(["opensearch", "dmp-works-search", "dmps-index", "works-index", str(out_dir)])
 
         mock_dmp_works_search.assert_called_once_with(
             "dmps-index",
             "works-index",
-            out_file,
+            out_dir,
             OpenSearchClientConfig(),
             query_builder_name="build_dmp_works_search_baseline_query",
             rerank_model_name=None,

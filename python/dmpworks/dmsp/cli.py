@@ -89,16 +89,23 @@ def load_ground_truth_related_works(
 @related_works_app.command(name="merge")
 def merge_related_works_cmd(
     matches_path: Annotated[
-        pathlib.Path, Parameter(validator=validators.Path(dir_okay=False, file_okay=True, exists=True))
+        pathlib.Path,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=True,
+                file_okay=False,
+                exists=True,
+            )
+        ),
     ],
     mysql_config: MySQLConfig,
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
-    """Merge related works from a file into the database.
+    """Merge related works from a Parquet directory into the database.
 
     Args:
-        matches_path: Path to the file containing matches.
+        matches_path: Path to the directory containing match Parquet files.
         mysql_config: MySQL connection configuration.
         batch_size: Number of records to process in a batch.
         log_level: Logging level.

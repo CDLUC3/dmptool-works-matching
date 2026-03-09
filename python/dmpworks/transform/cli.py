@@ -11,7 +11,6 @@ from dmpworks.cli_utils import (
     LogLevel,
     OpenAlexWorksTransformConfig,
 )
-from dmpworks.transform.utils_file import setup_multiprocessing_logging
 
 app = App(name="transform", help="Transformation utilities.")
 
@@ -33,6 +32,7 @@ def crossref_metadata_cmd(
         log_level: Python log level.
     """
     from dmpworks.transform.crossref_metadata import transform_crossref_metadata
+    from dmpworks.utils import setup_multiprocessing_logging
 
     config = CrossrefMetadataTransformConfig() if config is None else config
     level = logging.getLevelName(log_level)
@@ -63,6 +63,7 @@ def datacite_cmd(
         log_level: Python log level.
     """
     from dmpworks.transform.datacite import transform_datacite
+    from dmpworks.utils import setup_multiprocessing_logging
 
     config = DataCiteTransformConfig() if config is None else config
     level = logging.getLevelName(log_level)
@@ -93,6 +94,7 @@ def openalex_works_cmd(
         log_level: Python log level.
     """
     from dmpworks.transform.openalex_works import transform_openalex_works
+    from dmpworks.utils import setup_multiprocessing_logging
 
     config = OpenAlexWorksTransformConfig() if config is None else config
     level = logging.getLevelName(log_level)
@@ -149,6 +151,7 @@ def dataset_subset_cmd(
     """
     from dmpworks.dataset_subset import load_dois, load_institutions
     from dmpworks.transform.dataset_subset import create_dataset_subset
+    from dmpworks.utils import setup_multiprocessing_logging
 
     level = logging.getLevelName(log_level)
     setup_multiprocessing_logging(level)
