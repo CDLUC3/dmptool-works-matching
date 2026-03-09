@@ -807,7 +807,7 @@ class DMPWorksSearchConfig:
     dmps_start_date: Annotated[
         pendulum.Date | None,
         Parameter(
-            env_var="DMP_WORKS_SEARCH_START_DATE",
+            env_var="DMP_WORKS_SEARCH_DMPS_START_DATE",
             converter=parse_date,
             help="Return DMPs with project start dates on or after this date (YYYY-MM-DD).",
         ),
@@ -815,7 +815,7 @@ class DMPWorksSearchConfig:
     dmps_end_date: Annotated[
         pendulum.Date | None,
         Parameter(
-            env_var="DMP_WORKS_SEARCH_END_DATE",
+            env_var="DMP_WORKS_SEARCH_DMPS_END_DATE",
             converter=parse_date,
             help="Return DMPs with project start dates on or before this date (YYYY-MM-DD).",
         ),

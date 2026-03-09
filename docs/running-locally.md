@@ -72,7 +72,7 @@ Create an OpenSearch index.
 This section describes how to generate a subset of the source datasets used for
 development and testing.
 
-### 2.1 Download Datasets
+### 2.1. Download Datasets
 
 Download datasets from the following sources:
 
@@ -112,7 +112,7 @@ Then run:
 ### 2.3. Link Upstream (Alternative to Subsetting)
 
 To run the full pipeline against upstream datasets without creating copies, use
-`link-upstream.sh`. Skip this step if you are working with the subset. This 
+`link-upstream.sh`. Skip this step if you are working with the subset. This
 creates symlinks in `${DATA_DIR}/sources/` pointing to the `UPSTREAM_*` paths
 — skipping the subset step entirely.
 
@@ -154,7 +154,7 @@ dmpworks sqlmesh plan
 Optionally run the DuckDB UI to inspect tables:
 
 ```bash
-duckdb ${DATA_DIR}/duckdb/db.db  -ui
+duckdb ${DATA_DIR}/duckdb/db.db -ui
 ```
 
 To view the DuckDB database: <http://localhost:4213>.
@@ -209,9 +209,20 @@ candidate matches without Learning to Rank re-scoring.
 To search for works associated with DMPs:
 
 ```bash
-dmpworks opensearch dmp-works-search dmps-index works-index ${DATA_DIR}/matches \
-         --dois-file=${DATA_DIR}/meta/dmp_dois.json \
-         --institutions-file=${DATA_DIR}/meta/dmp_institutions.json
+dmpworks opensearch dmp-works-search dmps-index works-index ${DATA_DIR}/matches
+```
+
+### 5.2. Load matches into DMP Tool MySQL Database
+
+Next you can load the published research outputs that were matched to DMPs into the
+DMP Tool MySQL database.
+
+Before loading the matches into MySQL, ensure you have a connection to the MySQL
+database and have configured the MySQL environment variables in `.env.local`,
+then run:
+
+```bash
+dmpworks dmsp related-works merge ${DATA_DIR}/matches
 ```
 
 ## 6. Learning to Rank

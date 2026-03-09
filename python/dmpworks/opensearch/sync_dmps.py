@@ -24,7 +24,19 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 DMPS_QUERY_TEMPLATE = """
-WITH institutions AS (
+WITH unique_plans AS (
+  SELECT id, dmpId, projectId, created, registered, modified, title
+  FROM (
+    SELECT
+      *,
+      ROW_NUMBER() OVER (PARTITION BY dmpId ORDER BY created DESC, id DESC) AS rn
+    FROM plans
+    WHERE dmpId IS NOT NULL
+  ) AS ranked
+  WHERE rn = 1
+),
+
+institutions AS (
   SELECT
     temp.plan_id,
     JSON_ARRAYAGG(
@@ -39,11 +51,10 @@ WITH institutions AS (
       pl.id AS plan_id,
       af.name,
       prm.affiliationId AS affiliation_id
-    FROM plans pl
+    FROM unique_plans pl
     INNER JOIN planMembers plm ON plm.planId = pl.id
     INNER JOIN projectMembers prm ON prm.id = plm.projectMemberId
     LEFT JOIN affiliations af ON af.uri = prm.affiliationId
-    WHERE pl.dmpId IS NOT NULL
   ) AS temp
   GROUP BY temp.plan_id
 ),
@@ -70,10 +81,9 @@ authors AS (
       prm.orcid AS orcid,
       plm.isPrimaryContact AS is_primary_contact,
       plm.created
-    FROM plans pl
+    FROM unique_plans pl
     INNER JOIN planMembers plm ON plm.planId = pl.id
     INNER JOIN projectMembers prm ON prm.id = plm.projectMemberId
-    WHERE pl.dmpId IS NOT NULL
   ) AS temp
   GROUP BY temp.plan_id
 ),
@@ -102,12 +112,11 @@ funding AS (
       prf.grantId AS grant_id,
       prf.status,
       plf.created
-    FROM plans pl
+    FROM unique_plans pl
     INNER JOIN planFundings plf ON plf.planId = pl.id
     INNER JOIN projectFundings prf ON prf.id = plf.projectFundingId
     LEFT JOIN affiliations af ON af.uri = prf.affiliationId
-    WHERE pl.dmpId IS NOT NULL
-          AND COALESCE(af.name, prf.affiliationId, prf.funderOpportunityNumber, prf.grantId) IS NOT NULL
+    WHERE COALESCE(af.name, prf.affiliationId, prf.funderOpportunityNumber, prf.grantId) IS NOT NULL
   ) AS temp
   GROUP BY temp.plan_id
 ),
@@ -124,11 +133,11 @@ published_outputs AS (
     SELECT DISTINCT
       p.id AS plan_id,
       w.doi AS work_doi
-    FROM plans p
+    FROM unique_plans p
     INNER JOIN relatedWorks rw ON rw.planId = p.id
     INNER JOIN workVersions wv ON wv.id = rw.workVersionId
     INNER JOIN works w ON w.id = wv.workId
-    WHERE p.dmpId IS NOT NULL AND rw.status = 'ACCEPTED'
+    WHERE rw.status = 'ACCEPTED'
   ) AS temp
   GROUP BY temp.plan_id
 )
@@ -146,13 +155,12 @@ SELECT
   COALESCE(inst.institutions, '[]') AS institutions,
   COALESCE(fn.funding, '[]') AS funding,
   COALESCE(po.published_outputs, '[]') AS published_outputs
-FROM plans AS pl
+FROM unique_plans AS pl
 LEFT JOIN projects AS pr ON pr.id = pl.projectId
 LEFT JOIN institutions inst ON inst.plan_id = pl.id
 LEFT JOIN authors au ON au.plan_id = pl.id
 LEFT JOIN funding fn ON fn.plan_id = pl.id
 LEFT JOIN published_outputs po ON po.plan_id = pl.id
-WHERE pl.dmpId IS NOT NULL
 """
 
 DMPS_MAPPING_FILE = "dmps-mapping.json"
@@ -251,7 +259,7 @@ def count_dmps(conn):
     Returns:
         int: The number of DMPs.
     """
-    query = "SELECT COUNT(DISTINCT pl.id) AS total FROM plans pl WHERE pl.dmpId IS NOT NULL;"
+    query = "SELECT COUNT(DISTINCT pl.dmpId) AS total FROM plans pl WHERE pl.dmpId IS NOT NULL;"
     with conn.cursor() as count_cursor:
         count_cursor.execute(query)
         result = count_cursor.fetchone()
@@ -304,6 +312,15 @@ def generate_actions(
     dois_set = set(dois) if dois else None
     ror_set = {inst.ror for inst in institutions if inst.ror} if institutions else None
 
+    def include_dmp(dmp: DMPModel) -> bool:
+        if dois_set is None and ror_set is None:
+            return True
+
+        if dois_set is not None and dmp.doi in dois_set:
+            return True
+
+        return ror_set is not None and any(inst.ror in ror_set for inst in dmp.institutions if inst.ror)
+
     with conn.cursor() as stream_cursor:
         stream_cursor.execute(DMPS_QUERY_TEMPLATE)
         for row in stream_cursor:
@@ -311,10 +328,7 @@ def generate_actions(
                 dmp = transform_dmp(row)
                 validate_dmp(dmp)
 
-                if dois_set is not None and dmp.doi not in dois_set:
-                    on_skipped()
-                    continue
-                if ror_set is not None and not any(inst.ror in ror_set for inst in dmp.institutions if inst.ror):
+                if not include_dmp(dmp):
                     on_skipped()
                     continue
 

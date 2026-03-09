@@ -90,7 +90,7 @@ def build_enrich_query(
             "query": {
                 "bool": {
                     "must": [script_filter],
-                    "filter": subset_filters,
+                    "filter": {"bool": {"should": subset_filters, "minimum_should_match": 1}},
                 }
             }
         }
