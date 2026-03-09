@@ -1,10 +1,9 @@
 import json
 import pathlib
 
-import pytest
-
 from dmpworks.opensearch.dmp_works_search import MATCH_DATA_SCHEMA
 from dmpworks.utils import ParquetBatchWriter, read_parquet_files
+import pytest
 
 
 def make_match_data_row(

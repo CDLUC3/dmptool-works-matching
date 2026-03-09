@@ -40,7 +40,7 @@ MATCH_DATA_SCHEMA = pa.schema(
 )
 
 
-def _to_match_data_row(d: dict) -> dict:
+def to_match_data_row(d: dict) -> dict:
     """Serialize a RelatedWork model_dump dict to a flat Parquet row.
 
     Nested dicts and lists are serialized to JSON strings.
@@ -51,21 +51,21 @@ def _to_match_data_row(d: dict) -> dict:
     Returns:
         A flat dictionary suitable for writing to Parquet with MATCH_DATA_SCHEMA.
     """
-    _dumps = lambda v: json.dumps(v, sort_keys=True, separators=(",", ":"))  # noqa: E731
+    dumps = lambda v: json.dumps(v, sort_keys=True, separators=(",", ":"))  # noqa: E731
     return {
         "dmpDoi": d["dmpDoi"],
-        "work": _dumps(d["work"]),
+        "work": dumps(d["work"]),
         "score": d["score"],
         "scoreMax": d["scoreMax"],
-        "doiMatch": _dumps(d["doiMatch"]),
-        "contentMatch": _dumps(d["contentMatch"]),
-        "authorMatches": _dumps(d["authorMatches"]),
-        "institutionMatches": _dumps(d["institutionMatches"]),
-        "funderMatches": _dumps(d["funderMatches"]),
-        "awardMatches": _dumps(d["awardMatches"]),
-        "intraWorkDoiMatches": _dumps(d["intraWorkDoiMatches"]),
-        "possibleSharedProjectDoiMatches": _dumps(d["possibleSharedProjectDoiMatches"]),
-        "datasetCitationDoiMatches": _dumps(d["datasetCitationDoiMatches"]),
+        "doiMatch": dumps(d["doiMatch"]),
+        "contentMatch": dumps(d["contentMatch"]),
+        "authorMatches": dumps(d["authorMatches"]),
+        "institutionMatches": dumps(d["institutionMatches"]),
+        "funderMatches": dumps(d["funderMatches"]),
+        "awardMatches": dumps(d["awardMatches"]),
+        "intraWorkDoiMatches": dumps(d["intraWorkDoiMatches"]),
+        "possibleSharedProjectDoiMatches": dumps(d["possibleSharedProjectDoiMatches"]),
+        "datasetCitationDoiMatches": dumps(d["datasetCitationDoiMatches"]),
     }
 
 
@@ -148,7 +148,7 @@ def dmp_works_search(
         pbar.total = results.total_dmps
 
         def write_works(works: list[RelatedWork], count: int):
-            writer.write_rows([_to_match_data_row(work.model_dump(by_alias=True, mode="json")) for work in works])
+            writer.write_rows([to_match_data_row(work.model_dump(by_alias=True, mode="json")) for work in works])
             pbar.update(count)
 
         batch = []

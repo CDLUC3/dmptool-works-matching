@@ -13,4 +13,4 @@ MODEL (
 PRAGMA threads=CAST(@VAR('opensearch_current_doi_state_threads') AS INT64);
 
 SELECT *
-FROM read_parquet(@VAR('prev_doi_state_export_path') || '/doi_state_[0-9]*.parquet');
+FROM read_parquet(@VAR('doi_state_export_prev_path') || '/doi_state_[0-9]*.parquet');

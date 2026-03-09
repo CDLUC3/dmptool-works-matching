@@ -45,13 +45,13 @@ aws sso login
 Create a `.env.aws` file from `.env.aws.example` and populate all required AWS,
 S3, and job configuration variables.
 
-`dmpworks` loads `.env.aws` automatically when invoked with `--env aws`. Pass
-this flag (or set `DMPWORKS_ENV=aws`) when running any `batch-submit` command:
+`dmpworks` does not load `.env.aws` automatically. Pass `--env-file .env.aws`
+(or set `DMPWORKS_ENV_FILE=.env.aws`) when running any `batch-submit` command:
 
 ```bash
-dmpworks --env aws batch-submit <command>
+dmpworks --env-file .env.aws batch-submit <command>
 # or
-DMPWORKS_ENV=aws dmpworks batch-submit <command>
+DMPWORKS_ENV_FILE=.env.aws dmpworks batch-submit <command>
 ```
 
 ### 1.3. Build and Push Image
@@ -161,25 +161,25 @@ Usage: dmpworks batch-submit ror [ARGS] [OPTIONS]
 Download and normalise ROR data:
 
 ```bash
-dmpworks --env aws batch-submit ror
+dmpworks --env-file .env.aws batch-submit ror
 ```
 
 Download and normalise OpenAlex Works:
 
 ```bash
-dmpworks --env aws batch-submit openalex-works
+dmpworks --env-file .env.aws batch-submit openalex-works
 ```
 
 Download and normalise Crossref Metadata:
 
 ```bash
-dmpworks --env aws batch-submit crossref-metadata
+dmpworks --env-file .env.aws batch-submit crossref-metadata
 ```
 
 Download and normalise DataCite data:
 
 ```bash
-dmpworks --env aws batch-submit datacite
+dmpworks --env-file .env.aws batch-submit datacite
 ```
 
 ## 3. Process Works
@@ -191,7 +191,7 @@ results to OpenSearch (`sync-works` job).
 Run the following command to submit these AWS Batch jobs:
 
 ```bash
-dmpworks --env aws batch-submit process-works
+dmpworks --env-file .env.aws batch-submit process-works
 ```
 
 ## 4. Process DMPs
@@ -204,7 +204,7 @@ DMP Tool database (`merge-related-works` job).
 Run the following command to submit these AWS Batch jobs:
 
 ```bash
-dmpworks --env aws batch-submit process-dmps
+dmpworks --env-file .env.aws batch-submit process-dmps
 ```
 
 This updates the OpenSearch DMP index and writes matched outputs back to the

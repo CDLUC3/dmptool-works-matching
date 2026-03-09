@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from pydantic import BaseModel
 
 from dmpworks.model.common import to_camel
-
-if TYPE_CHECKING:
-    from dmpworks.model.work_model import WorkModel
+from dmpworks.model.work_model import WorkModel
 
 
 class DoiMatch(BaseModel):
