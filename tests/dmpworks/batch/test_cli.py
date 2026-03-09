@@ -399,6 +399,8 @@ class TestOpenSearchCLI:
         mock_enrich_dmps.assert_called_once_with(
             index_name="dmps-index",
             client_config=OpenSearchClientConfig(),
+            bucket_name=None,
+            dmp_subset=None,
         )
 
     def test_dmp_works_search(self, mock_dmp_works_search):

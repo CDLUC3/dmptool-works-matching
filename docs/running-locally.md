@@ -11,7 +11,7 @@ This section covers environment variables, local services, and test setup.
 Create a `.env.local` file from `.env.local.example` and fill in the required values.
 
 `dmpworks` loads `.env.local` automatically when invoked (the default). You can override
-this using `--env-file` or the `DMPWORKS_ENV` environment variable:
+this using `--env-file` or the `DMPWORKS_ENV_FILE` environment variable:
 
 ```bash
 # Use an explicit file

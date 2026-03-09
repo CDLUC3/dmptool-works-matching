@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from contextlib import closing
 import logging
+from typing import TYPE_CHECKING
 
 from opensearchpy.helpers import streaming_bulk
 import pendulum
@@ -15,9 +18,12 @@ from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_cl
 from dmpworks.transform.dmp import transform_dmp
 from dmpworks.utils import timed
 
+if TYPE_CHECKING:
+    from dmpworks.model.common import Institution
+
 log = logging.getLogger(__name__)
 
-DMPS_QUERY = """
+DMPS_QUERY_TEMPLATE = """
 WITH institutions AS (
   SELECT
     temp.plan_id,
@@ -89,7 +95,7 @@ funding AS (
   FROM (
     SELECT
       pl.id AS plan_id,
-      plf.id AS plan_funding_id,	  
+      plf.id AS plan_funding_id,
       af.name AS funder_name,
       prf.affiliationId AS funder_id,
       prf.funderOpportunityNumber AS funder_opportunity_id,
@@ -100,7 +106,7 @@ funding AS (
     INNER JOIN planFundings plf ON plf.planId = pl.id
     INNER JOIN projectFundings prf ON prf.id = plf.projectFundingId
     LEFT JOIN affiliations af ON af.uri = prf.affiliationId
-    WHERE pl.dmpId IS NOT NULL 
+    WHERE pl.dmpId IS NOT NULL
           AND COALESCE(af.name, prf.affiliationId, prf.funderOpportunityNumber, prf.grantId) IS NOT NULL
   ) AS temp
   GROUP BY temp.plan_id
@@ -136,19 +142,18 @@ SELECT
   pr.abstractText AS abstract_text,
   pr.startDate AS project_start,
   pr.endDate AS project_end,
-  COALESCE(au.authors, '[]') AS authors, 
-  COALESCE(inst.institutions, '[]') AS institutions, 
-  COALESCE(fn.funding, '[]') AS funding, 
-  COALESCE(po.published_outputs, '[]') AS published_outputs 
+  COALESCE(au.authors, '[]') AS authors,
+  COALESCE(inst.institutions, '[]') AS institutions,
+  COALESCE(fn.funding, '[]') AS funding,
+  COALESCE(po.published_outputs, '[]') AS published_outputs
 FROM plans AS pl
 LEFT JOIN projects AS pr ON pr.id = pl.projectId
 LEFT JOIN institutions inst ON inst.plan_id = pl.id
 LEFT JOIN authors au ON au.plan_id = pl.id
 LEFT JOIN funding fn ON fn.plan_id = pl.id
 LEFT JOIN published_outputs po ON po.plan_id = pl.id
-WHERE pl.dmpId IS NOT NULL;
+WHERE pl.dmpId IS NOT NULL
 """
-
 
 DMPS_MAPPING_FILE = "dmps-mapping.json"
 
@@ -159,6 +164,8 @@ def sync_dmps(
     mysql_config: MySQLConfig,
     opensearch_config: OpenSearchClientConfig = None,
     chunk_size: int = 1000,
+    institutions: list[Institution] | None = None,
+    dois: list[str] | None = None,
 ):
     """Syncs the DMPs from the MySQL database to OpenSearch.
 
@@ -167,6 +174,8 @@ def sync_dmps(
         mysql_config: The MySQL configuration.
         opensearch_config: The OpenSearch client configuration.
         chunk_size: The number of DMPs to process per batch.
+        institutions: When supplied only syncs DMPs from these institutions.
+        dois: When supplied only syncs DMPs with these DOIs.
     """
     if opensearch_config is None:
         opensearch_config = OpenSearchClientConfig()
@@ -179,6 +188,7 @@ def sync_dmps(
 
     success_count = 0
     failed_count = 0
+    skipped_count = 0
 
     with closing(
         pymysql.connect(
@@ -191,17 +201,33 @@ def sync_dmps(
         )
     ) as conn:
 
+        def postfix():
+            return {"Success": f"{success_count:,}", "Failed": f"{failed_count:,}", "Skipped": f"{skipped_count:,}"}
+
         def on_validation_error():
             nonlocal failed_count
             failed_count += 1
             pbar.update(1)
-            pbar.set_postfix({"Success": f"{success_count:,}", "Failed": f"{failed_count:,}"})
+            pbar.set_postfix(postfix())
+
+        def on_skipped():
+            nonlocal skipped_count
+            skipped_count += 1
+            pbar.update(1)
+            pbar.set_postfix(postfix())
 
         total_rows = count_dmps(conn)
         with tqdm(total=total_rows, desc="Sync DMPs with OpenSearch", unit="doc") as pbar:
             for ok, item in streaming_bulk(
                 os_client,
-                generate_actions(conn=conn, dmps_index=index_name, on_error=on_validation_error),
+                generate_actions(
+                    conn=conn,
+                    dmps_index=index_name,
+                    on_error=on_validation_error,
+                    on_skipped=on_skipped,
+                    institutions=institutions,
+                    dois=dois,
+                ),
                 chunk_size=chunk_size,
                 raise_on_error=False,
             ):
@@ -213,12 +239,7 @@ def sync_dmps(
                     log.error(f"OpenSearch indexing failed for DMP: {dmp_id}")
 
                 pbar.update(1)
-                pbar.set_postfix(
-                    {
-                        "Success": f"{success_count:,}",
-                        "Failed": f"{failed_count:,}",
-                    }
-                )
+                pbar.set_postfix(postfix())
 
 
 def count_dmps(conn):
@@ -230,8 +251,9 @@ def count_dmps(conn):
     Returns:
         int: The number of DMPs.
     """
+    query = "SELECT COUNT(DISTINCT pl.id) AS total FROM plans pl WHERE pl.dmpId IS NOT NULL;"
     with conn.cursor() as count_cursor:
-        count_cursor.execute("SELECT COUNT(*) AS total FROM plans WHERE dmpId IS NOT NULL;")
+        count_cursor.execute(query)
         result = count_cursor.fetchone()
         return result["total"]
 
@@ -257,23 +279,44 @@ def validate_dmp(dmp: DMPModel) -> None:
         )
 
 
-def generate_actions(*, conn, dmps_index: str, on_error: callable):
+def generate_actions(
+    *,
+    conn,
+    dmps_index: str,
+    on_error: callable,
+    on_skipped: callable,
+    institutions: list[Institution] | None = None,
+    dois: list[str] | None = None,
+):
     """Generate OpenSearch bulk actions from MySQL rows.
 
     Args:
         conn: The MySQL connection.
         dmps_index: The name of the DMPs index.
-        on_error: A callback function to call when an error occurs.
+        on_error: A callback function to call when a validation error occurs.
+        on_skipped: A callback function to call when a DMP is filtered by subset.
+        institutions: When supplied only syncs DMPs from these institutions (matched by ROR ID).
+        dois: When supplied only syncs DMPs with these DOIs.
 
     Yields:
         dict: An OpenSearch bulk action.
     """
+    dois_set = set(dois) if dois else None
+    ror_set = {inst.ror for inst in institutions if inst.ror} if institutions else None
+
     with conn.cursor() as stream_cursor:
-        stream_cursor.execute(DMPS_QUERY)
+        stream_cursor.execute(DMPS_QUERY_TEMPLATE)
         for row in stream_cursor:
             try:
                 dmp = transform_dmp(row)
                 validate_dmp(dmp)
+
+                if dois_set is not None and dmp.doi not in dois_set:
+                    on_skipped()
+                    continue
+                if ror_set is not None and not any(inst.ror in ror_set for inst in dmp.institutions if inst.ror):
+                    on_skipped()
+                    continue
 
                 yield {
                     "_op_type": "update",

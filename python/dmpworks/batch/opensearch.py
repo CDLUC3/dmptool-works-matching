@@ -11,15 +11,52 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_files_to_s3,
 )
-from dmpworks.cli_utils import DMPSubset, LogLevel, MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
+from dmpworks.cli_utils import DMPSubsetAWS, LogLevel, MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.dataset_subset import load_dois, load_institutions
 
 log = logging.getLogger(__name__)
 
 SQLMESH_DIR = "sqlmesh"
-MATCHES_DIR_NAME = "matches"
-DMP_WORKS_SEARCH_PATH = "dmp-works-search"
+MATCHES_DIR = "matches"
+DMP_WORKS_SEARCH_DIR = "dmp-works-search"
+META_DIR = "meta"
 DATASET = "opensearch"
+
+
+def load_dmp_subset_from_s3(
+    bucket_name: str,
+    dmp_subset: DMPSubsetAWS | None,
+    meta_dir,
+):
+    """Download and load DMP subset institutions and DOIs from S3.
+
+    Args:
+        bucket_name: DMP Tool S3 bucket name.
+        dmp_subset: DMP subset configuration.
+        meta_dir: Local directory to download files into.
+
+    Returns:
+        tuple[list | None, list[str] | None]: Loaded institutions and DOIs, or None if not configured.
+    """
+    use_subset = dmp_subset is not None and dmp_subset.enable
+    institutions = None
+    dois = None
+
+    if use_subset and dmp_subset.institutions_s3_path is not None:
+        institutions_uri = s3_uri(bucket_name, dmp_subset.institutions_s3_path)
+        institutions_path = meta_dir / "institutions.json"
+        download_file_from_s3(institutions_uri, institutions_path)
+        institutions = load_institutions(institutions_path)
+        logging.info(f"institutions: {institutions}")
+
+    if use_subset and dmp_subset.dois_s3_path is not None:
+        dois_uri = s3_uri(bucket_name, dmp_subset.dois_s3_path)
+        dois_path = meta_dir / "dois.json"
+        download_file_from_s3(dois_uri, dois_path)
+        dois = load_dois(dois_path)
+        logging.info(f"dois: {dois}")
+
+    return institutions, dois
 
 
 def sync_works_cmd(
@@ -71,22 +108,77 @@ def sync_works_cmd(
         shutil.rmtree(doi_state_export, ignore_errors=True)
 
 
+def sync_dmps_cmd(
+    *,
+    bucket_name: str,
+    index_name: str,
+    client_config: OpenSearchClientConfig,
+    mysql_config: MySQLConfig,
+    dmp_subset: DMPSubsetAWS | None = None,
+):
+    """Sync DMPs from MySQL into the OpenSearch DMPs index, with optional subset filtering.
+
+    Downloads institution and DOI subset files from S3 when configured, then syncs
+    only the matching DMPs.
+
+    Args:
+        bucket_name: DMP Tool S3 bucket name.
+        index_name: the OpenSearch DMPs index name.
+        client_config: the OpenSearch client config settings.
+        mysql_config: MySQL connection configuration.
+        dmp_subset: settings for including a subset of DMPs.
+    """
+    from dmpworks.opensearch.sync_dmps import sync_dmps  # noqa: PLC0415
+
+    logging.getLogger("opensearch").setLevel(logging.WARNING)
+
+    meta_dir = local_path(META_DIR)
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        institutions, dois = load_dmp_subset_from_s3(bucket_name, dmp_subset, meta_dir)
+        sync_dmps(
+            index_name,
+            mysql_config,
+            opensearch_config=client_config,
+            institutions=institutions,
+            dois=dois,
+        )
+    finally:
+        shutil.rmtree(meta_dir, ignore_errors=True)
+
+
 def enrich_dmps_cmd(
     *,
     index_name: str,
     client_config: OpenSearchClientConfig,
+    bucket_name: str | None = None,
+    dmp_subset: DMPSubsetAWS | None = None,
 ):
     """Enrich dmps in the OpenSearch DMPs index.
 
     Args:
         index_name: the OpenSearch index name.
         client_config: the OpenSearch client config settings.
+        bucket_name: DMP Tool S3 bucket name (required when dmp_subset is provided).
+        dmp_subset: settings for including a subset of DMPs.
     """
     from dmpworks.opensearch.enrich_dmps import enrich_dmps  # noqa: PLC0415
 
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    enrich_dmps(index_name, client_config)
+    institutions = None
+    dois = None
+    meta_dir = None
+    if dmp_subset is not None and dmp_subset.enable and bucket_name is not None:
+        meta_dir = local_path(META_DIR)
+        meta_dir.mkdir(parents=True, exist_ok=True)
+        institutions, dois = load_dmp_subset_from_s3(bucket_name, dmp_subset, meta_dir)
+
+    try:
+        enrich_dmps(index_name, client_config, institutions=institutions, dois=dois)
+    finally:
+        if meta_dir is not None:
+            shutil.rmtree(meta_dir, ignore_errors=True)
 
 
 def dmp_works_search_cmd(
@@ -104,7 +196,7 @@ def dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: OpenSearchClientConfig | None = None,
-    dmp_subset: DMPSubset = None,
+    dmp_subset: DMPSubsetAWS = None,
     start_date: pendulum.Date | None = None,
     end_date: pendulum.Date | None = None,
 ):
@@ -135,35 +227,15 @@ def dmp_works_search_cmd(
 
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    out_dir = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_DIR_NAME)
+    out_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    meta_dir = local_path(DMP_WORKS_SEARCH_PATH, run_id, "meta")
+    meta_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, META_DIR)
     meta_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load subset
-    use_subset = dmp_subset is not None and dmp_subset.enable
-    logging.info(f"use_subset: {use_subset}")
-
-    # Download institutions
-    institutions = None
-    if use_subset and dmp_subset.institutions_s3_path is not None:
-        institutions_uri = s3_uri(bucket_name, dmp_subset.institutions_s3_path)
-        institutions_path = meta_dir / "institutions.json"
-        download_file_from_s3(institutions_uri, institutions_path)
-        institutions = load_institutions(institutions_path)
-        logging.info(f"institutions: {institutions}")
-
-    # Download DOIs
-    dois = None
-    if use_subset and dmp_subset.dois_s3_path is not None:
-        dois_uri = s3_uri(bucket_name, dmp_subset.dois_s3_path)
-        dois_path = meta_dir / "dois.json"
-        download_file_from_s3(dois_uri, dois_path)
-        dois = load_dois(dois_path)
-        logging.info(f"dois: {dois}")
-
     try:
+        institutions, dois = load_dmp_subset_from_s3(bucket_name, dmp_subset, meta_dir)
+
         dmp_works_search(
             dmps_index_name,
             works_index_name,
@@ -184,7 +256,7 @@ def dmp_works_search_cmd(
         )
 
         # Upload all Parquet files to S3
-        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, run_id, MATCHES_DIR_NAME)
+        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
         upload_files_to_s3(out_dir, target_uri, glob_pattern="*.parquet")
     finally:
         shutil.rmtree(out_dir, ignore_errors=True)
@@ -207,11 +279,11 @@ def merge_related_works_cmd(
     """
     from dmpworks.dmsp.related_works import merge_related_works  # noqa: PLC0415
 
-    matches_dir = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_DIR_NAME)
+    matches_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
     matches_dir.mkdir(parents=True, exist_ok=True)
     try:
         # Download all Parquet files from S3
-        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, run_id, MATCHES_DIR_NAME, "*.parquet")
+        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR, "*.parquet")
         download_files_from_s3(source_uri, matches_dir)
 
         # Upsert data

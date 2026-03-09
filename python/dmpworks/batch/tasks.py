@@ -14,7 +14,7 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_files_to_s3,
 )
-from dmpworks.cli_utils import DatasetSubset
+from dmpworks.cli_utils import DatasetSubsetAWS
 from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.model.common import Institution
 
@@ -69,7 +69,7 @@ def download_source_task(bucket_name: str, dataset: str, run_id: str) -> Generat
 
 
 @dataclass
-class DatasetSubsetTaskContext:
+class DatasetSubsetAWSTaskContext:
     """Context for a dataset subset task.
 
     Attributes:
@@ -93,8 +93,8 @@ def dataset_subset_task(
     bucket_name: str,
     dataset: str,
     run_id: str,
-    dataset_subset: DatasetSubset,
-) -> Generator[DatasetSubsetTaskContext, Any, None]:
+    dataset_subset: DatasetSubsetAWS,
+) -> Generator[DatasetSubsetAWSTaskContext, Any, None]:
     """Context manager for creating a dataset subset.
 
     Downloads institutions and DOIs for filtering.
@@ -109,7 +109,7 @@ def dataset_subset_task(
         dataset_subset: Configuration for the dataset subset.
 
     Yields:
-        A DatasetSubsetTaskContext object.
+        A DatasetSubsetAWSTaskContext object.
     """
     meta_dir = local_path(dataset, run_id, "meta")
     download_dir = local_path(dataset, run_id, "download")
@@ -137,7 +137,7 @@ def dataset_subset_task(
     subset_dir.mkdir(parents=True, exist_ok=True)
 
     log.info(f"Transforming {dataset}")
-    ctx = DatasetSubsetTaskContext(
+    ctx = DatasetSubsetAWSTaskContext(
         download_dir=download_dir,
         subset_dir=subset_dir,
         target_uri=target_uri,

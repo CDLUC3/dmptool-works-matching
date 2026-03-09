@@ -102,8 +102,6 @@ class TestTransformCLI:
 
         in_dir.mkdir()
         out_dir.mkdir()
-
-        # Cyclopts validators require exists=True for file paths
         inst_path.touch()
         dois_path.touch()
 
@@ -114,8 +112,10 @@ class TestTransformCLI:
                 "openalex-works",
                 str(in_dir),
                 str(out_dir),
+                "--dataset-subset.enable",
+                "--dataset-subset.institutions-path",
                 str(inst_path),
-                "--dois-path",
+                "--dataset-subset.dois-path",
                 str(dois_path),
             ]
         )
@@ -152,6 +152,8 @@ class TestTransformCLI:
                 "datacite",
                 str(in_dir),
                 str(out_dir),
+                "--dataset-subset.enable",
+                "--dataset-subset.institutions-path",
                 str(inst_path),
             ]
         )

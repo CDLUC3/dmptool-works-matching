@@ -103,6 +103,8 @@ class TestOpenSearchCLI:
         mock_enrich_dmps.assert_called_once_with(
             "dmps-index",
             OpenSearchClientConfig(),
+            institutions=None,
+            dois=None,
         )
 
     @pytest.fixture

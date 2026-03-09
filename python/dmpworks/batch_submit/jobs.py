@@ -9,8 +9,8 @@ import pendulum
 from dmpworks.cli_utils import (
     CrossrefMetadataTransformConfig,
     DataCiteTransformConfig,
-    DatasetSubset,
-    DMPSubset,
+    DatasetSubsetAWS,
+    DMPSubsetAWS,
     OpenAlexWorksTransformConfig,
     OpenSearchClientConfig,
     OpenSearchSyncConfig,
@@ -257,7 +257,7 @@ def dataset_subset_job(
     bucket_name: str,
     run_id: str,
     dataset: Dataset,
-    dataset_subset: DatasetSubset,
+    dataset_subset: DatasetSubsetAWS,
     vcpus: int = LARGE_VCPUS,
     memory: int = LARGE_MEMORY,
     depends_on: list[DependsOnDict] | None = None,
@@ -723,10 +723,12 @@ def submit_sync_works_job(
 def submit_sync_dmps_job(
     *,
     env: str,
+    bucket_name: str,
     run_id_dmps: str,
     os_client_config: OpenSearchClientConfig | None = None,
     os_sync_config: OpenSearchSyncConfig | None = None,
     index_name: str = "dmps-index",
+    dmp_subset: DMPSubsetAWS | None = None,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: list[DependsOnDict] | None = None,
@@ -735,10 +737,12 @@ def submit_sync_dmps_job(
 
     Args:
         env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket for job I/O and DMP subset downloads.
         run_id_dmps: The run_id of the DMPs data to use.
         os_client_config: The OpenSearch client config.
         os_sync_config: The OpenSearch sync config.
         index_name: The name of the OpenSearch index to sync to.
+        dmp_subset: settings for including a subset of DMPs.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -752,12 +756,15 @@ def submit_sync_dmps_job(
         os_sync_config = OpenSearchSyncConfig()
 
     env_vars = {
+        "BUCKET_NAME": bucket_name,
         "INDEX_NAME": index_name,
         "TQDM_POSITION": TQDM_POSITION,
         "TQDM_MININTERVAL": TQDM_MININTERVAL,
     }
     env_vars.update(get_env_var_dict(os_client_config))
     env_vars.update(get_env_var_dict(os_sync_config))
+    if dmp_subset is not None:
+        env_vars.update(get_env_var_dict(dmp_subset))
 
     return submit_job(
         job_name="opensearch-sync-dmps",
@@ -766,7 +773,7 @@ def submit_sync_dmps_job(
         job_definition=database_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks opensearch sync-dmps $INDEX_NAME",
+        command="dmpworks aws-batch opensearch sync-dmps $BUCKET_NAME $INDEX_NAME",
         environment=make_env(env_vars),
         depends_on=depends_on,
     )
@@ -775,9 +782,11 @@ def submit_sync_dmps_job(
 def submit_enrich_dmps_job(
     *,
     env: str,
+    bucket_name: str,
     run_id_dmps: str,
     os_client_config: OpenSearchClientConfig | None = None,
     index_name: str = "dmps-index",
+    dmp_subset: DMPSubsetAWS | None = None,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: list[DependsOnDict] | None = None,
@@ -786,9 +795,11 @@ def submit_enrich_dmps_job(
 
     Args:
         env: environment, i.e., dev, stage, prod.
+        bucket_name: S3 bucket for DMP subset downloads.
         run_id_dmps: The run_id of the DMPs data, used for job tracking.
         os_client_config: The OpenSearch client config.
         index_name: The name of the OpenSearch DMPs index to enrich.
+        dmp_subset: settings for including a subset of DMPs.
         vcpus: number of vCPUs for the job.
         memory: memory (in MiB) for the job.
         depends_on: optional list of job dependencies.
@@ -800,11 +811,14 @@ def submit_enrich_dmps_job(
         os_client_config = OpenSearchClientConfig()
 
     env_vars = {
+        "BUCKET_NAME": bucket_name,
         "INDEX_NAME": index_name,
         "TQDM_POSITION": TQDM_POSITION,
         "TQDM_MININTERVAL": TQDM_MININTERVAL,
     }
     env_vars.update(get_env_var_dict(os_client_config))
+    if dmp_subset is not None:
+        env_vars.update(get_env_var_dict(dmp_subset))
 
     return submit_job(
         job_name="opensearch-enrich-dmps",
@@ -813,7 +827,7 @@ def submit_enrich_dmps_job(
         job_definition=standard_job_definition(env),
         vcpus=vcpus,
         memory=memory,
-        command="dmpworks aws-batch opensearch enrich-dmps $INDEX_NAME",
+        command="dmpworks aws-batch opensearch enrich-dmps $INDEX_NAME --bucket-name $BUCKET_NAME",
         environment=make_env(env_vars),
         depends_on=depends_on,
     )
@@ -827,7 +841,7 @@ def submit_dmp_works_search_job(
     os_client_config: OpenSearchClientConfig | None = None,
     dmps_index_name: str = "dmps-index",
     works_index_name: str = "works-index",
-    dmp_subset: DMPSubset,
+    dmp_subset: DMPSubsetAWS,
     vcpus: int = SMALL_VCPUS,
     memory: int = SMALL_MEMORY,
     depends_on: list[DependsOnDict] | None = None,

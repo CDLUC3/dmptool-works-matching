@@ -7,8 +7,8 @@ from cyclopts import App, Parameter
 from dmpworks.cli_utils import (
     CrossrefMetadataTransformConfig,
     DataCiteTransformConfig,
-    DatasetSubset,
-    DMPSubset,
+    DatasetSubsetAWS,
+    DMPSubsetAWS,
     LogLevel,
     OpenAlexWorksTransformConfig,
     OpenSearchClientConfig,
@@ -150,7 +150,7 @@ def crossref_metadata_cmd(
             help="Name of the Crossref AWS S3 bucket.",
         ),
     ],
-    dataset_subset: DatasetSubset = None,
+    dataset_subset: DatasetSubsetAWS = None,
     config: CrossrefMetadataTransformConfig | None = None,
     log_level: LogLevel = "INFO",
     start_job: Annotated[
@@ -257,7 +257,7 @@ def datacite_cmd(
             help="Name of the DataCite AWS S3 bucket.",
         ),
     ],
-    dataset_subset: DatasetSubset = None,
+    dataset_subset: DatasetSubsetAWS = None,
     config: DataCiteTransformConfig | None = None,
     log_level: LogLevel = "INFO",
     start_job: Annotated[
@@ -362,7 +362,7 @@ def openalex_works_cmd(
             help="Name of the OpenAlex AWS S3 bucket.",
         ),
     ],
-    dataset_subset: DatasetSubset = None,
+    dataset_subset: DatasetSubsetAWS = None,
     config: OpenAlexWorksTransformConfig | None = None,
     log_level: LogLevel = "INFO",
     start_job: Annotated[
@@ -551,7 +551,7 @@ def process_dmps_cmd(
     ] = "works-index",
     os_client_config: OpenSearchClientConfig | None = None,
     os_sync_config: OpenSearchSyncConfig | None = None,
-    dmp_subset: DMPSubset = None,
+    dmp_subset: DMPSubsetAWS = None,
     start_job: Annotated[
         Literal[*PROCESS_DMPS_JOBS],
         Parameter(
@@ -592,17 +592,21 @@ def process_dmps_cmd(
         "sync-dmps": partial(
             submit_sync_dmps_job,
             env=env,
+            bucket_name=bucket_name,
             run_id_dmps=run_id_dmps,
             os_client_config=os_client_config,
             os_sync_config=os_sync_config,
             index_name=dmps_index_name,
+            dmp_subset=dmp_subset,
         ),
         "enrich-dmps": partial(
             submit_enrich_dmps_job,
             env=env,
+            bucket_name=bucket_name,
             run_id_dmps=run_id_dmps,
             index_name=dmps_index_name,
             os_client_config=os_client_config,
+            dmp_subset=dmp_subset,
         ),
         "dmp-works-search": partial(
             submit_dmp_works_search_job,

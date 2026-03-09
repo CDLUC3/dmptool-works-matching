@@ -15,7 +15,7 @@ from dmpworks.batch_submit.cli import (
     ror_cmd,
 )
 from dmpworks.cli_utils import (
-    DatasetSubset,
+    DatasetSubsetAWS,
     RunIdentifiers,
     SQLMeshConfig,
 )
@@ -90,7 +90,7 @@ class TestCrossrefMetadataCmd:
         assert task_defs["transform"].keywords["use_subset"] is False
 
     def test_with_subset_includes_dataset_subset_task(self):
-        ds = DatasetSubset(enable=True, institutions_s3_path="path/institutions.csv")
+        ds = DatasetSubsetAWS(enable=True, institutions_s3_path="path/institutions.csv")
         with (
             patch("dmpworks.batch_submit.jobs.crossref_metadata_download_job") as mock_dl,
             patch("dmpworks.batch_submit.jobs.crossref_metadata_transform_job") as mock_tr,
@@ -116,7 +116,7 @@ class TestCrossrefMetadataCmd:
         assert task_defs["transform"].keywords["use_subset"] is True
 
     def test_disabled_dataset_subset_treated_as_no_subset(self):
-        ds = DatasetSubset(enable=False)
+        ds = DatasetSubsetAWS(enable=False)
         with (
             patch("dmpworks.batch_submit.jobs.crossref_metadata_download_job"),
             patch("dmpworks.batch_submit.jobs.crossref_metadata_transform_job") as mock_tr,
@@ -179,7 +179,7 @@ class TestDataciteCmd:
         assert task_defs["transform"].keywords["use_subset"] is False
 
     def test_with_subset_includes_dataset_subset_task(self):
-        ds = DatasetSubset(enable=True)
+        ds = DatasetSubsetAWS(enable=True)
         with (
             patch("dmpworks.batch_submit.jobs.datacite_download_job"),
             patch("dmpworks.batch_submit.jobs.datacite_transform_job") as mock_tr,
@@ -243,7 +243,7 @@ class TestOpenAlexWorksCmd:
         assert task_defs["transform"].keywords["use_subset"] is False
 
     def test_with_subset_includes_dataset_subset_task(self):
-        ds = DatasetSubset(enable=True, dois_s3_path="path/dois.csv")
+        ds = DatasetSubsetAWS(enable=True, dois_s3_path="path/dois.csv")
         with (
             patch("dmpworks.batch_submit.jobs.openalex_works_download_job"),
             patch("dmpworks.batch_submit.jobs.openalex_works_transform_job") as mock_tr,

@@ -110,8 +110,8 @@ QueryBuilder = Literal["build_dmp_works_search_baseline_query", "build_dmp_works
 
 
 @dataclass
-class DatasetSubset:
-    """Cyclopts configuration for creating a subset of datasets.
+class DatasetSubsetAWS:
+    """Cyclopts configuration for creating a subset of datasets (AWS).
 
     Attributes:
         enable: Enable subset creation to filter works by specific institutions or a list of DOIs.
@@ -143,8 +143,41 @@ class DatasetSubset:
 
 
 @dataclass
-class DMPSubset:
-    """Cyclopts configuration for creating a subset of DMPs.
+class DatasetSubsetLocal:
+    """Cyclopts configuration for creating a subset of datasets (local).
+
+    Attributes:
+        enable: Enable subset creation to filter works by specific institutions or a list of DOIs.
+        institutions_path: Path to a JSON file containing ROR IDs and institution names.
+        dois_path: Path to a JSON file containing specific Work DOIs to include in the subset.
+    """
+
+    enable: Annotated[
+        bool,
+        Parameter(
+            env_var="DATASET_SUBSET_ENABLE",
+            help="Enable subset creation to filter works by specific institutions or a list of DOIs.",
+        ),
+    ] = False
+    institutions_path: Annotated[
+        pathlib.Path | None,
+        Parameter(
+            env_var="DATASET_SUBSET_INSTITUTIONS_PATH",
+            help="Path to a JSON file containing ROR IDs and institution names. Works authored by researchers from these institutions will be included.",
+        ),
+    ] = None
+    dois_path: Annotated[
+        pathlib.Path | None,
+        Parameter(
+            env_var="DATASET_SUBSET_DOIS_PATH",
+            help="Path to a JSON file containing specific Work DOIs to include in the subset.",
+        ),
+    ] = None
+
+
+@dataclass
+class DMPSubsetAWS:
+    """Cyclopts configuration for creating a subset of DMPs (AWS).
 
     Attributes:
         enable: Enable subset creation to filter DMPs by specific institutions or a list of DOIs.
@@ -171,6 +204,39 @@ class DMPSubset:
         Parameter(
             env_var="DMP_SUBSET_DOIS_S3_PATH",
             help="S3 path (excluding bucket URI) to a specific list of DMP DOIs to include in the subset.",
+        ),
+    ] = None
+
+
+@dataclass
+class DMPSubsetLocal:
+    """Cyclopts configuration for creating a subset of DMPs (local).
+
+    Attributes:
+        enable: Enable subset creation to filter DMPs by specific institutions or a list of DOIs.
+        institutions_path: Path to a JSON file containing ROR IDs and institution names.
+        dois_path: Path to a JSON file containing specific DMP DOIs to include in the subset.
+    """
+
+    enable: Annotated[
+        bool,
+        Parameter(
+            env_var="DMP_SUBSET_ENABLE",
+            help="Enable subset creation to filter DMPs by specific institutions or a list of DOIs.",
+        ),
+    ] = False
+    institutions_path: Annotated[
+        pathlib.Path | None,
+        Parameter(
+            env_var="DMP_SUBSET_INSTITUTIONS_PATH",
+            help="Path to a JSON file containing ROR IDs and institution names. DMPs created by researchers from these institutions will be included.",
+        ),
+    ] = None
+    dois_path: Annotated[
+        pathlib.Path | None,
+        Parameter(
+            env_var="DMP_SUBSET_DOIS_PATH",
+            help="Path to a JSON file containing specific DMP DOIs to include in the subset.",
         ),
     ] = None
 

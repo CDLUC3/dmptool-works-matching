@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
 from dmpworks.batch.utils import s3_uri
-from dmpworks.cli_utils import CrossrefMetadataTransformConfig, DatasetSubset
+from dmpworks.cli_utils import CrossrefMetadataTransformConfig, DatasetSubsetAWS
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.utils import run_process
@@ -54,20 +54,20 @@ def dataset_subset(
     *,
     bucket_name: str,
     run_id: str,
-    dataset_subset: DatasetSubset = None,
+    ds_config: DatasetSubsetAWS = None,
 ):
     """Create a subset of Crossref Metadata.
 
     Args:
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
-        dataset_subset: settings for creating the subset of works
+        ds_config: settings for creating the subset of works
     """
     with dataset_subset_task(
         bucket_name=bucket_name,
         dataset=DATASET,
         run_id=run_id,
-        dataset_subset=dataset_subset,
+        dataset_subset=ds_config,
     ) as ctx:
         create_dataset_subset(
             dataset="crossref-metadata",

@@ -33,8 +33,8 @@ from dmpworks.batch_submit.jobs import (
 from dmpworks.cli_utils import (
     CrossrefMetadataTransformConfig,
     DataCiteTransformConfig,
-    DatasetSubset,
-    DMPSubset,
+    DatasetSubsetAWS,
+    DMPSubsetAWS,
     OpenAlexWorksTransformConfig,
     OpenSearchClientConfig,
     OpenSearchSyncConfig,
@@ -232,7 +232,7 @@ class TestRorDownloadJob:
 
 class TestDatasetSubsetJob:
     def test_submit_job_args(self, mock_submit):
-        ds = DatasetSubset(enable=True, institutions_s3_path="path/institutions.csv")
+        ds = DatasetSubsetAWS(enable=True, institutions_s3_path="path/institutions.csv")
         dataset_subset_job(
             env="dev",
             bucket_name="my-bucket",
@@ -249,7 +249,7 @@ class TestDatasetSubsetJob:
         assert kwargs["memory"] == LARGE_MEMORY
 
     def test_environment_with_all_subset_fields(self, mock_submit):
-        ds = DatasetSubset(
+        ds = DatasetSubsetAWS(
             enable=True,
             institutions_s3_path="path/institutions.csv",
             dois_s3_path="path/dois.csv",
@@ -273,7 +273,7 @@ class TestDatasetSubsetJob:
         }
 
     def test_environment_none_subset_fields_filtered(self, mock_submit):
-        ds = DatasetSubset(enable=False)
+        ds = DatasetSubsetAWS(enable=False)
         dataset_subset_job(
             env="dev",
             bucket_name="my-bucket",
@@ -287,7 +287,7 @@ class TestDatasetSubsetJob:
         assert "DATASET_SUBSET_DOIS_S3_PATH" not in env
 
     def test_depends_on_passed(self, mock_submit):
-        ds = DatasetSubset(enable=True)
+        ds = DatasetSubsetAWS(enable=True)
         depends = [{"jobId": "prior-job"}]
         dataset_subset_job(
             env="dev",
@@ -830,24 +830,26 @@ class TestSubmitSyncWorksJob:
 
 class TestSubmitSyncDmpsJob:
     def test_uses_database_job_definition(self, mock_submit):
-        submit_sync_dmps_job(env="dev", run_id_dmps="dmps-run-1")
+        submit_sync_dmps_job(env="dev", bucket_name="my-bucket", run_id_dmps="dmps-run-1")
         job_def = mock_submit.call_args.kwargs["job_definition"]
         assert job_def == database_job_definition("dev")
         assert job_def != standard_job_definition("dev")
 
     def test_command(self, mock_submit):
-        submit_sync_dmps_job(env="dev", run_id_dmps="dmps-run-1", index_name="my-dmps-index")
-        assert "sync-dmps $INDEX_NAME" in mock_submit.call_args.kwargs["command"]
+        submit_sync_dmps_job(env="dev", bucket_name="my-bucket", run_id_dmps="dmps-run-1", index_name="my-dmps-index")
+        assert "sync-dmps $BUCKET_NAME $INDEX_NAME" in mock_submit.call_args.kwargs["command"]
 
     def test_environment(self, mock_submit):
         submit_sync_dmps_job(
             env="dev",
+            bucket_name="my-bucket",
             run_id_dmps="dmps-run-1",
             index_name="my-dmps-index",
             os_client_config=AWS_OS_CLIENT_CONFIG,
             os_sync_config=OpenSearchSyncConfig(),
         )
         expected = {
+            "BUCKET_NAME": "my-bucket",
             "INDEX_NAME": "my-dmps-index",
             "TQDM_POSITION": TQDM_POSITION,
             "TQDM_MININTERVAL": TQDM_MININTERVAL,
@@ -858,27 +860,29 @@ class TestSubmitSyncDmpsJob:
 
     def test_depends_on_passed(self, mock_submit):
         depends = [{"jobId": "prior"}]
-        submit_sync_dmps_job(env="dev", run_id_dmps="dmps-run-1", depends_on=depends)
+        submit_sync_dmps_job(env="dev", bucket_name="my-bucket", run_id_dmps="dmps-run-1", depends_on=depends)
         assert mock_submit.call_args.kwargs["depends_on"] == depends
 
 
 class TestSubmitEnrichDmpsJob:
     def test_uses_standard_job_definition(self, mock_submit):
-        submit_enrich_dmps_job(env="dev", run_id_dmps="dmps-run-1")
+        submit_enrich_dmps_job(env="dev", bucket_name="my-bucket", run_id_dmps="dmps-run-1")
         assert mock_submit.call_args.kwargs["job_definition"] == standard_job_definition("dev")
 
     def test_command(self, mock_submit):
-        submit_enrich_dmps_job(env="dev", run_id_dmps="dmps-run-1", index_name="my-dmps-index")
-        assert "enrich-dmps $INDEX_NAME" in mock_submit.call_args.kwargs["command"]
+        submit_enrich_dmps_job(env="dev", bucket_name="my-bucket", run_id_dmps="dmps-run-1", index_name="my-dmps-index")
+        assert "enrich-dmps $INDEX_NAME --bucket-name $BUCKET_NAME" in mock_submit.call_args.kwargs["command"]
 
     def test_environment(self, mock_submit):
         submit_enrich_dmps_job(
             env="dev",
+            bucket_name="my-bucket",
             run_id_dmps="dmps-run-1",
             index_name="my-dmps-index",
             os_client_config=AWS_OS_CLIENT_CONFIG,
         )
         expected = {
+            "BUCKET_NAME": "my-bucket",
             "INDEX_NAME": "my-dmps-index",
             "TQDM_POSITION": TQDM_POSITION,
             "TQDM_MININTERVAL": TQDM_MININTERVAL,
@@ -888,7 +892,7 @@ class TestSubmitEnrichDmpsJob:
 
     def test_depends_on_passed(self, mock_submit):
         depends = [{"jobId": "prior"}]
-        submit_enrich_dmps_job(env="dev", run_id_dmps="dmps-run-1", depends_on=depends)
+        submit_enrich_dmps_job(env="dev", bucket_name="my-bucket", run_id_dmps="dmps-run-1", depends_on=depends)
         assert mock_submit.call_args.kwargs["depends_on"] == depends
 
 
@@ -933,7 +937,7 @@ class TestSubmitDmpWorksSearchJob:
         assert env_as_dict(mock_submit.call_args) == expected
 
     def test_environment_with_dmp_subset(self, mock_submit):
-        ds = DMPSubset(enable=True, dois_s3_path="path/dois.csv", institutions_s3_path="path/inst.csv")
+        ds = DMPSubsetAWS(enable=True, dois_s3_path="path/dois.csv", institutions_s3_path="path/inst.csv")
         submit_dmp_works_search_job(
             env="dev",
             bucket_name="my-bucket",
