@@ -1,12 +1,16 @@
 import logging
-import os
 import pathlib
-from dataclasses import dataclass
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from cyclopts import App, Parameter, validators
 
-from dmpworks.cli_utils import Directory, LogLevel
+from dmpworks.cli_utils import (
+    CrossrefMetadataTransformConfig,
+    DataCiteTransformConfig,
+    Directory,
+    LogLevel,
+    OpenAlexWorksTransformConfig,
+)
 from dmpworks.dataset_subset import load_dois, load_institutions
 from dmpworks.transform.crossref_metadata import transform_crossref_metadata
 from dmpworks.transform.datacite import transform_datacite
@@ -17,52 +21,12 @@ from dmpworks.utils import copy_dict
 app = App(name="transform", help="Transformation utilities.")
 
 
-BatchSize = Annotated[
-    int,
-    Parameter(
-        validator=validators.Number(gte=1),
-        help="Number of input files to process per batch (must be >= 1).",
-    ),
-]
-RowGroupSize = Annotated[
-    int,
-    Parameter(
-        validator=validators.Number(gte=1),
-        help="Parquet row group size (must be >= 1). For efficient downstream querying, target row group sizes of 128-512MB. Row groups are buffered fully in memory before being flushed to disk.",
-    ),
-]
-RowGroupsPerFile = Annotated[
-    int,
-    Parameter(
-        validator=validators.Number(gte=1),
-        help="Number of row groups per Parquet file (must be >= 1). Target file sizes of 512MB-1GB.",
-    ),
-]
-MaxWorkers = Annotated[
-    int,
-    Parameter(
-        validator=validators.Number(gte=1),
-        help="Number of workers to run in parallel (must be >= 1).",
-    ),
-]
-
-
-@Parameter(name="*")
-@dataclass
-class CrossrefMetadataConfig:
-    batch_size: BatchSize = 500
-    row_group_size: RowGroupSize = 500_000
-    row_groups_per_file: RowGroupsPerFile = 4
-    max_workers: MaxWorkers = os.cpu_count()
-    log_level: LogLevel = "INFO"
-
-
 @app.command(name="crossref-metadata")
 def crossref_metadata_cmd(
     in_dir: Directory,
     out_dir: Directory,
     *,
-    config: Optional[CrossrefMetadataConfig] = None,
+    config: CrossrefMetadataTransformConfig | None = None,
 ):
     """Transform Crossref Metadata to Parquet.
 
@@ -71,8 +35,7 @@ def crossref_metadata_cmd(
         out_dir: Path to the output directory for transformed Parquet files (e.g. /path/to/crossref_metadata).
         config: optional configuration parameters.
     """
-
-    config = CrossrefMetadataConfig() if config is None else config
+    config = CrossrefMetadataTransformConfig() if config is None else config
 
     log_level = logging.getLevelName(config.log_level)
     transform_crossref_metadata(
@@ -83,22 +46,12 @@ def crossref_metadata_cmd(
     )
 
 
-@Parameter(name="*")
-@dataclass
-class DataCiteConfig:
-    batch_size: BatchSize = 150
-    row_group_size: RowGroupSize = 250_000
-    row_groups_per_file: RowGroupsPerFile = 8
-    max_workers: MaxWorkers = 8
-    log_level: LogLevel = "INFO"
-
-
 @app.command(name="datacite")
 def datacite_cmd(
     in_dir: Directory,
     out_dir: Directory,
     *,
-    config: Optional[DataCiteConfig] = None,
+    config: DataCiteTransformConfig | None = None,
 ):
     """Transform DataCite to Parquet.
 
@@ -107,8 +60,7 @@ def datacite_cmd(
         out_dir: Path to the output directory for transformed Parquet files (e.g. /path/to/datacite).
         config: optional configuration parameters.
     """
-
-    config = DataCiteConfig() if config is None else config
+    config = DataCiteTransformConfig() if config is None else config
     log_level = logging.getLevelName(config.log_level)
     transform_datacite(
         in_dir=in_dir,
@@ -118,22 +70,12 @@ def datacite_cmd(
     )
 
 
-@Parameter(name="*")
-@dataclass
-class OpenAlexWorksConfig:
-    batch_size: BatchSize = 16
-    row_group_size: RowGroupSize = 200_000
-    row_groups_per_file: RowGroupsPerFile = 4
-    max_workers: MaxWorkers = os.cpu_count()
-    log_level: LogLevel = "INFO"
-
-
 @app.command(name="openalex-works")
 def openalex_works_cmd(
     in_dir: Directory,
     out_dir: Directory,
     *,
-    config: Optional[OpenAlexWorksConfig] = None,
+    config: OpenAlexWorksTransformConfig | None = None,
 ):
     """Transform OpenAlex Works to Parquet.
 
@@ -142,8 +84,7 @@ def openalex_works_cmd(
         out_dir: "Path to the output directory (e.g. /path/to/openalex_works)."
         config: optional configuration parameters.
     """
-
-    config = OpenAlexWorksConfig() if config is None else config
+    config = OpenAlexWorksTransformConfig() if config is None else config
     log_level = logging.getLevelName(config.log_level)
     transform_openalex_works(
         in_dir=in_dir,
@@ -171,7 +112,7 @@ def dataset_subset_cmd(
         ),
     ],
     dois_path: Annotated[
-        Optional[pathlib.Path],
+        pathlib.Path | None,
         Parameter(
             validator=validators.Path(
                 dir_okay=False,
@@ -194,7 +135,6 @@ def dataset_subset_cmd(
         dois_path: Path to a JSON file with specific list of Work DOIs to include in the subset, e.g. `["10.0000/abc", "10.0000/123"]`.
         log_level: Python log level.
     """
-
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
     institutions = load_institutions(institutions_path)

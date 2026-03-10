@@ -10,6 +10,9 @@ ARG PYTHON_VERSION="3.12"
 ENV RUST_TARGET_CPU=${RUST_TARGET_CPU}
 ENV PYTHON_VERSION=${PYTHON_VERSION}
 
+# Pull uv into stage 1
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 # Install system dependencies
 RUN dnf -y install \
     wget \
@@ -23,14 +26,17 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install maturin
-RUN python${PYTHON_VERSION} -m pip install maturin
+RUN uv tool install maturin
 
-WORKDIR /app
-
-# Build dmpworks
+# Go to dmpworks
 WORKDIR /app/dmptool-works-matching
+
+# Sync dependencies
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --python ${PYTHON_VERSION}
+
 COPY . .
-RUN RUSTFLAGS="-C target-cpu=${RUST_TARGET_CPU}" maturin build --interpreter python${PYTHON_VERSION} --release
+RUN RUSTFLAGS="-C target-cpu=${RUST_TARGET_CPU}" uv tool run maturin build --interpreter python${PYTHON_VERSION} --release
 
 # ----------------------------------
 # Stage 2: Final Amazon Linux Image
@@ -43,6 +49,9 @@ ARG S5CMD_VERSION="2.3.0"
 ENV PYTHON_VERSION=${PYTHON_VERSION}
 ENV S5CMD_VERSION=${S5CMD_VERSION}
 ENV TMPDIR=/data/tmp
+
+# Pull uv into stage 2
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Make temp folder
 RUN mkdir -p ${TMPDIR}
@@ -68,6 +77,13 @@ RUN wget https://github.com/peak/s5cmd/releases/download/v${S5CMD_VERSION}/s5cmd
   mv s5cmd /usr/local/bin/ && \
   rm s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz
 
+# Sync dependencies
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev --python ${PYTHON_VERSION}
+
+# Set PATH
+ENV PATH="/app/.venv/bin:$PATH"
+
 # Copy and install dmpworks
 COPY --from=builder /app/dmptool-works-matching/target/wheels /app/wheels/dmpworks
-RUN python${PYTHON_VERSION} -m pip install /app/wheels/dmpworks/*.whl
+RUN uv pip install --no-deps /app/wheels/dmpworks/*.whl

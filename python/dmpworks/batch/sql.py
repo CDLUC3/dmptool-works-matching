@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 import logging
 import os
 import pathlib
-from dataclasses import dataclass
 
 from cyclopts import App
 
@@ -18,6 +18,16 @@ app = App(name="sqlmesh", help="SQLMesh AWS Batch pipeline.")
 
 @dataclass
 class ReleaseDates:
+    """Release dates for various datasets.
+
+    Attributes:
+        openalex_works: Release date for OpenAlex works.
+        datacite: Release date for DataCite.
+        crossref_metadata: Release date for Crossref metadata.
+        ror: Release date for ROR.
+        data_citation_corpus: Release date for Data Citation Corpus.
+    """
+
     openalex_works: DateString
     datacite: DateString
     crossref_metadata: DateString
@@ -42,7 +52,6 @@ def plan(
         release_dates: the release dates of each dataset.
         log_level: Python log level.
     """
-
     setup_multiprocessing_logging(logging.getLevelName(log_level))
 
     # Download Parquet files for each dataset from S3.

@@ -1,9 +1,8 @@
 import logging
 import shutil
-from typing import Optional
 
-import pymysql.cursors
 from cyclopts import App
+import pymysql.cursors
 
 from dmpworks.batch.utils import (
     download_file_from_s3,
@@ -14,7 +13,7 @@ from dmpworks.batch.utils import (
 )
 from dmpworks.cli_utils import DMPSubset, LogLevel
 from dmpworks.dataset_subset import load_dois, load_institutions
-from dmpworks.dmsp.related_works import merge_related_works, MySQLConfig
+from dmpworks.dmsp.related_works import MySQLConfig, merge_related_works
 from dmpworks.opensearch.cli import OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.opensearch.dmp_works_search import dmp_works_search
 from dmpworks.opensearch.enrich_dmps import enrich_dmps
@@ -25,7 +24,6 @@ from dmpworks.transform.utils_file import setup_multiprocessing_logging
 log = logging.getLogger(__name__)
 
 SQLMESH_DIR = "sqlmesh"
-DMPS_SOURCE_DIR = "dmps"
 
 MATCHES_FILE_NAME = "matches.jsonl"
 DMP_WORKS_SEARCH_PATH = "dmp-works-search"
@@ -39,8 +37,8 @@ def sync_works_cmd(
     bucket_name: str,
     run_id: str,
     index_name: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
-    sync_config: Optional[OpenSearchSyncConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
+    sync_config: OpenSearchSyncConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Sync exported works in Parquet format with OpenSearch.
@@ -53,7 +51,6 @@ def sync_works_cmd(
         sync_config: the OpenSearch sync config settings.
         log_level: Python log level.
     """
-
     client_config = OpenSearchClientConfig() if client_config is None else client_config
     sync_config = OpenSearchSyncConfig() if sync_config is None else sync_config
     level = logging.getLevelName(log_level)
@@ -88,7 +85,7 @@ def sync_works_cmd(
 @app.command(name="enrich-dmps")
 def enrich_dmps_cmd(
     index_name: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Enrich dmps in the OpenSearch DMPs index.
@@ -98,7 +95,6 @@ def enrich_dmps_cmd(
         client_config: the OpenSearch client config settings.
         log_level: Python log level.
     """
-
     client_config = OpenSearchClientConfig() if client_config is None else client_config
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
@@ -121,24 +117,26 @@ def dmp_works_search_cmd(
     include_named_queries_score: bool = True,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     dmp_subset: DMPSubset = None,
     start_date: Date = None,
     end_date: Date = None,
     log_level: LogLevel = "INFO",
 ):
-    """DMP Works Search.
+    """Run the DMP Works Search process to find matching works for DMPs.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
         dmps_index_name: the name of the DMP index in OpenSearch.
         works_index_name: the name of the works index in OpenSearch.
-        scroll_time: the length of time the OpenSearch scroll used to iterate through DMPs will stay active. Set it to a value greater than the length of this process.
+        scroll_time: the length of time the OpenSearch scroll used to iterate
+            through DMPs will stay active. Set it to a value greater than the
+            length of this process.
         batch_size: the number of searches run in parallel when include_scores=False.
         max_results: the maximum number of matches per DMP.
         project_end_buffer_years: the number of years to add to the end of the
-        project end date when searching for works.
+            project end date when searching for works.
         parallel_search: whether to run parallel search or not.
         include_named_queries_score: whether to include scores for subqueries.
         max_concurrent_searches: the maximum number of concurrent searches.
@@ -149,7 +147,6 @@ def dmp_works_search_cmd(
         end_date: return DMPs with project start dates on before this date.
         log_level: Python log level.
     """
-
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
@@ -217,6 +214,15 @@ def merge_related_works_cmd(
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
+    """Merge related works from S3 into the MySQL database.
+
+    Args:
+        bucket_name: DMP Tool S3 bucket name.
+        run_id: a unique ID to represent this run of the job.
+        mysql_config: MySQL connection configuration.
+        batch_size: Number of records to process in a batch.
+        log_level: Python log level.
+    """
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 

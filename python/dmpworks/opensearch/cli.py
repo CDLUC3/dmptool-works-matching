@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Annotated, Optional
+from typing import Annotated
 
 from cyclopts import App, Parameter, validators
 
@@ -19,10 +19,10 @@ from dmpworks.opensearch.sync_dmps import sync_dmps
 from dmpworks.opensearch.sync_works import sync_works
 from dmpworks.opensearch.utils import (
     Date,
-    make_opensearch_client,
     OpenSearchClientConfig,
     OpenSearchSyncConfig,
     QueryBuilder,
+    make_opensearch_client,
 )
 
 app = App(name="opensearch", help="OpenSearch utilities.")
@@ -32,7 +32,7 @@ app = App(name="opensearch", help="OpenSearch utilities.")
 def create_index_cmd(
     index_name: str,
     mapping_filename: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Create an OpenSearch index.
@@ -43,7 +43,6 @@ def create_index_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -57,7 +56,7 @@ def create_index_cmd(
 def update_mapping_cmd(
     index_name: str,
     mapping_filename: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Update an OpenSearch index mapping.
@@ -68,7 +67,6 @@ def update_mapping_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -84,8 +82,8 @@ def sync_works_cmd(
     works_index_export: Directory,
     doi_state_export: Directory,
     run_id: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
-    sync_config: Optional[OpenSearchSyncConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
+    sync_config: OpenSearchSyncConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Sync the DMP Tool Works Index Table with OpenSearch.
@@ -99,7 +97,6 @@ def sync_works_cmd(
         sync_config: OpenSearch sync settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -125,7 +122,7 @@ def sync_works_cmd(
 def sync_dmps_cmd(
     index_name: str,
     mysql_config: MySQLConfig,
-    opensearch_config: Optional[OpenSearchClientConfig] = None,
+    opensearch_config: OpenSearchClientConfig | None = None,
     chunk_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
@@ -138,7 +135,6 @@ def sync_dmps_cmd(
         chunk_size: OpenSearch bulk indexing chunk size.
         log_level: Python log level (e.g., INFO).
     """
-
     if opensearch_config is None:
         opensearch_config = OpenSearchClientConfig()
 
@@ -157,18 +153,16 @@ def sync_dmps_cmd(
 @app.command(name="enrich-dmps")
 def enrich_dmps_cmd(
     dmps_index_name: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
-    """Enrich DMPs in OpenSearch, including fetching publications that can be
-    found on funder award pages.
+    """Enrich DMPs in OpenSearch with publications found on funder award pages.
 
     Args:
         dmps_index_name: Name of the DMP index to update.
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -197,7 +191,7 @@ def dmp_works_search_cmd(
         ),
     ],
     query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
-    rerank_model_name: Optional[str] = None,
+    rerank_model_name: str | None = None,
     scroll_time: str = "360m",
     batch_size: int = 250,
     max_results: int = 100,
@@ -206,9 +200,9 @@ def dmp_works_search_cmd(
     include_named_queries_score: bool = True,
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     institutions_file: Annotated[
-        Optional[pathlib.Path],
+        pathlib.Path | None,
         Parameter(
             validator=validators.Path(
                 dir_okay=False,
@@ -218,7 +212,7 @@ def dmp_works_search_cmd(
         ),
     ] = None,
     dois_file: Annotated[
-        Optional[pathlib.Path],
+        pathlib.Path | None,
         Parameter(
             validator=validators.Path(
                 dir_okay=False,
@@ -254,7 +248,6 @@ def dmp_works_search_cmd(
         end_date: Return DMPs with project start dates on before this date.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -317,15 +310,15 @@ def rank_metrics_cmd(
         ),
     ],
     query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
-    rerank_model_name: Optional[str] = None,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    rerank_model_name: str | None = None,
+    client_config: OpenSearchClientConfig | None = None,
     scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,
     project_end_buffer_years: int = 3,
     include_named_queries_score: bool = True,
     inner_hits_size: int = 50,
-    ks: Annotated[Optional[list[int]], Parameter(consume_multiple=True)] = None,
+    ks: Annotated[list[int] | None, Parameter(consume_multiple=True)] = None,
     log_level: LogLevel = "INFO",
 ):
     """Compute ranking metrics for baseline or re-ranked search results.
@@ -347,7 +340,6 @@ def rank_metrics_cmd(
         ks: The top K breakpoints to compute for each metric.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -376,7 +368,7 @@ def rank_metrics_cmd(
 @app.command(name="create-featureset")
 def create_featureset_cmd(
     featureset_name: str,
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Create an OpenSearch Learning to Rank feature set.
@@ -386,7 +378,6 @@ def create_featureset_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -432,7 +423,7 @@ def upload_ranklib_model_cmd(
             )
         ),
     ],
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Upload a RankLib model to OpenSearch.
@@ -446,7 +437,6 @@ def upload_ranklib_model_cmd(
         client_config: The OpenSearch client config.
         log_level: The Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -491,7 +481,7 @@ def generate_training_dataset_cmd(
     ],
     featureset_name: str,
     query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
-    client_config: Optional[OpenSearchClientConfig] = None,
+    client_config: OpenSearchClientConfig | None = None,
     scroll_time: str = "360m",
     batch_size: int = 100,
     max_results: int = 100,
@@ -500,8 +490,9 @@ def generate_training_dataset_cmd(
     inner_hits_size: int = 50,
     log_level: LogLevel = "INFO",
 ):
-    """Generates a RankLib training dataset based on a baseline DMP works search,
-    a featureset and a ground truth file.
+    """Generate a RankLib training dataset from search results and ground truth.
+
+    Uses the baseline DMP works search, a featureset and a ground truth file.
 
     Args:
         ground_truth_file: Path to the ground truth data file
@@ -519,7 +510,6 @@ def generate_training_dataset_cmd(
         inner_hits_size: Maximum number of inner hits returned for each matched work.
         log_level: Python log level (e.g., INFO).
     """
-
     if client_config is None:
         client_config = OpenSearchClientConfig()
 

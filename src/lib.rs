@@ -30,7 +30,10 @@ fn parse_name(
 
 #[pyfunction]
 #[pyo3(signature = (text, null_if_equals = None))]
-fn revert_inverted_index(text: Option<&[u8]>, null_if_equals: Option<Vec<String>>) -> Option<String> {
+fn revert_inverted_index(
+    text: Option<&[u8]>,
+    null_if_equals: Option<Vec<String>>,
+) -> Option<String> {
     core::revert_inverted_index(text, null_if_equals.as_deref())
 }
 
@@ -43,7 +46,7 @@ fn strip_markup(text: Option<&str>, null_if_equals: Option<Vec<String>>) -> Opti
 #[pyfunction]
 #[pyo3(signature = (text))]
 fn has_alphabetic_initials(text: Option<&str>) -> bool {
-    text.map_or(false, core::has_alphabetic_initials)
+    text.is_some_and(core::has_alphabetic_initials)
 }
 
 #[pymodule]

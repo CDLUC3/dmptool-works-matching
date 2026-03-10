@@ -2,48 +2,72 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, Set
+from typing import ClassVar
 
 from dmpworks.funders.award_id import AwardID
 from dmpworks.funders.nih_funder_api import nih_core_project_to_appl_ids
 
 log = logging.getLogger(__name__)
 
+# Constants for parsing NIH award IDs
+APPLICATION_TYPE_LEN = 1  # Length of the application type prefix
+ACTIVITY_CODE_LEN = 3  # Length of the activity code prefix
+MIN_PREFIX_LEN_COMBINED = 4  # Minimum length for combined application type and activity code
+SUPPORT_YEAR_LEN = 2  # Length of the support year suffix
+MIN_SUFFIX_LEN_COMBINED = 3  # Minimum length for combined support year and other suffixes
+
 
 class NIHAwardID(AwardID):
-    parent_ror_ids = {"01cwqze88"}
+    """Represents an NIH Award ID.
+
+    Details derived from:
+     * https://www.era.nih.gov/files/Deciphering_NIH_Application.pdf
+     * https://grants.nih.gov/funding/activity-codes
+     * https://pmc.ncbi.nlm.nih.gov/articles/PMC3495907/
+
+    Attributes:
+        parent_ror_ids: The parent funder ROR IDs.
+        text: The original text that the ID was parsed from.
+        application_type: Classifies funding requests based on their purpose, such as new projects, renewals,
+            revisions, extensions, continuations, and administrative changes like transfers between institutions, organizations,
+            or NIH institutes.
+        activity_code: NIH uses three-character activity codes to categorize research-related programs, with the
+            first character indicating the funding type (e.g., "R" for research, "T" for training), though their use may vary
+            by institute or center.
+        institute_code: The NIH institution code.
+        serial_number: Six-digit number assigned within an Institute/Center.
+        support_year: Two-digit number indicating segment or budget period of a project.
+        other_suffixes: "A" and related number identifies the amendment number (e.g. A1 = resubmission); "S" and
+            related number identifies the revision record and follows the grant year or the amendment designation to which
+            additional funds have been awarded.
+        appl_id: The application ID.
+    """
+
+    parent_ror_ids: ClassVar[set[str]] = {"01cwqze88"}
 
     def __init__(
         self,
         text: str,
-        application_type: Optional[str] = None,
-        activity_code: Optional[str] = None,
-        institute_code: Optional[str] = None,
-        serial_number: Optional[str] = None,
-        support_year: Optional[str] = None,
-        other_suffixes: Optional[str] = None,
-        appl_id: Optional[str] = None,
+        application_type: str | None = None,
+        activity_code: str | None = None,
+        institute_code: str | None = None,
+        serial_number: str | None = None,
+        support_year: str | None = None,
+        other_suffixes: str | None = None,
+        appl_id: str | None = None,
     ):
-        """Construct an NIH Award ID. Details in docstrings derived from
-         * https://www.era.nih.gov/files/Deciphering_NIH_Application.pdf
-         * https://grants.nih.gov/funding/activity-codes
-         * https://pmc.ncbi.nlm.nih.gov/articles/PMC3495907/
+        """Construct an NIH Award ID.
 
-        :param text: the original text that the ID was parsed from.
-        :param application_type: classifies funding requests based on their purpose, such as new projects, renewals,
-        revisions, extensions, continuations, and administrative changes like transfers between institutions, organizations,
-        or NIH institutes.
-        :param activity_code: NIH uses three-character activity codes to categorize research-related programs, with the
-        first character indicating the funding type (e.g., "R" for research, "T" for training), though their use may vary
-        by institute or center.
-        :param institute_code: the NIH institution code.
-        :param serial_number: six‐digit number assigned within an Institute/Center.
-        :param support_year: two‐digit number indicating segment or budget period of a project.
-        :param other_suffixes: "A" and related number identifies the amendment number (e.g. A1 = resubmission); "S" and
-        related number identifies the revision record and follows the grant year or the amendment designation to which
-        additional funds have been awarded.
+        Args:
+            text: The original text.
+            application_type: The application type code.
+            activity_code: The activity code.
+            institute_code: The institution code.
+            serial_number: The serial number.
+            support_year: The support year.
+            other_suffixes: Other suffixes (amendments/revisions).
+            appl_id: The application ID.
         """
-
         super().__init__(
             text,
             [
@@ -67,8 +91,7 @@ class NIHAwardID(AwardID):
         self.appl_id = appl_id
 
     def identifier_string(self) -> str:
-        """The canonical identifier as a string"""
-
+        """The canonical identifier as a string."""
         parts = []
         if self.application_type:
             parts.append(self.application_type)
@@ -93,19 +116,22 @@ class NIHAwardID(AwardID):
 
         return "".join(parts)
 
-    def award_url(self) -> Optional[str]:
+    def award_url(self) -> str | None:
+        """Returns the URL for the award."""
         if self.appl_id is not None:
             return f"https://reporter.nih.gov/project-details/{self.appl_id}"
         return None
 
     def generate_variants(self) -> list[str]:
-        all_award_ids = [self] + self.related_awards
+        """Generates variants of the funder ID."""
+        all_award_ids = [self, *self.related_awards]
         variants = set()
         for award_id in all_award_ids:
             variants.update(nih_awards_generate_variants(award_id))
         return list(variants)
 
     def fetch_additional_metadata(self):
+        """Fetches additional metadata associated with the award ID."""
         # Fetch award info and related awards
         nih_project_details = nih_core_project_to_appl_ids(
             appl_type_code=self.application_type,
@@ -122,17 +148,20 @@ class NIHAwardID(AwardID):
             self.related_awards.append(award)
 
     @staticmethod
-    def parse(text: Optional[str]) -> Optional[NIHAwardID]:
+    def parse(text: str | None) -> NIHAwardID | None:
+        """Parses a funder ID."""
         return parse_nih_award_id(text)
 
 
-def parse_nih_award_id(text: Optional[str]) -> Optional[NIHAwardID]:
+def parse_nih_award_id(text: str | None) -> NIHAwardID | None:
     """Parse an NIH award ID string into an NIHAwardID object.
 
-    :param text: the text containing the NIH award ID.
-    :return: the NIHAwardID object or None if an award ID could not be matched.
-    """
+    Args:
+        text: The text containing the NIH award ID.
 
+    Returns:
+        The NIHAwardID object or None if an award ID could not be matched.
+    """
     original_text = text
 
     # Return None if None or empty string
@@ -165,13 +194,13 @@ def parse_nih_award_id(text: Optional[str]) -> Optional[NIHAwardID]:
         prefix = prefix.replace("NIH", "")
 
         # If there is only one character, and it is a digit from 1-9 then set application_type
-        if len(prefix) == 1 and re.fullmatch(r"[1-9]", prefix):
+        if len(prefix) == APPLICATION_TYPE_LEN and re.fullmatch(r"[1-9]", prefix):
             application_type = prefix  # 1
         # If there are three characters, and they are a mix of digits and numbers, then set activity_code
-        elif len(prefix) == 3 and re.fullmatch(r"[\dA-Z]{3}", prefix):
+        elif len(prefix) == ACTIVITY_CODE_LEN and re.fullmatch(r"[\dA-Z]{3}", prefix):
             activity_code = prefix  # R01
         # If there are four or more characters, then try to match both at same time
-        elif len(prefix) >= 4:
+        elif len(prefix) >= MIN_PREFIX_LEN_COMBINED:
             pattern = re.compile(r"^(?P<application_type>[1-9])(?P<activity_code>[\dA-Z]{3})$")
             match = pattern.match(prefix)
             if match:
@@ -184,13 +213,13 @@ def parse_nih_award_id(text: Optional[str]) -> Optional[NIHAwardID]:
     if suffix:
         # If two characters, then check if they are both digits, if so, then they are the support year.
         # otherwise they are the other suffixes
-        if len(suffix) == 2:
+        if len(suffix) == SUPPORT_YEAR_LEN:
             if re.fullmatch(r"[\d]{2}", suffix):
                 support_year = suffix  # 01
             else:
                 other_suffixes = suffix  # R1
         # Otherwise try a full pattern match
-        elif len(suffix) >= 3:
+        elif len(suffix) >= MIN_SUFFIX_LEN_COMBINED:
             pattern = re.compile(r"^(?P<support_year>[\d]{2})(?P<other_suffixes>[\dA-Z]{2,4})$")
             match = pattern.match(suffix)
             if match:
@@ -208,13 +237,15 @@ def parse_nih_award_id(text: Optional[str]) -> Optional[NIHAwardID]:
     )
 
 
-def nih_awards_generate_variants(award_id: NIHAwardID) -> Set[str]:
+def nih_awards_generate_variants(award_id: NIHAwardID) -> set[str]:
     """Generates different string representations of an NIH Award ID.
 
-    :param award_id: the NIH Award ID.
-    :return: variants.
-    """
+    Args:
+        award_id: The NIH Award ID.
 
+    Returns:
+        A set of variants.
+    """
     base = f"{award_id.institute_code} {award_id.serial_number}"
     variants = {base.replace(" ", ""), base}  # Include "AI176039" and "AI 176039"
 
@@ -230,13 +261,13 @@ def nih_awards_generate_variants(award_id: NIHAwardID) -> Set[str]:
 
     # Activity code prefix variants
     if award_id.activity_code:
-        for variant in list(variants):  # Extend all base variants with activity_code
+        for variant in variants:  # Extend all base variants with activity_code
             variants.add(f"{award_id.activity_code} {variant}")
             variants.add(f"{award_id.activity_code}{variant.replace(' ', '')}")
 
     # Application type prefix variants
     if award_id.application_type:
-        for variant in list(variants):  # Extend all current variants with application_type
+        for variant in variants:  # Extend all current variants with application_type
             variants.add(f"{award_id.application_type} {variant}")
             variants.add(f"{award_id.application_type}{variant.replace(' ', '')}")
 

@@ -1,15 +1,20 @@
+from collections.abc import Iterator
 import logging
 import pathlib
-from typing import Iterator
 
 import pyarrow as pa
 import pyarrow.compute as pc
 
 from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.sync import delete_docs, sync_docs
-from dmpworks.opensearch.utils import make_opensearch_client, OpenSearchClientConfig, OpenSearchSyncConfig
+from dmpworks.opensearch.utils import (
+    OpenSearchClientConfig,
+    OpenSearchSyncConfig,
+    force_index_refresh,
+    make_opensearch_client,
+    update_refresh_interval,
+)
 from dmpworks.utils import timed
-from dmpworks.opensearch.utils import force_index_refresh, update_refresh_interval
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +42,15 @@ def batch_to_work_actions(
     index_name: str,
     batch: pa.RecordBatch,
 ) -> Iterator[dict]:
+    """Convert a batch of work records to OpenSearch actions.
+
+    Args:
+        index_name: The name of the works index.
+        batch: The batch of work records.
+
+    Yields:
+        dict: An OpenSearch bulk action.
+    """
     # Convert date and datetimes
     batch = batch.set_column(
         batch.schema.get_field_index("publication_date"),
@@ -73,6 +87,17 @@ def sync_works(
     sync_config: OpenSearchSyncConfig,
     log_level: int = logging.INFO,
 ):
+    """Sync works from parquet files to OpenSearch.
+
+    Args:
+        index_name: The name of the works index.
+        works_index_export: The directory containing the works index export.
+        doi_state_export: The directory containing the DOI state export.
+        run_id: The run ID (date string) to filter records.
+        client_config: The OpenSearch client configuration.
+        sync_config: The sync configuration.
+        log_level: The logging level.
+    """
     client = None
 
     try:

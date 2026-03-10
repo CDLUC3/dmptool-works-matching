@@ -1,15 +1,17 @@
+from collections.abc import Callable, Generator
+from concurrent.futures import ProcessPoolExecutor
 import logging
 import multiprocessing as mp
+from multiprocessing import synchronize
+from multiprocessing.sharedctypes import Synchronized
 import os
 import pathlib
 import random
-from concurrent.futures import ProcessPoolExecutor
-from typing import Callable, Generator, Optional
+import time
 
 import pyarrow as pa
 import pyarrow.parquet as pq
 import simdjson
-import time
 from tqdm import tqdm
 
 from dmpworks.utils import to_batches
@@ -17,14 +19,13 @@ from dmpworks.utils import to_batches
 log = logging.getLogger(__name__)
 
 # Shared multiprocessing objects
-SHARED_FILES_PROCESSED: Optional[mp.Value] = None
-SHARED_COUNTER_LOCK: Optional[mp.Lock] = None
-SHARED_ABORT_EVENT: Optional[mp.Event] = None
+SHARED_FILES_PROCESSED: Synchronized | None = None
+SHARED_COUNTER_LOCK: synchronize.Lock | None = None
+SHARED_ABORT_EVENT: synchronize.Event | None = None
 
 
 def init_process_logs(shared_files_processed: mp.Value, shared_lock: mp.Lock, abort_event: mp.Event, level: int):
     """Initialize global logging and shared multiprocessing objects for a worker process."""
-
     global SHARED_FILES_PROCESSED, SHARED_COUNTER_LOCK, SHARED_ABORT_EVENT
 
     logging.basicConfig(level=level, format="[%(asctime)s] [%(levelname)s] [%(processName)s] %(message)s")
@@ -46,11 +47,10 @@ def process_files(
     transform_func: Callable[[simdjson.Object], dict | None],
     tqdm_description: str = "Transforming Files",
     max_workers: int = os.cpu_count(),
-    file_prefix: Optional[str] = None,
+    file_prefix: str | None = None,
     log_level: int = logging.INFO,
 ):
-    """
-    Transform JSON-based input files (e.g. gzipped JSON Lines) into Parquet.
+    """Transform JSON-based input files (e.g. gzipped JSON Lines) into Parquet.
 
     Streams rows from one or more JSON inputs, applies a transformation
     function to each row, and writes the results to Parquet.
@@ -60,14 +60,27 @@ def process_files(
     same Parquet file (controlled by `row_groups_per_file`), allowing multiple
     input files to be consolidated into fewer, larger Parquet files.
 
-    For efficient downstream querying, target row group sizes of 128–512MB
-    and file sizes of 512MB–1GB.
+    For efficient downstream querying, target row group sizes of 128-512MB
+    and file sizes of 512MB-1GB.
 
     Row groups are buffered fully in memory before being flushed to disk.
     Increasing `max_workers`, `row_group_size`, or `row_groups_per_file`
     will increase memory pressure and should be tuned accordingly.
-    """
 
+    Args:
+        files: List of input file paths.
+        output_dir: Directory to write Parquet files to.
+        batch_size: Number of files to process per batch.
+        row_group_size: Number of rows per Parquet row group.
+        row_groups_per_file: Number of row groups per Parquet file.
+        schema: PyArrow schema for the output Parquet files.
+        read_func: Function to read JSON objects from a file.
+        transform_func: Function to transform a JSON object into a dictionary.
+        tqdm_description: Description for the progress bar.
+        max_workers: Maximum number of worker processes.
+        file_prefix: Optional prefix for output filenames.
+        log_level: Logging level.
+    """
     log.debug("running process files")
 
     total_files = len(files)
@@ -87,12 +100,13 @@ def process_files(
     # evenly across batches, improving parallel load balancing.
     shuffled_files = random.sample(files, k=len(files))
 
-    with tqdm(
-        total=total_files,
-        desc=tqdm_description,
-        unit="file",
-    ) as pbar:
-        with ProcessPoolExecutor(
+    with (
+        tqdm(
+            total=total_files,
+            desc=tqdm_description,
+            unit="file",
+        ) as pbar,
+        ProcessPoolExecutor(
             mp_context=ctx,
             max_workers=max_workers,
             initializer=init_process_logs,
@@ -102,54 +116,54 @@ def process_files(
                 abort_event,
                 log_level,
             ),
-        ) as executor:
-            futures = []
-            for idx, batch in enumerate(to_batches(shuffled_files, batch_size=batch_size)):
-                future = executor.submit(
-                    transform_json_to_parquet,
-                    batch_index=idx,
-                    batch=batch,
-                    output_dir=output_dir,
-                    schema=schema,
-                    row_group_size=row_group_size,
-                    row_groups_per_file=row_groups_per_file,
-                    read_func=read_func,
-                    transform_func=transform_func,
-                    file_prefix=file_prefix,
-                )
-                futures.append(future)
+        ) as executor,
+    ):
+        futures = []
+        for idx, batch in enumerate(to_batches(shuffled_files, batch_size=batch_size)):
+            future = executor.submit(
+                transform_json_to_parquet,
+                batch_index=idx,
+                batch=batch,
+                output_dir=output_dir,
+                schema=schema,
+                row_group_size=row_group_size,
+                row_groups_per_file=row_groups_per_file,
+                read_func=read_func,
+                transform_func=transform_func,
+                file_prefix=file_prefix,
+            )
+            futures.append(future)
 
-            while futures:
-                # Update progress from shared file counter
-                with shared_lock:
-                    current_processed_count = shared_files_processed.value
-                    delta = current_processed_count - last_seen_processed_count
-                    if delta > 0:
-                        pbar.update(delta)
-                        last_seen_processed_count = current_processed_count
+        while futures:
+            # Update progress from shared file counter
+            with shared_lock:
+                current_processed_count = shared_files_processed.value
+                delta = current_processed_count - last_seen_processed_count
+                if delta > 0:
+                    pbar.update(delta)
+                    last_seen_processed_count = current_processed_count
 
-                finished_futures = []
-                for future in futures:
-                    if future.done():
-                        try:
-                            future.result()
-                        except Exception as e:
-                            log.error(f"Worker crashed! Signaling other workers to flush and exit. Error: {e}")
-                            abort_event.set()
-                        finally:
-                            finished_futures.append(future)
+            finished_futures = []
+            for future in futures:
+                if future.done():
+                    try:
+                        future.result()
+                    except Exception:
+                        log.exception("Worker crashed! Signaling other workers to flush and exit")
+                        abort_event.set()
+                    finally:
+                        finished_futures.append(future)
 
-                for future in finished_futures:
-                    futures.remove(future)
+            for future in finished_futures:
+                futures.remove(future)
 
-                time.sleep(1)
+            time.sleep(1)
 
     log.debug("finished process files")
 
 
-def output_file_name(batch_index: int, file_index: int, file_prefix: Optional[str] = None) -> str:
-    """
-    Generate a Parquet output filename using batch and file indices.
+def output_file_name(batch_index: int, file_index: int, file_prefix: str | None = None) -> str:
+    """Generate a Parquet output filename using batch and file indices.
 
     Because files may be written concurrently by multiple processes, each
     filename is namespaced by a `batch_index` to avoid collisions. The
@@ -164,7 +178,6 @@ def output_file_name(batch_index: int, file_index: int, file_prefix: Optional[st
     Returns: the generated Parquet filename as a string.
 
     """
-
     parts = []
     if file_prefix is not None:
         parts.append(file_prefix)
@@ -182,10 +195,9 @@ def transform_json_to_parquet(
     row_groups_per_file: int,
     read_func: Callable[[pathlib.Path], Generator[simdjson.Object, None, None]],
     transform_func: Callable[[simdjson.Object], dict | None],
-    file_prefix: Optional[str] = None,
+    file_prefix: str | None = None,
 ):
-    """
-    Process a batch of input files, transforming and writing them to Parquet format.
+    """Process a batch of input files, transforming and writing them to Parquet format.
 
     Iterates through the provided batch of input files, applies the transformation
     function to each record, and accumulates rows in memory.
@@ -196,8 +208,18 @@ def transform_json_to_parquet(
     - Multiple Row Groups are written to a single Parquet file until the count
       reaches `row_groups_per_file`. Once reached, the current file is closed,
       and a new file is started (incrementing the file part index).
-    """
 
+    Args:
+        batch_index: Index of the current batch.
+        batch: List of input file paths in the batch.
+        output_dir: Directory to write Parquet files to.
+        schema: PyArrow schema for the output Parquet files.
+        row_group_size: Number of rows per row group.
+        row_groups_per_file: Number of row groups per file.
+        read_func: Function to read JSON objects from a file.
+        transform_func: Function to transform a JSON object into a dictionary.
+        file_prefix: Optional prefix for output filenames.
+    """
     file_index = 0
     num_row_groups = 0
     row_buffer = []
@@ -213,7 +235,7 @@ def transform_json_to_parquet(
                 transformed_obj = transform_func(obj)
 
                 # Clear original reference for simdjson parser
-                obj = None
+                obj = None  # noqa: PLW2901
 
                 if transformed_obj is not None:
                     row_buffer.append(transformed_obj)
@@ -285,11 +307,10 @@ def transform_json_to_parquet(
 
 def debug_arrow_type_error(row_buffer: list[dict], schema: pa.Schema) -> None:
     """Iterates through a buffer of rows to find and logs the row causing a PyArrow ArrowTypeError."""
-
     for row in row_buffer:
         try:
             pa.Table.from_pylist([row], schema=schema)
-        except pa.lib.ArrowTypeError as e:
-            log.error(f"PyArrow Type Error: {e}")
-            log.error(f"Offending Row Data: {row}")
+        except pa.lib.ArrowTypeError:
+            log.exception("PyArrow Type Error")
+            log.exception(f"Offending Row Data: {row}")
             break

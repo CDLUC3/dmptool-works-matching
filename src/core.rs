@@ -1,7 +1,6 @@
 use human_name::Name;
-use std::collections::HashMap;
 use log::warn;
-use serde_json;
+use std::collections::HashMap;
 use strip_tags::strip_tags;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -65,9 +64,9 @@ pub fn has_alphabetic_initials(text: &str) -> bool {
 
 /// Parses a raw name string into a structured `ParsedName` object, utilizing `human_name` with a fallback strategy.
 pub fn parse_name(
-  raw_given_name: Option<&str>,
-  raw_surname: Option<&str>,
-  raw_full: Option<&str>,
+    raw_given_name: Option<&str>,
+    raw_surname: Option<&str>,
+    raw_full: Option<&str>,
 ) -> ParsedName {
     let given = raw_given_name.map(str::trim).filter(|s| !s.is_empty());
     let surname = raw_surname.map(str::trim).filter(|s| !s.is_empty());
@@ -76,7 +75,9 @@ pub fn parse_name(
     // If both given and surname are provided, build the final struct straight away
     if let (Some(g), Some(s)) = (given, surname) {
         let first_initial = if has_alphabetic_initials(g) {
-            g.graphemes(true).next().map(|grapheme| grapheme.to_uppercase())
+            g.graphemes(true)
+                .next()
+                .map(|grapheme| grapheme.to_uppercase())
         } else {
             None
         };
@@ -140,7 +141,10 @@ pub fn parse_name(
 }
 
 /// Reconstructs the original text from a JSON-serialized inverted index (mapping words to their positions).
-pub fn revert_inverted_index(text: Option<&[u8]>, null_if_equals: Option<&[String]>) -> Option<String> {
+pub fn revert_inverted_index(
+    text: Option<&[u8]>,
+    null_if_equals: Option<&[String]>,
+) -> Option<String> {
     let bytes = text?;
     if bytes.is_empty() {
         return None;
@@ -152,7 +156,7 @@ pub fn revert_inverted_index(text: Option<&[u8]>, null_if_equals: Option<&[Strin
         Err(e) => {
             warn!("revert_inverted_index: invalid json: {e}");
             return None;
-        }
+        },
     };
 
     // Build words array by position

@@ -1,13 +1,11 @@
 import logging
 import os
-from typing import Optional
 
 from cyclopts import App
 
 from dmpworks.batch.tasks import dataset_subset_task, download_source_task, transform_parquets_task
 from dmpworks.batch.utils import s3_uri
-from dmpworks.cli_utils import DatasetSubset
-from dmpworks.transform.cli import DataCiteConfig
+from dmpworks.cli_utils import DataCiteTransformConfig, DatasetSubset
 from dmpworks.transform.datacite import transform_datacite
 from dmpworks.transform.dataset_subset import create_dataset_subset
 from dmpworks.transform.utils_file import setup_multiprocessing_logging
@@ -21,15 +19,13 @@ app = App(name="datacite", help="DataCite AWS Batch pipeline.")
 
 @app.command(name="download")
 def download_cmd(bucket_name: str, run_id: str, datacite_bucket_name: str):
-    """Download DataCite from the DataCite S3 bucket and upload it to
-    the DMP Tool S3 bucket.
+    """Download DataCite from the DataCite S3 bucket and upload to the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
         datacite_bucket_name: the name of the DataCite AWS S3 bucket.
     """
-
     setup_multiprocessing_logging(logging.INFO)
 
     # Fetch DataCite AWS credentials
@@ -69,7 +65,6 @@ def dataset_subset_cmd(
         run_id: a unique ID to represent this run of the job.
         dataset_subset: settings for creating the subset of works
     """
-
     setup_multiprocessing_logging(logging.INFO)
 
     with dataset_subset_task(
@@ -93,10 +88,9 @@ def transform_cmd(
     run_id: str,
     use_subset: bool = False,
     *,
-    config: Optional[DataCiteConfig] = None,
+    config: DataCiteTransformConfig | None = None,
 ):
-    """Download DataCite from the DMP Tool S3 bucket, transform it to
-    Parquet format, and upload the results to same bucket.
+    """Download DataCite from DMP Tool S3 bucket, transform to Parquet, and upload the result.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
@@ -104,8 +98,7 @@ def transform_cmd(
         use_subset: whether to use a subset of the dataset or the full dataset.
         config: optional configuration parameters.
     """
-
-    config = DataCiteConfig() if config is None else config
+    config = DataCiteTransformConfig() if config is None else config
     setup_multiprocessing_logging(logging.INFO)
 
     with transform_parquets_task(bucket_name, DATASET, run_id, use_subset=use_subset) as ctx:
