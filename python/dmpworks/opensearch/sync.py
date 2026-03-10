@@ -197,7 +197,7 @@ def update_progress_bar(
     postfix = {"Success": f"{success_count:,}", "Fail": f"{failure_count:,}"}
     if postfix_extra:
         postfix.update(postfix_extra)
-    pbar.set_postfix(postfix)
+    pbar.set_postfix(postfix, refresh=False)
     return new_total
 
 

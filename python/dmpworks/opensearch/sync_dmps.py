@@ -216,13 +216,13 @@ def sync_dmps(
             nonlocal failed_count
             failed_count += 1
             pbar.update(1)
-            pbar.set_postfix(postfix())
+            pbar.set_postfix(postfix(), refresh=False)
 
         def on_skipped():
             nonlocal skipped_count
             skipped_count += 1
             pbar.update(1)
-            pbar.set_postfix(postfix())
+            pbar.set_postfix(postfix(), refresh=False)
 
         total_rows = count_dmps(conn)
         with tqdm(total=total_rows, desc="Sync DMPs with OpenSearch", unit="doc") as pbar:
@@ -247,7 +247,7 @@ def sync_dmps(
                     log.error(f"OpenSearch indexing failed for DMP: {dmp_id}")
 
                 pbar.update(1)
-                pbar.set_postfix(postfix())
+                pbar.set_postfix(postfix(), refresh=False)
 
 
 def count_dmps(conn):

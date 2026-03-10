@@ -231,7 +231,7 @@ def create_dataset_subset(
                         log.exception("Error getting future")
                         total_errors += 1
                     pbar.update(1)
-                    pbar.set_postfix({"Filtered": f"{total_filtered:,}", "Errors": f"{total_errors:,}"})
+                    pbar.set_postfix({"Filtered": f"{total_filtered:,}", "Errors": f"{total_errors:,}"}, refresh=False)
     except KeyboardInterrupt:
         log.info("Shutting down...")
         executor.shutdown(wait=True, cancel_futures=True)
