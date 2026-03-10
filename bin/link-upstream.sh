@@ -14,10 +14,8 @@
 
 set -euo pipefail
 
-if [ -f .env.local ]; then
-  # shellcheck source=../.env.local
-  source .env.local
-fi
+# shellcheck source=load-env.sh
+source "$(dirname "$0")/load-env.sh"
 
 REQUIRED_VARS=(
   DATA_DIR
@@ -36,15 +34,36 @@ for var in "${REQUIRED_VARS[@]}"; do
 done
 
 SOURCES_DIR="${DATA_DIR}/sources"
+
+if [ -d "${SOURCES_DIR}" ]; then
+  SYMLINK_COUNT=$(find "${SOURCES_DIR}" -maxdepth 1 -type l | wc -l)
+  if [ "${SYMLINK_COUNT}" -gt 0 ]; then
+    echo "Sources directory contains symlinks:"
+    find "${SOURCES_DIR}" -maxdepth 1 -type l -printf "  %f -> %l\n"
+    read -p "Remove and re-create symlinks? [y/N] " confirm
+  else
+    read -p "Delete contents of '${SOURCES_DIR}' and create symlinks? [y/N] " confirm
+  fi
+
+  if [[ "$confirm" == [yY] ]]; then
+    find "${SOURCES_DIR}" -maxdepth 1 -type l -delete
+    find "${SOURCES_DIR}" -mindepth 1 -maxdepth 1 ! -type l -exec rm -rf {} +
+    echo "Cleaned ${SOURCES_DIR}"
+  else
+    echo "Aborted."
+    exit 0
+  fi
+fi
+
 mkdir -p "${SOURCES_DIR}"
 
 echo "Linking upstream datasets into ${SOURCES_DIR}"
 
-ln -sfn "${UPSTREAM_CROSSREF_METADATA}" "${SOURCES_DIR}/crossref_metadata"
-ln -sfn "${UPSTREAM_DATACITE}" "${SOURCES_DIR}/datacite"
-ln -sfn "${UPSTREAM_OPENALEX_WORKS}" "${SOURCES_DIR}/openalex_works"
-ln -sfn "${UPSTREAM_ROR}" "${SOURCES_DIR}/ror"
-ln -sfn "${UPSTREAM_DATA_CITATION_CORPUS}" "${SOURCES_DIR}/data_citation_corpus"
+ln -s "${UPSTREAM_CROSSREF_METADATA}" "${SOURCES_DIR}/crossref_metadata"
+ln -s "${UPSTREAM_DATACITE}" "${SOURCES_DIR}/datacite"
+ln -s "${UPSTREAM_OPENALEX_WORKS}" "${SOURCES_DIR}/openalex_works"
+ln -s "${UPSTREAM_ROR}" "${SOURCES_DIR}/ror"
+ln -s "${UPSTREAM_DATA_CITATION_CORPUS}" "${SOURCES_DIR}/data_citation_corpus"
 
 echo "Done. Symlinks:"
 ls -la "${SOURCES_DIR}"/

@@ -22,6 +22,8 @@ from dmpworks.cli_utils import (
 from dmpworks.transform.dataset_subset import Dataset
 
 # CPU and memory groups
+# TODO: define multiple batch compute environments to have greater control
+# over what machines tasks are executed on
 NANO_VCPUS = 1
 NANO_MEMORY = 1024
 
@@ -844,8 +846,8 @@ def submit_dmp_works_search_job(
     works_index_name: str = "works-index",
     dmp_subset: DMPSubsetAWS,
     dmp_works_search_config: DMPWorksSearchConfig | None = None,
-    vcpus: int = SMALL_VCPUS,
-    memory: int = SMALL_MEMORY,
+    vcpus: int = MEDIUM_VCPUS,
+    memory: int = MEDIUM_MEMORY,
     depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Submits the OpenSearch DMP-to-Works search job to AWS Batch.
@@ -903,8 +905,8 @@ def submit_merge_related_works_job(
     env: str,
     bucket_name: str,
     run_id_dmps: str,
-    vcpus: int = SMALL_VCPUS,
-    memory: int = SMALL_MEMORY,
+    vcpus: int = MEDIUM_VCPUS,
+    memory: int = MEDIUM_MEMORY,
     depends_on: list[DependsOnDict] | None = None,
 ) -> str:
     """Creates a job to merge related works.

@@ -11,10 +11,8 @@
 
 set -euo pipefail
 
-if [ -f .env.local ]; then
-  # shellcheck source=../.env.local
-  source .env.local
-fi
+# shellcheck source=load-env.sh
+source "$(dirname "$0")/load-env.sh"
 
 if [ -z "${DATA_DIR:-}" ]; then
   echo "Error: environment variable DATA_DIR is not set" >&2
