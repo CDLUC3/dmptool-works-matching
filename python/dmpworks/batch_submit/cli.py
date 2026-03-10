@@ -20,7 +20,7 @@ from dmpworks.cli_utils import (
 
 app = App(name="batch-submit", help="Commands to submit AWS Batch jobs.")
 
-EnvTypes = Literal["dev", "stage", "prod"]
+EnvTypes = Literal["dev", "stg", "prd"]
 ROR_JOBS: tuple[str, ...] = ("download",)
 CROSSREF_METADATA_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
 DATACITE_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
@@ -40,7 +40,7 @@ def ror_cmd(
         EnvTypes,
         Parameter(
             env_var="AWS_ENV",
-            help="Environment (e.g., dev, stage, prod)",
+            help="Environment (e.g., dev, stg, prd)",
         ),
     ],
     run_id: Annotated[
@@ -82,7 +82,7 @@ def ror_cmd(
     """Submit ROR processing jobs.
 
     Args:
-        env: Environment (e.g., dev, stage, prod).
+        env: Environment (e.g., dev, stg, prd).
         run_id: A unique ID to represent this run of the job.
         bucket_name: S3 bucket name for job I/O.
         download_url: The Zenodo download URL for the ROR data file.
@@ -120,7 +120,7 @@ def crossref_metadata_cmd(
         EnvTypes,
         Parameter(
             env_var="AWS_ENV",
-            help="Environment (e.g., dev, stage, prod)",
+            help="Environment (e.g., dev, stg, prd)",
         ),
     ],
     run_id: Annotated[
@@ -165,7 +165,7 @@ def crossref_metadata_cmd(
     """Submit Crossref Metadata processing jobs.
 
     Args:
-        env: Environment (e.g., dev, stage, prod).
+        env: Environment (e.g., dev, stg, prd).
         run_id: A unique ID to represent this run of the job.
         bucket_name: S3 bucket name for job I/O.
         file_name: The name of the Crossref metadata file to download.
@@ -234,7 +234,7 @@ def datacite_cmd(
         EnvTypes,
         Parameter(
             env_var="AWS_ENV",
-            help="Environment (e.g., dev, stage, prod)",
+            help="Environment (e.g., dev, stg, prd)",
         ),
     ],
     run_id: Annotated[
@@ -272,7 +272,7 @@ def datacite_cmd(
     """Submit DataCite processing jobs.
 
     Args:
-        env: Environment (e.g., dev, stage, prod).
+        env: Environment (e.g., dev, stg, prd).
         run_id: A unique ID to represent this run of the job.
         bucket_name: S3 bucket name for job I/O.
         datacite_bucket_name: Name of the DataCite AWS S3 bucket.
@@ -339,7 +339,7 @@ def openalex_works_cmd(
         EnvTypes,
         Parameter(
             env_var="AWS_ENV",
-            help="Environment (e.g., dev, stage, prod)",
+            help="Environment (e.g., dev, stg, prd)",
         ),
     ],
     run_id: Annotated[
@@ -377,7 +377,7 @@ def openalex_works_cmd(
     """Submit OpenAlex Works processing jobs.
 
     Args:
-        env: Environment (e.g., dev, stage, prod).
+        env: Environment (e.g., dev, stg, prd).
         run_id: A unique ID to represent this run of the job.
         bucket_name: S3 bucket name.
         openalex_bucket_name: Name of the OpenAlex AWS S3 bucket.
@@ -443,7 +443,7 @@ def process_works_cmd(
         EnvTypes,
         Parameter(
             env_var="AWS_ENV",
-            help="Environment (e.g., dev, stage, prod)",
+            help="Environment (e.g., dev, stg, prd)",
         ),
     ],
     bucket_name: Annotated[
@@ -475,7 +475,7 @@ def process_works_cmd(
     """Submit Process Works jobs (SQLMesh and Sync Works).
 
     Args:
-        env: Environment (e.g., dev, stage, prod).
+        env: Environment (e.g., dev, stg, prd).
         bucket_name: S3 bucket name for job I/O.
         run_identifiers: Unique identifiers for each data source.
         sqlmesh_config: The SQLMesh config.
@@ -523,7 +523,7 @@ def process_works_cmd(
 def process_dmps_cmd(
     env: Annotated[
         EnvTypes,
-        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stage, prod)"),
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)"),
     ],
     bucket_name: Annotated[
         str,
@@ -565,7 +565,7 @@ def process_dmps_cmd(
     """Submit Process DMPs jobs (Sync, Enrich, Search, Merge).
 
     Args:
-        env: Environment (e.g., dev, stage, prod).
+        env: Environment (e.g., dev, stg, prd).
         bucket_name: S3 bucket name for job I/O.
         run_id_dmps: A unique ID of the run containing the DMPs file.
         dmps_index_name: The name of the OpenSearch DMPs index.

@@ -378,6 +378,13 @@ class OpenAlexWorksTransformConfig:
             help="Number of workers to run in parallel (must be >= 1).",
         ),
     ] = 32
+    include_xpac: Annotated[
+        bool,
+        Parameter(
+            env_var="OPENALEX_WORKS_TRANSFORM_INCLUDE_XPAC",
+            help="Include works flagged as xpac (is_xpac=true). Defaults to false.",
+        ),
+    ] = False
 
 
 @dataclass
