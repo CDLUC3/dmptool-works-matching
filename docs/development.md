@@ -20,6 +20,7 @@ git clone git@github.com:CDLUC3/dmptool-works-matching.git
 cd dmptool-works-matching
 make install-release
 make test
+source .venv/bin/activate
 ```
 
 `make install-release` creates the virtual environment (if needed) and installs

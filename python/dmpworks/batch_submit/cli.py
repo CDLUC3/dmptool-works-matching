@@ -9,6 +9,7 @@ from dmpworks.cli_utils import (
     DataCiteTransformConfig,
     DatasetSubsetAWS,
     DMPSubsetAWS,
+    DMPWorksSearchConfig,
     LogLevel,
     OpenAlexWorksTransformConfig,
     OpenSearchClientConfig,
@@ -552,6 +553,7 @@ def process_dmps_cmd(
     os_client_config: OpenSearchClientConfig | None = None,
     os_sync_config: OpenSearchSyncConfig | None = None,
     dmp_subset: DMPSubsetAWS = None,
+    dmp_works_search_config: DMPWorksSearchConfig | None = None,
     start_job: Annotated[
         Literal[*PROCESS_DMPS_JOBS],
         Parameter(
@@ -571,6 +573,7 @@ def process_dmps_cmd(
         os_client_config: The OpenSearch client config.
         os_sync_config: The OpenSearch sync config.
         dmp_subset: Configuration for creating a subset of DMPs.
+        dmp_works_search_config: DMP works search settings.
         start_job: The first job to run in the sequence.
     """
     from dmpworks.batch_submit.jobs import (
@@ -617,6 +620,7 @@ def process_dmps_cmd(
             works_index_name=works_index_name,
             dmp_subset=dmp_subset,
             os_client_config=os_client_config,
+            dmp_works_search_config=dmp_works_search_config,
         ),
         "merge-related-works": partial(
             submit_merge_related_works_job,

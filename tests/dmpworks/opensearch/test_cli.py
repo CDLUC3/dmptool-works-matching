@@ -133,8 +133,11 @@ class TestOpenSearchCLI:
             max_concurrent_shard_requests=12,
             institutions=None,
             dois=None,
-            start_date=None,
-            end_date=None,
+            dmps_start_date=None,
+            dmps_end_date=None,
+            inner_hits_size=50,
+            row_group_size=50_000,
+            row_groups_per_file=4,
         )
 
     @pytest.fixture

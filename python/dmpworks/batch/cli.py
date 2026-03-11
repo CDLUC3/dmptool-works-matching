@@ -6,8 +6,8 @@ from dmpworks.cli_utils import (
     CrossrefMetadataTransformConfig,
     DataCiteTransformConfig,
     DatasetSubsetAWS,
-    Date,
     DMPSubsetAWS,
+    DMPWorksSearchConfig,
     LogLevel,
     MySQLConfig,
     OpenAlexWorksTransformConfig,
@@ -254,7 +254,11 @@ def crossref_metadata_dataset_subset_cmd(
     from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
-    crossref_metadata.dataset_subset(bucket_name=bucket_name, run_id=run_id, ds_config=dataset_subset,)
+    crossref_metadata.dataset_subset(
+        bucket_name=bucket_name,
+        run_id=run_id,
+        ds_config=dataset_subset,
+    )
 
 
 @crossref_metadata_app.command(name="transform")
@@ -442,18 +446,9 @@ def opensearch_dmp_works_search_cmd(
     run_id: str,
     dmps_index_name: str,
     works_index_name: str,
-    scroll_time: str = "360m",
-    batch_size: int = 250,
-    max_results: int = 100,
-    project_end_buffer_years: int = 3,
-    parallel_search: bool = False,
-    include_named_queries_score: bool = True,
-    max_concurrent_searches: int = 125,
-    max_concurrent_shard_requests: int = 12,
     client_config: OpenSearchClientConfig | None = None,
     dmp_subset: DMPSubsetAWS | None = None,
-    start_date: Date = None,
-    end_date: Date = None,
+    dmp_works_search_config: DMPWorksSearchConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Run the DMP Works Search process to find matching works for DMPs.
@@ -463,21 +458,9 @@ def opensearch_dmp_works_search_cmd(
         run_id: a unique ID to represent this run of the job.
         dmps_index_name: the name of the DMP index in OpenSearch.
         works_index_name: the name of the works index in OpenSearch.
-        scroll_time: the length of time the OpenSearch scroll used to iterate
-            through DMPs will stay active. Set it to a value greater than the
-            length of this process.
-        batch_size: the number of searches run in parallel when include_scores=False.
-        max_results: the maximum number of matches per DMP.
-        project_end_buffer_years: the number of years to add to the end of the
-            project end date when searching for works.
-        parallel_search: whether to run parallel search or not.
-        include_named_queries_score: whether to include scores for subqueries.
-        max_concurrent_searches: the maximum number of concurrent searches.
-        max_concurrent_shard_requests: the maximum number of shards searched per node.
         client_config: OpenSearch client settings.
         dmp_subset: settings for including a subset of DMPs.
-        start_date: return DMPs with project start dates on or after this date.
-        end_date: return DMPs with project start dates on before this date.
+        dmp_works_search_config: DMP works search settings.
         log_level: Python log level.
     """
     from dmpworks.batch import opensearch
@@ -490,18 +473,9 @@ def opensearch_dmp_works_search_cmd(
         run_id=run_id,
         dmps_index_name=dmps_index_name,
         works_index_name=works_index_name,
-        scroll_time=scroll_time,
-        batch_size=batch_size,
-        max_results=max_results,
-        project_end_buffer_years=project_end_buffer_years,
-        parallel_search=parallel_search,
-        include_named_queries_score=include_named_queries_score,
-        max_concurrent_searches=max_concurrent_searches,
-        max_concurrent_shard_requests=max_concurrent_shard_requests,
         client_config=client_config,
         dmp_subset=dmp_subset,
-        start_date=start_date,
-        end_date=end_date,
+        dmp_works_search_config=dmp_works_search_config,
     )
 
 
