@@ -7,6 +7,7 @@ from cyclopts import App, Parameter, validators
 from dmpworks.cli_utils import (
     Date,
     Directory,
+    DMPSubsetLocal,
     LogLevel,
     MySQLConfig,
     OpenSearchClientConfig,
@@ -15,6 +16,29 @@ from dmpworks.cli_utils import (
 )
 
 app = App(name="opensearch", help="OpenSearch utilities.")
+
+
+def load_dmp_subset_local(
+    dmp_subset: DMPSubsetLocal | None,
+) -> tuple[list | None, list[str] | None]:
+    """Load institutions and DOIs from local files based on DMPSubsetLocal config.
+
+    Args:
+        dmp_subset: Local DMP subset configuration.
+
+    Returns:
+        tuple[list | None, list[str] | None]: Loaded institutions and DOIs, or None if not configured.
+    """
+    from dmpworks.dataset_subset import load_dois, load_institutions  # noqa: PLC0415
+
+    use_subset = dmp_subset is not None and dmp_subset.enable
+    institutions = None
+    dois = None
+    if use_subset and dmp_subset.institutions_path is not None:
+        institutions = load_institutions(dmp_subset.institutions_path)
+    if use_subset and dmp_subset.dois_path is not None:
+        dois = load_dois(dmp_subset.dois_path)
+    return institutions, dois
 
 
 @app.command(name="create-index")
@@ -122,6 +146,7 @@ def sync_dmps_cmd(
     mysql_config: MySQLConfig,
     opensearch_config: OpenSearchClientConfig | None = None,
     chunk_size: int = 1000,
+    dmp_subset: DMPSubsetLocal | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Sync DMPs from MySQL with OpenSearch DMPs index.
@@ -131,6 +156,7 @@ def sync_dmps_cmd(
         mysql_config: MySQL config.
         opensearch_config: OpenSearch client settings.
         chunk_size: OpenSearch bulk indexing chunk size.
+        dmp_subset: Settings for including a subset of DMPs.
         log_level: Python log level (e.g., INFO).
     """
     from dmpworks.opensearch.sync_dmps import sync_dmps
@@ -142,11 +168,14 @@ def sync_dmps_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
+    institutions, dois = load_dmp_subset_local(dmp_subset)
     sync_dmps(
         index_name,
         mysql_config,
         opensearch_config=opensearch_config,
         chunk_size=chunk_size,
+        institutions=institutions,
+        dois=dois,
     )
 
 
@@ -154,6 +183,7 @@ def sync_dmps_cmd(
 def enrich_dmps_cmd(
     dmps_index_name: str,
     client_config: OpenSearchClientConfig | None = None,
+    dmp_subset: DMPSubsetLocal | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Enrich DMPs in OpenSearch with publications found on funder award pages.
@@ -161,6 +191,7 @@ def enrich_dmps_cmd(
     Args:
         dmps_index_name: Name of the DMP index to update.
         client_config: OpenSearch client settings.
+        dmp_subset: Settings for including a subset of DMPs.
         log_level: Python log level (e.g., INFO).
     """
     from dmpworks.opensearch.enrich_dmps import enrich_dmps
@@ -172,9 +203,12 @@ def enrich_dmps_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
+    institutions, dois = load_dmp_subset_local(dmp_subset)
     enrich_dmps(
         dmps_index_name,
         client_config,
+        institutions=institutions,
+        dois=dois,
     )
 
 
@@ -203,28 +237,9 @@ def dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: OpenSearchClientConfig | None = None,
-    institutions_file: Annotated[
-        pathlib.Path | None,
-        Parameter(
-            validator=validators.Path(
-                dir_okay=False,
-                file_okay=True,
-                exists=True,
-            )
-        ),
-    ] = None,
-    dois_file: Annotated[
-        pathlib.Path | None,
-        Parameter(
-            validator=validators.Path(
-                dir_okay=False,
-                file_okay=True,
-                exists=True,
-            )
-        ),
-    ] = None,
-    start_date: Date = None,
-    end_date: Date = None,
+    dmp_subset: DMPSubsetLocal | None = None,
+    dmps_start_date: Date = None,
+    dmps_end_date: Date = None,
     log_level: LogLevel = "INFO",
 ):
     """Run the DMP works search, returning candidate matches for each DMP.
@@ -244,13 +259,11 @@ def dmp_works_search_cmd(
         max_concurrent_searches: The maximum number of concurrent searches.
         max_concurrent_shard_requests: The maximum number of shards searched per node.
         client_config: OpenSearch client settings.
-        institutions_file: When supplied only includes DMPs which have an institution in this list.
-        dois_file: When supplied only includes DMPs which have a DOI in this list.
-        start_date: Return DMPs with project start dates on or after this date.
-        end_date: Return DMPs with project start dates on before this date.
+        dmp_subset: Settings for including a subset of DMPs.
+        dmps_start_date: Return DMPs with project start dates on or after this date.
+        dmps_end_date: Return DMPs with project start dates on or before this date.
         log_level: Python log level (e.g., INFO).
     """
-    from dmpworks.dataset_subset import load_dois, load_institutions
     from dmpworks.opensearch.dmp_works_search import dmp_works_search
 
     if client_config is None:
@@ -260,13 +273,7 @@ def dmp_works_search_cmd(
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    # Load institutions and dois subset
-    institutions = None
-    if institutions_file:
-        institutions = load_institutions(institutions_file)
-    dois = None
-    if dois_file:
-        dois = load_dois(dois_file)
+    institutions, dois = load_dmp_subset_local(dmp_subset)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     dmp_works_search(
@@ -286,8 +293,8 @@ def dmp_works_search_cmd(
         max_concurrent_shard_requests=max_concurrent_shard_requests,
         institutions=institutions,
         dois=dois,
-        start_date=start_date,
-        end_date=end_date,
+        start_date=dmps_start_date,
+        end_date=dmps_end_date,
     )
 
 

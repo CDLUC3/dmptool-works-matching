@@ -38,8 +38,8 @@ def fetch_dmps(
         page_size: The number of results to return per page.
         dois: A list of DOIs to filter by.
         institutions: A list of institutions to filter by.
-        start_date: The start date for the project start range filter.
-        end_date: The end date for the project start range filter.
+        start_date: Return DMPs with project start dates on or after this date.
+        end_date: Return DMPs with project start dates on before this date.
         inner_hits_size: The size of inner hits to return for nested fields.
 
     Yields:

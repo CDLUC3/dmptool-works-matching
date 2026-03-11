@@ -1,12 +1,12 @@
 import logging
-import pathlib
-from typing import Annotated, Literal
+from typing import Literal
 
-from cyclopts import App, Parameter, validators
+from cyclopts import App
 
 from dmpworks.cli_utils import (
     CrossrefMetadataTransformConfig,
     DataCiteTransformConfig,
+    DatasetSubsetLocal,
     Directory,
     LogLevel,
     OpenAlexWorksTransformConfig,
@@ -113,30 +113,7 @@ def dataset_subset_cmd(
     dataset: Literal["crossref-metadata", "datacite", "openalex-works"],
     in_dir: Directory,
     out_dir: Directory,
-    institutions_path: Annotated[
-        pathlib.Path,
-        Parameter(
-            validator=validators.Path(
-                dir_okay=False,
-                file_okay=True,
-                exists=True,
-            ),
-            env_var="DATASET_SUBSET_INSTITUTIONS_PATH",
-            help="Path to a list of ROR IDs and institution names. Works authored by researchers from these institutions will be included.",
-        ),
-    ],
-    dois_path: Annotated[
-        pathlib.Path | None,
-        Parameter(
-            validator=validators.Path(
-                dir_okay=False,
-                file_okay=True,
-                exists=True,
-            ),
-            env_var="DATASET_SUBSET_DOIS_PATH",
-            help="Path to a specific list of Work DOIs to include in the subset.",
-        ),
-    ] = None,
+    dataset_subset: DatasetSubsetLocal | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Create a demo dataset.
@@ -145,8 +122,7 @@ def dataset_subset_cmd(
         dataset: The dataset to filter.
         in_dir: Path to the dataset directory (e.g. /path/to/openalex_works).
         out_dir: Path to the output directory (e.g. /path/to/demo_dataset/openalex).
-        institutions_path: Path to a JSON file containing a list of ROR IDs and institution names, e.g. `[{"name": "University of California, San Diego", "ror": "0168r3w48"}]`. Works authored by researchers from these institutions will be included.
-        dois_path: Path to a JSON file with specific list of Work DOIs to include in the subset, e.g. `["10.0000/abc", "10.0000/123"]`.
+        dataset_subset: Settings for filtering the dataset by institutions or DOIs.
         log_level: Python log level.
     """
     from dmpworks.dataset_subset import load_dois, load_institutions
@@ -156,8 +132,14 @@ def dataset_subset_cmd(
     level = logging.getLevelName(log_level)
     setup_multiprocessing_logging(level)
 
-    institutions = load_institutions(institutions_path)
-    dois = load_dois(dois_path) if dois_path is not None else []
+    use_subset = dataset_subset is not None and dataset_subset.enable
+    institutions = []
+    dois = []
+    if use_subset:
+        if dataset_subset.institutions_path is not None:
+            institutions = load_institutions(dataset_subset.institutions_path)
+        if dataset_subset.dois_path is not None:
+            dois = load_dois(dataset_subset.dois_path)
 
     create_dataset_subset(
         dataset=dataset,

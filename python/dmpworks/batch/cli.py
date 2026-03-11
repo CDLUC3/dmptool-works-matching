@@ -5,9 +5,9 @@ from cyclopts import App
 from dmpworks.cli_utils import (
     CrossrefMetadataTransformConfig,
     DataCiteTransformConfig,
-    DatasetSubset,
+    DatasetSubsetAWS,
     Date,
-    DMPSubset,
+    DMPSubsetAWS,
     LogLevel,
     MySQLConfig,
     OpenAlexWorksTransformConfig,
@@ -61,7 +61,7 @@ def datacite_download_cmd(
 def datacite_dataset_subset_cmd(
     bucket_name: str,
     run_id: str,
-    dataset_subset: DatasetSubset,
+    dataset_subset: DatasetSubsetAWS,
     log_level: LogLevel = "INFO",
 ):
     """Create a subset of DataCite.
@@ -79,7 +79,7 @@ def datacite_dataset_subset_cmd(
     datacite.dataset_subset(
         bucket_name=bucket_name,
         run_id=run_id,
-        dataset_subset=dataset_subset,
+        ds_config=dataset_subset,
     )
 
 
@@ -151,7 +151,7 @@ def openalex_works_download_cmd(
 def openalex_works_dataset_subset_cmd(
     bucket_name: str,
     run_id: str,
-    dataset_subset: DatasetSubset = None,
+    dataset_subset: DatasetSubsetAWS = None,
     log_level: LogLevel = "INFO",
 ):
     """Create a subset of OpenAlex Works.
@@ -169,7 +169,7 @@ def openalex_works_dataset_subset_cmd(
     openalex_works.dataset_subset(
         bucket_name=bucket_name,
         run_id=run_id,
-        dataset_subset=dataset_subset,
+        ds_config=dataset_subset,
     )
 
 
@@ -239,7 +239,7 @@ def crossref_metadata_download_cmd(
 def crossref_metadata_dataset_subset_cmd(
     bucket_name: str,
     run_id: str,
-    dataset_subset: DatasetSubset = None,
+    dataset_subset: DatasetSubsetAWS = None,
     log_level: LogLevel = "INFO",
 ):
     """Create a subset of Crossref Metadata.
@@ -254,7 +254,7 @@ def crossref_metadata_dataset_subset_cmd(
     from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
-    crossref_metadata.dataset_subset(bucket_name=bucket_name, run_id=run_id, dataset_subset=dataset_subset)
+    crossref_metadata.dataset_subset(bucket_name=bucket_name, run_id=run_id, ds_config=dataset_subset,)
 
 
 @crossref_metadata_app.command(name="transform")
@@ -373,10 +373,45 @@ def opensearch_sync_works_cmd(
     )
 
 
+@opensearch_app.command(name="sync-dmps")
+def opensearch_sync_dmps_cmd(
+    bucket_name: str,
+    index_name: str,
+    mysql_config: MySQLConfig,
+    client_config: OpenSearchClientConfig | None = None,
+    dmp_subset: DMPSubsetAWS | None = None,
+    log_level: LogLevel = "INFO",
+):
+    """Sync DMPs from MySQL with OpenSearch DMPs index.
+
+    Args:
+        bucket_name: DMP Tool S3 bucket name.
+        index_name: the OpenSearch DMPs index name.
+        mysql_config: MySQL connection configuration.
+        client_config: the OpenSearch client config settings.
+        dmp_subset: settings for including a subset of DMPs.
+        log_level: Python log level.
+    """
+    from dmpworks.batch import opensearch
+
+    client_config = OpenSearchClientConfig() if client_config is None else client_config
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+    opensearch.sync_dmps_cmd(
+        bucket_name=bucket_name,
+        index_name=index_name,
+        client_config=client_config,
+        mysql_config=mysql_config,
+        dmp_subset=dmp_subset,
+    )
+
+
 @opensearch_app.command(name="enrich-dmps")
 def opensearch_enrich_dmps_cmd(
     index_name: str,
     client_config: OpenSearchClientConfig | None = None,
+    bucket_name: str | None = None,
+    dmp_subset: DMPSubsetAWS | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Enrich dmps in the OpenSearch DMPs index.
@@ -384,6 +419,8 @@ def opensearch_enrich_dmps_cmd(
     Args:
         index_name: the OpenSearch index name.
         client_config: the OpenSearch client config settings.
+        bucket_name: DMP Tool S3 bucket name (required when dmp_subset is provided).
+        dmp_subset: settings for including a subset of DMPs.
         log_level: Python log level.
     """
     from dmpworks.batch import opensearch
@@ -394,6 +431,8 @@ def opensearch_enrich_dmps_cmd(
     opensearch.enrich_dmps_cmd(
         index_name=index_name,
         client_config=client_config,
+        bucket_name=bucket_name,
+        dmp_subset=dmp_subset,
     )
 
 
@@ -412,7 +451,7 @@ def opensearch_dmp_works_search_cmd(
     max_concurrent_searches: int = 125,
     max_concurrent_shard_requests: int = 12,
     client_config: OpenSearchClientConfig | None = None,
-    dmp_subset: DMPSubset | None = None,
+    dmp_subset: DMPSubsetAWS | None = None,
     start_date: Date = None,
     end_date: Date = None,
     log_level: LogLevel = "INFO",
