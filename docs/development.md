@@ -1,15 +1,15 @@
 # Development Guide
 
-This guide explains how to set up the project locally, build the application, 
+This guide explains how to set up the project locally, build the application,
 run tests, and perform common development tasks.
 
 ## Requirements
 
 Install the following tools before starting:
 
-- Rust: https://www.rust-lang.org/tools/install  
-- Python 3.12: https://www.python.org/downloads/  
-- uv: https://github.com/astral-sh/uv  
+- Rust: <https://www.rust-lang.org/tools/install>  
+- Python 3.12: <https://www.python.org/downloads/>  
+- uv: <https://github.com/astral-sh/uv>  
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ make install-release
 make test
 ```
 
-`make install-release` creates the virtual environment (if needed) and installs 
+`make install-release` creates the virtual environment (if needed) and installs
 the package in editable mode with the Rust extension built in release mode.
 
 ## Development
@@ -49,7 +49,7 @@ Setup Rust, including `rustfmt`, `clippy`, and `cargo-deny`:
 make setup-rust
 ```
 
-Build the Rust extension in debug mode and install the Python package in 
+Build the Rust extension in debug mode and install the Python package in
 editable mode with development extras:
 
 ```bash
@@ -75,7 +75,7 @@ The project is compiled in release mode and installed via Python wheels in
 
 By default, the Makefile compiles Rust with:
 
-```
+```bash
 RUST_TARGET_CPU=native
 ```
 
@@ -105,7 +105,7 @@ make test-sqlmesh
 
 The SQLMesh tests validate the transformation logic in the SQLMesh project:
 
-```
+```text
 python/dmpworks/sql
 ```
 
@@ -119,11 +119,11 @@ make tests
 
 The project uses the following tools:
 
-* `ruff`: Python linting.
-* `black`: Python formatting.
-* `cargo fmt`: Rust formatting.
-* `cargo clippy`: Rust linting.
-* `cargo deny`: Rust dependency license checks.
+- `ruff`: Python linting.
+- `black`: Python formatting.
+- `cargo fmt`: Rust formatting.
+- `cargo clippy`: Rust linting.
+- `cargo deny`: Rust dependency license checks.
 
 Run formatting:
 
@@ -163,11 +163,12 @@ This deletes:
 Python dependencies are managed with **uv**.
 
 See what Python packages are installed vs the newest versions available:
-```
+
+```bash
 uv pip list --outdated
 ```
 
-Then edit dependency versions/ranges in `pyproject.toml` based on what 
+Then edit dependency versions/ranges in `pyproject.toml` based on what
 you want installed.
 
 Then regenerate the lockfile and sync your environment:
