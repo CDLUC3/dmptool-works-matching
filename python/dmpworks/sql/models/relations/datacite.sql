@@ -36,23 +36,22 @@ PRAGMA threads=CAST(@VAR('relations_datacite_threads') AS INT64);
 
 WITH relations_with_dois AS (
   SELECT
-    @extract_doi(dc.doi) AS work_doi,
-    @extract_doi(r.related_identifier) AS related_doi,
+    work_doi,
+    related_doi,
     CASE
-      WHEN r.relation_type IN ('IsIdenticalTo', 'IsObsoletedBy', 'Obsoletes', 'IsPartOf', 'HasPart', 'IsPublishedIn',
+      WHEN relation_type IN ('IsIdenticalTo', 'IsObsoletedBy', 'Obsoletes', 'IsPartOf', 'HasPart', 'IsPublishedIn',
                              'IsTranslationOf', 'HasTranslation', 'IsVariantFormOf', 'IsOriginalFormOf',
                              'HasVersion', 'IsVersionOf', 'IsNewVersionOf', 'IsPreviousVersionOf') THEN TRUE
       ELSE FALSE
     END AS is_intra_work,
     CASE
-      WHEN r.relation_type IN ('Compiles', 'IsCompiledBy', 'Continues', 'IsContinuedBy', 'IsDerivedFrom', 'IsSourceOf',
+      WHEN relation_type IN ('Compiles', 'IsCompiledBy', 'Continues', 'IsContinuedBy', 'IsDerivedFrom', 'IsSourceOf',
                              'Describes', 'IsDescribedBy', 'Documents', 'IsDocumentedBy', 'IsSupplementTo',
                              'IsSupplementedBy') THEN TRUE
       ELSE FALSE
     END AS is_possible_shared_project
-  FROM datacite.datacite dc, UNNEST(dc.relations) AS item(r)
-  -- Don't filter on related_identifier_type = 'DOI', sometimes related_identifier_type is not 'DOI' but contains DOIs
-  -- hence, we use extract_doi instead and check rd.related_doi IS NOT NULL at the end
+  FROM relations.datacite_degrees
+  WHERE out_degree <= CAST(@VAR('max_relation_degrees') AS INT64) AND in_degree <= CAST(@VAR('max_relation_degrees') AS INT64)
 ),
 
 bidirectional AS (

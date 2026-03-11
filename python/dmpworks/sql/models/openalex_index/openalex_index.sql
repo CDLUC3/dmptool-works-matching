@@ -9,7 +9,14 @@ MODEL (
   dialect duckdb,
   kind FULL,
   audits (
-    unique_values(columns := (doi))
+    unique_values(columns := (doi)),
+    assert_max_institutions_length(column := institutions, threshold := CAST(@VAR('audit_nested_object_limit') AS INT64), blocking := false),
+    assert_max_authors_length(column := authors, threshold := CAST(@VAR('audit_nested_object_limit') AS INT64), blocking := false),
+    assert_max_funders_length(column := funders, threshold := CAST(@VAR('audit_nested_object_limit') AS INT64), blocking := false),
+    assert_max_awards_length(column := awards, threshold := CAST(@VAR('audit_nested_object_limit') AS INT64), blocking := false),
+    assert_max_intra_work_dois_length(column := relations.intra_work_dois, threshold := CAST(@VAR('audit_nested_object_limit') AS INT64), blocking := false),
+    assert_max_possible_shared_project_dois_length(column := relations.possible_shared_project_dois, threshold := CAST(@VAR('audit_nested_object_limit') AS INT64), blocking := false),
+    assert_max_dataset_citation_dois_length(column := relations.dataset_citation_dois, threshold := CAST(@VAR('audit_nested_object_limit') AS INT64), blocking := false)
   ),
   enabled true
 );

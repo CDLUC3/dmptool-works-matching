@@ -1,5 +1,7 @@
 test_relations_data_citation_corpus:
   model: relations.data_citation_corpus
+  vars:
+    max_relation_degrees: 3
   inputs:
     data_citation_corpus.relations:
       rows:
@@ -14,6 +16,20 @@ test_relations_data_citation_corpus:
           source: datacite
         - publication: "https://doi.org/10.9999/test.0004"
           dataset: "https://doi.org/10.1234/test.0004"
+          source: eupmc
+
+        # Higher degree test cases: should be filtered out
+        - publication: "https://doi.org/10.9999/test.0005"
+          dataset: "https://doi.org/10.1234/test.0005"
+          source: eupmc
+        - publication: "https://doi.org/10.9999/test.0005"
+          dataset: "https://doi.org/10.1234/test.0006"
+          source: eupmc
+        - publication: "https://doi.org/10.9999/test.0005"
+          dataset: "https://doi.org/10.1234/test.0007"
+          source: eupmc
+        - publication: "https://doi.org/10.9999/test.0005"
+          dataset: "https://doi.org/10.1234/test.0008"
           source: eupmc
 
   outputs:
