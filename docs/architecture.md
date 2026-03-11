@@ -102,7 +102,11 @@ dev environment and for testing.
 
 Downloaded files are transformed by a second set of Batch jobs. Each job
 streams gzipped JSON lines files from disk in multiple processes, parses the
-fields of interest using [pysimdjson](https://github.com/TkTech/pysimdjson),
+fields of interest using [pysimdjson](https://github.com/TkTech/pysimdjson)
+(chosen over standard `json` and alternatives for its SIMD-accelerated parsing
+and lazy object materialisation — Python object creation is expensive, so
+deferring it until fields are accessed gives a significant speedup when only a
+subset of each record is needed),
 then applies Python and Rust functions to clean and normalise the data before
 writing Parquet files to S3 under `{dataset}/{run_id}/transform/`.
 

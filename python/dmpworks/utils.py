@@ -326,6 +326,7 @@ class ParquetBatchWriter:
         self.row_groups_per_file = row_groups_per_file
         self.batch_index = batch_index
         self.file_prefix = file_prefix
+        output_dir.mkdir(parents=True, exist_ok=True)
         self.file_index = 0
         self.num_row_groups = 0
         self.row_buffer: list[dict] = []

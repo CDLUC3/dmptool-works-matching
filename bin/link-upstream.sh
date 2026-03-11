@@ -14,6 +14,11 @@
 
 set -euo pipefail
 
+if [ -f .env.local ]; then
+  # shellcheck source=../.env.local
+  source .env.local
+fi
+
 REQUIRED_VARS=(
   DATA_DIR
   UPSTREAM_CROSSREF_METADATA

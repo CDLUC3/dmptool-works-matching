@@ -11,6 +11,11 @@
 
 set -euo pipefail
 
+if [ -f .env.local ]; then
+  # shellcheck source=../.env.local
+  source .env.local
+fi
+
 if [ -z "${DATA_DIR:-}" ]; then
   echo "Error: environment variable DATA_DIR is not set" >&2
   exit 1
@@ -25,6 +30,23 @@ if [ ! -d "${SOURCES_DIR}" ]; then
   exit 1
 fi
 
+DOI_STATE_PREV_DIR="${DATA_DIR}/doi_state_export_prev"
+if [ -d "${DOI_STATE_PREV_DIR}" ] && [ -n "$(ls -A "${DOI_STATE_PREV_DIR}")" ]; then
+  read -p "Delete contents of '${DOI_STATE_PREV_DIR}' and reinitialise prev DOI state? [y/N] " confirm
+  if [[ "$confirm" == [yY] ]]; then
+    find "${DOI_STATE_PREV_DIR}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    echo "Cleaned ${DOI_STATE_PREV_DIR}"
+    echo "Initialising DOI prev state"
+    dmpworks sqlmesh init-doi-state "${DOI_STATE_PREV_DIR}/doi_state_00000.parquet"
+  else
+    echo "Skipping prev DOI state initialisation."
+  fi
+else
+  mkdir -p "${DOI_STATE_PREV_DIR}"
+  echo "Initialising prev DOI state"
+  dmpworks sqlmesh init-doi-state "${DOI_STATE_PREV_DIR}/doi_state_00000.parquet"
+fi
+
 if [ -d "${TRANSFORM_DIR}" ]; then
   read -p "Delete contents of '${TRANSFORM_DIR}' and regenerate transforms? [y/N] " confirm
   if [[ "$confirm" == [yY] ]]; then
@@ -36,10 +58,7 @@ if [ -d "${TRANSFORM_DIR}" ]; then
   fi
 fi
 
-mkdir -p "${TRANSFORM_DIR}"/{crossref_metadata,datacite,openalex_works,ror,opensearch,data_citation_corpus}
-
-echo "Initialising DOI state"
-dmpworks sqlmesh init-doi-state "${TRANSFORM_DIR}/opensearch/doi_state_00000.parquet"
+mkdir -p "${TRANSFORM_DIR}"/{crossref_metadata,datacite,openalex_works,ror,data_citation_corpus}
 
 echo "Copying ROR"
 cp -r "${SOURCES_DIR}/ror/." "${TRANSFORM_DIR}/ror/"

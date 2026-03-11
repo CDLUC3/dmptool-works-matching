@@ -49,7 +49,7 @@ test-sqlmesh:
 
 pre-commit: venv fmt lint test test-sqlmesh
 
-tests: test-python test-sqlmesh
+test: test-python test-sqlmesh
 
 clean:
 > rm -rf .venv target

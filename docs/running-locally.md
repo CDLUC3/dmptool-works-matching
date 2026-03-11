@@ -10,22 +10,30 @@ This section covers environment variables, local services, and test setup.
 
 Create a `.env.local` file from `.env.local.example` and fill in the required values.
 
-`dmpworks` loads `.env.local` automatically when invoked (the default environment). You
-can override this using the `--env` or `--env-file` flags, or via environment variables:
+`dmpworks` loads `.env.local` automatically when invoked (the default). You can override
+this using `--env-file` or the `DMPWORKS_ENV` environment variable:
 
 ```bash
 # Use an explicit file
 dmpworks --env-file /path/to/.env <command>
 
-# Use a named environment (local -> .env.local, aws -> .env.aws)
-dmpworks --env local <command>
-
-# Or control via environment variables
-DMPWORKS_ENV=local dmpworks <command>
+# Or control via environment variable
 DMPWORKS_ENV_FILE=/path/to/.env dmpworks <command>
 ```
 
-### 1.2. Local OpenSearch Stack
+### 1.2. DATA_DIR
+
+`DATA_DIR` is used throughout this guide as the working directory for all datasets,
+transforms, and index files. Set it in your terminal at the start of each session:
+
+```bash
+export DATA_DIR=/path/to/your/data
+```
+
+This can also be defined in `.env.local` and will be picked up automatically by the
+shell scripts in `bin/`.
+
+### 1.3. Local OpenSearch Stack
 
 Run OpenSearch locally:
 
@@ -36,7 +44,7 @@ docker compose up
 To view OpenSearch Dashboards go to:
 <http://localhost:5601>
 
-### 1.3. Help
+### 1.4. Help
 
 To view detailed descriptions for a `dmpworks` command append `--help` to the command,
 for example:
@@ -57,12 +65,6 @@ Create an OpenSearch index.
 │    CLIENT-CONFIG.SERVICE --client-config.service  AWS service name for SigV4 signing (usually es).                                                                                                                                            │
 │    LOG-LEVEL --log-level                          Python log level [choices: CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET] [default: INFO]                                                                                                   │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-```
-
-Run SQLMesh unit tests:
-
-```bash
-dmpworks sqlmesh test
 ```
 
 ## 2. Dataset Subset Preparation
@@ -88,15 +90,7 @@ the expected format, e.g.:
 gzip v2.3-2026-02-24-ror-data.json
 ```
 
-Once downloaded, set the `UPSTREAM_*` paths in `.env.local` to point to each dataset:
-
-```bash
-UPSTREAM_CROSSREF_METADATA=/path/to/crossref_metadata        # directory of .jsonl.gz files
-UPSTREAM_DATACITE=/path/to/datacite/dois                      # dois directory from the DataCite archive
-UPSTREAM_OPENALEX_WORKS=/path/to/openalex-snapshot/data/works
-UPSTREAM_ROR=/path/to/ror                                     # directory containing the gzipped JSON file
-UPSTREAM_DATA_CITATION_CORPUS=/path/to/data_citation_corpus
-```
+Once downloaded, fill in the **Upstream Source Paths** section of `.env.local` to point to each dataset.
 
 ### 2.2. Create Dataset Subsets
 
@@ -104,12 +98,7 @@ UPSTREAM_DATA_CITATION_CORPUS=/path/to/data_citation_corpus
 Works based on configured institutions and DOIs, writing output to `${DATA_DIR}/sources/`.
 ROR and Data Citation Corpus are copied in full.
 
-Before running, ensure the subset filter paths are set in `.env.local`:
-
-```bash
-DATASET_SUBSET_INSTITUTIONS_PATH=${DATA_DIR}/meta/institutions.json
-DATASET_SUBSET_DOIS_PATH=${DATA_DIR}/meta/work_dois.json
-```
+Before running, ensure the **Dataset Subsets** section of `.env.local` is configured.
 
 Then run:
 
@@ -123,8 +112,11 @@ Then run:
 ### 2.3. Link Upstream (Alternative to Subsetting)
 
 To run the full pipeline against upstream datasets without creating copies, use
-`link-upstream.sh`. This creates symlinks in `${DATA_DIR}/sources/` pointing to the
-`UPSTREAM_*` paths — skipping the subset step entirely.
+`link-upstream.sh`. Skip this step if you are working with the subset. This 
+creates symlinks in `${DATA_DIR}/sources/` pointing to the `UPSTREAM_*` paths
+— skipping the subset step entirely.
+
+Before running, ensure the **Upstream Source Paths** section of `.env.local` is configured.
 
 ```bash
 ./bin/link-upstream.sh
@@ -153,12 +145,6 @@ producing a unified works index using SQLMesh.
 SQLMesh transforms the input Parquet files into a unified works index for loading into
 OpenSearch.
 
-Create required directories:
-
-```bash
-mkdir -p "${DATA_DIR}"/{duckdb,matches,ltr,meta}
-```
-
 Run the SQLMesh pipeline:
 
 ```bash
@@ -168,7 +154,7 @@ dmpworks sqlmesh plan
 Optionally run the DuckDB UI to inspect tables:
 
 ```bash
-duckdb ${SQLMESH__GATEWAYS__DUCKDB__CONNECTION__DATABASE} -ui
+duckdb ${DATA_DIR}/duckdb/db.db  -ui
 ```
 
 To view the DuckDB database: <http://localhost:4213>.
@@ -178,21 +164,7 @@ To view the DuckDB database: <http://localhost:4213>.
 This section shows how to create and populate the OpenSearch indexes used for DMP and
 works search, including enrichment steps required for downstream matching.
 
-### 4.1. Create OpenSearch Indexes
-
-Create the OpenSearch DMPs index:
-
-```bash
-dmpworks opensearch create-index dmps-index dmps-mapping.json
-```
-
-Create the OpenSearch works index:
-
-```bash
-dmpworks opensearch create-index works-index works-mapping.json
-```
-
-### 4.2. DMPs Index
+### 4.1. DMPs Index
 
 Before syncing DMPs, ensure you have a connection to the MySQL database and have
 configured the MySQL environment variables in `.env.local`, then run:
@@ -201,18 +173,30 @@ configured the MySQL environment variables in `.env.local`, then run:
 dmpworks opensearch sync-dmps dmps-index
 ```
 
+The index is created automatically if it does not exist. To create it manually:
+
+```bash
+dmpworks opensearch create-index dmps-index dmps-mapping.json
+```
+
 Enrich the DMPs index with additional data:
 
 ```bash
 dmpworks opensearch enrich-dmps dmps-index
 ```
 
-### 4.3. Works Index
+### 4.2. Works Index
 
 Sync the works index export with the OpenSearch works index:
 
 ```bash
-dmpworks opensearch sync-works works-index ${DATA_DIR}/works_index_export
+dmpworks opensearch sync-works works-index --works-index-export=${DATA_DIR}/works_index_export --doi-state-export=${DATA_DIR}/doi_state_export --run-id=YYYY-MM-DD
+```
+
+The index is created automatically if it does not exist. To create it manually:
+
+```bash
+dmpworks opensearch create-index works-index works-mapping.json
 ```
 
 ## 5. Baseline DMP Works Search
@@ -225,7 +209,7 @@ candidate matches without Learning to Rank re-scoring.
 To search for works associated with DMPs:
 
 ```bash
-dmpworks opensearch dmp-works-search dmps-index works-index ${DATA_DIR}/matches/matches-2025-12-22.jsonl \
+dmpworks opensearch dmp-works-search dmps-index works-index ${DATA_DIR}/matches \
          --dois-file=${DATA_DIR}/meta/dmp_dois.json \
          --institutions-file=${DATA_DIR}/meta/dmp_institutions.json
 ```

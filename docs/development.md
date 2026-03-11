@@ -112,7 +112,7 @@ python/dmpworks/sql
 Run all tests:
 
 ```bash
-make tests
+make test
 ```
 
 ## Linting and Formatting

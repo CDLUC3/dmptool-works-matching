@@ -1,9 +1,8 @@
 import pathlib
 
+from dmpworks.utils import ParquetBatchWriter, read_parquet_files, run_process, write_rows_to_parquet
 import pyarrow as pa
 import pytest
-
-from dmpworks.utils import ParquetBatchWriter, read_parquet_files, run_process, write_rows_to_parquet
 
 
 def test_run_process_success(caplog):
@@ -142,9 +141,7 @@ class TestParquetBatchWriter:
         assert names[0].name.startswith("works_")
 
     def test_has_buffered_rows(self, tmp_path: pathlib.Path):
-        writer = ParquetBatchWriter(
-            output_dir=tmp_path, schema=SIMPLE_SCHEMA, row_group_size=10, row_groups_per_file=4
-        )
+        writer = ParquetBatchWriter(output_dir=tmp_path, schema=SIMPLE_SCHEMA, row_group_size=10, row_groups_per_file=4)
         assert not writer.has_buffered_rows
         writer.write_rows([make_row()])
         assert writer.has_buffered_rows
@@ -152,9 +149,7 @@ class TestParquetBatchWriter:
         assert not writer.has_buffered_rows
 
     def test_no_file_written_for_empty_input(self, tmp_path: pathlib.Path):
-        with ParquetBatchWriter(
-            output_dir=tmp_path, schema=SIMPLE_SCHEMA, row_group_size=100, row_groups_per_file=4
-        ):
+        with ParquetBatchWriter(output_dir=tmp_path, schema=SIMPLE_SCHEMA, row_group_size=100, row_groups_per_file=4):
             pass
 
         assert list(tmp_path.glob("*.parquet")) == []
@@ -163,12 +158,14 @@ class TestParquetBatchWriter:
         # 10 rows buffered, row_group_size=100 so none flushed yet — exception should
         # close the writer without writing the buffered rows.
         rows = [make_row(str(i)) for i in range(10)]
-        with pytest.raises(RuntimeError):
-            with ParquetBatchWriter(
+        with (
+            pytest.raises(RuntimeError),
+            ParquetBatchWriter(
                 output_dir=tmp_path, schema=SIMPLE_SCHEMA, row_group_size=100, row_groups_per_file=4
-            ) as writer:
-                writer.write_rows(rows)
-                raise RuntimeError("boom")
+            ) as writer,
+        ):
+            writer.write_rows(rows)
+            raise RuntimeError("boom")
 
         assert list(read_parquet_files([tmp_path])) == []
 
