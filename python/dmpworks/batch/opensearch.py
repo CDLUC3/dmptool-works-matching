@@ -270,7 +270,7 @@ def merge_related_works_cmd(
         mysql_config: MySQL connection configuration.
         batch_size: Number of records to process in a batch.
     """
-    from dmpworks.dmsp.related_works import merge_related_works  # noqa: PLC0415
+    from dmpworks.dmsp.merge import merge_related_works  # noqa: PLC0415
 
     matches_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
     matches_dir.mkdir(parents=True, exist_ok=True)

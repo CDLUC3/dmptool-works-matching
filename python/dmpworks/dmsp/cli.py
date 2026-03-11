@@ -29,7 +29,8 @@ def load_migration_related_works(
         batch_size: Number of records to process in a batch.
         log_level: Logging level.
     """
-    from dmpworks.dmsp.related_works import fetch_migration_related_works, load_related_works
+    from dmpworks.dmsp.loader import load_related_works
+    from dmpworks.dmsp.migration import fetch_migration_related_works
     from dmpworks.opensearch.utils import make_opensearch_client
 
     level = logging.getLevelName(log_level)
@@ -67,7 +68,8 @@ def load_ground_truth_related_works(
         batch_size: Number of records to process in a batch.
         log_level: Logging level.
     """
-    from dmpworks.dmsp.related_works import load_related_works, read_related_works_csv
+    from dmpworks.dmsp.ground_truth import read_related_works_csv
+    from dmpworks.dmsp.loader import load_related_works
     from dmpworks.opensearch.utils import make_opensearch_client
 
     level = logging.getLevelName(log_level)
@@ -110,7 +112,7 @@ def merge_related_works_cmd(
         batch_size: Number of records to process in a batch.
         log_level: Logging level.
     """
-    from dmpworks.dmsp.related_works import merge_related_works
+    from dmpworks.dmsp.merge import merge_related_works
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)

@@ -75,13 +75,13 @@ flowchart LR
 Raw datasets are downloaded by AWS Batch jobs and staged to a project S3 bucket
 before transformation. When running locally, datasets are downloaded manually.
 
-| Dataset | Source                              |
-|---|-------------------------------------|
-| OpenAlex Works | OpenAlex public S3 bucket           |
-| DataCite | DataCite monthly snapshot S3 bucket |
-| Crossref Metadata | Crossref requestor-pays S3 bucket   |
-| ROR | Zenodo                              |
-| Make Data Count / Data Citation Corpus | S3                                  |
+| Dataset                | Source                              |
+|------------------------|-------------------------------------|
+| OpenAlex Works         | OpenAlex public S3 bucket           |
+| DataCite               | DataCite monthly snapshot S3 bucket |
+| Crossref Metadata      | Crossref requestor-pays S3 bucket   |
+| ROR                    | Zenodo                              |
+| Data Citation Corpus   | Zenodo                              |
 
 Each download job:
 
@@ -127,16 +127,16 @@ DuckDB, which benefits from larger row groups for analytical queries.
 The Rust extension module (`dmpworks.rust`, built via PyO3) provides
 performance-critical helpers used across all transforms:
 
-| Function | Purpose |
-|---|---|
-| `parse_name()` | Parse author names into given/surname/initials components using the `human_name` crate |
-| `strip_markup()` | Remove HTML/XML markup from titles and abstracts |
-| `revert_inverted_index()` | Decompress OpenAlex inverted-index abstracts, e.g. `{"Hello":[0],"World":[1]}` → `Hello World` |
+| Function                    | Purpose                                                                                                                 |
+|-----------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `parse_name()`              | Parse author names into given/surname/initials components using the `human_name` crate                                  |
+| `strip_markup()`            | Remove HTML/XML markup from titles and abstracts                                                                        |
+| `revert_inverted_index()`   | Decompress OpenAlex inverted-index abstracts, e.g. `{"Hello":[0],"World":[1]}` → `Hello World`                          |
 | `has_alphabetic_initials()` | Determine whether first-name initials should be generated for a name — excluded for Korean, Chinese, and Japanese names |
 
 ### Per-dataset transforms
 
-**OpenAlex Works**
+#### OpenAlex Works
 
 - DOI extracted by regex, lowercased.
 - Strip markup from titles.
@@ -154,7 +154,7 @@ performance-critical helpers used across all transforms:
   - **Awards**: award ID and funder ID with any embedded URL prefixes removed,
     lowercased; display name, funder award ID, funder display name
 
-**DataCite**
+#### DataCite
 
 - DOI extracted by regex, lowercased.
 - Strip markup from titles and abstracts.
@@ -171,7 +171,7 @@ performance-critical helpers used across all transforms:
   - **Relations**: related identifiers cleaned — DOI extracted by regex where
     possible, otherwise URL prefixes removed; lowercased
 
-**Crossref Metadata**
+#### Crossref Metadata
 
 - DOI extracted by regex, lowercased.
 - Strip markup from titles and abstracts.
@@ -193,7 +193,7 @@ Parquet files on disk.
 
 ### Model structure
 
-```
+```text
 sql/models/
 ├── openalex/             — raw Parquet load
 ├── datacite/             — raw Parquet load
@@ -317,14 +317,14 @@ without spacing and hyphens.
 For each DMP, a structured query is built by `opensearch/query_builder.py` and
 executed against `works-index`. The query combines:
 
-| Component | Mechanism |
-|---|---|
-| Funded DOIs | `constant_score` filter on DOIs retrieved during the enrichment step |
-| Award IDs | Match on work award numbers |
-| Authors | ORCID (exact nested) and full name (exact phrase) |
-| Institutions | ROR ID (exact nested) and institution name (fuzzy, phrase slop=3) |
-| Funders | Funder ID (exact nested) and funder name (fuzzy, phrase slop=3) |
-| Content | More Like This (MLT) on title and abstract |
+| Component    | Mechanism                                                            |
+|--------------|----------------------------------------------------------------------|
+| Funded DOIs  | `constant_score` filter on DOIs retrieved during the enrichment step |
+| Award IDs    | Match on work award numbers                                          |
+| Authors      | ORCID (exact nested) and full name (exact phrase)                    |
+| Institutions | ROR ID (exact nested) and institution name (fuzzy, phrase slop=3)    |
+| Funders      | Funder ID (exact nested) and funder name (fuzzy, phrase slop=3)      |
+| Content      | More Like This (MLT) on title and abstract                           |
 
 Results are filtered to works whose publication date falls within the DMP
 project dates (with a configurable buffer). Searches for multiple DMPs can be
