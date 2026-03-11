@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from opensearchpy import OpenSearch
-import pendulum
-
-from dmpworks.model.common import Institution
 from dmpworks.model.dmp_model import DMPModel
 from dmpworks.opensearch.query_builder import build_dmps_query
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterator
+
+    from opensearchpy import OpenSearch
+    import pendulum
+
+    from dmpworks.model.common import Institution
 
 
 @contextmanager

@@ -1,5 +1,7 @@
 test_relations_crossref_metadata:
   model: relations.crossref_metadata
+  vars:
+    max_relation_degrees: 100
   inputs:
     relations.crossref_metadata_degrees:
       rows:

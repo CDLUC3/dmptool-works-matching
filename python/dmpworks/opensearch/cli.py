@@ -4,25 +4,14 @@ from typing import Annotated
 
 from cyclopts import App, Parameter, validators
 
-from dmpworks.cli_utils import Directory, LogLevel, MySQLConfig
-from dmpworks.dataset_subset import load_dois, load_institutions
-from dmpworks.opensearch.dmp_works_search import dmp_works_search
-from dmpworks.opensearch.enrich_dmps import enrich_dmps
-from dmpworks.opensearch.index import create_index, update_mapping
-from dmpworks.opensearch.learning_to_rank import (
-    create_featureset,
-    generate_training_dataset,
-    upload_ranklib_model,
-)
-from dmpworks.opensearch.rank_metrics import related_works_calculate_metrics
-from dmpworks.opensearch.sync_dmps import sync_dmps
-from dmpworks.opensearch.sync_works import sync_works
-from dmpworks.opensearch.utils import (
+from dmpworks.cli_utils import (
     Date,
+    Directory,
+    LogLevel,
+    MySQLConfig,
     OpenSearchClientConfig,
     OpenSearchSyncConfig,
     QueryBuilder,
-    make_opensearch_client,
 )
 
 app = App(name="opensearch", help="OpenSearch utilities.")
@@ -43,12 +32,16 @@ def create_index_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.index import create_index
+    from dmpworks.opensearch.utils import make_opensearch_client
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
     client = make_opensearch_client(client_config)
+
     create_index(client, index_name, mapping_filename)
 
 
@@ -67,6 +60,9 @@ def update_mapping_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.index import update_mapping
+    from dmpworks.opensearch.utils import make_opensearch_client
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -97,6 +93,8 @@ def sync_works_cmd(
         sync_config: OpenSearch sync settings.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.sync_works import sync_works
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -135,6 +133,8 @@ def sync_dmps_cmd(
         chunk_size: OpenSearch bulk indexing chunk size.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.sync_dmps import sync_dmps
+
     if opensearch_config is None:
         opensearch_config = OpenSearchClientConfig()
 
@@ -163,6 +163,8 @@ def enrich_dmps_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.enrich_dmps import enrich_dmps
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -248,6 +250,9 @@ def dmp_works_search_cmd(
         end_date: Return DMPs with project start dates on before this date.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.dataset_subset import load_dois, load_institutions
+    from dmpworks.opensearch.dmp_works_search import dmp_works_search
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -340,6 +345,8 @@ def rank_metrics_cmd(
         ks: The top K breakpoints to compute for each metric.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.rank_metrics import related_works_calculate_metrics
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -378,6 +385,9 @@ def create_featureset_cmd(
         client_config: OpenSearch client settings.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.learning_to_rank import create_featureset
+    from dmpworks.opensearch.utils import make_opensearch_client
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -437,6 +447,9 @@ def upload_ranklib_model_cmd(
         client_config: The OpenSearch client config.
         log_level: The Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.learning_to_rank import upload_ranklib_model
+    from dmpworks.opensearch.utils import make_opensearch_client
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 
@@ -510,6 +523,8 @@ def generate_training_dataset_cmd(
         inner_hits_size: Maximum number of inner hits returned for each matched work.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.learning_to_rank import generate_training_dataset
+
     if client_config is None:
         client_config = OpenSearchClientConfig()
 

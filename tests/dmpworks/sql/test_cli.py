@@ -1,7 +1,7 @@
 import pathlib
-import pytest
 
 from dmpworks.cli import cli
+import pytest
 
 CLI_MODULE = "dmpworks.sql.commands"
 

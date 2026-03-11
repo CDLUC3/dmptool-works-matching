@@ -7,16 +7,14 @@ import numpy as np
 from opensearchpy import OpenSearch
 from scipy.sparse import csr_matrix
 
+from dmpworks.cli_utils import QueryBuilder
 from dmpworks.model.dmp_model import DMPModel
 from dmpworks.model.related_work_model import RelatedWorkTrainingRow
 from dmpworks.opensearch.dmp_search import fetch_dmps
 from dmpworks.opensearch.dmp_works_search import search_dmp_works
 from dmpworks.opensearch.query_builder import build_sltr_query, get_query_builder
-from dmpworks.opensearch.rank_metrics import (
-    get_dmp_dois,
-    load_qrels_dict,
-)
-from dmpworks.opensearch.utils import OpenSearchClientConfig, QueryBuilder, make_opensearch_client
+from dmpworks.opensearch.rank_metrics import get_dmp_dois, load_qrels_dict
+from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
 
 TO_JSON_SECTION_NAME = "TO_JSON_SECTION"
 
@@ -511,7 +509,7 @@ def build_feature_normalizers(
 
     # Create feature normalizers
     feature_normalizers = {}
-    X, y, qids = load_ranklib_training_file(ranklib_training_file)  # noqa: N806
+    X, _, _ = load_ranklib_training_file(ranklib_training_file)  # noqa: N806
     means = np.mean(X, axis=0)
     stds = np.std(X, axis=0)
 

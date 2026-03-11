@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import TYPE_CHECKING
 
-from dmpworks.funders.award_id import AwardID
 from dmpworks.funders.nih_award_id import NIHAwardID
 from dmpworks.funders.nih_funder_api import nih_fetch_award_publication_dois
 from dmpworks.funders.nsf_award_id import NSFAwardID
 from dmpworks.funders.nsf_funder_api import nsf_fetch_award_publication_dois
+
+if TYPE_CHECKING:
+    from dmpworks.funders.award_id import AwardID
 
 log = logging.getLogger(__name__)
 

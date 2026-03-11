@@ -1,22 +1,18 @@
 import logging
 import pathlib
 
-import pytest
-from opensearchpy import OpenSearch
-
 from dmpworks.cli import cli
-from dmpworks.cli_utils import MySQLConfig
-from dmpworks.opensearch.utils import OpenSearchClientConfig, OpenSearchSyncConfig
+from dmpworks.cli_utils import MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.utils import InstanceOf
-
-CLI_MODULE = "dmpworks.opensearch.cli"
+from opensearchpy import OpenSearch
+import pytest
 
 
 class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_create_index(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.create_index")
+        return mocker.patch("dmpworks.opensearch.index.create_index")
 
     def test_opensearch_create_index(self, mock_create_index):
         cli(["opensearch", "create-index", "works-index", "works-mapping.json"])
@@ -29,7 +25,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_update_mapping(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.update_mapping")
+        return mocker.patch("dmpworks.opensearch.index.update_mapping")
 
     def test_opensearch_update_mapping(self, mock_update_mapping):
         cli(["opensearch", "update-mapping", "works-index", "works-mapping.json"])
@@ -42,7 +38,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_sync_works(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.sync_works")
+        return mocker.patch("dmpworks.opensearch.sync_works.sync_works")
 
     def test_opensearch_sync_works(self, mock_sync_works, tmp_path: pathlib.Path):
         works_export = tmp_path / "works_export"
@@ -64,7 +60,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_sync_dmps(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.sync_dmps")
+        return mocker.patch("dmpworks.opensearch.sync_dmps.sync_dmps")
 
     def test_opensearch_sync_dmps(self, mock_sync_dmps):
         cli(
@@ -99,7 +95,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_enrich_dmps(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.enrich_dmps")
+        return mocker.patch("dmpworks.opensearch.enrich_dmps.enrich_dmps")
 
     def test_opensearch_enrich_dmps(self, mock_enrich_dmps):
         cli(["opensearch", "enrich-dmps", "dmps-index"])
@@ -111,7 +107,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_dmp_works_search(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.dmp_works_search")
+        return mocker.patch("dmpworks.opensearch.dmp_works_search.dmp_works_search")
 
     def test_opensearch_dmp_works_search(self, mock_dmp_works_search, tmp_path: pathlib.Path):
         out_file = tmp_path / "results.json"
@@ -141,7 +137,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_rank_metrics(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.related_works_calculate_metrics")
+        return mocker.patch("dmpworks.opensearch.rank_metrics.related_works_calculate_metrics")
 
     def test_opensearch_rank_metrics(self, mock_rank_metrics, tmp_path: pathlib.Path):
         gt_file = tmp_path / "ground_truth.csv"
@@ -169,7 +165,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_create_featureset(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.create_featureset")
+        return mocker.patch("dmpworks.opensearch.learning_to_rank.create_featureset")
 
     def test_opensearch_create_featureset(self, mock_create_featureset):
         cli(["opensearch", "create-featureset", "my-featureset"])
@@ -181,7 +177,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_upload_ranklib_model(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.upload_ranklib_model")
+        return mocker.patch("dmpworks.opensearch.learning_to_rank.upload_ranklib_model")
 
     def test_opensearch_upload_ranklib_model(self, mock_upload_ranklib_model, tmp_path: pathlib.Path):
         model_file = tmp_path / "model.txt"
@@ -216,7 +212,7 @@ class TestOpenSearchCLI:
 
     @pytest.fixture
     def mock_generate_training_dataset(self, mocker):
-        return mocker.patch(f"{CLI_MODULE}.generate_training_dataset")
+        return mocker.patch("dmpworks.opensearch.learning_to_rank.generate_training_dataset")
 
     def test_opensearch_generate_training_dataset(self, mock_generate_training_dataset, tmp_path: pathlib.Path):
         gt_file = tmp_path / "ground_truth.csv"

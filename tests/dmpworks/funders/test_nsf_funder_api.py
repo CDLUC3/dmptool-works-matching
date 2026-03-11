@@ -1,7 +1,5 @@
 import os
 
-import vcr
-
 from dmpworks.funders.nsf_funder_api import (
     extract_doi,
     find_crossref_doi,
@@ -10,6 +8,8 @@ from dmpworks.funders.nsf_funder_api import (
     nsf_fetch_org_id,
     parse_reference,
 )
+import vcr
+
 from tests.utils import get_fixtures_path
 
 FIXTURES_FOLDER = get_fixtures_path()
@@ -19,7 +19,7 @@ def test_nsf_fetch_award_publications():
     with vcr.use_cassette(os.path.join(FIXTURES_FOLDER, "nsf_fetch_award_publication_dois_1507101.yaml")):
         results = nsf_fetch_award_publication_dois("1507101")
         dois = [result["doi"] for result in results]
-        assert [
+        assert dois == [
             "10.1016/j.surfrep.2018.08.001",
             "10.1063/1.5143061",
             "10.1063/1.5143061",
@@ -40,12 +40,12 @@ def test_nsf_fetch_award_publications():
             "10.1021/acs.inorgchem.8b00281",
             "10.1016/j.surfrep.2018.08.001",
             "10.1021/acs.nanolett.8b02123",
-        ] == dois
+        ]
 
     with vcr.use_cassette(os.path.join(FIXTURES_FOLDER, "nsf_fetch_award_publication_dois_0802290.yaml")):
         results = nsf_fetch_award_publication_dois("0802290")
         dois = [result["doi"] for result in results]
-        assert [
+        assert dois == [
             "10.1016/j.dsr2.2012.02.002",
             "10.3354/meps08275",
             "10.3354/meps08275",
@@ -63,7 +63,7 @@ def test_nsf_fetch_award_publications():
             "10.1007/s00300-010-0947-0",
             "10.1007/s00300-010-0947-0",
             "10.1007/s00300-011-1044-8",
-        ] == dois
+        ]
 
 
 def test_find_crossref_doi():
@@ -72,30 +72,30 @@ def test_find_crossref_doi():
             "Usability Analysis of Visual Programming Environments: A ‘Cognitive Dimensions’ Framework",
             "Journal of Visual Languages & Computing",
         )
-        assert "10.1006/jvlc.1996.0009" == doi
+        assert doi == "10.1006/jvlc.1996.0009"
 
         doi = find_crossref_doi(
             "The “Physics” of Notations: Toward a Scientific Basis for Constructing Visual Notations in Software Engineering",
             "IEEE Transactions on software engineering",
         )
-        assert "10.1109/tse.2009.67" == doi
+        assert doi == "10.1109/tse.2009.67"
 
 
 def test_find_datacite_doi():
     with vcr.use_cassette(os.path.join(FIXTURES_FOLDER, "find_datacite_doi.yaml")):
         doi = find_datacite_doi("COKI Open Access Dataset")
-        assert "10.5281/zenodo.6399462" == doi
+        assert doi == "10.5281/zenodo.6399462"
 
         doi = find_datacite_doi("The Data for Cloud Removal in Full-disk Solar Images Using Deep Learning")
-        assert "10.5281/zenodo.13841240" == doi
+        assert doi == "10.5281/zenodo.13841240"
 
         doi = find_datacite_doi(
             'Supplemental Figures for: "The SDSS-V Black Hole Mapper Reverberation Mapping Project: Multi-Line Dynamical Modeling of a Highly Variable Active Galactic Nucleus with Decade-long Light Curves"'
         )
-        assert "10.5281/zenodo.13259639" == doi
+        assert doi == "10.5281/zenodo.13259639"
 
         doi = find_datacite_doi("tidyterra: 'tidyverse' Methods and 'ggplot2' Helpers for 'terra' Objects")
-        assert "10.5281/zenodo.6572471" == doi
+        assert doi == "10.5281/zenodo.6572471"
 
 
 def test_parse_reference():
@@ -446,18 +446,18 @@ def test_parse_reference():
 
 def test_extract_doi():
     doi = extract_doi("DOI 10.1007/s00300-010-0947-0")
-    assert "10.1007/s00300-010-0947-0" == doi
+    assert doi == "10.1007/s00300-010-0947-0"
 
     doi = extract_doi("DOI10.1007/s00300-010-0947-0")
-    assert "10.1007/s00300-010-0947-0" == doi
+    assert doi == "10.1007/s00300-010-0947-0"
 
 
 def test_nsf_fetch_org_id():
     with vcr.use_cassette(os.path.join(FIXTURES_FOLDER, "nsf_fetch_org_id.yaml")):
         # NSF Org ID exists
         org_id = nsf_fetch_org_id("2234213")
-        assert "EAR" == org_id
+        assert org_id == "EAR"
 
         # NSF Org ID None
         org_id = nsf_fetch_org_id("0")
-        assert None == org_id
+        assert org_id == None

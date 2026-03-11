@@ -8,13 +8,14 @@ from opensearchpy import OpenSearch
 import pendulum
 from tqdm import tqdm
 
+from dmpworks.cli_utils import QueryBuilder
 from dmpworks.model.common import Institution
 from dmpworks.model.dmp_model import DMPModel
 from dmpworks.model.related_work_model import ContentMatch, DoiMatch, DoiMatchSource, ItemMatch, RelatedWork
 from dmpworks.model.work_model import WorkModel
 from dmpworks.opensearch.dmp_search import fetch_dmps
 from dmpworks.opensearch.query_builder import build_dmp_works_search_rerank_query, get_query_builder
-from dmpworks.opensearch.utils import OpenSearchClientConfig, QueryBuilder, make_opensearch_client
+from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
 from dmpworks.utils import timed
 
 log = logging.getLogger(__name__)

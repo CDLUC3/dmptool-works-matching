@@ -9,6 +9,7 @@ import pymysql.cursors
 from tqdm import tqdm
 
 from dmpworks.cli_utils import MySQLConfig
+from dmpworks.model.dmp_model import DMPModel
 from dmpworks.opensearch.index import create_index
 from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
 from dmpworks.transform.dmp import transform_dmp
@@ -235,6 +236,27 @@ def count_dmps(conn):
         return result["total"]
 
 
+def validate_dmp(dmp: DMPModel) -> None:
+    """Validate a DMP model, raising ValueError if invalid.
+
+    Checks that required fields are present and that field values are within
+    acceptable ranges. Currently validates the DOI and project start date.
+
+    Args:
+        dmp: The DMP object to validate.
+
+    Raises:
+        ValueError: If the DMP is missing or has an invalid DOI.
+        ValueError: If the project start date is on or before 1900-01-01.
+    """
+    if not dmp.doi:
+        raise ValueError("Missing or invalid DOI")
+    if dmp.project_start is not None and dmp.project_start <= pendulum.date(1900, 1, 1):
+        raise ValueError(
+            f"Project start date less than 1900-01-01 for DMP: doi={dmp.doi}, project_start={dmp.project_start}"
+        )
+
+
 def generate_actions(*, conn, dmps_index: str, on_error: callable):
     """Generate OpenSearch bulk actions from MySQL rows.
 
@@ -251,12 +273,7 @@ def generate_actions(*, conn, dmps_index: str, on_error: callable):
         for row in stream_cursor:
             try:
                 dmp = transform_dmp(row)
-                if not dmp.doi:
-                    raise ValueError("Missing or invalid DOI")
-                if dmp.project_start is not None and dmp.project_start <= pendulum.date(1900, 1, 1):
-                    raise ValueError(
-                        f"Project start date less than 1900-01-01 for DMP: doi={dmp.doi}, project_start={dmp.project_start}"
-                    )
+                validate_dmp(dmp)
 
                 yield {
                     "_op_type": "update",

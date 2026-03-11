@@ -5,7 +5,6 @@ import logging
 import os
 import shlex
 import subprocess
-from typing import TypeVar
 
 import pendulum
 import requests
@@ -32,7 +31,7 @@ def timed(func):
 
 
 def run_process(
-    args,
+    args: list[str],
     env: Mapping[str, str] | None = None,
 ):
     """Run a shell script.
@@ -43,13 +42,14 @@ def run_process(
     """
     log.info(f"run_process command: `{shlex.join(args)}`")
 
-    with subprocess.Popen(
+    with subprocess.Popen(  # noqa: S603
         args,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1,
         env=env,
+        shell=False,
     ) as proc:
         for line in proc.stdout:
             log.info(line)
@@ -84,6 +84,8 @@ class InstanceOf:
         """
         return isinstance(other, self.cls)
 
+    __hash__ = None
+
     def __repr__(self):
         """Return a string representation of the InstanceOf helper.
 
@@ -106,11 +108,7 @@ def copy_dict(original_dict: dict, keys_to_remove: list) -> dict:
     return {k: v for k, v in original_dict.items() if k not in keys_to_remove}
 
 
-T = TypeVar("T")
-BatchGenerator = Generator[list[T], None, None]
-
-
-def to_batches(items: list[T], batch_size: int) -> BatchGenerator:
+def to_batches[T](items: list[T], batch_size: int) -> Generator[list[T], None, None]:
     """Yield successive batches from a list.
 
     Args:

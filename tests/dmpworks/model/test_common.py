@@ -1,14 +1,13 @@
 import datetime
 
-import pendulum
-import pytest
-
 from dmpworks.model.common import (
     parse_pendulum_date,
     parse_pendulum_datetime,
     serialize_pendulum_date,
     serialize_pendulum_datetime,
 )
+import pendulum
+import pytest
 
 
 class TestParsePendulumDatetime:

@@ -69,11 +69,11 @@ def nsf_fetch_award_publication_dois(
 
             ref["doi"] = doi
 
-        return references
-
     except requests.exceptions.RequestException:
         log.exception("nsf_fetch_award_publication_dois: an error occurred while fetching data")
         raise
+    else:
+        return references
 
 
 def find_crossref_doi(
@@ -117,10 +117,11 @@ def find_crossref_doi(
             if fuzz.ratio(title, item_title, processor=preprocess_text) >= threshold:
                 return extract_doi(item.get("DOI"))
 
-        return None
     except requests.exceptions.RequestException:
         log.exception("find_crossref_doi: an error occurred while fetching data")
         raise
+    else:
+        return None
 
 
 def find_datacite_doi(title: str, threshold: float = 95) -> str | None:
@@ -166,10 +167,11 @@ def find_datacite_doi(title: str, threshold: float = 95) -> str | None:
 
                 return extract_doi(doi)
 
-        return None
     except requests.exceptions.RequestException:
         log.exception("find_datacite_doi: an error occurred while fetching data")
         raise
+    else:
+        return None
 
 
 def preprocess_text(text) -> str:
