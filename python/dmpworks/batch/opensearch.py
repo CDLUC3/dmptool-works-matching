@@ -9,7 +9,7 @@ from dmpworks.batch.utils import (
     download_files_from_s3,
     local_path,
     s3_uri,
-    upload_file_to_s3,
+    upload_files_to_s3,
 )
 from dmpworks.cli_utils import DMPSubset, LogLevel, MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
 from dmpworks.dataset_subset import load_dois, load_institutions
@@ -17,7 +17,7 @@ from dmpworks.dataset_subset import load_dois, load_institutions
 log = logging.getLogger(__name__)
 
 SQLMESH_DIR = "sqlmesh"
-MATCHES_FILE_NAME = "matches.jsonl"
+MATCHES_DIR_NAME = "matches"
 DMP_WORKS_SEARCH_PATH = "dmp-works-search"
 DATASET = "opensearch"
 
@@ -135,8 +135,8 @@ def dmp_works_search_cmd(
 
     logging.getLogger("opensearch").setLevel(logging.WARNING)
 
-    out_file = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
-    out_file.parent.mkdir(parents=True, exist_ok=True)
+    out_dir = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_DIR_NAME)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     meta_dir = local_path(DMP_WORKS_SEARCH_PATH, run_id, "meta")
     meta_dir.mkdir(parents=True, exist_ok=True)
@@ -167,7 +167,7 @@ def dmp_works_search_cmd(
         dmp_works_search(
             dmps_index_name,
             works_index_name,
-            out_file,
+            out_dir,
             client_config,
             scroll_time=scroll_time,
             batch_size=batch_size,
@@ -183,11 +183,11 @@ def dmp_works_search_cmd(
             end_date=end_date,
         )
 
-        # Upload to s3
-        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
-        upload_file_to_s3(out_file, target_uri)
+        # Upload all Parquet files to S3
+        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, run_id, MATCHES_DIR_NAME)
+        upload_files_to_s3(out_dir, target_uri, glob_pattern="*.parquet")
     finally:
-        out_file.unlink(missing_ok=True)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
 
 def merge_related_works_cmd(
@@ -207,11 +207,12 @@ def merge_related_works_cmd(
     """
     from dmpworks.dmsp.related_works import merge_related_works  # noqa: PLC0415
 
-    matches_path = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
+    matches_dir = local_path(DMP_WORKS_SEARCH_PATH, run_id, MATCHES_DIR_NAME)
+    matches_dir.mkdir(parents=True, exist_ok=True)
     try:
-        # Download data from s3
-        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, run_id, MATCHES_FILE_NAME)
-        download_file_from_s3(source_uri, matches_path)
+        # Download all Parquet files from S3
+        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_PATH, run_id, MATCHES_DIR_NAME, "*.parquet")
+        download_files_from_s3(source_uri, matches_dir)
 
         # Upsert data
         conn = pymysql.connect(
@@ -223,9 +224,9 @@ def merge_related_works_cmd(
             cursorclass=pymysql.cursors.DictCursor,
         )
         merge_related_works(
-            matches_path,
+            matches_dir,
             conn,
             batch_size=batch_size,
         )
     finally:
-        matches_path.unlink(missing_ok=True)
+        shutil.rmtree(matches_dir, ignore_errors=True)

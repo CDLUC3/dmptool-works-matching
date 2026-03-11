@@ -15,7 +15,7 @@ from dmpworks.transform.simdjson_transforms import (
     parse_iso8601_datetime,
     to_optional_string,
 )
-from dmpworks.transform.utils_file import setup_multiprocessing_logging, yield_objects_from_jsonl
+from dmpworks.utils import setup_multiprocessing_logging, yield_objects_from_jsonl
 
 logger = logging.getLogger(__name__)
 

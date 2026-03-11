@@ -1,4 +1,4 @@
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Callable, Iterable
 import csv
 from dataclasses import dataclass
 import json
@@ -7,15 +7,52 @@ import pathlib
 import tempfile
 from typing import Any
 
-from jsonlines import jsonlines
 from opensearchpy import OpenSearch, exceptions
+import pyarrow as pa
 
 from dmpworks.model.work_model import WorkModel
 from dmpworks.transform.simdjson_transforms import extract_doi
+from dmpworks.utils import ParquetBatchWriter, read_parquet_files
 
 log = logging.getLogger(__name__)
 
 ALLOWED_TABLES = {"works", "workVersions", "relatedWorks", "stagingWorkVersions", "stagingRelatedWorks"}
+
+WORK_VERSIONS_SCHEMA = pa.schema(
+    [
+        pa.field("doi", pa.string()),
+        pa.field("hash", pa.string()),
+        pa.field("workType", pa.string()),
+        pa.field("publicationDate", pa.string()),
+        pa.field("title", pa.string()),
+        pa.field("abstractText", pa.string()),
+        pa.field("authors", pa.string()),
+        pa.field("institutions", pa.string()),
+        pa.field("funders", pa.string()),
+        pa.field("awards", pa.string()),
+        pa.field("publicationVenue", pa.string()),
+        pa.field("sourceName", pa.string()),
+        pa.field("sourceUrl", pa.string()),
+    ]
+)
+
+RELATED_WORKS_SCHEMA = pa.schema(
+    [
+        pa.field("planId", pa.string()),
+        pa.field("dmpDoi", pa.string()),
+        pa.field("workDoi", pa.string()),
+        pa.field("hash", pa.string()),
+        pa.field("sourceType", pa.string()),
+        pa.field("score", pa.float64()),
+        pa.field("scoreMax", pa.float64()),
+        pa.field("doiMatch", pa.string()),
+        pa.field("contentMatch", pa.string()),
+        pa.field("authorMatches", pa.string()),
+        pa.field("institutionMatches", pa.string()),
+        pa.field("funderMatches", pa.string()),
+        pa.field("awardMatches", pa.string()),
+    ]
+)
 
 
 @dataclass
@@ -33,27 +70,32 @@ class RelatedWorkReference:
     work_doi: str
 
 
-def merge_related_works(matches_path: pathlib.Path, conn, batch_size: int = 1000):
+def merge_related_works(matches_dir: pathlib.Path, conn, batch_size: int = 1000):
     """Merge related works data into the database.
 
     Args:
-        matches_path: Path to the file containing matches.
+        matches_dir: Directory containing Parquet match data files.
         conn: Database connection object.
         batch_size: Number of records to process in a batch.
     """
     with RelatedWorksLoader(conn) as loader, tempfile.TemporaryDirectory() as tmp:
-        # Create temporary files with consolidated data
+        # Create temporary directories with consolidated data
         tmp_dir = pathlib.Path(tmp)
-        work_versions_path = tmp_dir / "work_versions.jsonl"
-        related_works_path = tmp_dir / "related_works.jsonl"
-        create_work_versions(matches_path, work_versions_path)
-        create_related_works(matches_path, related_works_path)
+        work_versions_dir = tmp_dir / "work_versions"
+        related_works_dir = tmp_dir / "related_works"
+        work_versions_dir.mkdir()
+        related_works_dir.mkdir()
+        create_work_versions(matches_dir, work_versions_dir)
+        create_related_works(matches_dir, related_works_dir)
 
         # Load into MySQL and run update procedure
         loader.prepare_staging_tables()
-        loader.insert_work_versions(yield_jsonlines(work_versions_path, to_sql_work_version_row), batch_size=batch_size)
+        loader.insert_work_versions(
+            (to_sql_work_version_row(row) for row in read_parquet_files([work_versions_dir])),
+            batch_size=batch_size,
+        )
         loader.insert_related_works(
-            yield_jsonlines(related_works_path, to_sql_related_work_row, extra_fields={"status": "PENDING"}),
+            (to_sql_related_work_row({**row, "status": "PENDING"}) for row in read_parquet_files([related_works_dir])),
             batch_size=batch_size,
         )
         loader.run_update_procedure(system_matched=True)
@@ -323,28 +365,6 @@ def load_related_works(conn, os_client: OpenSearch, records: list[RelatedWorkRef
         loader.run_update_procedure(system_matched=False)
 
 
-def yield_jsonlines(
-    input_path: pathlib.Path, transform_func: Callable, extra_fields: dict | None = None
-) -> Generator[list[Any], None, None]:
-    """Yield transformed rows from a JSONLines file.
-
-    Args:
-        input_path: Path to the JSONLines file.
-        transform_func: Function to transform each row.
-        extra_fields: Dictionary of extra fields to add to each row.
-
-    Yields:
-        Transformed rows.
-    """
-    if extra_fields is None:
-        extra_fields = {}
-
-    with jsonlines.open(input_path) as reader:
-        for row in reader:
-            row.update(extra_fields)
-            yield transform_func(row)
-
-
 def to_sql_work_version_row(row: dict) -> list:
     """Convert a work version dictionary to a list suitable for SQL insertion.
 
@@ -406,20 +426,33 @@ def to_sql_related_work_row(row: dict) -> list:
     ]
 
 
-def create_work_versions(input_path: pathlib.Path, output_path: pathlib.Path):
-    """Extract unique work versions from input file and write to output file.
+def create_work_versions(
+    input_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    *,
+    row_group_size: int = 50_000,
+    row_groups_per_file: int = 4,
+):
+    """Extract unique work versions from input Parquet directory and write to output directory.
 
     Args:
-        input_path: Path to the input file.
-        output_path: Path to the output file.
+        input_dir: Directory containing input Parquet match data files.
+        output_dir: Directory to write work version Parquet files into.
+        row_group_size: Number of rows per Parquet row group.
+        row_groups_per_file: Number of row groups per output file before rotating.
     """
     seen = set()
-    with jsonlines.open(input_path) as in_file, jsonlines.open(output_path, mode="w") as out_file:
-        for row in in_file:
-            work = row["work"]
+    with ParquetBatchWriter(
+        output_dir=output_dir,
+        schema=WORK_VERSIONS_SCHEMA,
+        row_group_size=row_group_size,
+        row_groups_per_file=row_groups_per_file,
+    ) as writer:
+        for row in read_parquet_files([input_dir]):
+            work = json.loads(row["work"])
             doi = work["doi"]
             if doi not in seen:
-                out_file.write(json_work_to_work_version(work))
+                writer.write_rows([json_work_to_work_version(work)])
                 seen.add(doi)
 
 
@@ -449,31 +482,47 @@ def json_work_to_work_version(work: dict) -> dict:
     }
 
 
-def create_related_works(input_path: pathlib.Path, output_path: pathlib.Path):
-    """Extract related works from input file and write to output file.
+def create_related_works(
+    input_dir: pathlib.Path,
+    output_dir: pathlib.Path,
+    *,
+    row_group_size: int = 50_000,
+    row_groups_per_file: int = 4,
+):
+    """Extract related works from input Parquet directory and write to output directory.
 
     Args:
-        input_path: Path to the input file.
-        output_path: Path to the output file.
+        input_dir: Directory containing input Parquet match data files.
+        output_dir: Directory to write related work Parquet files into.
+        row_group_size: Number of rows per Parquet row group.
+        row_groups_per_file: Number of row groups per output file before rotating.
     """
-    with jsonlines.open(input_path) as in_file, jsonlines.open(output_path, mode="w") as out_file:
-        for row in in_file:
-            out_file.write(
-                {
-                    "planId": None,
-                    "dmpDoi": row["dmpDoi"],
-                    "workDoi": row["work"]["doi"],
-                    "hash": row["work"]["hash"],
-                    "sourceType": "SYSTEM_MATCHED",
-                    "score": row["score"],
-                    "scoreMax": row["scoreMax"],
-                    "doiMatch": serialise_json(row["doiMatch"]),
-                    "contentMatch": serialise_json(row["contentMatch"]),
-                    "authorMatches": serialise_json(row["authorMatches"]),
-                    "institutionMatches": serialise_json(row["institutionMatches"]),
-                    "funderMatches": serialise_json(row["funderMatches"]),
-                    "awardMatches": serialise_json(row["awardMatches"]),
-                }
+    with ParquetBatchWriter(
+        output_dir=output_dir,
+        schema=RELATED_WORKS_SCHEMA,
+        row_group_size=row_group_size,
+        row_groups_per_file=row_groups_per_file,
+    ) as writer:
+        for row in read_parquet_files([input_dir]):
+            work = json.loads(row["work"])
+            writer.write_rows(
+                [
+                    {
+                        "planId": None,
+                        "dmpDoi": row["dmpDoi"],
+                        "workDoi": work["doi"],
+                        "hash": work["hash"],
+                        "sourceType": "SYSTEM_MATCHED",
+                        "score": row["score"],
+                        "scoreMax": row["scoreMax"],
+                        "doiMatch": row["doiMatch"],
+                        "contentMatch": row["contentMatch"],
+                        "authorMatches": row["authorMatches"],
+                        "institutionMatches": row["institutionMatches"],
+                        "funderMatches": row["funderMatches"],
+                        "awardMatches": row["awardMatches"],
+                    }
+                ]
             )
 
 

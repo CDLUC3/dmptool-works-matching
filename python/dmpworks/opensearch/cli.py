@@ -182,11 +182,11 @@ def enrich_dmps_cmd(
 def dmp_works_search_cmd(
     dmps_index_name: str,
     works_index_name: str,
-    out_file: Annotated[
+    out_dir: Annotated[
         pathlib.Path,
         Parameter(
             validator=validators.Path(
-                dir_okay=False,
+                dir_okay=True,
                 file_okay=False,
                 exists=False,
             )
@@ -232,7 +232,7 @@ def dmp_works_search_cmd(
     Args:
         dmps_index_name: Name of the DMP index in OpenSearch.
         works_index_name: Name of the works index in OpenSearch.
-        out_file: The output directory where search results will be saved.
+        out_dir: The output directory where search result Parquet files will be written.
         query_builder_name: Name of the query builder to use.
         rerank_model_name: Name of the re-ranking model to use. If nothing is supplied then no re-ranking will occur.
         scroll_time: The length of time the OpenSearch scroll used to iterate through DMPs will stay active. Set it to a value greater than the length of this process.
@@ -268,10 +268,11 @@ def dmp_works_search_cmd(
     if dois_file:
         dois = load_dois(dois_file)
 
+    out_dir.mkdir(parents=True, exist_ok=True)
     dmp_works_search(
         dmps_index_name,
         works_index_name,
-        out_file,
+        out_dir,
         client_config,
         query_builder_name=query_builder_name,
         rerank_model_name=rerank_model_name,

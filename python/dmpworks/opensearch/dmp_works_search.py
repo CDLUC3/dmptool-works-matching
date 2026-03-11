@@ -1,11 +1,12 @@
 from collections.abc import Callable
+import json
 import logging
 import math
 import pathlib
 
-import jsonlines
 from opensearchpy import OpenSearch
 import pendulum
+import pyarrow as pa
 from tqdm import tqdm
 
 from dmpworks.cli_utils import QueryBuilder
@@ -16,16 +17,63 @@ from dmpworks.model.work_model import WorkModel
 from dmpworks.opensearch.dmp_search import fetch_dmps
 from dmpworks.opensearch.query_builder import build_dmp_works_search_rerank_query, get_query_builder
 from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
-from dmpworks.utils import timed
+from dmpworks.utils import ParquetBatchWriter, timed
 
 log = logging.getLogger(__name__)
+
+MATCH_DATA_SCHEMA = pa.schema(
+    [
+        pa.field("dmpDoi", pa.string()),
+        pa.field("work", pa.string()),
+        pa.field("score", pa.float64()),
+        pa.field("scoreMax", pa.float64()),
+        pa.field("doiMatch", pa.string()),
+        pa.field("contentMatch", pa.string()),
+        pa.field("authorMatches", pa.string()),
+        pa.field("institutionMatches", pa.string()),
+        pa.field("funderMatches", pa.string()),
+        pa.field("awardMatches", pa.string()),
+        pa.field("intraWorkDoiMatches", pa.string()),
+        pa.field("possibleSharedProjectDoiMatches", pa.string()),
+        pa.field("datasetCitationDoiMatches", pa.string()),
+    ]
+)
+
+
+def _to_match_data_row(d: dict) -> dict:
+    """Serialize a RelatedWork model_dump dict to a flat Parquet row.
+
+    Nested dicts and lists are serialized to JSON strings.
+
+    Args:
+        d: Dictionary from RelatedWork.model_dump(by_alias=True, mode="json").
+
+    Returns:
+        A flat dictionary suitable for writing to Parquet with MATCH_DATA_SCHEMA.
+    """
+    _dumps = lambda v: json.dumps(v, sort_keys=True, separators=(",", ":"))  # noqa: E731
+    return {
+        "dmpDoi": d["dmpDoi"],
+        "work": _dumps(d["work"]),
+        "score": d["score"],
+        "scoreMax": d["scoreMax"],
+        "doiMatch": _dumps(d["doiMatch"]),
+        "contentMatch": _dumps(d["contentMatch"]),
+        "authorMatches": _dumps(d["authorMatches"]),
+        "institutionMatches": _dumps(d["institutionMatches"]),
+        "funderMatches": _dumps(d["funderMatches"]),
+        "awardMatches": _dumps(d["awardMatches"]),
+        "intraWorkDoiMatches": _dumps(d["intraWorkDoiMatches"]),
+        "possibleSharedProjectDoiMatches": _dumps(d["possibleSharedProjectDoiMatches"]),
+        "datasetCitationDoiMatches": _dumps(d["datasetCitationDoiMatches"]),
+    }
 
 
 @timed
 def dmp_works_search(
     dmps_index_name: str,
     works_index_name: str,
-    out_file: pathlib.Path,
+    out_dir: pathlib.Path,
     client_config: OpenSearchClientConfig,
     query_builder_name: QueryBuilder = "build_dmp_works_search_baseline_query",
     rerank_model_name: str | None = None,
@@ -42,13 +90,15 @@ def dmp_works_search(
     start_date: pendulum.Date | None = None,
     end_date: pendulum.Date | None = None,
     inner_hits_size: int = 50,
+    row_group_size: int = 50_000,
+    row_groups_per_file: int = 4,
 ):
     """Search for related works for DMPs.
 
     Args:
         dmps_index_name: The name of the DMPs index.
         works_index_name: The name of the works index.
-        out_file: The path to the output file.
+        out_dir: The directory to write output Parquet files into.
         client_config: The OpenSearch client configuration.
         query_builder_name: The name of the query builder to use.
         rerank_model_name: The name of the rerank model to use.
@@ -65,6 +115,8 @@ def dmp_works_search(
         start_date: The start date for the project start range filter.
         end_date: The end date for the project start range filter.
         inner_hits_size: The size of inner hits to return for nested fields.
+        row_group_size: Number of rows per Parquet row group.
+        row_groups_per_file: Number of row groups per output file before rotating.
     """
     client = make_opensearch_client(client_config)
 
@@ -72,17 +124,6 @@ def dmp_works_search(
         log.warning("Unable to use include_named_queries_score with msearch, query scores will not be returned.")
 
     query_builder = get_query_builder(query_builder_name)
-
-    def write_works(works: list[RelatedWork], count: int):
-        for work in works:
-            writer.write(
-                # Convert fields to CamelCase for database
-                work.model_dump(
-                    by_alias=True,
-                    mode="json",
-                )
-            )
-        pbar.update(count)
 
     with (
         tqdm(total=0, desc="Find DMP work matches with OpenSearch", unit="doc") as pbar,
@@ -97,57 +138,66 @@ def dmp_works_search(
             end_date=end_date,
             inner_hits_size=inner_hits_size,
         ) as results,
+        ParquetBatchWriter(
+            output_dir=out_dir,
+            schema=MATCH_DATA_SCHEMA,
+            row_group_size=row_group_size,
+            row_groups_per_file=row_groups_per_file,
+        ) as writer,
     ):
         pbar.total = results.total_dmps
 
-        with jsonlines.open(out_file, mode="w") as writer:
-            batch = []
-            for dmp in results.dmps:
-                if not parallel_search or include_named_queries_score:
-                    works = search_dmp_works(
-                        client,
-                        works_index_name,
-                        dmp,
-                        query_builder,
-                        rerank_model_name=rerank_model_name,
-                        max_results=max_results,
-                        project_end_buffer_years=project_end_buffer_years,
-                        include_named_queries_score=include_named_queries_score,
-                        inner_hits_size=inner_hits_size,
-                    )
-                    write_works(works, 1)
-                else:
-                    batch.append(dmp)
-                    if len(batch) >= batch_size:
-                        works = msearch_dmp_works(
-                            client,
-                            works_index_name,
-                            batch,
-                            query_builder,
-                            rerank_model_name=rerank_model_name,
-                            max_results=max_results,
-                            project_end_buffer_years=project_end_buffer_years,
-                            max_concurrent_searches=max_concurrent_searches,
-                            max_concurrent_shard_requests=max_concurrent_shard_requests,
-                            inner_hits_size=inner_hits_size,
-                        )
-                        write_works(works, len(batch))
-                        batch = []
+        def write_works(works: list[RelatedWork], count: int):
+            writer.write_rows([_to_match_data_row(work.model_dump(by_alias=True, mode="json")) for work in works])
+            pbar.update(count)
 
-            if parallel_search and batch:
-                works = msearch_dmp_works(
+        batch = []
+        for dmp in results.dmps:
+            if not parallel_search or include_named_queries_score:
+                works = search_dmp_works(
                     client,
                     works_index_name,
-                    batch,
+                    dmp,
                     query_builder,
                     rerank_model_name=rerank_model_name,
                     max_results=max_results,
                     project_end_buffer_years=project_end_buffer_years,
-                    max_concurrent_searches=max_concurrent_searches,
-                    max_concurrent_shard_requests=max_concurrent_shard_requests,
+                    include_named_queries_score=include_named_queries_score,
                     inner_hits_size=inner_hits_size,
                 )
-                write_works(works, len(batch))
+                write_works(works, 1)
+            else:
+                batch.append(dmp)
+                if len(batch) >= batch_size:
+                    works = msearch_dmp_works(
+                        client,
+                        works_index_name,
+                        batch,
+                        query_builder,
+                        rerank_model_name=rerank_model_name,
+                        max_results=max_results,
+                        project_end_buffer_years=project_end_buffer_years,
+                        max_concurrent_searches=max_concurrent_searches,
+                        max_concurrent_shard_requests=max_concurrent_shard_requests,
+                        inner_hits_size=inner_hits_size,
+                    )
+                    write_works(works, len(batch))
+                    batch = []
+
+        if parallel_search and batch:
+            works = msearch_dmp_works(
+                client,
+                works_index_name,
+                batch,
+                query_builder,
+                rerank_model_name=rerank_model_name,
+                max_results=max_results,
+                project_end_buffer_years=project_end_buffer_years,
+                max_concurrent_searches=max_concurrent_searches,
+                max_concurrent_shard_requests=max_concurrent_shard_requests,
+                inner_hits_size=inner_hits_size,
+            )
+            write_works(works, len(batch))
 
 
 def msearch_dmp_works(

@@ -32,7 +32,7 @@ class TestCrossrefMetadata:
         data = {}
 
         @contextmanager
-        def _mocked(bucket_name: str, dataset: str, run_id: str):
+        def mocked(bucket_name: str, dataset: str, run_id: str):
             with tempfile.TemporaryDirectory() as tmp_dir:
                 data["temp_path"] = pathlib.Path(tmp_dir)
                 ctx = DownloadTaskContext(
@@ -41,7 +41,7 @@ class TestCrossrefMetadata:
                 )
                 yield ctx
 
-        mock_wrapper = MagicMock(side_effect=_mocked)
+        mock_wrapper = MagicMock(side_effect=mocked)
 
         with patch(f"{MODULE}.download_source_task", mock_wrapper):
             yield {"data": data, "mock": mock_wrapper}
@@ -98,7 +98,7 @@ class TestCrossrefMetadata:
         data = {}
 
         @contextmanager
-        def _mocked(*, bucket_name: str, dataset: str, run_id: str, dataset_subset=None):
+        def mocked(*, bucket_name: str, dataset: str, run_id: str, dataset_subset=None):
             with tempfile.TemporaryDirectory() as tmp_dir:
                 data["temp_path"] = pathlib.Path(tmp_dir)
                 ctx = MagicMock()
@@ -108,7 +108,7 @@ class TestCrossrefMetadata:
                 ctx.dois = []
                 yield ctx
 
-        mock_wrapper = MagicMock(side_effect=_mocked)
+        mock_wrapper = MagicMock(side_effect=mocked)
 
         with patch(f"{MODULE}.dataset_subset_task", mock_wrapper):
             yield {"data": data, "mock": mock_wrapper}
@@ -118,7 +118,7 @@ class TestCrossrefMetadata:
         data = {}
 
         @contextmanager
-        def _mocked(bucket_name: str, dataset: str, run_id: str, use_subset: bool = False):
+        def mocked(bucket_name: str, dataset: str, run_id: str, use_subset: bool = False):
             with tempfile.TemporaryDirectory() as tmp_dir:
                 data["temp_path"] = pathlib.Path(tmp_dir)
                 ctx = MagicMock()
@@ -126,7 +126,7 @@ class TestCrossrefMetadata:
                 ctx.transform_dir = pathlib.Path(tmp_dir) / dataset / run_id / "transform"
                 yield ctx
 
-        mock_wrapper = MagicMock(side_effect=_mocked)
+        mock_wrapper = MagicMock(side_effect=mocked)
 
         with patch(f"{MODULE}.transform_parquets_task", mock_wrapper):
             yield {"data": data, "mock": mock_wrapper}
