@@ -19,8 +19,8 @@ DMP Tool Python package that matches DMPs to their published outputs.
 
 See the below pages for in depth documentation.
 
-* [Development](docs/development.md)
-* [Running Locally with Dataset Subset](docs/running-locally.md)
-* [Submitting AWS Batch Jobs](docs/aws-batch.md)
-* [Architecture](docs/architecture.md)
-* [Troubleshooting](docs/troubleshooting.md)
+* [Architecture](docs/architecture.md) — system overview, components, and data flow
+* [Development](docs/development.md) — setting up a local development environment
+* [Running Locally with Dataset Subset](docs/running-locally.md) — running the pipeline locally against a small dataset
+* [Submitting AWS Batch Jobs](docs/aws-batch.md) — running the pipeline at scale on AWS Batch
+* [Troubleshooting](docs/troubleshooting.md) — common issues and fixes

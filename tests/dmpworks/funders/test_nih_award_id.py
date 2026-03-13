@@ -1,7 +1,7 @@
 import csv
 import os
 
-from dmpworks.funders.nih_award_id import NIHAwardID, parse_nih_award_id
+from dmpworks.funders.nih_award_id import NIHAwardID, nih_awards_generate_variants, parse_nih_award_id
 from dmpworks.funders.parser import fetch_funded_dois
 import vcr
 
@@ -71,6 +71,23 @@ def test_parse_nih_award_id():
         #     # print(f"\texpected: {exp}")
         #     print(f"\tparsed: {parsed}")
         #     print(f"\tappl_ids: {appl_ids}")
+
+
+def test_nih_awards_generate_variants_with_activity_code_and_application_type():
+    """Regression test: generating variants must not raise RuntimeError when both
+    activity_code and application_type are set (set mutated during iteration bug)."""
+    award_id = NIHAwardID(
+        text="5R01AI176039-02",
+        application_type="5",
+        activity_code="R01",
+        institute_code="AI",
+        serial_number="176039",
+        support_year="02",
+    )
+    # Should not raise RuntimeError: Set changed size during iteration
+    variants = nih_awards_generate_variants(award_id)
+    assert len(variants) > 0
+    assert "R01AI176039" in variants
 
 
 def test_nih_award_id_e2e():

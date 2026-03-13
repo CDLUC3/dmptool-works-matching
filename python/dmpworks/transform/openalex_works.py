@@ -1,3 +1,4 @@
+import functools
 import logging
 import pathlib
 
@@ -105,11 +106,12 @@ OPENALEX_WORKS_SCHEMA = pa.schema(
 )
 
 
-def parse_openalex_works_record(obj: simdjson.Object) -> dict | None:
+def parse_openalex_works_record(obj: simdjson.Object, *, include_xpac: bool = False) -> dict | None:
     """Parse an OpenAlex Works record from a simdjson object.
 
     Args:
         obj: The simdjson object representing an OpenAlex Works record.
+        include_xpac: If True, include works flagged as xpac (is_xpac=true).
 
     Returns:
         Optional[dict]: A dictionary containing the parsed record, or None if parsing fails.
@@ -117,8 +119,8 @@ def parse_openalex_works_record(obj: simdjson.Object) -> dict | None:
     doi = extract_doi(obj.get("doi"))
     is_xpac = obj.get("is_xpac")
 
-    # Break early if no DOI or work is xpac
-    if doi is None or is_xpac:
+    # Break early if no DOI, or work is xpac and we're not including xpac works
+    if doi is None or (is_xpac and not include_xpac):
         return None
 
     work_id = normalise_identifier(obj.get("id"))
@@ -369,6 +371,7 @@ def transform_openalex_works(
     row_group_size: int,
     row_groups_per_file: int,
     max_workers: int,
+    include_xpac: bool = False,
     log_level: int = logging.INFO,
 ):
     """Transform OpenAlex Works JSONL files to Parquet format.
@@ -380,6 +383,7 @@ def transform_openalex_works(
         row_group_size: Number of rows per row group in Parquet files.
         row_groups_per_file: Number of row groups per Parquet file.
         max_workers: Maximum number of worker processes.
+        include_xpac: If True, include works flagged as xpac (is_xpac=true).
         log_level: Logging level.
     """
     setup_multiprocessing_logging(log_level)
@@ -392,7 +396,7 @@ def transform_openalex_works(
         row_groups_per_file=row_groups_per_file,
         schema=OPENALEX_WORKS_SCHEMA,
         read_func=yield_objects_from_jsonl,
-        transform_func=parse_openalex_works_record,
+        transform_func=functools.partial(parse_openalex_works_record, include_xpac=include_xpac),
         max_workers=max_workers,
         file_prefix="openalex_works_",
         tqdm_description="Transforming OpenAlex Works",

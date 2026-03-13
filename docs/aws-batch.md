@@ -64,17 +64,9 @@ docker tag dmpworks:x86 <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/<ECR
 docker push <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/<ECR_REPOSITORY>:dmpworks-x86
 ```
 
-### 1.4. Upload DMPs
+### 1.4. Upload Files
 
-Begin by uploading the DMP export file
-`coki-dmps_YYYY-MM-DD_1.jsonl.gz` to:
-
-`s3://<BUCKET_NAME>/dmps/YYYY-MM-DD/download/coki-dmps_YYYY-MM-DD_1.jsonl.gz`
-
-`YYYY-MM-DD` should match the snapshot date for this run. This is the only
-dataset that must be uploaded manually.
-
-### 1.5. Upload Files for Dataset Subsets
+#### 1.4.1. Dataset Subsets
 
 If you want to work with subsets of the source datasets and limit DMP–work
 searches to specific DMPs, create the files below and upload them to the
@@ -125,7 +117,28 @@ subset processing.
 ]
 ```
 
-### 1.6. Running Partial Jobs
+#### 1.4.2. Datasets
+
+**Data Citation Corpus**
+
+Extract the Data Citation Corpus JSON files from the ZIP archive, gzip them, and 
+upload them to the `data_citation_corpus/2025-08-15/download/` directory in your S3 bucket:
+
+```bash
+for f in *.json; do gzip -k "$f"; done
+s5cmd cp '*.json.gz' s3://<BUCKET_NAME>/data_citation_corpus/2025-08-15/download/
+```
+
+**DOI State**
+
+Generate an empty DOI state file and upload it to S3. This file is used by SQLMesh as the initial DOI state:
+
+```bash
+dmpworks sqlmesh init-doi-state doi_state_00000.parquet
+s5cmd cp doi_state_00000.parquet s3://<BUCKET_NAME>/sqlmesh/2025-01-01/doi_state_export/doi_state_00000.parquet
+```
+
+### 1.5. Running Partial Jobs
 
 AWS Batch submit commands typically launch a sequence of dependent jobs that
 run in order. If a job fails, you do not need to re-run the entire sequence.
@@ -143,7 +156,7 @@ dmpworks batch-submit ror --help
 Usage: dmpworks batch-submit ror [ARGS] [OPTIONS]
 
 ╭─ Parameters ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  ENV --env                    Environment (e.g., dev, stage, prod) [choices: dev, stage, prod] [env var: ENV]   │
+│ *  ENV --env                    Environment (e.g., dev, stg, prd) [choices: dev, stg, prd] [env var: ENV]   │
 │                                 [required]                                                                        │
 │ *  RUN-ID --run-id              A unique ID to represent this run of the job. [env var: ROR_RUN_ID] [required]    │
 │ *  BUCKET-NAME --bucket-name    S3 bucket name for job I/O. [env var: BUCKET_NAME] [required]                     │
@@ -158,25 +171,55 @@ Usage: dmpworks batch-submit ror [ARGS] [OPTIONS]
 
 ## 2. Download and Normalise Datasets
 
-Download and normalise ROR data:
+Each dataset is downloaded and normalised independently. The commands in this
+section can be run in parallel — there is no ordering requirement between them.
+Once all datasets have been normalised, proceed to [Section 3](#3-process-works).
+
+### 2.1. ROR
+
+Downloads ROR institution data, finds ROR JSON file in ZIP archive, extracts it,
+gzips JSON file and uploads it to S3. This command runs a single step:
+
+1. **`download`** — Download, extract, and upload ROR institution data to S3.
 
 ```bash
 dmpworks --env-file .env.aws batch-submit ror
 ```
 
-Download and normalise OpenAlex Works:
+### 2.2. OpenAlex Works
+
+Downloads and normalises OpenAlex Works data in three steps:
+
+1. **`download`** — Downloads the OpenAlex Works snapshot from S3.
+2. **`dataset-subset`** _(optional)_ — Filters the dataset to a subset of works
+   or institutions (see [Section 1.4](#14-upload-files)).
+3. **`transform`** — Normalises the downloaded data to Parquet.
 
 ```bash
 dmpworks --env-file .env.aws batch-submit openalex-works
 ```
 
-Download and normalise Crossref Metadata:
+### 2.3. Crossref Metadata
+
+Downloads and normalises Crossref Metadata in three steps:
+
+1. **`download`** — Downloads the Crossref Metadata snapshot from S3.
+2. **`dataset-subset`** _(optional)_ — Filters the dataset to a subset of works
+   or institutions (see [Section 1.4](#14-upload-files)).
+3. **`transform`** — Normalises the downloaded data to Parquet.
 
 ```bash
 dmpworks --env-file .env.aws batch-submit crossref-metadata
 ```
 
-Download and normalise DataCite data:
+### 2.4. DataCite
+
+Downloads and normalises DataCite data in three steps:
+
+1. **`download`** — Downloads the DataCite snapshot from S3.
+2. **`dataset-subset`** _(optional)_ — Filters the dataset to a subset of works
+   or institutions (see [Section 1.4](#14-upload-files)).
+3. **`transform`** — Normalises the downloaded data to Parquet.
 
 ```bash
 dmpworks --env-file .env.aws batch-submit datacite
@@ -184,11 +227,15 @@ dmpworks --env-file .env.aws batch-submit datacite
 
 ## 3. Process Works
 
-Next, works are processed by transforming the normalised source datasets into
-the works index using SQLMesh (`sqlmesh-transform` job), and then syncing the
-results to OpenSearch (`sync-works` job).
+> **Prerequisite:** All datasets in [Section 2](#2-download-and-normalise-datasets)
+> must be fully downloaded and normalised before running this step.
 
-Run the following command to submit these AWS Batch jobs:
+Transforms the normalised source datasets into the works index and syncs the
+results to OpenSearch in two steps:
+
+1. **`sqlmesh-transform`** — Transforms the normalised Parquet data into the
+   works index using SQLMesh.
+2. **`sync-works`** — Syncs the works index to OpenSearch.
 
 ```bash
 dmpworks --env-file .env.aws batch-submit process-works
@@ -196,16 +243,20 @@ dmpworks --env-file .env.aws batch-submit process-works
 
 ## 4. Process DMPs
 
-Lastly, DMPs are processed by syncing them to OpenSearch (`sync-dmps` job),
-enriching them with additional metadata (`enrich-dmps` job), running the DMP–works
-search (`dmp-works-search` job), and merging published output matches into the
-DMP Tool database (`merge-related-works` job).
+> **Prerequisite:** [Section 3: Process Works](#3-process-works) must have completed
+> and the works index must be loaded into OpenSearch before running this step.
+
+Lastly, DMPs are processed in four steps:
+
+1. **`sync-dmps`** — Fetches the latest DMP metadata from the DMP Tool MySQL
+   database and synchronises it with the `dmps-index` OpenSearch index.
+2. **`enrich-dmps`** — Enriches DMPs in the index with additional metadata.
+3. **`dmp-works-search`** — Runs the DMP–works search to find matching outputs.
+4. **`merge-related-works`** — Merges published output matches back into the
+   DMP Tool database.
 
 Run the following command to submit these AWS Batch jobs:
 
 ```bash
 dmpworks --env-file .env.aws batch-submit process-dmps
 ```
-
-This updates the OpenSearch DMP index and writes matched outputs back to the
-DMP Tool database.

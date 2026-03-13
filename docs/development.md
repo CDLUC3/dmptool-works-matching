@@ -159,6 +159,52 @@ This deletes:
 - `.venv`
 - `target`
 
+## Development Tools
+
+### DuckDB
+
+DuckDB is used to inspect the intermediate Parquet tables produced by the pipeline.
+See [Running Locally](running-locally.md) for how to populate these tables.
+
+Install DuckDB:
+
+```bash
+curl https://install.duckdb.org | DUCKDB_VERSION=1.4.4 sh
+```
+
+Open the DuckDB UI (requires `DATA_DIR` to be set — see
+[Running Locally Section DATA_DIR](running-locally.md#12-data_dir)):
+
+```bash
+duckdb ${DATA_DIR}/duckdb/db.db -ui
+```
+
+Then open the UI in your browser: <http://localhost:4213>
+
+You can also run a subset of SQLMesh models rather than the full pipeline. For
+example, to load only the source dataset models:
+
+```bash
+sqlmesh -p python/dmpworks/sql plan \
+    --select-model=crossref.crossref_metadata \
+    --select-model=data_citation_corpus.relations \
+    --select-model=openalex.openalex_works \
+    --select-model=datacite.datacite
+```
+
+### Jupyter Lab
+
+Jupyter Lab is installed automatically when the package is installed with dev
+extras (i.e. `make install` or `make install-release`).
+
+Start Jupyter Lab:
+
+```bash
+jupyter lab
+```
+
+Notebooks are in the `notebooks/` directory.
+
 ## Python Dependency Management
 
 Python dependencies are managed with **uv**.

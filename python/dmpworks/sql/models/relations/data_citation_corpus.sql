@@ -32,10 +32,12 @@ pair_degrees AS (
   SELECT
     work_doi,
     dataset_doi,
-    -- The number of datasets this work is connected to
-    COUNT(*) OVER (PARTITION BY work_doi) AS work_degree,
-    -- The number of works this dataset is connected to
-    COUNT(*) OVER (PARTITION BY dataset_doi) AS dataset_degree
+    
+    -- For one specific work_doi, how many different dataset_dois does it point out to?
+    COUNT(*) OVER (PARTITION BY work_doi) AS out_degree,
+    
+    -- For one specific dataset_doi, how many different work_dois are pointing in at it?
+    COUNT(*) OVER (PARTITION BY dataset_doi) AS in_degree
   FROM unique_pairs
 ),
 
@@ -44,7 +46,7 @@ filtered_pairs AS (
     work_doi,
     dataset_doi
   FROM pair_degrees
-  WHERE work_degree <= CAST(@VAR('max_relation_degrees') AS INT64) AND dataset_degree <= CAST(@VAR('max_relation_degrees') AS INT64)
+  WHERE out_degree <= CAST(@VAR('max_relation_degrees') AS INT64) AND in_degree <= CAST(@VAR('max_relation_degrees') AS INT64)
 ),
 
 bidirectional AS (
