@@ -27,6 +27,7 @@ def fetch_dmps(
     institutions: list[Institution] | None = None,
     start_date: pendulum.Date | None = None,
     end_date: pendulum.Date | None = None,
+    modified_since: pendulum.Date | None = None,
     inner_hits_size: int = 50,
 ) -> Generator[ScrollDmps, None, None]:
     """A context manager for fetching DMPs from OpenSearch.
@@ -40,6 +41,7 @@ def fetch_dmps(
         institutions: A list of institutions to filter by.
         start_date: Return DMPs with project start dates on or after this date.
         end_date: Return DMPs with project start dates on before this date.
+        modified_since: Only return DMPs with a modified date on or after this date.
         inner_hits_size: The size of inner hits to return for nested fields.
 
     Yields:
@@ -50,6 +52,7 @@ def fetch_dmps(
         institutions=institutions,
         start_date=start_date,
         end_date=end_date,
+        modified_since=modified_since,
         inner_hits_size=inner_hits_size,
     )
 

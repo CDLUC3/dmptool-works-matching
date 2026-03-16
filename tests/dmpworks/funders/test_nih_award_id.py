@@ -7,7 +7,7 @@ import vcr
 
 from tests.utils import get_fixtures_path
 
-FIXTURES_FOLDER = get_fixtures_path()
+FIXTURES_FOLDER = get_fixtures_path() / "funders"
 
 
 def test_parse_nih_award_id():
@@ -75,7 +75,8 @@ def test_parse_nih_award_id():
 
 def test_nih_awards_generate_variants_with_activity_code_and_application_type():
     """Regression test: generating variants must not raise RuntimeError when both
-    activity_code and application_type are set (set mutated during iteration bug)."""
+    activity_code and application_type are set (set mutated during iteration bug).
+    """
     award_id = NIHAwardID(
         text="5R01AI176039-02",
         application_type="5",

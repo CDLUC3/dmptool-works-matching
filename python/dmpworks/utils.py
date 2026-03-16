@@ -7,7 +7,9 @@ from multiprocessing import log_to_stderr
 import os
 import pathlib
 import shlex
+import shutil
 import subprocess
+import zipfile
 
 import pendulum
 import pyarrow as pa
@@ -62,43 +64,6 @@ def run_process(
 
     if proc.returncode != 0:
         raise subprocess.CalledProcessError(proc.returncode, args)
-
-
-class InstanceOf:
-    """Helper class to check if an object is an instance of a class.
-
-    Attributes:
-        cls: The class to check against.
-    """
-
-    def __init__(self, cls):
-        """Initialize the InstanceOf helper.
-
-        Args:
-            cls: The class to check against.
-        """
-        self.cls = cls
-
-    def __eq__(self, other):
-        """Check if the other object is an instance of the class.
-
-        Args:
-            other: The object to check.
-
-        Returns:
-            bool: True if the object is an instance of the class, False otherwise.
-        """
-        return isinstance(other, self.cls)
-
-    __hash__ = None
-
-    def __repr__(self):
-        """Return a string representation of the InstanceOf helper.
-
-        Returns:
-            str: The string representation.
-        """
-        return f"<any {self.cls.__name__} instance>"
 
 
 def copy_dict(original_dict: dict, keys_to_remove: list) -> dict:
@@ -442,22 +407,55 @@ def read_parquet_files(paths: list[pathlib.Path]) -> Generator[dict, None, None]
             yield from pq.read_table(file).to_pylist()
 
 
-def fetch_datacite_aws_credentials() -> tuple[str, str, str]:
+def extract_zip_to_gzip(file_path: pathlib.Path) -> list[pathlib.Path]:
+    """Extract JSON files from a ZIP archive, compressing each directly to gzip.
+
+    Args:
+        file_path: Path to the ZIP file.
+
+    Returns:
+        List of paths to the gzipped output files.
+    """
+    out_paths = []
+    with zipfile.ZipFile(file_path) as zf:
+        log.info(f"Files in archive: {file_path}")
+        for name in zf.namelist():
+            log.info(name)
+            if not name.lower().endswith(".json"):
+                continue
+            out_path = file_path.parent / (pathlib.Path(name).name + ".gz")
+            with zf.open(name) as src, gzip.open(out_path, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+            log.info(f"Compressed {name} into {out_path.name}")
+            out_paths.append(out_path)
+    return out_paths
+
+
+def fetch_datacite_aws_credentials(
+    *, account_id: str | None = None, password: str | None = None
+) -> tuple[str, str, str]:
     """Fetches DataCite AWS credentials.
 
-    Retrieves credentials from environment variables and the DataCite API.
+    Retrieves credentials from the provided arguments or environment variables, then
+    exchanges them for temporary AWS credentials via the DataCite API.
+
+    Args:
+        account_id: DataCite account ID. Falls back to ``DATACITE_ACCOUNT_ID`` env var if not provided.
+        password: DataCite password. Falls back to ``DATACITE_PASSWORD`` env var if not provided.
 
     Returns:
         A tuple containing (access_key_id, secret_access_key, session_token).
 
     Raises:
-        RuntimeError: If environment variables are missing or the API request fails.
+        RuntimeError: If credentials are missing or the API request fails.
     """
-    account_id = os.getenv("DATACITE_ACCOUNT_ID")
-    password = os.getenv("DATACITE_PASSWORD")
+    account_id = account_id or os.getenv("DATACITE_ACCOUNT_ID")
+    password = password or os.getenv("DATACITE_PASSWORD")
 
     if not account_id or not password:
-        raise RuntimeError("DATACITE_ACCOUNT_ID and DATACITE_PASSWORD must be set in environment variables.")
+        raise RuntimeError(
+            "DataCite account_id and password must be provided or set via DATACITE_ACCOUNT_ID and DATACITE_PASSWORD environment variables."
+        )
 
     url = "https://api.datacite.org/credentials/datafile"
 

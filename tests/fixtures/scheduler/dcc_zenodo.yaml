@@ -1,0 +1,689 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.5
+    method: GET
+    uri: https://zenodo.org/api/records?q=conceptrecid%3A11196858&all_versions=true&sort=mostrecent&page=1&size=10
+  response:
+    body:
+      string: '{"hits": {"hits": [{"created": "2025-08-19T09:18:46.244708+00:00",
+        "modified": "2025-08-19T09:18:46.419885+00:00", "id": 16901115, "conceptrecid":
+        "11196858", "doi": "10.5281/zenodo.16901115", "conceptdoi": "10.5281/zenodo.11196858",
+        "doi_url": "https://doi.org/10.5281/zenodo.16901115", "metadata": {"title":
+        "Data Citation Corpus Data File", "doi": "10.5281/zenodo.16901115", "publication_date":
+        "2025-08-15", "description": "<p>Data file for the fourth release of the Data
+        Citation Corpus, produced by DataCite and Make Data Count as part of an ongoing
+        grant project funded by the Wellcome Trust. <a href=\"https://makedatacount.org/data-citation/\">Read
+        more about the project</a>.</p>\n<p>The data file includes 10,697,745 data
+        citation records (of which 9,682,257 represent unique dataset-publication
+        pairs) in JSON and CSV formats. The JSON file is the version of record.</p>\n<p>Data
+        is provided in batches of approximately 1 million records each. The publication
+        date and batch number are included in the file name, ex: 2025-08-15-data-citation-corpus-01-v4.1.json.</p>\n<p>The
+        data citations in the file originate from the following sources:</p>\n<ul>\n<li>DataCite
+        Event Data</li>\n<li>Chan Zuckerberg Initiative (CZI) Science Knowledge Graph</li>\n<li>Aligning
+        Science Across Parkinson&rsquo;s (ASAP)</li>\n<li>Europe PMC</li>\n</ul>\n<p>Each
+        data citation record is comprised of:</p>\n<ul>\n<li>\n<p>A pair of identifiers:
+        An identifier for the dataset (a DOI or an accession number) and the DOI of
+        the publication (journal article or preprint) in which the dataset is cited&nbsp;&nbsp;</p>\n</li>\n<li>\n<p>Metadata
+        for the cited dataset and for the citing publication&nbsp;</p>\n</li>\n</ul>\n<p>The
+        data file includes the following fields:</p>\n<div>\n<table>\n<tbody>\n<tr>\n<td>\n<p>Field</p>\n</td>\n<td>\n<p>Description</p>\n</td>\n<td>\n<p>Required?</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>id</p>\n</td>\n<td>\n<p>Internal
+        identifier for the citation</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>created</p>\n</td>\n<td>\n<p>Date
+        of item''s incorporation into the corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>updated</p>\n</td>\n<td>\n<p>Date
+        of item''s most recent update in corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>repository</p>\n</td>\n<td>\n<p>Repository
+        where cited data is stored</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publisher</p>\n</td>\n<td>\n<p>Publisher
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>journal</p>\n</td>\n<td>\n<p>Journal
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>title</p>\n</td>\n<td>\n<p>Title
+        of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publication</p>\n</td>\n<td>\n<p>DOI
+        of article where data is cited</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>dataset</p>\n</td>\n<td>\n<p>DOI
+        or accession number of cited data</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publishedDate</p>\n</td>\n<td>\n<p>Date
+        when citing article was published</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>source</p>\n</td>\n<td>\n<p>Source
+        where citation was harvested</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>subjects</p>\n</td>\n<td>\n<p>Subject
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>affiliations</p>\n</td>\n<td>\n<p>Affiliation
+        information for creator of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>funders</p>\n</td>\n<td>\n<p>Funding
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n<p><strong>&nbsp;</strong></p>\n<p>Additional
+        documentation about the citations and metadata in the file is available on
+        the <a href=\"https://makedatacount.org/find-a-tool/data-citation-corpus-documentation/\">Make
+        Data Count website</a>.&nbsp;</p>\n<p><strong>Notes on v4.1:</strong></p>\n<p>Version
+        4.1 of the Data Citation Corpus is a minor update to v4.0 that corrects (1)
+        an error that occurred when a portion of DOI-DOI citations originating from
+        Europe PMC were attributed to the wrong repository, and (2) a small number
+        of DOI formatting errors in the \"publication\" field.</p>\n<p><strong>Notes
+        on v4.0:</strong></p>\n<p>The fourth release of the Data Citation Corpus data
+        file adds new citations from the following sources:</p>\n<ul>\n<li>\n<p dir=\"ltr\">5.2
+        million data citations from <a href=\"https://europepmc.org/\">Europe PMC</a>
+        identified as \"eupmc\" in the source field. Ingest of these citations was
+        performed 9 July 2025.</p>\n</li>\n<li>\n<p dir=\"ltr\">139,647 data citations
+        from DataCite Event Data for the period 1 January 2025 through 30 June 2025.</p>\n</li>\n</ul>\n<p
+        dir=\"ltr\">This release also includes the following new metadata enhancements:</p>\n<ul>\n<li>\n<p
+        dir=\"ltr\">Affiliation information for cited data from the Gene Expression
+        Omnibus (GEO) repository, reonciled to Research Organization Registry (ROR)
+        IDs where possible.</p>\n</li>\n<li>\n<p dir=\"ltr\">Reconciliation of organization
+        and funders names with the Research Organization Registry (ROR) for new citations
+        from Event Data.</p>\n</li>\n<li>\n<p dir=\"ltr\">Application of Field of
+        Science subject terms to citation records originating from Europe PMC, based
+        on disciplinary area of data repository.</p>\n</li>\n</ul>\n<p>Additional
+        details about the above changes, including scripts used to perform the above
+        tasks, are available in <a href=\"https://github.com/Make-Data-Count-Community/corpus-data-file\"
+        target=\"_blank\" rel=\"noopener\">GitHub</a>.&nbsp;</p>\n<p>Additional enhancements
+        to the corpus are ongoing and will be addressed in the course of subsequent
+        releases. Users are invited to submit feedback via <a href=\"https://github.com/Make-Data-Count-Community/data-citation-corpus-feedback\">GitHub</a>.&nbsp;For
+        general questions, email <a href=\"mailto:info@makedatacount.org\">info@makedatacount.org</a>.</p>",
+        "access_right": "open", "creators": [{"name": "DataCite", "affiliation": null},
+        {"name": "Make Data Count", "affiliation": null}], "keywords": ["open data",
+        "data metrics", "research data", "research evaluation", "data citation", "data
+        usage", "open infrastructure", "datacite", "make data count"], "related_identifiers":
+        [{"identifier": "10.5281/zenodo.11196859", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}, {"identifier": "10.5281/zenodo.11216814", "relation":
+        "isNewVersionOf", "resource_type": "dataset", "scheme": "doi"}, {"identifier":
+        "10.5281/zenodo.13376773", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}, {"identifier": "10.5281/zenodo.14897662", "relation":
+        "isNewVersionOf", "resource_type": "dataset", "scheme": "doi"}, {"identifier":
+        "10.5281/zenodo.16546069", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}], "version": "v4.1", "resource_type": {"title":
+        "Dataset", "type": "dataset"}, "license": {"id": "cc-zero"}, "grants": [{"code":
+        "226453/Z/22/Z", "internal_id": "10.13039/100004440::226453/Z/22/Z", "funder":
+        {"name": "Wellcome Trust", "doi": "10.13039/100004440", "acronym": "WT"},
+        "title": "Make Data Count: A Central Corpus for All Data Citations"}], "communities":
+        [{"id": "makedatacount"}], "relations": {"version": [{"index": 5, "is_last":
+        true, "parent": {"pid_type": "recid", "pid_value": "11196858"}}]}}, "title":
+        "Data Citation Corpus Data File", "links": {"self": "https://zenodo.org/api/records/16901115",
+        "self_html": "https://zenodo.org/records/16901115", "preview_html": "https://zenodo.org/records/16901115?preview=1",
+        "doi": "https://doi.org/10.5281/zenodo.16901115", "self_doi": "https://doi.org/10.5281/zenodo.16901115",
+        "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.16901115", "reserve_doi":
+        "https://zenodo.org/api/records/16901115/draft/pids/doi", "parent": "https://zenodo.org/api/records/11196858",
+        "parent_html": "https://zenodo.org/records/11196858", "parent_doi": "https://doi.org/10.5281/zenodo.11196858",
+        "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.11196858", "self_iiif_manifest":
+        "https://zenodo.org/api/iiif/record:16901115/manifest", "self_iiif_sequence":
+        "https://zenodo.org/api/iiif/record:16901115/sequence/default", "files": "https://zenodo.org/api/records/16901115/files",
+        "media_files": "https://zenodo.org/api/records/16901115/media-files", "archive":
+        "https://zenodo.org/api/records/16901115/files-archive", "archive_media":
+        "https://zenodo.org/api/records/16901115/media-files-archive", "latest": "https://zenodo.org/api/records/16901115/versions/latest",
+        "latest_html": "https://zenodo.org/records/16901115/latest", "versions": "https://zenodo.org/api/records/16901115/versions",
+        "draft": "https://zenodo.org/api/records/16901115/draft", "access_links":
+        "https://zenodo.org/api/records/16901115/access/links", "access_grants": "https://zenodo.org/api/records/16901115/access/grants",
+        "access_users": "https://zenodo.org/api/records/16901115/access/users", "access_request":
+        "https://zenodo.org/api/records/16901115/access/request", "access": "https://zenodo.org/api/records/16901115/access",
+        "communities": "https://zenodo.org/api/records/16901115/communities", "communities-suggestions":
+        "https://zenodo.org/api/records/16901115/communities-suggestions", "request_deletion":
+        "https://zenodo.org/api/records/16901115/request-deletion", "file_modification":
+        "https://zenodo.org/api/records/16901115/file-modification", "requests": "https://zenodo.org/api/records/16901115/requests"},
+        "updated": "2025-08-19T09:18:46.419885+00:00", "recid": "16901115", "revision":
+        4, "files": [{"id": "a76d2055-96d8-454c-8107-a185c86075f6", "key": "2025-08-15-data-citation-corpus-v4.1-json.zip",
+        "size": 1007917074, "checksum": "md5:601293df895148b315fdf5395484e768", "links":
+        {"self": "https://zenodo.org/api/records/16901115/files/2025-08-15-data-citation-corpus-v4.1-json.zip/content"}},
+        {"id": "1b75d147-865d-4da0-9e76-af9164ee0e62", "key": "2025-08-15-data-citation-corpus-v4.1-csv.zip",
+        "size": 887454965, "checksum": "md5:8d60ab7f08c7d4a09a5865c1d2da7654", "links":
+        {"self": "https://zenodo.org/api/records/16901115/files/2025-08-15-data-citation-corpus-v4.1-csv.zip/content"}}],
+        "swh": null, "owners": [{"id": "66910"}], "status": "published", "stats":
+        {"downloads": 1853, "unique_downloads": 1646, "views": 10324, "unique_views":
+        9415, "version_downloads": 429, "version_unique_downloads": 387, "version_unique_views":
+        1501, "version_views": 1686}, "state": "done", "submitted": true}, {"created":
+        "2025-07-28T22:02:30.732378+00:00", "modified": "2025-07-28T22:02:31.042225+00:00",
+        "id": 16546069, "conceptrecid": "11196858", "doi": "10.5281/zenodo.16546069",
+        "conceptdoi": "10.5281/zenodo.11196858", "doi_url": "https://doi.org/10.5281/zenodo.16546069",
+        "metadata": {"title": "Data Citation Corpus Data File", "doi": "10.5281/zenodo.16546069",
+        "publication_date": "2025-07-27", "description": "<p>Data file for the fourth
+        release of the Data Citation Corpus, produced by DataCite and Make Data Count
+        as part of an ongoing grant project funded by the Wellcome Trust. <a href=\"https://makedatacount.org/data-citation/\">Read
+        more about the project</a>.</p>\n<p>The data file includes 10,697,745 data
+        citation records (of which 9,682,257 represent unique dataset-publication
+        pairs) in JSON and CSV formats. The JSON file is the version of record.</p>\n<p>Data
+        is provided in batches of approximately 1 million records each. The publication
+        date and batch number are included in the file name, ex: 2027-07-27-data-citation-corpus-01-v4.0.json.</p>\n<p>The
+        data citations in the file originate from the following sources:</p>\n<ul>\n<li>DataCite
+        Event Data</li>\n<li>Chan Zuckerberg Initiative (CZI) Science Knowledge Graph</li>\n<li>Aligning
+        Science Across Parkinson&rsquo;s (ASAP)</li>\n<li>Europe PMC</li>\n</ul>\n<p>Each
+        data citation record is comprised of:</p>\n<ul>\n<li>\n<p>A pair of identifiers:
+        An identifier for the dataset (a DOI or an accession number) and the DOI of
+        the publication (journal article or preprint) in which the dataset is cited&nbsp;&nbsp;</p>\n</li>\n<li>\n<p>Metadata
+        for the cited dataset and for the citing publication&nbsp;</p>\n</li>\n</ul>\n<p>The
+        data file includes the following fields:</p>\n<div>\n<table>\n<tbody>\n<tr>\n<td>\n<p>Field</p>\n</td>\n<td>\n<p>Description</p>\n</td>\n<td>\n<p>Required?</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>id</p>\n</td>\n<td>\n<p>Internal
+        identifier for the citation</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>created</p>\n</td>\n<td>\n<p>Date
+        of item''s incorporation into the corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>updated</p>\n</td>\n<td>\n<p>Date
+        of item''s most recent update in corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>repository</p>\n</td>\n<td>\n<p>Repository
+        where cited data is stored</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publisher</p>\n</td>\n<td>\n<p>Publisher
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>journal</p>\n</td>\n<td>\n<p>Journal
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>title</p>\n</td>\n<td>\n<p>Title
+        of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publication</p>\n</td>\n<td>\n<p>DOI
+        of article where data is cited</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>dataset</p>\n</td>\n<td>\n<p>DOI
+        or accession number of cited data</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publishedDate</p>\n</td>\n<td>\n<p>Date
+        when citing article was published</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>source</p>\n</td>\n<td>\n<p>Source
+        where citation was harvested</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>subjects</p>\n</td>\n<td>\n<p>Subject
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>affiliations</p>\n</td>\n<td>\n<p>Affiliation
+        information for creator of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>funders</p>\n</td>\n<td>\n<p>Funding
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n<p><strong>&nbsp;</strong></p>\n<p>Additional
+        documentation about the citations and metadata in the file is available on
+        the <a href=\"https://makedatacount.org/find-a-tool/data-citation-corpus-documentation/\">Make
+        Data Count website</a>.&nbsp;</p>\n<p><strong>Notes on v4.0:</strong></p>\n<p>The
+        fourth release of the Data Citation Corpus data file adds new citations from
+        the following sources:</p>\n<ul>\n<li>\n<p dir=\"ltr\">5.2 million data citations
+        from <a href=\"https://europepmc.org/\">Europe PMC</a> identified as \"eupmc\"
+        in the source field. Ingest of these citations was performed 9 July 2025.</p>\n</li>\n<li>\n<p
+        dir=\"ltr\">139,647 data citations from DataCite Event Data for the period
+        1 January 2025 through 30 June 2025.</p>\n</li>\n</ul>\n<p dir=\"ltr\">This
+        release also includes the following new metadata enhancements:</p>\n<ul>\n<li>\n<p
+        dir=\"ltr\">Affiliation information for cited data from the Gene Expression
+        Omnibus (GEO) repository, reonciled to Research Organization Registry (ROR)
+        IDs where possible.</p>\n</li>\n<li>\n<p dir=\"ltr\">Reconciliation of organization
+        and funders names with the Research Organization Registry (ROR) for new citations
+        from Event Data.</p>\n</li>\n<li>\n<p dir=\"ltr\">Application of Field of
+        Science subject terms to citation records originating from Europe PMC, based
+        on disciplinary area of data repository.</p>\n</li>\n</ul>\n<p>Additional
+        details about the above changes, including scripts used to perform the above
+        tasks, are available in <a href=\"https://github.com/Make-Data-Count-Community/corpus-data-file\"
+        target=\"_blank\" rel=\"noopener\">GitHub</a>.&nbsp;</p>\n<p>Additional enhancements
+        to the corpus are ongoing and will be addressed in the course of subsequent
+        releases. Users are invited to submit feedback via <a href=\"https://github.com/Make-Data-Count-Community/data-citation-corpus-feedback\">GitHub</a>.&nbsp;For
+        general questions, email <a href=\"mailto:info@makedatacount.org\">info@makedatacount.org</a>.</p>",
+        "access_right": "open", "creators": [{"name": "DataCite", "affiliation": null},
+        {"name": "Make Data Count", "affiliation": null}], "keywords": ["open data",
+        "data metrics", "research data", "research evaluation", "data citation", "data
+        usage", "open infrastructure", "datacite", "make data count"], "related_identifiers":
+        [{"identifier": "10.5281/zenodo.11196859", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}, {"identifier": "10.5281/zenodo.11216814", "relation":
+        "isNewVersionOf", "resource_type": "dataset", "scheme": "doi"}, {"identifier":
+        "10.5281/zenodo.13376773", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}, {"identifier": "10.5281/zenodo.14897662", "relation":
+        "isNewVersionOf", "resource_type": "dataset", "scheme": "doi"}], "version":
+        "v4.0", "resource_type": {"title": "Dataset", "type": "dataset"}, "license":
+        {"id": "cc-zero"}, "grants": [{"code": "226453/Z/22/Z", "internal_id": "10.13039/100004440::226453/Z/22/Z",
+        "funder": {"name": "Wellcome Trust", "doi": "10.13039/100004440", "acronym":
+        "WT"}, "title": "Make Data Count: A Central Corpus for All Data Citations"}],
+        "communities": [{"id": "makedatacount"}], "relations": {"version": [{"index":
+        4, "is_last": false, "parent": {"pid_type": "recid", "pid_value": "11196858"}}]}},
+        "title": "Data Citation Corpus Data File", "links": {"self": "https://zenodo.org/api/records/16546069",
+        "self_html": "https://zenodo.org/records/16546069", "preview_html": "https://zenodo.org/records/16546069?preview=1",
+        "doi": "https://doi.org/10.5281/zenodo.16546069", "self_doi": "https://doi.org/10.5281/zenodo.16546069",
+        "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.16546069", "reserve_doi":
+        "https://zenodo.org/api/records/16546069/draft/pids/doi", "parent": "https://zenodo.org/api/records/11196858",
+        "parent_html": "https://zenodo.org/records/11196858", "parent_doi": "https://doi.org/10.5281/zenodo.11196858",
+        "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.11196858", "self_iiif_manifest":
+        "https://zenodo.org/api/iiif/record:16546069/manifest", "self_iiif_sequence":
+        "https://zenodo.org/api/iiif/record:16546069/sequence/default", "files": "https://zenodo.org/api/records/16546069/files",
+        "media_files": "https://zenodo.org/api/records/16546069/media-files", "archive":
+        "https://zenodo.org/api/records/16546069/files-archive", "archive_media":
+        "https://zenodo.org/api/records/16546069/media-files-archive", "latest": "https://zenodo.org/api/records/16546069/versions/latest",
+        "latest_html": "https://zenodo.org/records/16546069/latest", "versions": "https://zenodo.org/api/records/16546069/versions",
+        "draft": "https://zenodo.org/api/records/16546069/draft", "access_links":
+        "https://zenodo.org/api/records/16546069/access/links", "access_grants": "https://zenodo.org/api/records/16546069/access/grants",
+        "access_users": "https://zenodo.org/api/records/16546069/access/users", "access_request":
+        "https://zenodo.org/api/records/16546069/access/request", "access": "https://zenodo.org/api/records/16546069/access",
+        "communities": "https://zenodo.org/api/records/16546069/communities", "communities-suggestions":
+        "https://zenodo.org/api/records/16546069/communities-suggestions", "request_deletion":
+        "https://zenodo.org/api/records/16546069/request-deletion", "file_modification":
+        "https://zenodo.org/api/records/16546069/file-modification", "requests": "https://zenodo.org/api/records/16546069/requests"},
+        "updated": "2025-07-28T22:02:31.042225+00:00", "recid": "16546069", "revision":
+        4, "files": [{"id": "4575bc26-7ced-4e37-8c71-8d6c99537acc", "key": "2025-07-27-data-citation-corpus-v4.0-json.zip",
+        "size": 1007096882, "checksum": "md5:d494496791277d8d69e21f66e5ace027", "links":
+        {"self": "https://zenodo.org/api/records/16546069/files/2025-07-27-data-citation-corpus-v4.0-json.zip/content"}},
+        {"id": "8db9d698-f0ad-4791-a4da-d3a90dbc0013", "key": "2025-07-27-data-citation-corpus-v4.0-csv.zip",
+        "size": 886480473, "checksum": "md5:5bb77bb014714c877ff6a94e1a8c9253", "links":
+        {"self": "https://zenodo.org/api/records/16546069/files/2025-07-27-data-citation-corpus-v4.0-csv.zip/content"}}],
+        "swh": null, "owners": [{"id": "66910"}], "status": "published", "stats":
+        {"downloads": 1853, "unique_downloads": 1646, "views": 10324, "unique_views":
+        9415, "version_downloads": 186, "version_unique_downloads": 173, "version_unique_views":
+        713, "version_views": 803}, "state": "done", "submitted": true}, {"created":
+        "2025-02-20T01:22:39.812879+00:00", "modified": "2025-02-20T15:42:41.827699+00:00",
+        "id": 14897662, "conceptrecid": "11196858", "doi": "10.5281/zenodo.14897662",
+        "conceptdoi": "10.5281/zenodo.11196858", "doi_url": "https://doi.org/10.5281/zenodo.14897662",
+        "metadata": {"title": "Data Citation Corpus Data File", "doi": "10.5281/zenodo.14897662",
+        "publication_date": "2025-02-01", "description": "<p>Data file for the third
+        release of the Data Citation Corpus, produced by DataCite and Make Data Count
+        as part of an ongoing grant project funded by the Wellcome Trust. <a href=\"https://makedatacount.org/data-citation/\">Read
+        more about the project</a>.</p>\n<p>The data file includes 5,322,388 data
+        citation records in JSON and CSV formats. The JSON file is the version of
+        record.</p>\n<p>For convenience, the data is provided in batches of approximately
+        1 million records each. The publication date and batch number are included
+        in the file name, ex: 2025-02-01-data-citation-corpus-01-v3.0.json.</p>\n<p>The
+        data citations in the file originate from the following sources:</p>\n<ul>\n<li>DataCite
+        Event Data</li>\n<li>A project by Chan Zuckerberg Initiative (CZI) to identify
+        mentions to datasets in the full text of articles</li>\n<li>Data citations
+        identified Aligning Science Across Parkinson&rsquo;s (ASAP)</li>\n</ul>\n<p>Each
+        data citation record is comprised of:</p>\n<ul>\n<li>\n<p>A pair of identifiers:
+        An identifier for the dataset (a DOI or an accession number) and the DOI of
+        the publication (journal article or preprint) in which the dataset is cited&nbsp;&nbsp;</p>\n</li>\n<li>\n<p>Metadata
+        for the cited dataset and for the citing publication&nbsp;</p>\n</li>\n</ul>\n<p>The
+        data file includes the following fields:</p>\n<div>\n<table>\n<tbody>\n<tr>\n<td>\n<p>Field</p>\n</td>\n<td>\n<p>Description</p>\n</td>\n<td>\n<p>Required?</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>id</p>\n</td>\n<td>\n<p>Internal
+        identifier for the citation</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>created</p>\n</td>\n<td>\n<p>Date
+        of item''s incorporation into the corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>updated</p>\n</td>\n<td>\n<p>Date
+        of item''s most recent update in corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>repository</p>\n</td>\n<td>\n<p>Repository
+        where cited data is stored</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publisher</p>\n</td>\n<td>\n<p>Publisher
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>journal</p>\n</td>\n<td>\n<p>Journal
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>title</p>\n</td>\n<td>\n<p>Title
+        of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publication</p>\n</td>\n<td>\n<p>DOI
+        of article where data is cited</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>dataset</p>\n</td>\n<td>\n<p>DOI
+        or accession number of cited data</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publishedDate</p>\n</td>\n<td>\n<p>Date
+        when citing article was published</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>source</p>\n</td>\n<td>\n<p>Source
+        where citation was harvested</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>subjects</p>\n</td>\n<td>\n<p>Subject
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>affiliations</p>\n</td>\n<td>\n<p>Affiliation
+        information for creator of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>funders</p>\n</td>\n<td>\n<p>Funding
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n<p><strong>&nbsp;</strong></p>\n<p>Additional
+        documentation about the citations and metadata in the file is available on
+        the <a href=\"https://makedatacount.org/find-a-tool/data-citation-corpus-documentation/\">Make
+        Data Count website</a>.&nbsp;</p>\n<p><strong>Notes on v3.0:</strong></p>\n<p>The
+        third release of the Data Citation Corpus data file reflects a few changes
+        made to add new citations, including those from a new data source (ASAP),
+        update and enhance citation metadata, and improve the overall usability of
+        the file. These changes are as follows:</p>\n<p>Add and update Event Data
+        citations:</p>\n<ul>\n<li>\n<p>Add 65,524 new data citations created in DataCite
+        Event Data between August 2024 and December 2024</p>\n</li>\n</ul>\n<p>Add
+        ASAP citations:</p>\n<ul>\n<li>\n<p>Add 750 new data citations provided by
+        Aligning Science Across Parkinson&rsquo;s (ASAP), identified through processes
+        to evaluate compliance with ASAP&rsquo;s for open science practices, which
+        involve a partnership with DataSeer and internal curation (described <a href=\"https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1011626\">here</a>).</p>\n</li>\n<li>\n<p>Citations
+        with provenance from ASAP are identified as &ldquo;asap&rdquo; in the source
+        field</p>\n</li>\n</ul>\n<p>Metadata enhancements:</p>\n<ul>\n<li>Reconcile
+        and normalize organization names for affiliations and funders in a subset
+        of records with the&nbsp;<a href=\"https://ror.org\">Research Organization
+        Registry (ROR)</a>\n<ul>\n<li>Add ror_name and ror_id subfields for affiliations
+        and funders in JSON files. Unreconciled affiliation and funder strings are
+        identified with values of null</li>\n<li>Add new columns affiliationsROR and
+        fundersROR in CSV files. Unreconciled affiliation and funder strings are identified
+        with values of NONE NONE (this is to ensure consistency in number and order
+        of values in cases where some strings have been reconciled and others have
+        not)</li>\n</ul>\n</li>\n<li>Normalize DOI formats for articles and papers
+        as full URLs</li>\n</ul>\n<p>Additional details about the above changes, including
+        scripts used to perform the above tasks, are available in <a href=\"https://github.com/Make-Data-Count-Community/corpus-data-file\"
+        target=\"_blank\" rel=\"noopener\">GitHub</a>.&nbsp;</p>\n<p>Additional enhancements
+        to the corpus are ongoing and will be addressed in the course of subsequent
+        releases. Users are invited to submit feedback via <a href=\"https://github.com/Make-Data-Count-Community/data-citation-corpus-feedback\">GitHub</a>.&nbsp;For
+        general questions, email <a href=\"mailto:info@makedatacount.org\">info@makedatacount.org</a>.</p>",
+        "access_right": "open", "creators": [{"name": "DataCite", "affiliation": null},
+        {"name": "Make Data Count", "affiliation": null}], "keywords": ["open data",
+        "data metrics", "research data", "research evaluation", "data citation", "data
+        usage", "open infrastructure", "datacite", "make data count"], "related_identifiers":
+        [{"identifier": "10.5281/zenodo.11196859", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}, {"identifier": "10.5281/zenodo.11216814", "relation":
+        "isNewVersionOf", "resource_type": "dataset", "scheme": "doi"}, {"identifier":
+        "10.5281/zenodo.13376773", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}], "version": "v3.0", "resource_type": {"title":
+        "Dataset", "type": "dataset"}, "license": {"id": "cc-zero"}, "grants": [{"code":
+        "226453/Z/22/Z", "internal_id": "10.13039/100004440::226453/Z/22/Z", "funder":
+        {"name": "Wellcome Trust", "doi": "10.13039/100004440", "acronym": "WT"},
+        "title": "Make Data Count: A Central Corpus for All Data Citations"}], "communities":
+        [{"id": "makedatacount"}], "relations": {"version": [{"index": 3, "is_last":
+        false, "parent": {"pid_type": "recid", "pid_value": "11196858"}}]}}, "title":
+        "Data Citation Corpus Data File", "links": {"self": "https://zenodo.org/api/records/14897662",
+        "self_html": "https://zenodo.org/records/14897662", "preview_html": "https://zenodo.org/records/14897662?preview=1",
+        "doi": "https://doi.org/10.5281/zenodo.14897662", "self_doi": "https://doi.org/10.5281/zenodo.14897662",
+        "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.14897662", "reserve_doi":
+        "https://zenodo.org/api/records/14897662/draft/pids/doi", "parent": "https://zenodo.org/api/records/11196858",
+        "parent_html": "https://zenodo.org/records/11196858", "parent_doi": "https://doi.org/10.5281/zenodo.11196858",
+        "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.11196858", "self_iiif_manifest":
+        "https://zenodo.org/api/iiif/record:14897662/manifest", "self_iiif_sequence":
+        "https://zenodo.org/api/iiif/record:14897662/sequence/default", "files": "https://zenodo.org/api/records/14897662/files",
+        "media_files": "https://zenodo.org/api/records/14897662/media-files", "archive":
+        "https://zenodo.org/api/records/14897662/files-archive", "archive_media":
+        "https://zenodo.org/api/records/14897662/media-files-archive", "latest": "https://zenodo.org/api/records/14897662/versions/latest",
+        "latest_html": "https://zenodo.org/records/14897662/latest", "versions": "https://zenodo.org/api/records/14897662/versions",
+        "draft": "https://zenodo.org/api/records/14897662/draft", "access_links":
+        "https://zenodo.org/api/records/14897662/access/links", "access_grants": "https://zenodo.org/api/records/14897662/access/grants",
+        "access_users": "https://zenodo.org/api/records/14897662/access/users", "access_request":
+        "https://zenodo.org/api/records/14897662/access/request", "access": "https://zenodo.org/api/records/14897662/access",
+        "communities": "https://zenodo.org/api/records/14897662/communities", "communities-suggestions":
+        "https://zenodo.org/api/records/14897662/communities-suggestions", "request_deletion":
+        "https://zenodo.org/api/records/14897662/request-deletion", "file_modification":
+        "https://zenodo.org/api/records/14897662/file-modification", "requests": "https://zenodo.org/api/records/14897662/requests"},
+        "updated": "2025-02-20T15:42:41.827699+00:00", "recid": "14897662", "revision":
+        6, "files": [{"id": "88a5d92a-f2f3-464b-9039-fd07733916af", "key": "2025-02-01-data-citation-corpus-v3.0-json.zip",
+        "size": 528383631, "checksum": "md5:31f8bec01ebdc44dc0de7129b0938e1d", "links":
+        {"self": "https://zenodo.org/api/records/14897662/files/2025-02-01-data-citation-corpus-v3.0-json.zip/content"}},
+        {"id": "f9867f6b-0c92-4b75-8efb-5737bfa3500d", "key": "2025-02-01-data-citation-corpus-v3.0-csv.zip",
+        "size": 467313106, "checksum": "md5:f744eb66df2fcd832b5f2a9e78103b26", "links":
+        {"self": "https://zenodo.org/api/records/14897662/files/2025-02-01-data-citation-corpus-v3.0-csv.zip/content"}}],
+        "swh": null, "owners": [{"id": "66910"}], "status": "published", "stats":
+        {"downloads": 1853, "unique_downloads": 1646, "views": 10324, "unique_views":
+        9415, "version_downloads": 654, "version_unique_downloads": 550, "version_unique_views":
+        3548, "version_views": 3842}, "state": "done", "submitted": true}, {"created":
+        "2024-08-26T19:19:47.476554+00:00", "modified": "2024-10-14T16:55:00.888196+00:00",
+        "id": 13376773, "conceptrecid": "11196858", "doi": "10.5281/zenodo.13376773",
+        "conceptdoi": "10.5281/zenodo.11196858", "doi_url": "https://doi.org/10.5281/zenodo.13376773",
+        "metadata": {"title": "Data Citation Corpus Data File", "doi": "10.5281/zenodo.13376773",
+        "publication_date": "2024-08-23", "description": "<p>Data file for the second
+        release of the Data Citation Corpus, produced by DataCite and Make Data Count
+        as part of an ongoing grant project funded by the Wellcome Trust. <a href=\"https://makedatacount.org/data-citation/\">Read
+        more about the project</a>.</p>\n<p>The data file includes 5,256,114 data
+        citation records in JSON and CSV formats. The JSON file is the version of
+        record.</p>\n<p>For convenience, the data is provided in batches of approximately
+        1 million records each. The publication date and batch number are included
+        in the file name, ex: 2024-08-23-data-citation-corpus-01-v2.0.json.</p>\n<p>The
+        data citations in the file originate from DataCite Event Data and a project
+        by Chan Zuckerberg Initiative (CZI) to identify mentions to datasets in the
+        full text of articles.&nbsp;</p>\n<p>Each data citation record is comprised
+        of:</p>\n<ul>\n<li>\n<p>A pair of identifiers: An identifier for the dataset
+        (a DOI or an accession number) and the DOI of the publication (journal article
+        or preprint) in which the dataset is cited&nbsp;&nbsp;</p>\n</li>\n<li>\n<p>Metadata
+        for the cited dataset and for the citing publication&nbsp;</p>\n</li>\n</ul>\n<p>The
+        data file includes the following fields:</p>\n<div>\n<table>\n<tbody>\n<tr>\n<td>\n<p>Field</p>\n</td>\n<td>\n<p>Description</p>\n</td>\n<td>\n<p>Required?</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>id</p>\n</td>\n<td>\n<p>Internal
+        identifier for the citation</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>created</p>\n</td>\n<td>\n<p>Date
+        of item''s incorporation into the corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>updated</p>\n</td>\n<td>\n<p>Date
+        of item''s most recent update in corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>repository</p>\n</td>\n<td>\n<p>Repository
+        where cited data is stored</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publisher</p>\n</td>\n<td>\n<p>Publisher
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>journal</p>\n</td>\n<td>\n<p>Journal
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>title</p>\n</td>\n<td>\n<p>Title
+        of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publication</p>\n</td>\n<td>\n<p>DOI
+        of article where data is cited</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>dataset</p>\n</td>\n<td>\n<p>DOI
+        or accession number of cited data</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publishedDate</p>\n</td>\n<td>\n<p>Date
+        when citing article was published</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>source</p>\n</td>\n<td>\n<p>Source
+        where citation was harvested</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>subjects</p>\n</td>\n<td>\n<p>Subject
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>affiliations</p>\n</td>\n<td>\n<p>Affiliation
+        information for creator of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>funders</p>\n</td>\n<td>\n<p>Funding
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n<p><strong>&nbsp;</strong></p>\n<p>Additional
+        documentation about the citations and metadata in the file is available on
+        the <a href=\"https://makedatacount.org/find-a-tool/data-citation-corpus-documentation/\">Make
+        Data Count website</a>.&nbsp;</p>\n<p>The second release of the Data Citation
+        Corpus data file reflects several changes made to add new citations, remove
+        some records deemed out of scope for the corpus, update and enhance citation
+        metadata, and improve the overall usability of the file. These changes are
+        as follows:</p>\n<p>Add and update Event Data citations:</p>\n<ul>\n<li>\n<p>Add
+        179,885 new data citations created in DataCite Event Data between 01 June
+        2023 through 30 June 2024</p>\n</li>\n</ul>\n<p>Remove citation records deemed
+        out of scope for the corpus:</p>\n<ul>\n<li>\n<p>273,567 records from DataCite
+        Event Data with non-citation relationship types&nbsp;</p>\n</li>\n<li>\n<p>28,334
+        citations to items in non-data repositories (clinical trials registries, stem
+        cells, samples, and other non-data materials)</p>\n</li>\n<li>\n<p>44,117
+        invalid citations where subj_id value was the same as the obj_id value or
+        subj_id and obj_id are inverted, indicating a citation from a dataset to a
+        publication</p>\n</li>\n<li>\n<p>473,792 citations to invalid accession numbers
+        from CZI data present in v1.1 as a result of false positives in the algorithm
+        used to identify mentions</p>\n</li>\n<li>\n<p>4,110,019 duplicate records
+        from CZI data present in v1.1 where metadata is the same for obj_id, subj_id,
+        repository_id, publisher_id, journal_id, accession_number, and source_id (the
+        record with the most recent updated date was retained in all of these cases)</p>\n</li>\n</ul>\n<p>Metadata
+        enhancements:</p>\n<ul>\n<li>\n<p>Apply Field of Science subject terms to
+        citation records originating from CZI, based on disciplinary area of data
+        repository</p>\n</li>\n<li>\n<p>Initial cleanup of affiliation and funder
+        organization names to remove personal email addresses and social media handles
+        (additional cleanup and standardization in progress and will be included in
+        future releases)</p>\n</li>\n</ul>\n<p>Data structure updates to improve usability
+        and eliminate redundancies:</p>\n<ul>\n<li>\n<p>Rename subj_id and obj_id
+        fields to &ldquo;dataset&rdquo; and &ldquo;publication&rdquo; for clarity</p>\n</li>\n<li>\n<p>Remove
+        accessionNumber and doi elements to eliminate redundancy with subj_id</p>\n</li>\n<li>\n<p>Remove
+        relationTypeId fields as these are specific to Event Data only</p>\n</li>\n</ul>\n<p><strong>&nbsp;</strong></p>\n<p>Full
+        details of the above changes, including scripts used to perform the above
+        tasks, are available in <a href=\"https://github.com/Make-Data-Count-Community/corpus-data-file\"
+        target=\"_blank\" rel=\"noopener\">GitHub</a>.&nbsp;</p>\n<p>While v2 addresses
+        a number of cleanup and enhancement tasks, additional data issues may remain,
+        and additional enhancements are being explored. These will be addressed in
+        the course of subsequent data file releases.&nbsp;</p>\n<p><strong><br></strong>Feedback
+        on the data file can be submitted via <a href=\"https://github.com/Make-Data-Count-Community/data-citation-corpus-feedback\"
+        target=\"_blank\" rel=\"noopener\">GitHub</a>. For general questions, email
+        <a href=\"mailto:info@makedatacount.org\">info@makedatacount.org</a>.</p>",
+        "access_right": "open", "creators": [{"name": "DataCite", "affiliation": null},
+        {"name": "Make Data Count", "affiliation": null}], "keywords": ["open data",
+        "data metrics", "research data", "research evaluation", "data citation", "data
+        usage", "open infrastructure", "datacite", "make data count"], "related_identifiers":
+        [{"identifier": "10.5281/zenodo.11196859", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}, {"identifier": "10.5281/zenodo.11216814", "relation":
+        "isNewVersionOf", "resource_type": "dataset", "scheme": "doi"}], "version":
+        "v2.0", "resource_type": {"title": "Dataset", "type": "dataset"}, "license":
+        {"id": "cc-zero"}, "grants": [{"code": "226453/Z/22/Z", "internal_id": "10.13039/100004440::226453/Z/22/Z",
+        "funder": {"name": "Wellcome Trust", "doi": "10.13039/100004440", "acronym":
+        "WT"}, "title": "Make Data Count: A Central Corpus for All Data Citations"}],
+        "communities": [{"id": "makedatacount"}], "relations": {"version": [{"index":
+        2, "is_last": false, "parent": {"pid_type": "recid", "pid_value": "11196858"}}]}},
+        "title": "Data Citation Corpus Data File", "links": {"self": "https://zenodo.org/api/records/13376773",
+        "self_html": "https://zenodo.org/records/13376773", "preview_html": "https://zenodo.org/records/13376773?preview=1",
+        "doi": "https://doi.org/10.5281/zenodo.13376773", "self_doi": "https://doi.org/10.5281/zenodo.13376773",
+        "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.13376773", "reserve_doi":
+        "https://zenodo.org/api/records/13376773/draft/pids/doi", "parent": "https://zenodo.org/api/records/11196858",
+        "parent_html": "https://zenodo.org/records/11196858", "parent_doi": "https://doi.org/10.5281/zenodo.11196858",
+        "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.11196858", "self_iiif_manifest":
+        "https://zenodo.org/api/iiif/record:13376773/manifest", "self_iiif_sequence":
+        "https://zenodo.org/api/iiif/record:13376773/sequence/default", "files": "https://zenodo.org/api/records/13376773/files",
+        "media_files": "https://zenodo.org/api/records/13376773/media-files", "archive":
+        "https://zenodo.org/api/records/13376773/files-archive", "archive_media":
+        "https://zenodo.org/api/records/13376773/media-files-archive", "latest": "https://zenodo.org/api/records/13376773/versions/latest",
+        "latest_html": "https://zenodo.org/records/13376773/latest", "versions": "https://zenodo.org/api/records/13376773/versions",
+        "draft": "https://zenodo.org/api/records/13376773/draft", "access_links":
+        "https://zenodo.org/api/records/13376773/access/links", "access_grants": "https://zenodo.org/api/records/13376773/access/grants",
+        "access_users": "https://zenodo.org/api/records/13376773/access/users", "access_request":
+        "https://zenodo.org/api/records/13376773/access/request", "access": "https://zenodo.org/api/records/13376773/access",
+        "communities": "https://zenodo.org/api/records/13376773/communities", "communities-suggestions":
+        "https://zenodo.org/api/records/13376773/communities-suggestions", "request_deletion":
+        "https://zenodo.org/api/records/13376773/request-deletion", "file_modification":
+        "https://zenodo.org/api/records/13376773/file-modification", "requests": "https://zenodo.org/api/records/13376773/requests"},
+        "updated": "2024-10-14T16:55:00.888196+00:00", "recid": "13376773", "revision":
+        8, "files": [{"id": "5548d837-cafb-4413-a8e1-bd8e97b9ab76", "key": "2024-08-23-data-citation-corpus-v2.0.zip",
+        "size": 956079833, "checksum": "md5:03c3fb45edbab61fa59e0acbd5275715", "links":
+        {"self": "https://zenodo.org/api/records/13376773/files/2024-08-23-data-citation-corpus-v2.0.zip/content"}}],
+        "swh": null, "owners": [{"id": "66910"}], "status": "published", "stats":
+        {"downloads": 1853, "unique_downloads": 1646, "views": 10324, "unique_views":
+        9415, "version_downloads": 288, "version_unique_downloads": 265, "version_unique_views":
+        1611, "version_views": 1772}, "state": "done", "submitted": true}, {"created":
+        "2024-05-20T07:35:08.835845+00:00", "modified": "2024-05-20T07:35:09.032780+00:00",
+        "id": 11216814, "conceptrecid": "11196858", "doi": "10.5281/zenodo.11216814",
+        "conceptdoi": "10.5281/zenodo.11196858", "doi_url": "https://doi.org/10.5281/zenodo.11216814",
+        "metadata": {"title": "Data Citation Corpus Data File", "doi": "10.5281/zenodo.11216814",
+        "publication_date": "2024-05-10", "description": "<p>Data file for the first
+        release of the Data Citation Corpus, produced by DataCite and Make Data Count
+        as part of an ongoing grant project funded by the Wellcome Trust. <a href=\"https://makedatacount.org/data-citation/\">Read
+        more about the project</a>.</p>\n<p>The data file includes 10,006,058 data
+        citation records in JSON and CSV formats. The JSON file is the version of
+        record.</p>\n<p>Version 1.0 of the corpus data file was released on January
+        30, 2024. Release v1.1 is an optimized version of v1.0 designed to make the
+        original citation records more usable. No citations have been added to or
+        removed from the dataset in v1.1.&nbsp;</p>\n<p>For convenience, the data
+        file is provided in batches of approximately 1 million records each. The publication
+        date and batch number are included in each component file name, ex: 2024-05-10-data-citation-corpus-01-v1.1.json.</p>\n<p>The
+        data citations in the file originate from DataCite Event Data and a project
+        by Chan Zuckerberg Initiative (CZI) to identify mentions to datasets in the
+        full text of articles.&nbsp;</p>\n<p>Each data citation record&nbsp; is comprised
+        of:</p>\n<ul>\n<li>\n<p>A pair of identifiers: An identifier for the dataset
+        (a DOI or an accession number) and the DOI of the publication object (journal
+        article or preprint) in which the dataset is cited&nbsp;&nbsp;</p>\n</li>\n<li>\n<p>Metadata
+        for the cited dataset and for the citing publication object</p>\n</li>\n</ul>\n<p>The
+        data file includes the following fields:</p>\n<table>\n<tbody>\n<tr>\n<td>\n<p><strong>Field</strong></p>\n</td>\n<td>\n<p><strong>Description</strong></p>\n</td>\n<td>\n<p><strong>Required?</strong></p>\n</td>\n</tr>\n<tr>\n<td>\n<p>id</p>\n</td>\n<td>\n<p>Internal
+        identifier for the citation</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>created</p>\n</td>\n<td>\n<p>Date
+        of item''s incorporation into the corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>updated</p>\n</td>\n<td>\n<p>Date
+        of item''s most recent update in corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>repository</p>\n</td>\n<td>\n<p>Repository
+        where cited data is stored</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publisher</p>\n</td>\n<td>\n<p>Publisher
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>journal</p>\n</td>\n<td>\n<p>Journal
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>title</p>\n</td>\n<td>\n<p>Title
+        of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>objId</p>\n</td>\n<td>\n<p>DOI
+        of article where data is cited</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>subjId</p>\n</td>\n<td>\n<p>DOI
+        or accession number of cited data</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publishedDate</p>\n</td>\n<td>\n<p>Date
+        when citing article was published</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>accessionNumber</p>\n</td>\n<td>\n<p>Accession
+        number of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>doi</p>\n</td>\n<td>\n<p>DOI
+        of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>relationTypeId</p>\n</td>\n<td>\n<p>Relation
+        type in metadata between citation object and subject</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>source</p>\n</td>\n<td>\n<p>Source
+        where citation was harvested</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>subjects</p>\n</td>\n<td>\n<p>Subject
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>affiliations</p>\n</td>\n<td>\n<p>Affiliation
+        information for creator of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>funders</p>\n</td>\n<td>\n<p>Funding
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n</tbody>\n</table>\n<div>\n<p>&nbsp;</p>\n<p>Additional
+        documentation about the citations and metadata in the file is available on
+        the&nbsp;<a href=\"https://makedatacount.org/data-citation-corpus-documentation/\">Make
+        Data Count website</a>.</p>\n<p>Feedback on the data file can be submitted
+        via&nbsp;<a href=\"https://github.com/datacite/make-data-count\">Github</a>.
+        For general questions, email info@makedatacount.org.</p>\n</div>", "access_right":
+        "open", "creators": [{"name": "DataCite", "affiliation": null}, {"name": "Make
+        Data Count", "affiliation": null}], "keywords": ["open data", "data metrics",
+        "research data", "research evaluation", "data citation", "data usage", "open
+        infrastructure", "datacite", "make data count"], "related_identifiers": [{"identifier":
+        "10.5281/zenodo.11196859", "relation": "isNewVersionOf", "resource_type":
+        "dataset", "scheme": "doi"}], "version": "v1.1", "resource_type": {"title":
+        "Dataset", "type": "dataset"}, "license": {"id": "cc-zero"}, "grants": [{"code":
+        "226453/Z/22/Z", "internal_id": "10.13039/100004440::226453/Z/22/Z", "funder":
+        {"name": "Wellcome Trust", "doi": "10.13039/100004440", "acronym": "WT"},
+        "title": "Make Data Count: A Central Corpus for All Data Citations"}], "communities":
+        [{"id": "makedatacount"}], "relations": {"version": [{"index": 1, "is_last":
+        false, "parent": {"pid_type": "recid", "pid_value": "11196858"}}]}}, "title":
+        "Data Citation Corpus Data File", "links": {"self": "https://zenodo.org/api/records/11216814",
+        "self_html": "https://zenodo.org/records/11216814", "preview_html": "https://zenodo.org/records/11216814?preview=1",
+        "doi": "https://doi.org/10.5281/zenodo.11216814", "self_doi": "https://doi.org/10.5281/zenodo.11216814",
+        "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.11216814", "reserve_doi":
+        "https://zenodo.org/api/records/11216814/draft/pids/doi", "parent": "https://zenodo.org/api/records/11196858",
+        "parent_html": "https://zenodo.org/records/11196858", "parent_doi": "https://doi.org/10.5281/zenodo.11196858",
+        "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.11196858", "self_iiif_manifest":
+        "https://zenodo.org/api/iiif/record:11216814/manifest", "self_iiif_sequence":
+        "https://zenodo.org/api/iiif/record:11216814/sequence/default", "files": "https://zenodo.org/api/records/11216814/files",
+        "media_files": "https://zenodo.org/api/records/11216814/media-files", "archive":
+        "https://zenodo.org/api/records/11216814/files-archive", "archive_media":
+        "https://zenodo.org/api/records/11216814/media-files-archive", "latest": "https://zenodo.org/api/records/11216814/versions/latest",
+        "latest_html": "https://zenodo.org/records/11216814/latest", "versions": "https://zenodo.org/api/records/11216814/versions",
+        "draft": "https://zenodo.org/api/records/11216814/draft", "access_links":
+        "https://zenodo.org/api/records/11216814/access/links", "access_grants": "https://zenodo.org/api/records/11216814/access/grants",
+        "access_users": "https://zenodo.org/api/records/11216814/access/users", "access_request":
+        "https://zenodo.org/api/records/11216814/access/request", "access": "https://zenodo.org/api/records/11216814/access",
+        "communities": "https://zenodo.org/api/records/11216814/communities", "communities-suggestions":
+        "https://zenodo.org/api/records/11216814/communities-suggestions", "request_deletion":
+        "https://zenodo.org/api/records/11216814/request-deletion", "file_modification":
+        "https://zenodo.org/api/records/11216814/file-modification", "requests": "https://zenodo.org/api/records/11216814/requests"},
+        "updated": "2024-05-20T07:35:09.032780+00:00", "recid": "11216814", "revision":
+        4, "files": [{"id": "d4bc4f88-1d15-43c9-b4d9-2d9848fb5732", "key": "2024-05-10-data-citation-corpus-v1.1.zip",
+        "size": 1834930014, "checksum": "md5:e2e191e9573a9ee729413df872edd96b", "links":
+        {"self": "https://zenodo.org/api/records/11216814/files/2024-05-10-data-citation-corpus-v1.1.zip/content"}}],
+        "swh": null, "owners": [{"id": "66910"}], "status": "published", "stats":
+        {"downloads": 1853, "unique_downloads": 1646, "views": 10324, "unique_views":
+        9415, "version_downloads": 216, "version_unique_downloads": 205, "version_unique_views":
+        1728, "version_views": 1882}, "state": "done", "submitted": true}, {"created":
+        "2024-05-18T08:38:15.034853+00:00", "modified": "2024-05-18T08:38:15.222792+00:00",
+        "id": 11196859, "conceptrecid": "11196858", "doi": "10.5281/zenodo.11196859",
+        "conceptdoi": "10.5281/zenodo.11196858", "doi_url": "https://doi.org/10.5281/zenodo.11196859",
+        "metadata": {"title": "Data Citation Corpus Data File", "doi": "10.5281/zenodo.11196859",
+        "publication_date": "2024-01-30", "description": "<p>Data file for the first
+        release of the Data Citation Corpus, produced by DataCite and Make Data Count
+        as part of an ongoing grant project funded by the Wellcome Trust. <a href=\"https://makedatacount.org/data-citation/\">Read
+        more about the project</a>.</p>\n<p>The data file includes 10,006,058 data
+        citation records in JSON and CSV formats. The JSON file is the version of
+        record.</p>\n<p>The data citations in the file originate from DataCite Event
+        Data and a project by Chan Zuckerberg Initiative (CZI) to identify mentions
+        to datasets in the full text of articles.&nbsp;</p>\n<p>Each data citation
+        record&nbsp; is comprised of:</p>\n<ul>\n<li>\n<p>A pair of identifiers: An
+        identifier for the dataset (a DOI or an accession number) and the DOI of the
+        publication object (journal article or preprint) in which the dataset is cited&nbsp;&nbsp;</p>\n</li>\n<li>\n<p>Metadata
+        for the cited dataset and for the citing publication object</p>\n</li>\n</ul>\n<p>The
+        data file includes the following fields:</p>\n<table>\n<tbody>\n<tr>\n<td>\n<p><strong>Field</strong></p>\n</td>\n<td>\n<p><strong>Description</strong></p>\n</td>\n<td>\n<p><strong>Required?</strong></p>\n</td>\n</tr>\n<tr>\n<td>\n<p>id</p>\n</td>\n<td>\n<p>Internal
+        identifier for the citation</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>created</p>\n</td>\n<td>\n<p>Date
+        of item''s incorporation into the corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>updated</p>\n</td>\n<td>\n<p>Date
+        of item''s most recent update in corpus</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>repository</p>\n</td>\n<td>\n<p>Repository
+        where cited data is stored</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publisher</p>\n</td>\n<td>\n<p>Publisher
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>journal</p>\n</td>\n<td>\n<p>Journal
+        for the article citing the data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>title</p>\n</td>\n<td>\n<p>Title
+        of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>objId</p>\n</td>\n<td>\n<p>DOI
+        of article where data is cited</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>subjId</p>\n</td>\n<td>\n<p>DOI
+        or accession number of cited data</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>publishedDate</p>\n</td>\n<td>\n<p>Date
+        when citing article was published</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>accessionNumber</p>\n</td>\n<td>\n<p>Accession
+        number of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>doi</p>\n</td>\n<td>\n<p>DOI
+        of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>relationTypeId</p>\n</td>\n<td>\n<p>Relation
+        type in metadata between citation object and subject</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>source</p>\n</td>\n<td>\n<p>Source
+        where citation was harvested</p>\n</td>\n<td>\n<p>Yes</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>subjects</p>\n</td>\n<td>\n<p>Subject
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>affiliations</p>\n</td>\n<td>\n<p>Affiliation
+        information for creator of cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n<tr>\n<td>\n<p>funders</p>\n</td>\n<td>\n<p>Funding
+        information for cited data</p>\n</td>\n<td>\n<p>No</p>\n</td>\n</tr>\n</tbody>\n</table>\n<div>\n<p>&nbsp;</p>\n<p>Additional
+        documentation about the citations and metadata in the file is available on
+        the&nbsp;<a href=\"https://makedatacount.org/data-citation-corpus-documentation/\">Make
+        Data Count website</a>.</p>\n<p>Feedback on the data file can be submitted
+        via&nbsp;<a href=\"https://github.com/datacite/make-data-count\">Github</a>.
+        For general questions, email info@makedatacount.org.</p>\n</div>", "access_right":
+        "open", "creators": [{"name": "DataCite", "affiliation": null}, {"name": "Make
+        Data Count", "affiliation": null}], "keywords": ["open data", "data metrics",
+        "research data", "research evaluation", "data citation", "data usage", "open
+        infrastructure", "datacite", "make data count"], "version": "v1.0", "resource_type":
+        {"title": "Dataset", "type": "dataset"}, "license": {"id": "cc-zero"}, "grants":
+        [{"code": "226453/Z/22/Z", "internal_id": "10.13039/100004440::226453/Z/22/Z",
+        "funder": {"name": "Wellcome Trust", "doi": "10.13039/100004440", "acronym":
+        "WT"}, "title": "Make Data Count: A Central Corpus for All Data Citations"}],
+        "communities": [{"id": "makedatacount"}], "relations": {"version": [{"index":
+        0, "is_last": false, "parent": {"pid_type": "recid", "pid_value": "11196858"}}]}},
+        "title": "Data Citation Corpus Data File", "links": {"self": "https://zenodo.org/api/records/11196859",
+        "self_html": "https://zenodo.org/records/11196859", "preview_html": "https://zenodo.org/records/11196859?preview=1",
+        "doi": "https://doi.org/10.5281/zenodo.11196859", "self_doi": "https://doi.org/10.5281/zenodo.11196859",
+        "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.11196859", "reserve_doi":
+        "https://zenodo.org/api/records/11196859/draft/pids/doi", "parent": "https://zenodo.org/api/records/11196858",
+        "parent_html": "https://zenodo.org/records/11196858", "parent_doi": "https://doi.org/10.5281/zenodo.11196858",
+        "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.11196858", "self_iiif_manifest":
+        "https://zenodo.org/api/iiif/record:11196859/manifest", "self_iiif_sequence":
+        "https://zenodo.org/api/iiif/record:11196859/sequence/default", "files": "https://zenodo.org/api/records/11196859/files",
+        "media_files": "https://zenodo.org/api/records/11196859/media-files", "archive":
+        "https://zenodo.org/api/records/11196859/files-archive", "archive_media":
+        "https://zenodo.org/api/records/11196859/media-files-archive", "latest": "https://zenodo.org/api/records/11196859/versions/latest",
+        "latest_html": "https://zenodo.org/records/11196859/latest", "versions": "https://zenodo.org/api/records/11196859/versions",
+        "draft": "https://zenodo.org/api/records/11196859/draft", "access_links":
+        "https://zenodo.org/api/records/11196859/access/links", "access_grants": "https://zenodo.org/api/records/11196859/access/grants",
+        "access_users": "https://zenodo.org/api/records/11196859/access/users", "access_request":
+        "https://zenodo.org/api/records/11196859/access/request", "access": "https://zenodo.org/api/records/11196859/access",
+        "communities": "https://zenodo.org/api/records/11196859/communities", "communities-suggestions":
+        "https://zenodo.org/api/records/11196859/communities-suggestions", "request_deletion":
+        "https://zenodo.org/api/records/11196859/request-deletion", "file_modification":
+        "https://zenodo.org/api/records/11196859/file-modification", "requests": "https://zenodo.org/api/records/11196859/requests"},
+        "updated": "2024-05-18T08:38:15.222792+00:00", "recid": "11196859", "revision":
+        4, "files": [{"id": "46554aef-589c-40ea-ac08-57fe4cf585ce", "key": "2024-01-30-data-citation-corpus-v1.0.zip",
+        "size": 1400187243, "checksum": "md5:7e56ae579f62d432b2fac135d924ac70", "links":
+        {"self": "https://zenodo.org/api/records/11196859/files/2024-01-30-data-citation-corpus-v1.0.zip/content"}}],
+        "swh": null, "owners": [{"id": "66910"}], "status": "published", "stats":
+        {"downloads": 1853, "unique_downloads": 1646, "views": 10324, "unique_views":
+        9415, "version_downloads": 80, "version_unique_downloads": 66, "version_unique_views":
+        314, "version_views": 339}, "state": "done", "submitted": true}], "total":
+        6}, "aggregations": {"access_status": {"buckets": [{"key": "open", "doc_count":
+        6, "label": "Open", "is_selected": false}], "label": "Access status"}, "resource_type":
+        {"buckets": [{"key": "dataset", "doc_count": 6, "label": "Dataset", "is_selected":
+        false, "inner": {"buckets": []}}], "label": "Resource types"}, "subject":
+        {"buckets": [{"key": "data citation", "doc_count": 6, "label": "data citation",
+        "is_selected": false}, {"key": "data metrics", "doc_count": 6, "label": "data
+        metrics", "is_selected": false}, {"key": "data usage", "doc_count": 6, "label":
+        "data usage", "is_selected": false}, {"key": "datacite", "doc_count": 6, "label":
+        "datacite", "is_selected": false}, {"key": "make data count", "doc_count":
+        6, "label": "make data count", "is_selected": false}, {"key": "open data",
+        "doc_count": 6, "label": "open data", "is_selected": false}, {"key": "open
+        infrastructure", "doc_count": 6, "label": "open infrastructure", "is_selected":
+        false}, {"key": "research data", "doc_count": 6, "label": "research data",
+        "is_selected": false}, {"key": "research evaluation", "doc_count": 6, "label":
+        "research evaluation", "is_selected": false}], "label": "Subjects"}, "file_type":
+        {"buckets": [{"key": "zip", "doc_count": 6, "label": "ZIP", "is_selected":
+        false}], "label": "File type"}}, "links": {"self": "https://zenodo.org/api/records?allversions=True&page=1&q=conceptrecid:11196858&size=10&sort=mostrecent"}}'
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - Content-Type, ETag, Link, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+      content-encoding:
+      - gzip
+      content-security-policy:
+      - 'default-src ''self'' fonts.googleapis.com *.gstatic.com data: ''unsafe-inline''
+        ''unsafe-eval'' blob: zenodo-broker.web.cern.ch zenodo-broker-qa.web.cern.ch
+        maxcdn.bootstrapcdn.com cdnjs.cloudflare.com ajax.googleapis.com webanalytics.web.cern.ch'
+      content-type:
+      - application/json
+      date:
+      - Mon, 16 Mar 2026 23:26:42 GMT
+      permissions-policy:
+      - interest-cohort=()
+      referrer-policy:
+      - strict-origin-when-cross-origin
+      retry-after:
+      - '37'
+      server:
+      - nginx
+      strict-transport-security:
+      - max-age=31556926; includeSubDomains
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - sameorigin
+      x-ratelimit-limit:
+      - '30'
+      x-ratelimit-remaining:
+      - '20'
+      x-ratelimit-reset:
+      - '1773703640'
+      x-source:
+      - api
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

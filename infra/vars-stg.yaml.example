@@ -1,0 +1,29 @@
+# Copy to vars-stg.yaml and fill in your values.
+# vars-stg.yaml is gitignored.
+
+env: stg
+
+# AWS region for deployment.
+region: us-east-1
+
+# Root SSM path prefix for this deployment.
+# All SSM parameters this project reads live under this prefix, e.g.:
+#   {ssm_prefix}/{env}/CloudFormationBucket
+#   {ssm_prefix}/{env}/LambdaConfig
+ssm_prefix: /your-org/your-app/dmpworks
+
+# CloudFormation stack tags
+tag_program: ''
+tag_service: ''
+tag_subservice: ''
+tag_code_repo: 'https://github.com/your-org/dmptool-works-matching'
+tag_contact: ''
+
+# Stack output references used by Sceptre to resolve VPC, networking, and
+# infrastructure ARNs from other CloudFormation stacks at deploy time.
+# Format: "<stack-name>::<output-key> <aws-profile>"
+vpc_stack_output: "<stack-name>::<output-key> <aws-profile>"
+subnet_stack_output: "<stack-name>::<output-key> <aws-profile>"
+security_group_stack_output: "<stack-name>::<output-key> <aws-profile>"
+opensearch_stack_output: "<stack-name>::<output-key> <aws-profile>"
+rds_secret_stack_output: "<stack-name>::<output-key> <aws-profile>"

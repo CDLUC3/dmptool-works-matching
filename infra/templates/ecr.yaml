@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'Elastic container registry for DMP Tool works matching build images'
+
+Parameters:
+  BatchRepositoryName:
+    Type: String
+  LambdaRepositoryName:
+    Type: String
+
+Resources:
+  # -----------------------------------------------------------
+  # Elastic Container Repository (ECR) - Hosts the AWS Batch job Docker image
+  # -----------------------------------------------------------
+  BatchRepository:
+    Type: 'AWS::ECR::Repository'
+    DeletionPolicy: 'Retain'
+    Properties:
+      RepositoryName: !Ref BatchRepositoryName
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "action": {
+                  "type": "expire"
+                },
+                "selection": {
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 1,
+                  "tagStatus": "tagged",
+                  "tagPrefixList": [
+                    "latest"
+                  ]
+                },
+                "description": "Ensure that we do not have more than 1 tagged version",
+                "rulePriority": 1
+              },
+              {
+                "action": {
+                  "type": "expire"
+                },
+                "selection": {
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 3,
+                  "tagStatus": "untagged"
+                },
+                "description": "Only retain the last 3 versions",
+                "rulePriority": 2
+              }
+            ]
+          }
+
+  # -----------------------------------------------------------
+  # Elastic Container Repository (ECR) - Hosts the AWS Lambda Docker image
+  # -----------------------------------------------------------
+  LambdaRepository:
+    Type: 'AWS::ECR::Repository'
+    DeletionPolicy: 'Retain'
+    Properties:
+      RepositoryName: !Ref LambdaRepositoryName
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "action": {
+                  "type": "expire"
+                },
+                "selection": {
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 1,
+                  "tagStatus": "tagged",
+                  "tagPrefixList": [
+                    "latest"
+                  ]
+                },
+                "description": "Ensure that we do not have more than 1 tagged version",
+                "rulePriority": 1
+              },
+              {
+                "action": {
+                  "type": "expire"
+                },
+                "selection": {
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 3,
+                  "tagStatus": "untagged"
+                },
+                "description": "Only retain the last 3 versions",
+                "rulePriority": 2
+              }
+            ]
+          }
+
+Outputs:
+  BatchRepositoryName:
+    Value: !Ref BatchRepository
+  BatchRepositoryARN:
+    Value: !GetAtt BatchRepository.Arn
+  BatchRepositoryURI:
+    Value: !GetAtt BatchRepository.RepositoryUri
+
+  LambdaRepositoryName:
+    Value: !Ref LambdaRepository
+  LambdaRepositoryARN:
+    Value: !GetAtt LambdaRepository.Arn
+  LambdaRepositoryURI:
+    Value: !GetAtt LambdaRepository.RepositoryUri

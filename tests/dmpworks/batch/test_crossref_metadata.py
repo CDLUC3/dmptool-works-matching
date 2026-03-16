@@ -48,7 +48,7 @@ class TestCrossrefMetadata:
 
     def test_download(self, mock_download_source_task, mock_run_process):
         bucket = "my-bucket"
-        dataset = "crossref_metadata"
+        dataset = "crossref-metadata"
         run_id = "2025-01-01"
         archive_name = "April_2025_Public_Data_File_from_Crossref.tar"
         crossref_bucket = "crossref-source-bucket"
@@ -98,7 +98,7 @@ class TestCrossrefMetadata:
         data = {}
 
         @contextmanager
-        def mocked(*, bucket_name: str, dataset: str, run_id: str, dataset_subset=None):
+        def mocked(*, bucket_name: str, dataset: str, run_id: str, prev_run_id=None, dataset_subset=None):
             with tempfile.TemporaryDirectory() as tmp_dir:
                 data["temp_path"] = pathlib.Path(tmp_dir)
                 ctx = MagicMock()
@@ -118,7 +118,9 @@ class TestCrossrefMetadata:
         data = {}
 
         @contextmanager
-        def mocked(bucket_name: str, dataset: str, run_id: str, use_subset: bool = False):
+        def mocked(
+            bucket_name: str, dataset: str, run_id: str, use_subset: bool = False, source_run_id: str | None = None
+        ):
             with tempfile.TemporaryDirectory() as tmp_dir:
                 data["temp_path"] = pathlib.Path(tmp_dir)
                 ctx = MagicMock()
@@ -139,7 +141,7 @@ class TestCrossrefMetadata:
         from dmpworks.cli_utils import CrossrefMetadataTransformConfig
 
         bucket = "my-bucket"
-        dataset = "crossref_metadata"
+        dataset = "crossref-metadata"
         run_id = "2025-01-01"
 
         crossref_metadata_module.transform(
@@ -149,7 +151,7 @@ class TestCrossrefMetadata:
         )
 
         mock_task = mock_transform_parquets_task["mock"]
-        mock_task.assert_called_once_with(bucket, dataset, run_id, use_subset=False)
+        mock_task.assert_called_once_with(bucket, dataset, run_id, use_subset=False, source_run_id=None)
 
         temp_path = mock_transform_parquets_task["data"]["temp_path"]
         download_dir = temp_path / dataset / run_id / "download"
@@ -169,7 +171,7 @@ class TestCrossrefMetadata:
         from dmpworks.cli_utils import CrossrefMetadataTransformConfig
 
         bucket = "my-bucket"
-        dataset = "crossref_metadata"
+        dataset = "crossref-metadata"
         run_id = "2025-01-01"
 
         crossref_metadata_module.transform(
@@ -180,4 +182,4 @@ class TestCrossrefMetadata:
         )
 
         mock_task = mock_transform_parquets_task["mock"]
-        mock_task.assert_called_once_with(bucket, dataset, run_id, use_subset=True)
+        mock_task.assert_called_once_with(bucket, dataset, run_id, use_subset=True, source_run_id=None)

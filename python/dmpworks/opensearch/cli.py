@@ -275,6 +275,9 @@ def dmp_works_search_cmd(
         dois=dois,
         dmps_start_date=search_config.dmps_start_date,
         dmps_end_date=search_config.dmps_end_date,
+        dmp_modification_window_days=(
+            search_config.dmp_modification_window_days if search_config.apply_modification_window else None
+        ),
         inner_hits_size=search_config.inner_hits_size,
         row_group_size=search_config.row_group_size,
         row_groups_per_file=search_config.row_groups_per_file,

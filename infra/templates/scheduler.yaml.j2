@@ -1,0 +1,668 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: dmpworks Lambda scheduler functions
+
+Parameters:
+  Env:
+    Type: String
+  EcrImageUri:
+    Type: String
+  BucketName:
+    Type: String
+  DataCiteCredentialsAPIUserSecretArn:
+    Type: String
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:DescribeTable
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/dmpworks-${Env}-dataset-releases
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/dmpworks-${Env}-task-runs
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/dmpworks-${Env}-task-runs/index/step-function-execution-arn-index
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/dmpworks-${Env}-task-checkpoints
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/dmpworks-${Env}-process-works-runs
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/dmpworks-${Env}-process-dmps-runs
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-dataset-ingest-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-process-works-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-process-dmps-${Env}
+        - PolicyName: SSMParameterAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/uc3/dmp/dmpworks/${Env}/LambdaConfig
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref DataCiteCredentialsAPIUserSecretArn
+        - PolicyName: CrossrefMetadataS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: arn:aws:s3:::api-snapshots-reqpays-crossref
+        - PolicyName: S3LifecycleAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetLifecycleConfiguration
+                  - s3:PutLifecycleConfiguration
+                Resource: !Sub arn:aws:s3:::${BucketName}
+
+  StateMachineExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StateMachinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt SetReleaseStatusFunction.Arn
+                  - !GetAtt GetBatchJobParamsFunction.Arn
+                  - !GetAtt SetTaskRunCompleteFunction.Arn
+                  - !GetAtt CheckDatasetsReadyFunction.Arn
+                  - !GetAtt CreateProcessWorksRunFunction.Arn
+                  - !GetAtt SetProcessWorksRunStatusFunction.Arn
+                  - !GetAtt CreateProcessDMPsRunFunction.Arn
+                  - !GetAtt SetProcessDMPsRunStatusFunction.Arn
+              - Effect: Allow
+                Action: dynamodb:GetItem
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/dmpworks-${Env}-task-checkpoints
+              - Effect: Allow
+                Action: batch:SubmitJob
+                Resource:
+                  - !Sub 'arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/*'
+                  - !Sub 'arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-definition/*'
+              - Effect: Allow
+                Action:
+                  - batch:DescribeJobs
+                  - batch:TerminateJob
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - events:PutTargets
+                  - events:PutRule
+                  - events:DescribeRule
+                Resource:
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForBatchJobsRule
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForStepFunctionsExecutionRule
+              - Effect: Allow
+                Action:
+                  - states:StartExecution
+                  - states:DescribeExecution
+                  - states:StopExecution
+                Resource:
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-download-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-subset-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-transform-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-sqlmesh-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-sync-works-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-process-dmps-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-sync-dmps-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-enrich-dmps-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-dmp-works-search-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-merge-related-works-workflow-${Env}
+              - Effect: Allow
+                Action: states:SendTaskSuccess
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - states:DescribeExecution
+                  - states:StopExecution
+                Resource:
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-download-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-subset-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-transform-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-sqlmesh-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-sync-works-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-process-dmps-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-sync-dmps-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-enrich-dmps-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-dmp-works-search-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-merge-related-works-workflow-${Env}:*
+
+  VersionCheckerFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: DatasetIngestStateMachine
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.version_checker_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+          BUCKET_NAME: !Ref BucketName
+          STATE_MACHINE_ARN: !GetAtt DatasetIngestStateMachine.Arn
+          DATACITE_CREDENTIALS_SECRET_ARN: !Ref DataCiteCredentialsAPIUserSecretArn
+
+  VersionCheckerSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: cron(0 15 ? * MON-FRI *)
+      Description: Weekday version check at 15:00 UTC (07:00 PDT in winter, 08:00 PDT in summer)
+      State: ENABLED
+      Targets:
+        - Id: VersionCheckerFunction
+          Arn: !GetAtt VersionCheckerFunction.Arn
+
+  VersionCheckerSchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt VersionCheckerFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt VersionCheckerSchedule.Arn
+
+  SetReleaseStatusFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.set_release_status_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  GetBatchJobParamsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.get_batch_job_params_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+          BUCKET_NAME: !Ref BucketName
+
+  SetTaskRunCompleteFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.set_task_run_complete_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  DownloadWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-download-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/dataset_ingest_workflow/download_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  SubsetWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-subset-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/dataset_ingest_workflow/subset_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  TransformWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-transform-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/dataset_ingest_workflow/transform_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  DatasetIngestStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    DependsOn:
+      - DownloadWorkflowStateMachine
+      - SubsetWorkflowStateMachine
+      - TransformWorkflowStateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-dataset-ingest-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/dataset_ingest_workflow/dataset_ingest_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        SetReleaseStatusFunction: !GetAtt SetReleaseStatusFunction.Arn
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+        TaskCheckpointsTableName: !Sub dmpworks-${Env}-task-checkpoints
+        DownloadWorkflowStateMachine: !GetAtt DownloadWorkflowStateMachine.Arn
+        SubsetWorkflowStateMachine: !GetAtt SubsetWorkflowStateMachine.Arn
+        TransformWorkflowStateMachine: !GetAtt TransformWorkflowStateMachine.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  HandleExecutionFailureFunction:
+    Type: AWS::Lambda::Function
+    DependsOn:
+      - DownloadWorkflowStateMachine
+      - SubsetWorkflowStateMachine
+      - TransformWorkflowStateMachine
+      - DatasetIngestStateMachine
+      - SqlmeshWorkflowStateMachine
+      - SyncWorksWorkflowStateMachine
+      - ProcessWorksStateMachine
+      - ProcessDmpsStateMachine
+      - SyncDmpsWorkflowStateMachine
+      - EnrichDmpsWorkflowStateMachine
+      - DmpWorksSearchWorkflowStateMachine
+      - MergeRelatedWorksWorkflowStateMachine
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.handle_execution_failure_handler"]
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  ExecutionFailedRule:
+    Type: AWS::Events::Rule
+    DependsOn: HandleExecutionFailureFunction
+    Properties:
+      Description: Route Step Functions FAILED executions to the failure handler
+      EventPattern:
+        source:
+          - aws.states
+        detail-type:
+          - Step Functions Execution Status Change
+        detail:
+          stateMachineArn:
+            - !GetAtt DatasetIngestStateMachine.Arn
+            - !GetAtt DownloadWorkflowStateMachine.Arn
+            - !GetAtt SubsetWorkflowStateMachine.Arn
+            - !GetAtt TransformWorkflowStateMachine.Arn
+            - !GetAtt ProcessWorksStateMachine.Arn
+            - !GetAtt SqlmeshWorkflowStateMachine.Arn
+            - !GetAtt SyncWorksWorkflowStateMachine.Arn
+            - !GetAtt ProcessDmpsStateMachine.Arn
+            - !GetAtt SyncDmpsWorkflowStateMachine.Arn
+            - !GetAtt EnrichDmpsWorkflowStateMachine.Arn
+            - !GetAtt DmpWorksSearchWorkflowStateMachine.Arn
+            - !GetAtt MergeRelatedWorksWorkflowStateMachine.Arn
+          status:
+            - FAILED
+      State: ENABLED
+      Targets:
+        - Id: HandleExecutionFailureFunction
+          Arn: !GetAtt HandleExecutionFailureFunction.Arn
+
+  HandleExecutionFailurePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt HandleExecutionFailureFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ExecutionFailedRule.Arn
+
+  CheckDatasetsReadyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.check_datasets_ready_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  CreateProcessWorksRunFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.create_process_works_run_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  SetProcessWorksRunStatusFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.set_process_works_run_status_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  CreateProcessDMPsRunFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.create_process_dmps_run_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  SetProcessDMPsRunStatusFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.set_process_dmps_run_status_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  SqlmeshWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-sqlmesh-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/process_works_workflow/sqlmesh_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  SyncWorksWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-sync-works-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/process_works_workflow/sync_works_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  SyncDmpsWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-sync-dmps-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/sync_dmps_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  EnrichDmpsWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-enrich-dmps-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/enrich_dmps_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  DmpWorksSearchWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-dmp-works-search-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/dmp_works_search_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  MergeRelatedWorksWorkflowStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-merge-related-works-workflow-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/merge_related_works_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        GetBatchJobParamsFunction: !GetAtt GetBatchJobParamsFunction.Arn
+        SetTaskRunCompleteFunction: !GetAtt SetTaskRunCompleteFunction.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  ProcessDmpsStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    DependsOn:
+      - SyncDmpsWorkflowStateMachine
+      - EnrichDmpsWorkflowStateMachine
+      - DmpWorksSearchWorkflowStateMachine
+      - MergeRelatedWorksWorkflowStateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-process-dmps-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/process_dmps_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        CreateProcessDMPsRunFunction: !GetAtt CreateProcessDMPsRunFunction.Arn
+        SetProcessDMPsRunStatusFunction: !GetAtt SetProcessDMPsRunStatusFunction.Arn
+        TaskCheckpointsTableName: !Sub dmpworks-${Env}-task-checkpoints
+        SyncDmpsWorkflowStateMachine: !GetAtt SyncDmpsWorkflowStateMachine.Arn
+        EnrichDmpsWorkflowStateMachine: !GetAtt EnrichDmpsWorkflowStateMachine.Arn
+        DmpWorksSearchWorkflowStateMachine: !GetAtt DmpWorksSearchWorkflowStateMachine.Arn
+        MergeRelatedWorksWorkflowStateMachine: !GetAtt MergeRelatedWorksWorkflowStateMachine.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  ProcessWorksStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    DependsOn:
+      - SqlmeshWorkflowStateMachine
+      - SyncWorksWorkflowStateMachine
+      - ProcessDmpsStateMachine
+    Properties:
+      StateMachineName: !Sub dmpworks-process-works-${Env}
+      DefinitionString: |
+{% filter indent(8, true) %}{% include 'state_machines/process_works_workflow/process_works_workflow.asl.json' %}{% endfilter %}
+      DefinitionSubstitutions:
+        CheckDatasetsReadyFunction: !GetAtt CheckDatasetsReadyFunction.Arn
+        CreateProcessWorksRunFunction: !GetAtt CreateProcessWorksRunFunction.Arn
+        SetProcessWorksRunStatusFunction: !GetAtt SetProcessWorksRunStatusFunction.Arn
+        TaskCheckpointsTableName: !Sub dmpworks-${Env}-task-checkpoints
+        SqlmeshWorkflowStateMachine: !GetAtt SqlmeshWorkflowStateMachine.Arn
+        SyncWorksWorkflowStateMachine: !GetAtt SyncWorksWorkflowStateMachine.Arn
+        ProcessDmpsStateMachine: !GetAtt ProcessDmpsStateMachine.Arn
+      StateMachineType: STANDARD
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+
+  StartProcessWorksFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: ProcessWorksStateMachine
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.start_process_works_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+          BUCKET_NAME: !Ref BucketName
+          STATE_MACHINE_ARN: !GetAtt ProcessWorksStateMachine.Arn
+
+  ProcessWorksSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: cron(0 16 8-14 * MON *)
+      Description: Start process-works on the second Monday of each month at 16:00 UTC
+      State: ENABLED
+      Targets:
+        - Id: StartProcessWorksFunction
+          Arn: !GetAtt StartProcessWorksFunction.Arn
+
+  ProcessWorksSchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt StartProcessWorksFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ProcessWorksSchedule.Arn
+
+  StartProcessDMPsFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: ProcessDmpsStateMachine
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.start_process_dmps_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+          BUCKET_NAME: !Ref BucketName
+          STATE_MACHINE_ARN: !GetAtt ProcessDmpsStateMachine.Arn
+
+  ProcessDMPsSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: cron(0 17 ? * * *)
+      Description: Start process-dmps daily at 17:00 UTC
+      State: ENABLED
+      Targets:
+        - Id: StartProcessDMPsFunction
+          Arn: !GetAtt StartProcessDMPsFunction.Arn
+
+  ProcessDMPsSchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt StartProcessDMPsFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ProcessDMPsSchedule.Arn
+
+  S3CleanupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.s3_cleanup_handler"]
+      Timeout: 300
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+          BUCKET_NAME: !Ref BucketName
+
+  S3CleanupSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: cron(0 0 L * ? *)
+      Description: Monthly S3 cleanup — schedules stale run data for expiry on last day of month
+      State: ENABLED
+      Targets:
+        - Id: S3CleanupFunction
+          Arn: !GetAtt S3CleanupFunction.Arn
+
+  S3CleanupSchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt S3CleanupFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt S3CleanupSchedule.Arn

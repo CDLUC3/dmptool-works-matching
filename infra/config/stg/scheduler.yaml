@@ -1,0 +1,15 @@
+template:
+  path: scheduler.yaml.j2
+  type: file
+
+parameters:
+  Env: "{{ var.env }}"
+  EcrImageUri: !ssm {{ stack_group_config.sceptre_user_data.ssm_path }}/LambdaEcrImageUri
+  BucketName: !stack_output stg.yaml/s3::S3BucketID
+  DataCiteCredentialsAPIUserSecretArn: !ssm {{ stack_group_config.sceptre_user_data.ssm_path }}/DataCiteCredentialsAPIUserSecretArn
+
+dependencies:
+  - stg/s3.yaml
+
+capabilities:
+  - CAPABILITY_IAM

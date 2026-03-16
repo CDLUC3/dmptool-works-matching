@@ -11,7 +11,7 @@ import vcr
 
 from tests.utils import get_fixtures_path
 
-FIXTURES_FOLDER = get_fixtures_path()
+FIXTURES_FOLDER = get_fixtures_path() / "funders"
 
 
 def test_nih_core_project_to_appl_ids():

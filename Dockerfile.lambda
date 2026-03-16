@@ -1,0 +1,31 @@
+# ----------------------------------
+# dmpworks lambda image
+# ----------------------------------
+
+# Build arguments
+ARG PYTHON_VERSION="3.12"
+
+FROM dmpworks-builder:latest AS builder
+
+FROM public.ecr.aws/lambda/python:${PYTHON_VERSION}
+ARG PYTHON_VERSION
+
+# Pull uv into image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+# Sync dependencies
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev --python ${PYTHON_VERSION}
+
+# Set PATH
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app/.venv/lib/python${PYTHON_VERSION}/site-packages"
+
+# Copy and install dmpworks
+COPY --from=builder /app/dmptool-works-matching/target/wheels /app/wheels/dmpworks
+RUN uv pip install --no-deps /app/wheels/dmpworks/*.whl
+
+CMD ["dmpworks.scheduler.handler.version_checker_handler"]
+

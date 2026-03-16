@@ -1,0 +1,222 @@
+{
+  "Comment": "Dataset ingest workflow — orchestrates download, subset, and transform child state machines",
+  "StartAt": "MarkReleaseStarted",
+  "States": {
+    "MarkReleaseStarted": {
+      "Type": "Task",
+      "Comment": "Mark the initial release record status as STARTED in the database",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetReleaseStatusFunction}",
+        "Payload": {
+          "release_status": "STARTED",
+          "workflow_key.$": "$.workflow_key",
+          "publication_date.$": "$.publication_date",
+          "execution_arn.$": "$$.Execution.Id"
+        }
+      },
+      "ResultPath": null,
+      "Next": "GetDownloadTaskRunStatus"
+    },
+    "GetDownloadTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing download checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S.$": "$.workflow_key"},
+          "task_key": {"S.$": "States.Format('download#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.task_run_check",
+      "Next": "SkipDownloadCheck"
+    },
+    "SkipDownloadCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the download task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.task_run_check.Item",
+          "IsPresent": true,
+          "Next": "CheckHasTransform"
+        }
+      ],
+      "Default": "InvokeDownloadChildSM"
+    },
+    "InvokeDownloadChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the download child state machine and wait for its task token callback",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${DownloadWorkflowStateMachine}",
+        "Name.$": "States.Format('{}-download-{}-{}', $.workflow_key, $.publication_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key.$": "$.workflow_key",
+          "publication_date.$": "$.publication_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "download_url.$": "$.download_url",
+          "file_hash.$": "$.file_hash",
+          "file_name.$": "$.file_name",
+          "use_subset.$": "$.use_subset",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "CheckHasTransform"
+    },
+    "CheckHasTransform": {
+      "Type": "Choice",
+      "Comment": "Skip the transform task run for natively formatted datasets like ror and data-citation-corpus",
+      "Choices": [
+        {
+          "Or": [
+            {
+              "Variable": "$.workflow_key",
+              "StringEquals": "ror"
+            },
+            {
+              "Variable": "$.workflow_key",
+              "StringEquals": "data-citation-corpus"
+            }
+          ],
+          "Next": "MarkReleaseCompleted"
+        }
+      ],
+      "Default": "CheckUseSubset"
+    },
+    "CheckUseSubset": {
+      "Type": "Choice",
+      "Comment": "Determine if we should run the subset task run based on configuration",
+      "Choices": [
+        {
+          "Variable": "$.use_subset",
+          "BooleanEquals": true,
+          "Next": "GetSubsetTaskRunStatus"
+        }
+      ],
+      "Default": "GetTransformTaskRunStatus"
+    },
+    "GetSubsetTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing subset checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S.$": "$.workflow_key"},
+          "task_key": {"S.$": "States.Format('subset#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.task_run_check",
+      "Next": "SkipSubsetCheck"
+    },
+    "SkipSubsetCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the subset task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.task_run_check.Item",
+          "IsPresent": true,
+          "Next": "GetTransformTaskRunStatus"
+        }
+      ],
+      "Default": "InvokeSubsetChildSM"
+    },
+    "InvokeSubsetChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the subset child state machine and wait for its task token callback",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${SubsetWorkflowStateMachine}",
+        "Name.$": "States.Format('{}-subset-{}-{}', $.workflow_key, $.publication_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key.$": "$.workflow_key",
+          "publication_date.$": "$.publication_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "download_url.$": "$.download_url",
+          "file_hash.$": "$.file_hash",
+          "file_name.$": "$.file_name",
+          "use_subset.$": "$.use_subset",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GetTransformTaskRunStatus"
+    },
+    "GetTransformTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing transform checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S.$": "$.workflow_key"},
+          "task_key": {"S.$": "States.Format('transform#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.task_run_check",
+      "Next": "SkipTransformCheck"
+    },
+    "SkipTransformCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the transform task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.task_run_check.Item",
+          "IsPresent": true,
+          "Next": "MarkReleaseCompleted"
+        }
+      ],
+      "Default": "InvokeTransformChildSM"
+    },
+    "InvokeTransformChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the transform child state machine and wait for its task token callback",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${TransformWorkflowStateMachine}",
+        "Name.$": "States.Format('{}-transform-{}-{}', $.workflow_key, $.publication_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key.$": "$.workflow_key",
+          "publication_date.$": "$.publication_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "download_url.$": "$.download_url",
+          "file_hash.$": "$.file_hash",
+          "file_name.$": "$.file_name",
+          "use_subset.$": "$.use_subset",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "MarkReleaseCompleted"
+    },
+    "MarkReleaseCompleted": {
+      "Type": "Task",
+      "Comment": "Mark the overall release record status as COMPLETED in the database",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetReleaseStatusFunction}",
+        "Payload": {
+          "release_status": "COMPLETED",
+          "workflow_key.$": "$.workflow_key",
+          "publication_date.$": "$.publication_date"
+        }
+      },
+      "ResultPath": null,
+      "End": true
+    }
+  }
+}

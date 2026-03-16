@@ -1,0 +1,70 @@
+{
+  "Comment": "Sync-works task run — builds Batch params, submits job, marks task run COMPLETED",
+  "StartAt": "BuildSyncWorksParams",
+  "States": {
+    "BuildSyncWorksParams": {
+      "Type": "Task",
+      "Comment": "Compute AWS Batch parameters and create a STARTED TaskRunRecord for the sync-works task run",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GetBatchJobParamsFunction}",
+        "Payload": {
+          "task_type": "sync-works",
+          "workflow_key": "process-works",
+          "publication_date.$": "$.publication_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "execution_arn.$": "$$.Execution.Id",
+          "sqlmesh_run_id.$": "$.sqlmesh_run_id"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "run_name.$": "$.Payload.run_name",
+        "batch_params.$": "$.Payload.batch_params"
+      },
+      "ResultPath": "$.current",
+      "Next": "SubmitSyncWorks"
+    },
+    "SubmitSyncWorks": {
+      "Type": "Task",
+      "Comment": "Submit the synchronous AWS Batch job to sync works to OpenSearch",
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName.$": "$.current.batch_params.JobName",
+        "JobQueue.$": "$.current.batch_params.JobQueue",
+        "JobDefinition.$": "$.current.batch_params.JobDefinition",
+        "ContainerOverrides.$": "$.current.batch_params.ContainerOverrides"
+      },
+      "ResultPath": null,
+      "Next": "SetSyncWorksTaskRunComplete"
+    },
+    "SetSyncWorksTaskRunComplete": {
+      "Type": "Task",
+      "Comment": "Mark the sync-works task run as COMPLETED in the database and record its run_id",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetTaskRunCompleteFunction}",
+        "Payload": {
+          "task_type": "sync-works",
+          "workflow_key": "process-works",
+          "publication_date.$": "$.publication_date",
+          "current.$": "$.current"
+        }
+      },
+      "ResultPath": null,
+      "Next": "SendTaskSuccess"
+    },
+    "SendTaskSuccess": {
+      "Type": "Task",
+      "Comment": "Send the task success token back to the parent state machine",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+      "Parameters": {
+        "TaskToken.$": "$.TaskToken",
+        "Output": "{}"
+      },
+      "ResultPath": null,
+      "End": true
+    }
+  }
+}

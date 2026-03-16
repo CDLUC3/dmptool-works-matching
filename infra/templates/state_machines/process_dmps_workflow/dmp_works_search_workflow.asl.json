@@ -1,0 +1,70 @@
+{
+  "Comment": "DMP-works-search task run — builds Batch params, submits job, marks task run COMPLETED",
+  "StartAt": "BuildDmpWorksSearchParams",
+  "States": {
+    "BuildDmpWorksSearchParams": {
+      "Type": "Task",
+      "Comment": "Compute AWS Batch parameters and create a STARTED TaskRunRecord for the dmp-works-search task run",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GetBatchJobParamsFunction}",
+        "Payload": {
+          "task_type": "dmp-works-search",
+          "workflow_key": "process-dmps",
+          "publication_date.$": "$.publication_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "execution_arn.$": "$$.Execution.Id",
+          "run_all_dmps.$": "$.run_all_dmps"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "run_name.$": "$.Payload.run_name",
+        "batch_params.$": "$.Payload.batch_params"
+      },
+      "ResultPath": "$.current",
+      "Next": "SubmitDmpWorksSearch"
+    },
+    "SubmitDmpWorksSearch": {
+      "Type": "Task",
+      "Comment": "Submit the synchronous AWS Batch job to search for related works per DMP",
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName.$": "$.current.batch_params.JobName",
+        "JobQueue.$": "$.current.batch_params.JobQueue",
+        "JobDefinition.$": "$.current.batch_params.JobDefinition",
+        "ContainerOverrides.$": "$.current.batch_params.ContainerOverrides"
+      },
+      "ResultPath": null,
+      "Next": "SetDmpWorksSearchTaskRunComplete"
+    },
+    "SetDmpWorksSearchTaskRunComplete": {
+      "Type": "Task",
+      "Comment": "Mark the dmp-works-search task run as COMPLETED in the database and record its run_id",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetTaskRunCompleteFunction}",
+        "Payload": {
+          "task_type": "dmp-works-search",
+          "workflow_key": "process-dmps",
+          "publication_date.$": "$.publication_date",
+          "current.$": "$.current"
+        }
+      },
+      "ResultPath": null,
+      "Next": "SendTaskSuccess"
+    },
+    "SendTaskSuccess": {
+      "Type": "Task",
+      "Comment": "Return the run_id to the parent state machine via task token callback",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+      "Parameters": {
+        "TaskToken.$": "$.TaskToken",
+        "Output.$": "States.Format('{\"task_run_id\": \"{}\", \"task_run_status\": \"COMPLETED\"}', $.current.run_id)"
+      },
+      "ResultPath": null,
+      "End": true
+    }
+  }
+}

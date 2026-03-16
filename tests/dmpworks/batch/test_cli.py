@@ -120,6 +120,7 @@ class TestCrossrefMetadataCLI:
             run_id="2025-01-01",
             config=CrossrefMetadataTransformConfig(),
             use_subset=False,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
@@ -135,6 +136,7 @@ class TestCrossrefMetadataCLI:
             run_id="2025-01-01",
             config=CrossrefMetadataTransformConfig(max_workers=4),
             use_subset=False,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
@@ -157,6 +159,7 @@ class TestCrossrefMetadataCLI:
             run_id="2025-01-01",
             config=CrossrefMetadataTransformConfig(),
             use_subset=True,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
@@ -206,6 +209,7 @@ class TestDataCiteCLI:
             run_id="2025-01-01",
             config=DataCiteTransformConfig(),
             use_subset=False,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
@@ -255,6 +259,7 @@ class TestOpenAlexWorksCLI:
             run_id="2025-01-01",
             config=OpenAlexWorksTransformConfig(),
             use_subset=False,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
@@ -277,7 +282,7 @@ class TestRorCLI:
                 "my-bucket",
                 "2025-01-01",
                 "https://zenodo.org/records/123/files/ror.zip",
-                "--hash",
+                "--file-hash",
                 "md5:abc123",
             ]
         )
@@ -286,7 +291,7 @@ class TestRorCLI:
             bucket_name="my-bucket",
             run_id="2025-01-01",
             download_url="https://zenodo.org/records/123/files/ror.zip",
-            hash="md5:abc123",
+            file_hash="md5:abc123",
         )
 
     def test_download_no_hash(self, mock_download):
@@ -305,7 +310,7 @@ class TestRorCLI:
             bucket_name="my-bucket",
             run_id="2025-01-01",
             download_url="https://zenodo.org/records/123/files/ror.zip",
-            hash=None,
+            file_hash=None,
         )
 
 
@@ -328,14 +333,14 @@ class TestSQLMeshCLI:
     def test_plan(self, monkeypatch, mock_plan):
         from dmpworks.cli_utils import RunIdentifiers, SQLMeshConfig
 
-        monkeypatch.setenv("RUN_ID_PROCESS_WORKS", "2025-01-01")
-        monkeypatch.setenv("RUN_ID_PROCESS_WORKS_PREV", "2024-12-01")
+        monkeypatch.setenv("RUN_ID_SQLMESH", "2025-01-01")
+        monkeypatch.setenv("RUN_ID_SQLMESH_PREV", "2024-12-01")
 
         cli(["aws-batch", "sqlmesh", "plan", "my-bucket"])
 
         expected_run_identifiers = RunIdentifiers(
-            run_id_process_works="2025-01-01",
-            run_id_process_works_prev="2024-12-01",
+            run_id_sqlmesh="2025-01-01",
+            run_id_sqlmesh_prev="2024-12-01",
         )
         mock_plan.assert_called_once_with(
             bucket_name="my-bucket",
@@ -378,13 +383,14 @@ class TestOpenSearchCLI:
     def test_sync_works(self, monkeypatch, mock_sync_works):
         from dmpworks.cli_utils import OpenSearchClientConfig, OpenSearchSyncConfig
 
-        monkeypatch.setenv("RUN_ID_PROCESS_WORKS", "2025-01-01")
+        monkeypatch.setenv("RUN_ID_SQLMESH", "2025-01-01")
 
         cli(["aws-batch", "opensearch", "sync-works", "my-bucket", "works-index"])
 
         mock_sync_works.assert_called_once_with(
             bucket_name="my-bucket",
             run_id="2025-01-01",
+            sqlmesh_run_id="2025-01-01",
             index_name="works-index",
             client_config=OpenSearchClientConfig(),
             sync_config=OpenSearchSyncConfig(),
@@ -437,11 +443,12 @@ class TestOpenSearchCLI:
         monkeypatch.setenv("MYSQL_DATABASE", "dmpworks")
         monkeypatch.setenv("MYSQL_PWD", "secret")
 
-        cli(["aws-batch", "opensearch", "merge-related-works", "my-bucket", "run-123"])
+        cli(["aws-batch", "opensearch", "merge-related-works", "my-bucket", "run-123", "search-run-123"])
 
         mock_merge_related_works.assert_called_once_with(
             bucket_name="my-bucket",
             run_id="run-123",
+            search_run_id="search-run-123",
             mysql_config=MySQLConfig(
                 mysql_host="db.example.com",
                 mysql_tcp_port=3306,

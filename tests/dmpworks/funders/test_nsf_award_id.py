@@ -7,7 +7,7 @@ import vcr
 
 from tests.utils import get_fixtures_path
 
-FIXTURES_FOLDER = get_fixtures_path()
+FIXTURES_FOLDER = get_fixtures_path() / "funders"
 
 
 def test_parse_nsf_award_id():

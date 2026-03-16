@@ -70,7 +70,7 @@ The Python package is installed in **editable mode**, so changes to Python code
 take effect immediately during development without reinstalling the package.
 
 The project is compiled in release mode and installed via Python wheels in
-`Dockerfile.aws`.
+`Dockerfile.batch`.
 
 ### CPU Optimization
 
@@ -194,8 +194,11 @@ sqlmesh -p python/dmpworks/sql plan \
 
 ### Jupyter Lab
 
-Jupyter Lab is installed automatically when the package is installed with dev
-extras (i.e. `make install` or `make install-release`).
+Jupyter Lab is in the `notebooks` extra. Install it alongside the dev extras:
+
+```bash
+uv sync --extra dev --extra notebooks
+```
 
 Start Jupyter Lab:
 
@@ -222,8 +225,12 @@ Then regenerate the lockfile and sync your environment:
 
 ```bash
 uv lock --upgrade
-uv sync --all-extras
+uv sync --extra dev --extra notebooks  # or --extra infra instead of --extra notebooks
 ```
+
+> **Note:** The `infra` and `notebooks` extras are mutually exclusive and cannot
+> be installed together. `sceptre` (infra) requires `jsonschema<3.3` while
+> `jupyterlab` (notebooks) requires `jsonschema>=4.17.3`.
 
 ## Rust Dependency Maintenance
 

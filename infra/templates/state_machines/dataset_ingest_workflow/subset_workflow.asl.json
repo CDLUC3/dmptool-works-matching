@@ -1,0 +1,74 @@
+{
+  "Comment": "Subset task run — builds Batch params, submits job, marks task run COMPLETED",
+  "StartAt": "BuildSubsetParams",
+  "States": {
+    "BuildSubsetParams": {
+      "Type": "Task",
+      "Comment": "Compute AWS Batch parameters and create a STARTED TaskRunRecord for the subset task run",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GetBatchJobParamsFunction}",
+        "Payload": {
+          "task_type": "subset",
+          "predecessor_task_name": "download",
+          "workflow_key.$": "$.workflow_key",
+          "publication_date.$": "$.publication_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "execution_arn.$": "$$.Execution.Id",
+          "download_url.$": "$.download_url",
+          "file_hash.$": "$.file_hash",
+          "file_name.$": "$.file_name",
+          "use_subset.$": "$.use_subset"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "run_name.$": "$.Payload.run_name",
+        "batch_params.$": "$.Payload.batch_params"
+      },
+      "ResultPath": "$.current",
+      "Next": "SubmitSubset"
+    },
+    "SubmitSubset": {
+      "Type": "Task",
+      "Comment": "Submit the synchronous AWS Batch job to process the dataset subset",
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName.$": "$.current.batch_params.JobName",
+        "JobQueue.$": "$.current.batch_params.JobQueue",
+        "JobDefinition.$": "$.current.batch_params.JobDefinition",
+        "ContainerOverrides.$": "$.current.batch_params.ContainerOverrides"
+      },
+      "ResultPath": null,
+      "Next": "SetSubsetTaskRunComplete"
+    },
+    "SetSubsetTaskRunComplete": {
+      "Type": "Task",
+      "Comment": "Mark the subset task run as COMPLETED in the database and record its run_id",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetTaskRunCompleteFunction}",
+        "Payload": {
+          "task_type": "subset",
+          "workflow_key.$": "$.workflow_key",
+          "publication_date.$": "$.publication_date",
+          "current.$": "$.current"
+        }
+      },
+      "ResultPath": null,
+      "Next": "SendTaskSuccess"
+    },
+    "SendTaskSuccess": {
+      "Type": "Task",
+      "Comment": "Send the task success token back to the parent state machine",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+      "Parameters": {
+        "TaskToken.$": "$.TaskToken",
+        "Output": "{}"
+      },
+      "ResultPath": null,
+      "End": true
+    }
+  }
+}

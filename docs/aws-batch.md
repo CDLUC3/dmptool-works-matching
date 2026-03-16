@@ -59,9 +59,7 @@ DMPWORKS_ENV_FILE=.env.aws dmpworks batch-submit <command>
 Build the Docker image and push it to Amazon ECR:
 
 ```bash
-docker build -t dmpworks:x86 -f Dockerfile.aws .
-docker tag dmpworks:x86 <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/<ECR_REPOSITORY>:dmpworks-x86
-docker push <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/<ECR_REPOSITORY>:dmpworks-x86
+make push-batch-dev
 ```
 
 ### 1.4. Upload Files

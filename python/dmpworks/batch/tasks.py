@@ -49,8 +49,8 @@ def download_source_task(bucket_name: str, dataset: str, run_id: str) -> Generat
     Yields:
         A DownloadTaskContext object.
     """
-    target_uri = s3_uri(bucket_name, dataset, run_id, "download/")
-    download_dir = local_path(dataset, run_id, "download")
+    target_uri = s3_uri(bucket_name, f"{dataset}-download", run_id) + "/"
+    download_dir = local_path(f"{dataset}-download", run_id)
 
     clean_s3_prefix(target_uri)
 
@@ -93,6 +93,7 @@ def dataset_subset_task(
     bucket_name: str,
     dataset: str,
     run_id: str,
+    prev_run_id: str | None = None,
     dataset_subset: DatasetSubsetAWS,
 ) -> Generator[DatasetSubsetAWSTaskContext, Any, None]:
     """Context manager for creating a dataset subset.
@@ -106,15 +107,17 @@ def dataset_subset_task(
         bucket_name: The name of the S3 bucket.
         dataset: The name of the dataset.
         run_id: The unique identifier for the run.
+        prev_run_id: Run ID of the prior download job to read source data from (defaults to run_id).
         dataset_subset: Configuration for the dataset subset.
 
     Yields:
         A DatasetSubsetAWSTaskContext object.
     """
-    meta_dir = local_path(dataset, run_id, "meta")
-    download_dir = local_path(dataset, run_id, "download")
-    subset_dir = local_path(dataset, run_id, "subset")
-    target_uri = s3_uri(bucket_name, dataset, run_id, "subset/")
+    src_run_id = prev_run_id or run_id
+    meta_dir = local_path(f"{dataset}-meta", run_id)
+    download_dir = local_path(f"{dataset}-download", src_run_id)
+    subset_dir = local_path(f"{dataset}-subset", run_id)
+    target_uri = s3_uri(bucket_name, f"{dataset}-subset", run_id) + "/"
 
     # Download institutions
     institutions_uri = s3_uri(bucket_name, dataset_subset.institutions_s3_path)
@@ -132,7 +135,7 @@ def dataset_subset_task(
 
     # Download files
     clean_s3_prefix(target_uri)
-    download_uri = s3_uri(bucket_name, dataset, run_id, "download/*")
+    download_uri = s3_uri(bucket_name, f"{dataset}-download", src_run_id, "*")
     download_files_from_s3(download_uri, download_dir)
     subset_dir.mkdir(parents=True, exist_ok=True)
 
@@ -172,7 +175,7 @@ class TransformTaskContext:
 
 @contextmanager
 def transform_parquets_task(
-    bucket_name: str, dataset: str, run_id: str, use_subset: bool = False
+    bucket_name: str, dataset: str, run_id: str, use_subset: bool = False, source_run_id: str | None = None
 ) -> Generator[TransformTaskContext, Any, None]:
     """Context manager for transforming Parquet files.
 
@@ -183,19 +186,22 @@ def transform_parquets_task(
     Args:
         bucket_name: The name of the S3 bucket.
         dataset: The name of the dataset.
-        run_id: The unique identifier for the run.
+        run_id: The unique identifier for this transform run.
         use_subset: Whether to use the subset of the dataset.
+        source_run_id: Run ID of the download job to read from (defaults to run_id).
 
     Yields:
         A TransformTaskContext object.
     """
-    download_dir = local_path(dataset, run_id, "subset" if use_subset else "download")
-    transform_dir = local_path(dataset, run_id, "transform")
-    target_uri = s3_uri(bucket_name, dataset, run_id, "transform/")
+    src_run_id = source_run_id or run_id
+    phase = "subset" if use_subset else "download"
+    download_dir = local_path(f"{dataset}-{phase}", src_run_id)
+    transform_dir = local_path(f"{dataset}-transform", run_id)
+    target_uri = s3_uri(bucket_name, f"{dataset}-transform", run_id) + "/"
 
     clean_s3_prefix(target_uri)
 
-    download_uri = s3_uri(bucket_name, dataset, run_id, "subset/*" if use_subset else "download/*")
+    download_uri = s3_uri(bucket_name, f"{dataset}-{phase}", src_run_id, "*")
     download_files_from_s3(download_uri, download_dir)
     transform_dir.mkdir(parents=True, exist_ok=True)
 

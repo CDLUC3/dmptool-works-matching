@@ -1,0 +1,365 @@
+{
+  "Comment": "Process DMPs workflow — syncs DMPs to OpenSearch, enriches them, searches for related works, and merges results into MySQL",
+  "StartAt": "CreateProcessDMPsRun",
+  "States": {
+    "CreateProcessDMPsRun": {
+      "Type": "Task",
+      "Comment": "Create a ProcessDMPsRunRecord with STARTED status",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CreateProcessDMPsRunFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "execution_arn.$": "$$.Execution.Id"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id"
+      },
+      "ResultPath": "$.created",
+      "Next": "MergeRunId"
+    },
+    "MergeRunId": {
+      "Type": "Pass",
+      "Comment": "Merge the new run_id into top-level state",
+      "Parameters": {
+        "workflow_key.$": "$.workflow_key",
+        "publication_date.$": "$.publication_date",
+        "run_date.$": "$.run_date",
+        "aws_env.$": "$.aws_env",
+        "bucket_name.$": "$.bucket_name",
+        "run_all_dmps.$": "$.run_all_dmps",
+        "run_id.$": "$.created.run_id"
+      },
+      "Next": "MarkProcessDMPsStarted"
+    },
+    "MarkProcessDMPsStarted": {
+      "Type": "Task",
+      "Comment": "Mark the ProcessDMPsRunRecord as STARTED and record the execution ARN",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetProcessDMPsRunStatusFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "process_dmps_status": "STARTED",
+          "execution_arn.$": "$$.Execution.Id"
+        }
+      },
+      "ResultPath": null,
+      "Next": "GetSyncDmpsTaskRunStatus"
+    },
+    "GetSyncDmpsTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing sync-dmps checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S": "process-dmps"},
+          "task_key": {"S.$": "States.Format('sync-dmps#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.sync_dmps_check",
+      "Next": "SkipSyncDmpsCheck"
+    },
+    "SkipSyncDmpsCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the sync-dmps task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.sync_dmps_check.Item",
+          "IsPresent": true,
+          "Next": "ExtractSyncDmpsRunId"
+        }
+      ],
+      "Default": "InvokeSyncDmpsChildSM"
+    },
+    "ExtractSyncDmpsRunId": {
+      "Type": "Pass",
+      "Comment": "Extract the sync-dmps run_id from the DynamoDB checkpoint item into a normalized structure",
+      "Parameters": {
+        "task_run_status": "COMPLETED",
+        "task_run_id.$": "$.sync_dmps_check.Item.run_id.S"
+      },
+      "ResultPath": "$.sync_dmps_check",
+      "Next": "RecordSyncDmpsRunId"
+    },
+    "InvokeSyncDmpsChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the sync-dmps child state machine and wait for its task token callback; captures run_id from child output",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${SyncDmpsWorkflowStateMachine}",
+        "Name.$": "States.Format('process-dmps-sync-dmps-{}-{}', $.run_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key": "process-dmps",
+          "publication_date.$": "$.publication_date",
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultSelector": {
+        "task_run_status.$": "$.task_run_status",
+        "task_run_id.$": "$.task_run_id"
+      },
+      "ResultPath": "$.sync_dmps_check",
+      "TimeoutSeconds": 604800,
+      "Next": "RecordSyncDmpsRunId"
+    },
+    "RecordSyncDmpsRunId": {
+      "Type": "Task",
+      "Comment": "Record the sync-dmps task run_id in the ProcessDMPsRunRecord",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetProcessDMPsRunStatusFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "run_id_sync_dmps.$": "$.sync_dmps_check.task_run_id"
+        }
+      },
+      "ResultPath": null,
+      "Next": "GetEnrichDmpsTaskRunStatus"
+    },
+    "GetEnrichDmpsTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing enrich-dmps checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S": "process-dmps"},
+          "task_key": {"S.$": "States.Format('enrich-dmps#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.enrich_dmps_check",
+      "Next": "SkipEnrichDmpsCheck"
+    },
+    "SkipEnrichDmpsCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the enrich-dmps task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.enrich_dmps_check.Item",
+          "IsPresent": true,
+          "Next": "ExtractEnrichDmpsRunId"
+        }
+      ],
+      "Default": "InvokeEnrichDmpsChildSM"
+    },
+    "ExtractEnrichDmpsRunId": {
+      "Type": "Pass",
+      "Comment": "Extract the enrich-dmps run_id from the DynamoDB checkpoint item into a normalized structure",
+      "Parameters": {
+        "task_run_status": "COMPLETED",
+        "task_run_id.$": "$.enrich_dmps_check.Item.run_id.S"
+      },
+      "ResultPath": "$.enrich_dmps_check",
+      "Next": "RecordEnrichDmpsRunId"
+    },
+    "InvokeEnrichDmpsChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the enrich-dmps child state machine and wait for its task token callback; captures run_id from child output",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${EnrichDmpsWorkflowStateMachine}",
+        "Name.$": "States.Format('process-dmps-enrich-dmps-{}-{}', $.run_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key": "process-dmps",
+          "publication_date.$": "$.publication_date",
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultSelector": {
+        "task_run_status.$": "$.task_run_status",
+        "task_run_id.$": "$.task_run_id"
+      },
+      "ResultPath": "$.enrich_dmps_check",
+      "TimeoutSeconds": 604800,
+      "Next": "RecordEnrichDmpsRunId"
+    },
+    "RecordEnrichDmpsRunId": {
+      "Type": "Task",
+      "Comment": "Record the enrich-dmps task run_id in the ProcessDMPsRunRecord",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetProcessDMPsRunStatusFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "run_id_enrich_dmps.$": "$.enrich_dmps_check.task_run_id"
+        }
+      },
+      "ResultPath": null,
+      "Next": "GetDmpWorksSearchTaskRunStatus"
+    },
+    "GetDmpWorksSearchTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing dmp-works-search checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S": "process-dmps"},
+          "task_key": {"S.$": "States.Format('dmp-works-search#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.dws_check",
+      "Next": "SkipDmpWorksSearchCheck"
+    },
+    "SkipDmpWorksSearchCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the dmp-works-search task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.dws_check.Item",
+          "IsPresent": true,
+          "Next": "ExtractDmpWorksSearchRunId"
+        }
+      ],
+      "Default": "InvokeDmpWorksSearchChildSM"
+    },
+    "ExtractDmpWorksSearchRunId": {
+      "Type": "Pass",
+      "Comment": "Extract the dmp-works-search run_id from the DynamoDB checkpoint item into a normalized structure",
+      "Parameters": {
+        "task_run_status": "COMPLETED",
+        "task_run_id.$": "$.dws_check.Item.run_id.S"
+      },
+      "ResultPath": "$.dws_check",
+      "Next": "RecordDmpWorksSearchRunId"
+    },
+    "InvokeDmpWorksSearchChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the dmp-works-search child state machine and wait for its task token callback; captures run_id from child output",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${DmpWorksSearchWorkflowStateMachine}",
+        "Name.$": "States.Format('process-dmps-dmp-works-search-{}-{}', $.run_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key": "process-dmps",
+          "publication_date.$": "$.publication_date",
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "run_all_dmps.$": "$.run_all_dmps",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultSelector": {
+        "task_run_status.$": "$.task_run_status",
+        "task_run_id.$": "$.task_run_id"
+      },
+      "ResultPath": "$.dws_check",
+      "TimeoutSeconds": 604800,
+      "Next": "RecordDmpWorksSearchRunId"
+    },
+    "RecordDmpWorksSearchRunId": {
+      "Type": "Task",
+      "Comment": "Record the dmp-works-search task run_id in the ProcessDMPsRunRecord",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetProcessDMPsRunStatusFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "run_id_dmp_works_search.$": "$.dws_check.task_run_id"
+        }
+      },
+      "ResultPath": null,
+      "Next": "GetMergeRelatedWorksTaskRunStatus"
+    },
+    "GetMergeRelatedWorksTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing merge-related-works checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S": "process-dmps"},
+          "task_key": {"S.$": "States.Format('merge-related-works#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.mrw_check",
+      "Next": "SkipMergeRelatedWorksCheck"
+    },
+    "SkipMergeRelatedWorksCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the merge-related-works task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.mrw_check.Item",
+          "IsPresent": true,
+          "Next": "ExtractMergeRelatedWorksRunId"
+        }
+      ],
+      "Default": "InvokeMergeRelatedWorksChildSM"
+    },
+    "ExtractMergeRelatedWorksRunId": {
+      "Type": "Pass",
+      "Comment": "Extract the merge-related-works run_id from the DynamoDB checkpoint item into a normalized structure",
+      "Parameters": {
+        "task_run_status": "COMPLETED",
+        "task_run_id.$": "$.mrw_check.Item.run_id.S"
+      },
+      "ResultPath": "$.mrw_check",
+      "Next": "MarkProcessDMPsCompleted"
+    },
+    "InvokeMergeRelatedWorksChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the merge-related-works child state machine and wait for its task token callback; captures run_id from child output",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${MergeRelatedWorksWorkflowStateMachine}",
+        "Name.$": "States.Format('process-dmps-merge-related-works-{}-{}', $.run_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key": "process-dmps",
+          "publication_date.$": "$.publication_date",
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "search_run_id.$": "$.dws_check.task_run_id",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultSelector": {
+        "task_run_status.$": "$.task_run_status",
+        "task_run_id.$": "$.task_run_id"
+      },
+      "ResultPath": "$.mrw_check",
+      "TimeoutSeconds": 604800,
+      "Next": "MarkProcessDMPsCompleted"
+    },
+    "MarkProcessDMPsCompleted": {
+      "Type": "Task",
+      "Comment": "Mark the ProcessDMPsRunRecord as COMPLETED and record the merge-related-works task run_id",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetProcessDMPsRunStatusFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "process_dmps_status": "COMPLETED",
+          "run_id_merge_related_works.$": "$.mrw_check.task_run_id"
+        }
+      },
+      "ResultPath": null,
+      "End": true
+    }
+  }
+}

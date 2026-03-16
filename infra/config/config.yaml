@@ -1,0 +1,9 @@
+region: "{{ var.region }}"
+project_code: dmpworks
+
+stack_tags:
+  Program: '{{ var.tag_program }}'
+  Service: '{{ var.tag_service }}'
+  Subservice: '{{ var.tag_subservice }}'
+  CodeRepo: '{{ var.tag_code_repo }}'
+  Contact: '{{ var.tag_contact }}'

@@ -3,9 +3,10 @@ import pathlib
 
 from dmpworks.cli import cli
 from dmpworks.cli_utils import MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
-from dmpworks.utils import InstanceOf
 from opensearchpy import OpenSearch
 import pytest
+
+from tests.utils import InstanceOf
 
 
 class TestOpenSearchCLI:
@@ -135,6 +136,7 @@ class TestOpenSearchCLI:
             dois=None,
             dmps_start_date=None,
             dmps_end_date=None,
+            dmp_modification_window_days=None,
             inner_hits_size=50,
             row_group_size=50_000,
             row_groups_per_file=4,

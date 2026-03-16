@@ -36,6 +36,7 @@ def build_dmps_query(
     institutions: list[Institution] | None = None,
     start_date: pendulum.Date | None = None,
     end_date: pendulum.Date | None = None,
+    modified_since: pendulum.Date | None = None,
     inner_hits_size: int = 50,
 ) -> dict:
     """Build a query for searching DMPs.
@@ -45,6 +46,7 @@ def build_dmps_query(
         institutions: A list of institutions to filter by.
         start_date: The start date for the project start range filter.
         end_date: The end date for the project start range filter.
+        modified_since: Only return DMPs with a modified date on or after this date.
         inner_hits_size: The size of inner hits to return for nested fields.
 
     Returns:
@@ -89,6 +91,9 @@ def build_dmps_query(
                 }
             }
         )
+
+    if modified_since is not None:
+        filters.append({"range": {"modified": {"gte": modified_since.format("YYYY-MM-DD")}}})
 
     # Build final query
     query = {"query": {}}

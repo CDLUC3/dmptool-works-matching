@@ -1,90 +1,39 @@
-import gzip
 import logging
 import pathlib
-import shutil
-import zipfile
 
 import pooch
 
 from dmpworks.batch.tasks import download_source_task
+from dmpworks.utils import extract_zip_to_gzip
 
 log = logging.getLogger(__name__)
 
 DATASET = "ror"
 
 
-def extract_ror(file_path: pathlib.Path) -> pathlib.Path:
-    """Extract the ROR JSON file from a ZIP archive.
-
-    Args:
-        file_path: Path to the ZIP file.
-
-    Returns:
-        Path to the extracted JSON file.
-
-    Raises:
-        FileNotFoundError: If the ROR JSON file is not found in the archive.
-    """
-    with zipfile.ZipFile(file_path, "r") as file:
-        # Find ROR v2 JSON file in ZIP file
-        log.info(f"Files in archive: {file_path}")
-        json_file_name = None
-        for name in file.namelist():
-            log.info(name)
-            if name.lower().endswith(".json"):
-                log.info(f"Found ROR JSON file: {name}")
-                json_file_name = name
-                break
-
-        if json_file_name is None:
-            msg = "Could not find ROR JSON file"
-            log.error(msg)
-            raise FileNotFoundError(msg)
-
-        # Extract it
-        json_path = file_path.parent / json_file_name
-        file.extract(member=json_file_name, path=file_path.parent)
-
-    return json_path
-
-
-def gzip_file(in_file: pathlib.Path, out_file: pathlib.Path):
-    """Compress a file using gzip.
-
-    Args:
-        in_file: Path to the input file.
-        out_file: Path to the output gzip file.
-    """
-    with in_file.open("rb") as f_in, gzip.open(out_file, "wb") as f_out:
-        shutil.copyfileobj(f_in, f_out)
-
-
-def download(*, bucket_name: str, run_id: str, download_url: str, hash: str | None = None):
+def download(*, bucket_name: str, run_id: str, download_url: str, file_hash: str | None = None):
     """Download ROR from the Zenodo and upload it to the DMP Tool S3 bucket.
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
-        download_url: the Zenodo download URL for a specific ROR ID, e.g. https://zenodo.org/records/15731450/files/v1.67-2025-06-24-ror-data.zip?download=1.
-        hash: the MD5 sum of the file.
+        download_url: the Zenodo download URL for the ROR zip file.
+        file_hash: optional expected MD5 checksum (md5:... format).
     """
     with download_source_task(bucket_name, DATASET, run_id) as ctx:
         # Download file
         zip_path = pooch.retrieve(
             url=download_url,
-            known_hash=hash,
+            known_hash=file_hash,
             path=ctx.download_dir,
             progressbar=True,
         )
         zip_path = pathlib.Path(zip_path)
 
-        # Extract the ROR v2 JSON file
-        json_path = extract_ror(zip_path)
+        # Extract and gzip JSON files
+        file_paths = extract_zip_to_gzip(zip_path)
+        if len(file_paths) == 0:
+            raise FileNotFoundError(f"No JSON files found in archive: {zip_path}")
 
-        # Gzip it
-        gzip_path = json_path.with_name(json_path.name + ".gz")
-        gzip_file(json_path, gzip_path)
-
-        # Cleanup files we no longer need
+        # Remove zip
         zip_path.unlink(missing_ok=True)
-        json_path.unlink(missing_ok=True)

@@ -1,0 +1,16 @@
+template_bucket_name: !ssm {{ var.ssm_prefix }}/stg/CloudFormationBucket
+
+vars:
+  env: stg
+
+stack_tags:
+  Environment: 'stg'
+
+sceptre_user_data:
+  ssm_path: "{{ var.ssm_prefix }}/stg"
+  ecr_batch:
+    name: dmpworks-stg-batch
+    tag: latest
+  ecr_lambda:
+    name: dmpworks-stg-lambda
+    tag: latest

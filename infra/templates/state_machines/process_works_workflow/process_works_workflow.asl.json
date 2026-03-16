@@ -1,0 +1,314 @@
+{
+  "Comment": "Process Works workflow — waits for all dataset ingests to complete, then runs SQLMesh and OpenSearch sync",
+  "StartAt": "InitializeRetryCount",
+  "States": {
+    "InitializeRetryCount": {
+      "Type": "Pass",
+      "Comment": "Initialize the retry counter to zero before entering the dataset readiness poll loop",
+      "Result": {"count": 0},
+      "ResultPath": "$.retry_counter",
+      "Next": "CheckDatasetsReady"
+    },
+    "CheckDatasetsReady": {
+      "Type": "Task",
+      "Comment": "Check whether all 5 required dataset checkpoints are present and no ingest is in-flight",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CheckDatasetsReadyFunction}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "datasets.$": "$.Payload"
+      },
+      "ResultPath": "$.check",
+      "Next": "AreAllDatasetsReady"
+    },
+    "AreAllDatasetsReady": {
+      "Type": "Choice",
+      "Comment": "If all dataset checkpoints are ready, proceed; otherwise wait and retry",
+      "Choices": [
+        {
+          "Variable": "$.check.datasets.all_ready",
+          "BooleanEquals": true,
+          "Next": "MergeRunIds"
+        }
+      ],
+      "Default": "WaitForDatasets"
+    },
+    "WaitForDatasets": {
+      "Type": "Wait",
+      "Comment": "Wait 1 hour before re-checking dataset readiness",
+      "Seconds": 3600,
+      "Next": "IncrementRetryCount"
+    },
+    "IncrementRetryCount": {
+      "Type": "Pass",
+      "Comment": "Increment the poll iteration counter after each wait cycle",
+      "Parameters": {
+        "count.$": "States.MathAdd($.retry_counter.count, 1)"
+      },
+      "ResultPath": "$.retry_counter",
+      "Next": "CheckMaxRetries"
+    },
+    "CheckMaxRetries": {
+      "Type": "Choice",
+      "Comment": "Fail if the poll loop has exceeded 168 iterations (~1 week of hourly polls)",
+      "Choices": [
+        {
+          "Variable": "$.retry_counter.count",
+          "NumericGreaterThan": 168,
+          "Next": "DatasetsNotReadyTimeout"
+        }
+      ],
+      "Default": "CheckDatasetsReady"
+    },
+    "DatasetsNotReadyTimeout": {
+      "Type": "Fail",
+      "Comment": "Terminal failure: datasets did not become ready within the maximum poll window",
+      "Error": "DatasetsNotReadyTimeout",
+      "Cause": "Datasets were not ready after 168 poll iterations (~1 week)"
+    },
+    "MergeRunIds": {
+      "Type": "Pass",
+      "Comment": "Flatten dataset run_ids and sqlmesh_prev from check result into top-level state",
+      "Parameters": {
+        "workflow_key.$": "$.workflow_key",
+        "publication_date.$": "$.publication_date",
+        "run_date.$": "$.run_date",
+        "aws_env.$": "$.aws_env",
+        "bucket_name.$": "$.bucket_name",
+        "run_id_openalex_works.$": "$.check.datasets.run_id_openalex_works",
+        "run_id_datacite.$": "$.check.datasets.run_id_datacite",
+        "run_id_crossref_metadata.$": "$.check.datasets.run_id_crossref_metadata",
+        "run_id_ror.$": "$.check.datasets.run_id_ror",
+        "run_id_data_citation_corpus.$": "$.check.datasets.run_id_data_citation_corpus",
+        "run_id_sqlmesh_prev.$": "$.check.datasets.run_id_sqlmesh_prev",
+        "publication_date_openalex_works.$": "$.check.datasets.publication_date_openalex_works",
+        "publication_date_datacite.$": "$.check.datasets.publication_date_datacite",
+        "publication_date_crossref_metadata.$": "$.check.datasets.publication_date_crossref_metadata",
+        "publication_date_ror.$": "$.check.datasets.publication_date_ror",
+        "publication_date_data_citation_corpus.$": "$.check.datasets.publication_date_data_citation_corpus"
+      },
+      "Next": "CreateProcessWorksRun"
+    },
+    "CreateProcessWorksRun": {
+      "Type": "Task",
+      "Comment": "Create a ProcessWorksRunRecord with STARTED status",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${CreateProcessWorksRunFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "run_id_sqlmesh_prev.$": "$.run_id_sqlmesh_prev",
+          "run_id_openalex_works.$": "$.run_id_openalex_works",
+          "run_id_datacite.$": "$.run_id_datacite",
+          "run_id_crossref_metadata.$": "$.run_id_crossref_metadata",
+          "run_id_ror.$": "$.run_id_ror",
+          "run_id_data_citation_corpus.$": "$.run_id_data_citation_corpus",
+          "publication_date_openalex_works.$": "$.publication_date_openalex_works",
+          "publication_date_datacite.$": "$.publication_date_datacite",
+          "publication_date_crossref_metadata.$": "$.publication_date_crossref_metadata",
+          "publication_date_ror.$": "$.publication_date_ror",
+          "publication_date_data_citation_corpus.$": "$.publication_date_data_citation_corpus",
+          "execution_arn.$": "$$.Execution.Id"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id"
+      },
+      "ResultPath": "$.created",
+      "Next": "MergeRunId"
+    },
+    "MergeRunId": {
+      "Type": "Pass",
+      "Comment": "Merge the new run_id into top-level state",
+      "Parameters": {
+        "workflow_key.$": "$.workflow_key",
+        "publication_date.$": "$.publication_date",
+        "run_date.$": "$.run_date",
+        "aws_env.$": "$.aws_env",
+        "bucket_name.$": "$.bucket_name",
+        "run_id.$": "$.created.run_id",
+        "run_id_openalex_works.$": "$.run_id_openalex_works",
+        "run_id_datacite.$": "$.run_id_datacite",
+        "run_id_crossref_metadata.$": "$.run_id_crossref_metadata",
+        "run_id_ror.$": "$.run_id_ror",
+        "run_id_data_citation_corpus.$": "$.run_id_data_citation_corpus",
+        "run_id_sqlmesh_prev.$": "$.run_id_sqlmesh_prev",
+        "publication_date_openalex_works.$": "$.publication_date_openalex_works",
+        "publication_date_datacite.$": "$.publication_date_datacite",
+        "publication_date_crossref_metadata.$": "$.publication_date_crossref_metadata",
+        "publication_date_ror.$": "$.publication_date_ror",
+        "publication_date_data_citation_corpus.$": "$.publication_date_data_citation_corpus"
+      },
+      "Next": "MarkProcessWorksStarted"
+    },
+    "MarkProcessWorksStarted": {
+      "Type": "Task",
+      "Comment": "Mark the ProcessWorksRunRecord as STARTED and record the execution ARN",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetProcessWorksRunStatusFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "process_works_status": "STARTED",
+          "execution_arn.$": "$$.Execution.Id"
+        }
+      },
+      "ResultPath": null,
+      "Next": "GetSqlmeshTaskRunStatus"
+    },
+    "GetSqlmeshTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing sqlmesh checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S": "process-works"},
+          "task_key": {"S.$": "States.Format('sqlmesh#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.sqlmesh_check",
+      "Next": "SkipSqlmeshCheck"
+    },
+    "SkipSqlmeshCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the SQLMesh task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.sqlmesh_check.Item",
+          "IsPresent": true,
+          "Next": "ExtractSqlmeshRunId"
+        }
+      ],
+      "Default": "InvokeSqlmeshChildSM"
+    },
+    "ExtractSqlmeshRunId": {
+      "Type": "Pass",
+      "Comment": "Extract the sqlmesh run_id from the DynamoDB checkpoint item into a normalized structure",
+      "Parameters": {
+        "task_run_status": "COMPLETED",
+        "task_run_id.$": "$.sqlmesh_check.Item.run_id.S"
+      },
+      "ResultPath": "$.sqlmesh_check",
+      "Next": "GetSyncWorksTaskRunStatus"
+    },
+    "InvokeSqlmeshChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the SQLMesh child state machine and wait for its task token callback; captures run_id from child output",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${SqlmeshWorkflowStateMachine}",
+        "Name.$": "States.Format('process-works-sqlmesh-{}-{}', $.publication_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key": "process-works",
+          "publication_date.$": "$.publication_date",
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "run_id_sqlmesh_prev.$": "$.run_id_sqlmesh_prev",
+          "run_id_openalex_works.$": "$.run_id_openalex_works",
+          "run_id_datacite.$": "$.run_id_datacite",
+          "run_id_crossref_metadata.$": "$.run_id_crossref_metadata",
+          "run_id_ror.$": "$.run_id_ror",
+          "run_id_data_citation_corpus.$": "$.run_id_data_citation_corpus",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultSelector": {
+        "task_run_status.$": "$.task_run_status",
+        "task_run_id.$": "$.task_run_id"
+      },
+      "ResultPath": "$.sqlmesh_check",
+      "TimeoutSeconds": 604800,
+      "Next": "GetSyncWorksTaskRunStatus"
+    },
+    "GetSyncWorksTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing sync-works checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S": "process-works"},
+          "task_key": {"S.$": "States.Format('sync-works#{}', $.publication_date)"}
+        }
+      },
+      "ResultPath": "$.sync_works_check",
+      "Next": "SkipSyncWorksCheck"
+    },
+    "SkipSyncWorksCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the sync-works task run if a checkpoint already exists",
+      "Choices": [
+        {
+          "Variable": "$.sync_works_check.Item",
+          "IsPresent": true,
+          "Next": "MarkProcessWorksCompleted"
+        }
+      ],
+      "Default": "InvokeSyncWorksChildSM"
+    },
+    "InvokeSyncWorksChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the sync-works child state machine and wait for its task token callback",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${SyncWorksWorkflowStateMachine}",
+        "Name.$": "States.Format('process-works-sync-works-{}-{}', $.publication_date, $.run_id)",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key": "process-works",
+          "publication_date.$": "$.publication_date",
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "sqlmesh_run_id.$": "$.sqlmesh_check.task_run_id",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "MarkProcessWorksCompleted"
+    },
+    "MarkProcessWorksCompleted": {
+      "Type": "Task",
+      "Comment": "Mark the ProcessWorksRunRecord as COMPLETED",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetProcessWorksRunStatusFunction}",
+        "Payload": {
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "process_works_status": "COMPLETED"
+        }
+      },
+      "ResultPath": null,
+      "Next": "StartProcessDmps"
+    },
+    "StartProcessDmps": {
+      "Type": "Task",
+      "Comment": "Fire-and-forget: start the process-dmps workflow to process all DMPs",
+      "Resource": "arn:aws:states:::states:startExecution",
+      "Parameters": {
+        "StateMachineArn": "${ProcessDmpsStateMachine}",
+        "Input": {
+          "workflow_key": "process-dmps",
+          "publication_date.$": "$.publication_date",
+          "run_date.$": "$.run_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "run_all_dmps": true
+        }
+      },
+      "ResultPath": null,
+      "End": true
+    }
+  }
+}
