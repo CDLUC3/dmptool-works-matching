@@ -356,6 +356,7 @@ class TestOpenAlexWorksTransformJob:
             "OPENALEX_WORKS_TRANSFORM_ROW_GROUP_SIZE": "100000",
             "OPENALEX_WORKS_TRANSFORM_ROW_GROUPS_PER_FILE": "2",
             "OPENALEX_WORKS_TRANSFORM_MAX_WORKERS": "16",
+            "OPENALEX_WORKS_TRANSFORM_INCLUDE_XPAC": "false",
         }
 
     def test_use_subset_false_serialized_to_lowercase(self, mock_submit):

@@ -249,7 +249,7 @@ def dmp_works_search_cmd(
         )
 
         # Upload all Parquet files to S3
-        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
+        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_DIR, run_id, f"{MATCHES_DIR}/")
         upload_files_to_s3(out_dir, target_uri, glob_pattern="*.parquet")
     finally:
         shutil.rmtree(out_dir, ignore_errors=True)

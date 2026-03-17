@@ -20,10 +20,8 @@
 
 set -euo pipefail
 
-if [ -f .env.local ]; then
-  # shellcheck source=../.env.local
-  source .env.local
-fi
+# shellcheck source=load-env.sh
+source "$(dirname "$0")/load-env.sh"
 
 REQUIRED_VARS=(
   DATA_DIR

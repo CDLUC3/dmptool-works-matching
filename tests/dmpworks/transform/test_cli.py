@@ -66,11 +66,12 @@ class TestTransformCLI:
         mock_transform_openalex_works.assert_called_once_with(
             in_dir=in_dir,
             out_dir=out_dir,
-            log_level=logging.INFO,
             batch_size=16,
             row_group_size=200_000,
             row_groups_per_file=4,
             max_workers=os.cpu_count(),
+            include_xpac=False,
+            log_level=logging.INFO,
         )
 
     @pytest.fixture

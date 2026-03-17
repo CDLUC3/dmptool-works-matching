@@ -20,7 +20,7 @@ dependencies = [
     "fold_to_ascii>=1,<=2",
     "rapidfuzz>=3,<4",
     "pydantic>=2,<3",
-    "duckdb>=1.4.0,<2",
+    "duckdb>=1.4.0,<1.5.0",
     "pymysql[rsa]>=1.1.2,<2",
     "ranx>=0.3.21,<0.4",
     "numpy>=1.22,<2.5.0",
@@ -34,7 +34,10 @@ dev = [
     "pytest-mock>=3,<4", # testing
     "black>=25,<27", # code formatting
     "vcrpy>=7,<9", # testing
-    "ruff>=0.11.13,<1" # linting
+    "ruff>=0.11.13,<1", # linting
+    "jupyterlab>=4,<5", # for Jupyter Notebooks
+    "jupysql>=0.11.1,<1", # Enables magic SQL commands in Jupyter Notebooks
+    "duckdb_engine>=0.17.0,<1", # Enables jupysql to connect to DuckDB
 ]
 
 [project.scripts]
