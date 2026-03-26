@@ -27,7 +27,7 @@ Resources:
   BatchJobRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub '${AWS::StackName}-job-role'
+      RoleName: !Sub 'dmpworks-${Env}-batch-job-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -149,6 +149,7 @@ Resources:
   DMPWorksDatabaseJobExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub dmpworks-${Env}-database-job-execution-role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -207,6 +208,7 @@ Resources:
   DMPWorksDataCiteJobExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub dmpworks-${Env}-datacite-job-execution-role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:

@@ -33,6 +33,9 @@ log = logging.getLogger(__name__)
 INPUT_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
+    "properties": {
+        "dry_run": {"type": "boolean"},
+    },
 }
 
 OUTPUT_SCHEMA = {
@@ -51,6 +54,23 @@ OUTPUT_SCHEMA = {
                 },
             },
             "description": "List of datasets for which a new SFN execution was started.",
+        },
+        "discovered": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["dataset", "publication_date"],
+                "properties": {
+                    "dataset": {"type": "string"},
+                    "publication_date": {"type": "string"},
+                    "download_url": {"type": "string"},
+                },
+            },
+            "description": "List of newly discovered releases (always populated, even in dry_run mode).",
+        },
+        "dry_run": {
+            "type": "boolean",
+            "description": "Whether this was a dry-run invocation.",
         },
     },
 }
@@ -97,8 +117,10 @@ def version_checker_handler(event: dict, context: LambdaContext) -> dict:  # noq
         "datacite": (detect_datacite_version, datacite_kwargs),
     }
 
+    dry_run = event.get("dry_run", False)
     sfn = boto3.client("stepfunctions")
     triggered = []
+    discovered = []
 
     for dataset in enabled:
         log.info(f"Processing dataset={dataset}")
@@ -124,6 +146,20 @@ def version_checker_handler(event: dict, context: LambdaContext) -> dict:  # noq
         )
         if record is None:
             log.info(f"No new release for dataset={dataset}")
+            continue
+
+        discovered.append(
+            {
+                "dataset": dataset,
+                "publication_date": record.publication_date,
+                "download_url": record.download_url,
+            }
+        )
+
+        if dry_run:
+            log.info(
+                f"Dry run — discovered but not starting SFN: dataset={dataset} publication_date={record.publication_date}"
+            )
             continue
 
         run_id = generate_run_id()
@@ -155,4 +191,4 @@ def version_checker_handler(event: dict, context: LambdaContext) -> dict:  # noq
             }
         )
 
-    return {"triggered": triggered}
+    return {"triggered": triggered, "discovered": discovered, "dry_run": dry_run}

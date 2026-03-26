@@ -8,6 +8,7 @@ from dmpworks.batch.cli import app as batch_app
 from dmpworks.batch_submit.cli import app as batch_submit_app
 from dmpworks.dmsp.cli import app as dmsp_app
 from dmpworks.opensearch.cli import app as opensearch_app
+from dmpworks.pipeline.cli import app as pipeline_app
 from dmpworks.sql.cli import app as sqlmesh_app
 from dmpworks.transform.cli import app as transform_app
 
@@ -19,6 +20,7 @@ cli.command(sqlmesh_app)
 cli.command(transform_app)
 cli.command(dmsp_app)
 cli.command(batch_submit_app)
+cli.command(pipeline_app)
 
 
 @cli.meta.default

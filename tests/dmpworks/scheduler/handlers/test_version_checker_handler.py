@@ -72,7 +72,10 @@ class TestVersionCheckerHandlerNewRelease:
 
             result = version_checker_handler({}, None)
 
-        assert result == {"triggered": [{"dataset": "ror", "publication_date": "2026-03-12"}]}
+        assert result["triggered"] == [{"dataset": "ror", "publication_date": "2026-03-12"}]
+        assert result["dry_run"] is False
+        assert len(result["discovered"]) == 1
+        assert result["discovered"][0]["dataset"] == "ror"
         mock_sfn.start_execution.assert_called_once()
         call_kwargs = mock_sfn.start_execution.call_args[1]
         assert call_kwargs["stateMachineArn"] == BASE_ENV["STATE_MACHINE_ARN"]
@@ -102,7 +105,9 @@ class TestVersionCheckerHandlerNoRelease:
             mock_boto3.return_value = mock_sfn
             result = version_checker_handler({}, None)
 
-        assert result == {"triggered": []}
+        assert result["triggered"] == []
+        assert result["discovered"] == []
+        assert result["dry_run"] is False
         mock_sfn.start_execution.assert_not_called()
 
 
@@ -124,7 +129,9 @@ class TestVersionCheckerHandlerUnknownDataset:
             mock_boto3.return_value = mock_sfn
             result = version_checker_handler({}, None)
 
-        assert result == {"triggered": []}
+        assert result["triggered"] == []
+        assert result["discovered"] == []
+        assert result["dry_run"] is False
         mock_discover.assert_not_called()
         mock_sfn.start_execution.assert_not_called()
 
@@ -173,6 +180,8 @@ class TestVersionCheckerHandlerEmptyDatasets:
             mock_boto3.return_value = mock_sfn
             result = version_checker_handler({}, None)
 
-        assert result == {"triggered": []}
+        assert result["triggered"] == []
+        assert result["discovered"] == []
+        assert result["dry_run"] is False
         mock_discover.assert_not_called()
         mock_sfn.start_execution.assert_not_called()

@@ -24,19 +24,27 @@ def s3_cleanup_handler(event: dict[str, Any], context: LambdaContext) -> dict[st
     runs, then writes S3 lifecycle rules so AWS expires those objects within 24 hours.
     Previously written cleanup rules are removed on each run to keep the configuration tidy.
 
+    When ``dry_run`` is true in the event payload, the plan is computed and returned
+    but lifecycle rules are not written.
+
     Args:
-        event: EventBridge scheduled event (no required fields used).
+        event: EventBridge scheduled event or manual invocation with optional ``dry_run`` field.
         context: Lambda context.
 
     Returns:
-        Dict with scheduled_count indicating how many prefixes were scheduled for expiry.
+        Dict with scheduled_count, and plan list when dry_run is true.
     """
+    dry_run = event.get("dry_run", False)
     settings = S3CleanupEnvSettings()
     stale_prefixes = build_cleanup_plan(bucket_name=settings.bucket_name)
 
     log.info(f"S3 cleanup plan: {len(stale_prefixes)} stale prefixes identified")
     for item in stale_prefixes:
         log.info(f"Stale prefix: s3://{item['bucket_name']}/{item['prefix_type']}/{item['run_id']}/")
+
+    if dry_run:
+        log.info(f"Dry run — returning plan without applying lifecycle rules ({len(stale_prefixes)} prefixes)")
+        return {"scheduled_count": 0, "dry_run": True, "plan": stale_prefixes}
 
     if not stale_prefixes:
         log.info("No stale prefixes found — nothing to schedule")

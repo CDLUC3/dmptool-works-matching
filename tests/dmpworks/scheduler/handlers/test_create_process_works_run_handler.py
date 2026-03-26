@@ -11,7 +11,7 @@ PATCH_BASE = "dmpworks.scheduler.handler.create_process_works_run_handler"
 BASE_EVENT = {
     "run_date": "2025-01-13",
     "aws_env": "dev",
-    "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-process-works-dev:abc123",
+    "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:abc123",
     "run_id_sqlmesh_prev": "INITIAL",
     "run_id_openalex_works": "oa-run",
     "run_id_datacite": "dc-run",
@@ -40,7 +40,7 @@ class TestCreateRun:
         mock_create.assert_called_once_with(
             run_date="2025-01-13",
             run_id="20250113T060000-aabbccdd",
-            execution_arn="arn:aws:states:us-east-1:123456789012:execution:dmpworks-process-works-dev:abc123",
+            execution_arn="arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:abc123",
             run_id_sqlmesh_prev="INITIAL",
             run_id_openalex_works="oa-run",
             run_id_datacite="dc-run",

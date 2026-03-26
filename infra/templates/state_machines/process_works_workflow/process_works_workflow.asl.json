@@ -77,6 +77,8 @@
         "run_date.$": "$.run_date",
         "aws_env.$": "$.aws_env",
         "bucket_name.$": "$.bucket_name",
+        "skip_sqlmesh.$": "$.skip_sqlmesh",
+        "skip_sync_works.$": "$.skip_sync_works",
         "run_id_openalex_works.$": "$.check.datasets.run_id_openalex_works",
         "run_id_datacite.$": "$.check.datasets.run_id_datacite",
         "run_id_crossref_metadata.$": "$.check.datasets.run_id_crossref_metadata",
@@ -129,6 +131,8 @@
         "run_date.$": "$.run_date",
         "aws_env.$": "$.aws_env",
         "bucket_name.$": "$.bucket_name",
+        "skip_sqlmesh.$": "$.skip_sqlmesh",
+        "skip_sync_works.$": "$.skip_sync_works",
         "run_id.$": "$.created.run_id",
         "run_id_openalex_works.$": "$.run_id_openalex_works",
         "run_id_datacite.$": "$.run_id_datacite",
@@ -176,11 +180,18 @@
     },
     "SkipSqlmeshCheck": {
       "Type": "Choice",
-      "Comment": "Skip the SQLMesh task run if a checkpoint already exists",
+      "Comment": "Skip the SQLMesh task run if a checkpoint already exists or skip_sqlmesh flag is set",
       "Choices": [
         {
           "Variable": "$.sqlmesh_check.Item",
           "IsPresent": true,
+          "Next": "ExtractSqlmeshRunId"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_sqlmesh", "IsPresent": true },
+            { "Variable": "$.skip_sqlmesh", "BooleanEquals": true }
+          ],
           "Next": "ExtractSqlmeshRunId"
         }
       ],
@@ -244,11 +255,18 @@
     },
     "SkipSyncWorksCheck": {
       "Type": "Choice",
-      "Comment": "Skip the sync-works task run if a checkpoint already exists",
+      "Comment": "Skip the sync-works task run if a checkpoint already exists or skip_sync_works flag is set",
       "Choices": [
         {
           "Variable": "$.sync_works_check.Item",
           "IsPresent": true,
+          "Next": "MarkProcessWorksCompleted"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_sync_works", "IsPresent": true },
+            { "Variable": "$.skip_sync_works", "BooleanEquals": true }
+          ],
           "Next": "MarkProcessWorksCompleted"
         }
       ],
@@ -304,7 +322,11 @@
           "run_date.$": "$.run_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
-          "run_all_dmps": true
+          "run_all_dmps": true,
+          "skip_sync_dmps": false,
+          "skip_enrich_dmps": false,
+          "skip_dmp_works_search": false,
+          "skip_merge_related_works": false
         }
       },
       "ResultPath": null,

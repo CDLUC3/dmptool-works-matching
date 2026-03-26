@@ -52,6 +52,10 @@ def start_process_dmps_handler(event: dict[str, Any], context: LambdaContext) ->
                 "aws_env": settings.aws_env,
                 "bucket_name": settings.bucket_name,
                 "run_all_dmps": False,
+                "skip_sync_dmps": False,
+                "skip_enrich_dmps": False,
+                "skip_dmp_works_search": False,
+                "skip_merge_related_works": False,
             }
         ),
     )

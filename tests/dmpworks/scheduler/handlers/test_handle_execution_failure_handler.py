@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch
 
 from dmpworks.scheduler.handler.handle_execution_failure_handler import handle_execution_failure_handler
 
-PARENT_SM_ARN = "arn:aws:states:us-east-1:123456789012:stateMachine:dmpworks-dataset-ingest-dev"
-CHILD_SM_ARN = "arn:aws:states:us-east-1:123456789012:stateMachine:dmpworks-download-workflow-dev"
-EXECUTION_ARN = "arn:aws:states:us-east-1:123456789012:execution:dmpworks-download-workflow-dev:abc123"
+PARENT_SM_ARN = "arn:aws:states:us-east-1:123456789012:stateMachine:dmpworks-dev-dataset-ingest"
+CHILD_SM_ARN = "arn:aws:states:us-east-1:123456789012:stateMachine:dmpworks-dev-download"
+EXECUTION_ARN = "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-download:abc123"
 
 
 def make_event(*, state_machine_arn: str, execution_arn: str, execution_input: dict, cause: str | None = None) -> dict:

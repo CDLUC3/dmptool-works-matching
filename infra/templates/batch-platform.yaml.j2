@@ -26,7 +26,7 @@ Resources:
   BatchLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
-      LaunchTemplateName: !Sub '${AWS::StackName}-launch-template'
+      LaunchTemplateName: !Sub 'dmpworks-${Env}-batch-launch-template'
       LaunchTemplateData:
         BlockDeviceMappings:
           - DeviceName: '/dev/xvda' # Amazon Linux root volume
@@ -138,7 +138,7 @@ Resources:
   BatchServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub '${AWS::StackName}-service-role'
+      RoleName: !Sub 'dmpworks-${Env}-batch-service-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -154,14 +154,14 @@ Resources:
     DependsOn:
       - BatchInstanceRole
     Properties:
-      InstanceProfileName: !Sub '${AWS::StackName}-instance-profile'
+      InstanceProfileName: !Sub 'dmpworks-${Env}-batch-instance-profile'
       Roles:
         - !Ref BatchInstanceRole
 
   BatchInstanceRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Sub '${AWS::StackName}-instance-role'
+      RoleName: !Sub 'dmpworks-${Env}-batch-instance-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:

@@ -69,6 +69,8 @@ def start_process_works_handler(event: dict[str, Any], context: LambdaContext) -
                 "run_date": run_date,
                 "aws_env": settings.aws_env,
                 "bucket_name": settings.bucket_name,
+                "skip_sqlmesh": False,
+                "skip_sync_works": False,
             }
         ),
     )

@@ -28,9 +28,9 @@ DOWNLOAD_SM_PATH = _SM_DIR / "dataset_ingest_workflow" / "download_workflow.asl.
 SUBSET_SM_PATH = _SM_DIR / "dataset_ingest_workflow" / "subset_workflow.asl.json"
 TRANSFORM_SM_PATH = _SM_DIR / "dataset_ingest_workflow" / "transform_workflow.asl.json"
 
-DOWNLOAD_SM_NAME = "dmpworks-download-workflow-test"
-SUBSET_SM_NAME = "dmpworks-subset-workflow-test"
-TRANSFORM_SM_NAME = "dmpworks-transform-workflow-test"
+DOWNLOAD_SM_NAME = "dmpworks-test-download"
+SUBSET_SM_NAME = "dmpworks-test-subset"
+TRANSFORM_SM_NAME = "dmpworks-test-transform"
 
 BASE_INPUT = {
     "workflow_key": "ror",

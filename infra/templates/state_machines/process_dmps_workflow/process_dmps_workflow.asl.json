@@ -30,6 +30,10 @@
         "aws_env.$": "$.aws_env",
         "bucket_name.$": "$.bucket_name",
         "run_all_dmps.$": "$.run_all_dmps",
+        "skip_sync_dmps.$": "$.skip_sync_dmps",
+        "skip_enrich_dmps.$": "$.skip_enrich_dmps",
+        "skip_dmp_works_search.$": "$.skip_dmp_works_search",
+        "skip_merge_related_works.$": "$.skip_merge_related_works",
         "run_id.$": "$.created.run_id"
       },
       "Next": "MarkProcessDMPsStarted"
@@ -66,11 +70,18 @@
     },
     "SkipSyncDmpsCheck": {
       "Type": "Choice",
-      "Comment": "Skip the sync-dmps task run if a checkpoint already exists",
+      "Comment": "Skip the sync-dmps task run if a checkpoint already exists or skip_sync_dmps flag is set",
       "Choices": [
         {
           "Variable": "$.sync_dmps_check.Item",
           "IsPresent": true,
+          "Next": "ExtractSyncDmpsRunId"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_sync_dmps", "IsPresent": true },
+            { "Variable": "$.skip_sync_dmps", "BooleanEquals": true }
+          ],
           "Next": "ExtractSyncDmpsRunId"
         }
       ],
@@ -143,11 +154,18 @@
     },
     "SkipEnrichDmpsCheck": {
       "Type": "Choice",
-      "Comment": "Skip the enrich-dmps task run if a checkpoint already exists",
+      "Comment": "Skip the enrich-dmps task run if a checkpoint already exists or skip_enrich_dmps flag is set",
       "Choices": [
         {
           "Variable": "$.enrich_dmps_check.Item",
           "IsPresent": true,
+          "Next": "ExtractEnrichDmpsRunId"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_enrich_dmps", "IsPresent": true },
+            { "Variable": "$.skip_enrich_dmps", "BooleanEquals": true }
+          ],
           "Next": "ExtractEnrichDmpsRunId"
         }
       ],
@@ -220,11 +238,18 @@
     },
     "SkipDmpWorksSearchCheck": {
       "Type": "Choice",
-      "Comment": "Skip the dmp-works-search task run if a checkpoint already exists",
+      "Comment": "Skip the dmp-works-search task run if a checkpoint already exists or skip_dmp_works_search flag is set",
       "Choices": [
         {
           "Variable": "$.dws_check.Item",
           "IsPresent": true,
+          "Next": "ExtractDmpWorksSearchRunId"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_dmp_works_search", "IsPresent": true },
+            { "Variable": "$.skip_dmp_works_search", "BooleanEquals": true }
+          ],
           "Next": "ExtractDmpWorksSearchRunId"
         }
       ],
@@ -298,11 +323,18 @@
     },
     "SkipMergeRelatedWorksCheck": {
       "Type": "Choice",
-      "Comment": "Skip the merge-related-works task run if a checkpoint already exists",
+      "Comment": "Skip the merge-related-works task run if a checkpoint already exists or skip_merge_related_works flag is set",
       "Choices": [
         {
           "Variable": "$.mrw_check.Item",
           "IsPresent": true,
+          "Next": "ExtractMergeRelatedWorksRunId"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_merge_related_works", "IsPresent": true },
+            { "Variable": "$.skip_merge_related_works", "BooleanEquals": true }
+          ],
           "Next": "ExtractMergeRelatedWorksRunId"
         }
       ],

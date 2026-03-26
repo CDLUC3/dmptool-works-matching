@@ -34,11 +34,18 @@
     },
     "SkipDownloadCheck": {
       "Type": "Choice",
-      "Comment": "Skip the download task run if a checkpoint already exists",
+      "Comment": "Skip the download task run if a checkpoint already exists or skip_download flag is set",
       "Choices": [
         {
           "Variable": "$.task_run_check.Item",
           "IsPresent": true,
+          "Next": "CheckHasTransform"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_download", "IsPresent": true },
+            { "Variable": "$.skip_download", "BooleanEquals": true }
+          ],
           "Next": "CheckHasTransform"
         }
       ],
@@ -117,11 +124,18 @@
     },
     "SkipSubsetCheck": {
       "Type": "Choice",
-      "Comment": "Skip the subset task run if a checkpoint already exists",
+      "Comment": "Skip the subset task run if a checkpoint already exists or skip_subset flag is set",
       "Choices": [
         {
           "Variable": "$.task_run_check.Item",
           "IsPresent": true,
+          "Next": "GetTransformTaskRunStatus"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_subset", "IsPresent": true },
+            { "Variable": "$.skip_subset", "BooleanEquals": true }
+          ],
           "Next": "GetTransformTaskRunStatus"
         }
       ],
@@ -168,11 +182,18 @@
     },
     "SkipTransformCheck": {
       "Type": "Choice",
-      "Comment": "Skip the transform task run if a checkpoint already exists",
+      "Comment": "Skip the transform task run if a checkpoint already exists or skip_transform flag is set",
       "Choices": [
         {
           "Variable": "$.task_run_check.Item",
           "IsPresent": true,
+          "Next": "MarkReleaseCompleted"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_transform", "IsPresent": true },
+            { "Variable": "$.skip_transform", "BooleanEquals": true }
+          ],
           "Next": "MarkReleaseCompleted"
         }
       ],

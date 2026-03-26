@@ -163,5 +163,3 @@ class TestSetTaskRunCompleteHandler:
 
         checkpoint = TaskCheckpointRecord.get("ror", "download#2025-01-01")
         assert checkpoint.run_id == "2025-01-01T060000-a1b2c3d4"
-
-

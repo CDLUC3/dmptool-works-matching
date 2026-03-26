@@ -316,6 +316,28 @@ def get_task_checkpoint(*, workflow_key: str, task_name: str, date: str | None =
     return next(iter(results), None)
 
 
+def delete_task_checkpoint(*, workflow_key: str, task_name: str, date: str) -> TaskCheckpointRecord | None:
+    """Delete a task checkpoint and return the deleted record for logging/cleanup.
+
+    Args:
+        workflow_key: Workflow type identifier, e.g. "openalex-works".
+        task_name: Task within the workflow, e.g. "download".
+        date: Publication date (YYYY-MM-DD).
+
+    Returns:
+        The deleted TaskCheckpointRecord, or None if it did not exist.
+    """
+    try:
+        record = TaskCheckpointRecord.get(workflow_key, f"{task_name}#{date}")
+    except DoesNotExist:
+        return None
+    record.delete()
+    log.info(
+        f"Deleted task checkpoint: workflow_key={workflow_key} task_name={task_name} date={date} run_id={record.run_id}"
+    )
+    return record
+
+
 def scan_task_checkpoints(*, workflow_key: str, task_name: str) -> list[TaskCheckpointRecord]:
     """Return all checkpoints for a workflow task across all dates.
 

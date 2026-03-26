@@ -15,6 +15,7 @@ Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub dmpworks-${Env}-scheduler-lambda-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -47,9 +48,9 @@ Resources:
               - Effect: Allow
                 Action: states:StartExecution
                 Resource:
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-dataset-ingest-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-process-works-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-process-dmps-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-dataset-ingest
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-process-works
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-process-dmps
         - PolicyName: SSMParameterAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -84,6 +85,7 @@ Resources:
   StateMachineExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub dmpworks-${Env}-scheduler-sfn-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -135,16 +137,16 @@ Resources:
                   - states:DescribeExecution
                   - states:StopExecution
                 Resource:
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-download-workflow-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-subset-workflow-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-transform-workflow-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-sqlmesh-workflow-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-sync-works-workflow-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-process-dmps-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-sync-dmps-workflow-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-enrich-dmps-workflow-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-dmp-works-search-workflow-${Env}
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-merge-related-works-workflow-${Env}
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-download
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-subset
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-transform
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-sqlmesh
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-sync-works
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-process-dmps
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-sync-dmps
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-enrich-dmps
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-dmp-works-search
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-merge-related-works
               - Effect: Allow
                 Action: states:SendTaskSuccess
                 Resource: "*"
@@ -153,21 +155,22 @@ Resources:
                   - states:DescribeExecution
                   - states:StopExecution
                 Resource:
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-download-workflow-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-subset-workflow-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-transform-workflow-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-sqlmesh-workflow-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-sync-works-workflow-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-process-dmps-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-sync-dmps-workflow-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-enrich-dmps-workflow-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-dmp-works-search-workflow-${Env}:*
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-merge-related-works-workflow-${Env}:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-download:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-subset:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-transform:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-sqlmesh:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-sync-works:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-process-dmps:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-sync-dmps:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-enrich-dmps:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-dmp-works-search:*
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:execution:dmpworks-${Env}-merge-related-works:*
 
   VersionCheckerFunction:
     Type: AWS::Lambda::Function
     DependsOn: DatasetIngestStateMachine
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-version-checker
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -186,6 +189,7 @@ Resources:
   VersionCheckerSchedule:
     Type: AWS::Events::Rule
     Properties:
+      Name: !Sub dmpworks-${Env}-version-checker-schedule
       ScheduleExpression: cron(0 15 ? * MON-FRI *)
       Description: Weekday version check at 15:00 UTC (07:00 PDT in winter, 08:00 PDT in summer)
       State: ENABLED
@@ -204,6 +208,7 @@ Resources:
   SetReleaseStatusFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-set-release-status
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -219,6 +224,7 @@ Resources:
   GetBatchJobParamsFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-get-batch-job-params
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -235,6 +241,7 @@ Resources:
   SetTaskRunCompleteFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-set-task-run-complete
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -250,7 +257,7 @@ Resources:
   DownloadWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-download-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-download
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/dataset_ingest_workflow/download_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -262,7 +269,7 @@ Resources:
   SubsetWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-subset-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-subset
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/dataset_ingest_workflow/subset_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -274,7 +281,7 @@ Resources:
   TransformWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-transform-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-transform
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/dataset_ingest_workflow/transform_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -290,7 +297,7 @@ Resources:
       - SubsetWorkflowStateMachine
       - TransformWorkflowStateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-dataset-ingest-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-dataset-ingest
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/dataset_ingest_workflow/dataset_ingest_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -320,6 +327,7 @@ Resources:
       - DmpWorksSearchWorkflowStateMachine
       - MergeRelatedWorksWorkflowStateMachine
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-handle-execution-failure
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -374,6 +382,7 @@ Resources:
   CheckDatasetsReadyFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-check-datasets-ready
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -389,6 +398,7 @@ Resources:
   CreateProcessWorksRunFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-create-process-works-run
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -404,6 +414,7 @@ Resources:
   SetProcessWorksRunStatusFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-set-process-works-run-status
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -419,6 +430,7 @@ Resources:
   CreateProcessDMPsRunFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-create-process-dmps-run
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -434,6 +446,7 @@ Resources:
   SetProcessDMPsRunStatusFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-set-process-dmps-run-status
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -449,7 +462,7 @@ Resources:
   SqlmeshWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-sqlmesh-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-sqlmesh
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/process_works_workflow/sqlmesh_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -461,7 +474,7 @@ Resources:
   SyncWorksWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-sync-works-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-sync-works
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/process_works_workflow/sync_works_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -473,7 +486,7 @@ Resources:
   SyncDmpsWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-sync-dmps-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-sync-dmps
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/sync_dmps_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -485,7 +498,7 @@ Resources:
   EnrichDmpsWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-enrich-dmps-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-enrich-dmps
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/enrich_dmps_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -497,7 +510,7 @@ Resources:
   DmpWorksSearchWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-dmp-works-search-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-dmp-works-search
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/dmp_works_search_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -509,7 +522,7 @@ Resources:
   MergeRelatedWorksWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-merge-related-works-workflow-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-merge-related-works
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/merge_related_works_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -526,7 +539,7 @@ Resources:
       - DmpWorksSearchWorkflowStateMachine
       - MergeRelatedWorksWorkflowStateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-process-dmps-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-process-dmps
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/process_dmps_workflow/process_dmps_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -547,7 +560,7 @@ Resources:
       - SyncWorksWorkflowStateMachine
       - ProcessDmpsStateMachine
     Properties:
-      StateMachineName: !Sub dmpworks-process-works-${Env}
+      StateMachineName: !Sub dmpworks-${Env}-process-works
       DefinitionString: |
 {% filter indent(8, true) %}{% include 'state_machines/process_works_workflow/process_works_workflow.asl.json' %}{% endfilter %}
       DefinitionSubstitutions:
@@ -565,6 +578,7 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: ProcessWorksStateMachine
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-start-process-works
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -582,6 +596,7 @@ Resources:
   ProcessWorksSchedule:
     Type: AWS::Events::Rule
     Properties:
+      Name: !Sub dmpworks-${Env}-process-works-schedule
       ScheduleExpression: cron(0 16 8-14 * MON *)
       Description: Start process-works on the second Monday of each month at 16:00 UTC
       State: ENABLED
@@ -601,6 +616,7 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn: ProcessDmpsStateMachine
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-start-process-dmps
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -618,6 +634,7 @@ Resources:
   ProcessDMPsSchedule:
     Type: AWS::Events::Rule
     Properties:
+      Name: !Sub dmpworks-${Env}-process-dmps-schedule
       ScheduleExpression: cron(0 17 ? * * *)
       Description: Start process-dmps daily at 17:00 UTC
       State: ENABLED
@@ -636,6 +653,7 @@ Resources:
   S3CleanupFunction:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub dmpworks-${Env}-s3-cleanup
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri
@@ -652,6 +670,7 @@ Resources:
   S3CleanupSchedule:
     Type: AWS::Events::Rule
     Properties:
+      Name: !Sub dmpworks-${Env}-s3-cleanup-schedule
       ScheduleExpression: cron(0 0 L * ? *)
       Description: Monthly S3 cleanup — schedules stale run data for expiry on last day of month
       State: ENABLED

@@ -18,7 +18,7 @@ flowchart TD
     SkipDownloadCheck -->|task_run_status = COMPLETED| CheckHasTransform
     SkipDownloadCheck -->|default| InvokeDownloadChildSM
 
-    InvokeDownloadChildSM["InvokeDownloadChildSM\n(states:startExecution.sync:2)\ndmpworks-download-workflow-{env}"]
+    InvokeDownloadChildSM["InvokeDownloadChildSM\n(states:startExecution.sync:2)\ndmpworks-{env}-download"]
     InvokeDownloadChildSM -->|success| CheckHasTransform
     InvokeDownloadChildSM -->|catch States.ALL| WorkflowFailed
 
@@ -37,7 +37,7 @@ flowchart TD
     SkipSubsetCheck -->|task_run_status = COMPLETED| GetTransformTaskRunStatus
     SkipSubsetCheck -->|default| InvokeSubsetChildSM
 
-    InvokeSubsetChildSM["InvokeSubsetChildSM\n(states:startExecution.sync:2)\ndmpworks-subset-workflow-{env}"]
+    InvokeSubsetChildSM["InvokeSubsetChildSM\n(states:startExecution.sync:2)\ndmpworks-{env}-subset"]
     InvokeSubsetChildSM -->|success| GetTransformTaskRunStatus
     InvokeSubsetChildSM -->|catch States.ALL| WorkflowFailed
 
@@ -48,7 +48,7 @@ flowchart TD
     SkipTransformCheck -->|task_run_status = COMPLETED| MarkReleaseCompleted
     SkipTransformCheck -->|default| InvokeTransformChildSM
 
-    InvokeTransformChildSM["InvokeTransformChildSM\n(states:startExecution.sync:2)\ndmpworks-transform-workflow-{env}"]
+    InvokeTransformChildSM["InvokeTransformChildSM\n(states:startExecution.sync:2)\ndmpworks-{env}-transform"]
     InvokeTransformChildSM -->|success| MarkReleaseCompleted
     InvokeTransformChildSM -->|catch States.ALL| WorkflowFailed
 

@@ -30,6 +30,8 @@ dependencies = [
     "pydantic-settings>=2,<3",
     "aws-lambda-powertools[validation]>=3,<4",
     "pyyaml>=6,<7",
+    "rich>=13,<15",
+    "questionary>=2,<3",
 ]
 
 [project.optional-dependencies]
