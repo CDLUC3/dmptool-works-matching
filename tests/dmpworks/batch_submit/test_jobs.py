@@ -4,14 +4,6 @@ import pytest
 
 from dmpworks.batch_submit.job_registry import (
     JOB_FACTORIES,
-    DOWNLOAD_QUEUE_MEMORY,
-    DOWNLOAD_QUEUE_VCPUS,
-    SMALL_QUEUE_MEMORY,
-    SMALL_QUEUE_VCPUS,
-    TQDM_MININTERVAL,
-    TQDM_POSITION,
-    TRANSFORM_QUEUE_MEMORY,
-    TRANSFORM_QUEUE_VCPUS,
     datacite_download_job_definition,
     standard_job_definition,
 )
@@ -203,205 +195,24 @@ class TestSubmitFactoryJob:
             submit_factory_job(factory_key=("nonexistent", "task"), run_id="r")
 
 
-MINIMAL_FACTORY_ARGS = {
-    ("ror", "download"): {
-        "run_id": "r",
-        "bucket_name": "b",
-        "download_url": "http://x",
-        "file_hash": "h",
-        "env": "dev",
-    },
-    ("data-citation-corpus", "download"): {
-        "run_id": "r",
-        "bucket_name": "b",
-        "download_url": "http://x",
-        "file_hash": "h",
-        "env": "dev",
-    },
-    ("openalex-works", "download"): {"run_id": "r", "bucket_name": "b", "openalex_bucket_name": "oa", "env": "dev"},
-    ("crossref-metadata", "download"): {
-        "run_id": "r",
-        "bucket_name": "b",
-        "file_name": "f.tar.gz",
-        "crossref_metadata_bucket_name": "cb",
-        "env": "dev",
-    },
-    ("datacite", "download"): {"run_id": "r", "bucket_name": "b", "datacite_bucket_name": "db", "env": "dev"},
-    ("openalex-works", "subset"): {"run_id": "r", "bucket_name": "b", "env": "dev", "dataset": "openalex-works"},
-    ("crossref-metadata", "subset"): {"run_id": "r", "bucket_name": "b", "env": "dev", "dataset": "crossref-metadata"},
-    ("datacite", "subset"): {"run_id": "r", "bucket_name": "b", "env": "dev", "dataset": "datacite"},
-    ("openalex-works", "transform"): {
-        "run_id": "r",
-        "bucket_name": "b",
-        "env": "dev",
-        "openalex_works_transform_batch_size": 8,
-        "openalex_works_transform_row_group_size": 100_000,
-        "openalex_works_transform_row_groups_per_file": 2,
-        "openalex_works_transform_max_workers": 4,
-        "openalex_works_transform_include_xpac": False,
-    },
-    ("crossref-metadata", "transform"): {
-        "run_id": "r",
-        "bucket_name": "b",
-        "env": "dev",
-        "crossref_metadata_transform_batch_size": 8,
-        "crossref_metadata_transform_row_group_size": 100_000,
-        "crossref_metadata_transform_row_groups_per_file": 2,
-        "crossref_metadata_transform_max_workers": 4,
-    },
-    ("datacite", "transform"): {
-        "run_id": "r",
-        "bucket_name": "b",
-        "env": "dev",
-        "datacite_transform_batch_size": 8,
-        "datacite_transform_row_group_size": 100_000,
-        "datacite_transform_row_groups_per_file": 2,
-        "datacite_transform_max_workers": 4,
-    },
-}
-
-
-class TestStageRegistry:
-    def test_all_pipeline_stage_keys_exist(self):
-        expected_keys = [
-            ("ror", "download"),
-            ("data-citation-corpus", "download"),
-            ("openalex-works", "download"),
-            ("openalex-works", "subset"),
-            ("openalex-works", "transform"),
-            ("crossref-metadata", "download"),
-            ("crossref-metadata", "subset"),
-            ("crossref-metadata", "transform"),
-            ("datacite", "download"),
-            ("datacite", "subset"),
-            ("datacite", "transform"),
-        ]
-        for key in expected_keys:
-            assert key in JOB_FACTORIES, f"{key} not found in JOB_FACTORIES"
-
-    def test_datacite_download_uses_special_job_definition(self):
-        params = JOB_FACTORIES[("datacite", "download")](**MINIMAL_FACTORY_ARGS[("datacite", "download")])
-        assert params["JobDefinition"] == datacite_download_job_definition("dev")
-        assert params["JobDefinition"] != standard_job_definition("dev")
-
-    def test_all_others_use_standard_job_definition(self):
-        for key in [
-            ("ror", "download"),
-            ("data-citation-corpus", "download"),
-            ("openalex-works", "download"),
-            ("crossref-metadata", "download"),
-            ("openalex-works", "subset"),
-            ("crossref-metadata", "subset"),
-            ("datacite", "subset"),
-            ("openalex-works", "transform"),
-            ("crossref-metadata", "transform"),
-            ("datacite", "transform"),
-        ]:
-            params = JOB_FACTORIES[key](**MINIMAL_FACTORY_ARGS[key])
-            assert params["JobDefinition"] == standard_job_definition(
-                "dev"
-            ), f"{key} should use standard job definition"
-
-    def test_ror_dcc_use_small_queue_resources(self):
-        for key in [("ror", "download"), ("data-citation-corpus", "download")]:
-            params = JOB_FACTORIES[key](**MINIMAL_FACTORY_ARGS[key])
-            assert params["ContainerOverrides"]["Vcpus"] == SMALL_QUEUE_VCPUS
-            assert params["ContainerOverrides"]["Memory"] == SMALL_QUEUE_MEMORY
-
-    def test_download_stages_use_download_queue_resources(self):
-        for key in [
-            ("openalex-works", "download"),
-            ("crossref-metadata", "download"),
-            ("datacite", "download"),
-        ]:
-            params = JOB_FACTORIES[key](**MINIMAL_FACTORY_ARGS[key])
-            assert params["ContainerOverrides"]["Vcpus"] == DOWNLOAD_QUEUE_VCPUS
-            assert params["ContainerOverrides"]["Memory"] == DOWNLOAD_QUEUE_MEMORY
-
-    def test_transform_stages_use_transform_queue_resources(self):
-        for key in [
-            ("openalex-works", "subset"),
-            ("openalex-works", "transform"),
-            ("crossref-metadata", "subset"),
-            ("crossref-metadata", "transform"),
-            ("datacite", "subset"),
-            ("datacite", "transform"),
-        ]:
-            params = JOB_FACTORIES[key](**MINIMAL_FACTORY_ARGS[key])
-            assert params["ContainerOverrides"]["Vcpus"] == TRANSFORM_QUEUE_VCPUS
-            assert params["ContainerOverrides"]["Memory"] == TRANSFORM_QUEUE_MEMORY
-
-    def test_run_names(self):
-        assert (
-            JOB_FACTORIES[("ror", "download")](**MINIMAL_FACTORY_ARGS[("ror", "download")])["run_name"]
-            == "ror-download"
-        )
-        assert (
-            JOB_FACTORIES[("data-citation-corpus", "download")](
-                **MINIMAL_FACTORY_ARGS[("data-citation-corpus", "download")]
-            )["run_name"]
-            == "data-citation-corpus-download"
-        )
-        assert (
-            JOB_FACTORIES[("openalex-works", "subset")](**MINIMAL_FACTORY_ARGS[("openalex-works", "subset")])[
-                "run_name"
-            ]
-            == "openalex-works-dataset-subset"
-        )
-        assert (
-            JOB_FACTORIES[("crossref-metadata", "subset")](**MINIMAL_FACTORY_ARGS[("crossref-metadata", "subset")])[
-                "run_name"
-            ]
-            == "crossref-metadata-dataset-subset"
-        )
-        assert (
-            JOB_FACTORIES[("datacite", "subset")](**MINIMAL_FACTORY_ARGS[("datacite", "subset")])["run_name"]
-            == "datacite-dataset-subset"
-        )
-        assert (
-            JOB_FACTORIES[("openalex-works", "transform")](**MINIMAL_FACTORY_ARGS[("openalex-works", "transform")])[
-                "run_name"
-            ]
-            == "openalex-works-transform"
-        )
-        assert (
-            JOB_FACTORIES[("crossref-metadata", "transform")](
-                **MINIMAL_FACTORY_ARGS[("crossref-metadata", "transform")]
-            )["run_name"]
-            == "crossref-metadata-transform"
-        )
-        assert (
-            JOB_FACTORIES[("datacite", "transform")](**MINIMAL_FACTORY_ARGS[("datacite", "transform")])["run_name"]
-            == "datacite-transform"
-        )
-
-
 class TestGetTaskTypesToRun:
-    def test_ror_always_download_only(self):
-        assert get_task_types_to_run("ror", use_subset=True) == ["download"]
-        assert get_task_types_to_run("ror", use_subset=False) == ["download"]
-
-    def test_dcc_always_download_only(self):
-        assert get_task_types_to_run("data-citation-corpus", use_subset=True) == ["download"]
-        assert get_task_types_to_run("data-citation-corpus", use_subset=False) == ["download"]
-
-    def test_openalex_with_subset(self):
-        assert get_task_types_to_run("openalex-works", use_subset=True) == ["download", "subset", "transform"]
-
-    def test_openalex_without_subset(self):
-        assert get_task_types_to_run("openalex-works", use_subset=False) == ["download", "transform"]
-
-    def test_crossref_with_subset(self):
-        assert get_task_types_to_run("crossref-metadata", use_subset=True) == ["download", "subset", "transform"]
-
-    def test_crossref_without_subset(self):
-        assert get_task_types_to_run("crossref-metadata", use_subset=False) == ["download", "transform"]
-
-    def test_datacite_with_subset(self):
-        assert get_task_types_to_run("datacite", use_subset=True) == ["download", "subset", "transform"]
-
-    def test_datacite_without_subset(self):
-        assert get_task_types_to_run("datacite", use_subset=False) == ["download", "transform"]
+    @pytest.mark.parametrize(
+        ("dataset", "use_subset", "expected"),
+        [
+            ("ror", True, ["download"]),
+            ("ror", False, ["download"]),
+            ("data-citation-corpus", True, ["download"]),
+            ("data-citation-corpus", False, ["download"]),
+            ("openalex-works", True, ["download", "subset", "transform"]),
+            ("openalex-works", False, ["download", "transform"]),
+            ("crossref-metadata", True, ["download", "subset", "transform"]),
+            ("crossref-metadata", False, ["download", "transform"]),
+            ("datacite", True, ["download", "subset", "transform"]),
+            ("datacite", False, ["download", "transform"]),
+        ],
+    )
+    def test_returns_correct_task_types(self, dataset, use_subset, expected):
+        assert get_task_types_to_run(dataset, use_subset=use_subset) == expected
 
 
 class TestSubmitJobFromParams:

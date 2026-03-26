@@ -9,8 +9,13 @@ PYTHON_VERSION ?= 3.12
 check-ecr-registry:
 > @[ -n "$(ECR_REGISTRY)" ] || { echo >&2 "ECR_REGISTRY is required but not set. Aborting."; exit 1; }
 
+check-env:
+> @[ -n "$(ENV)" ] || { echo >&2 "ENV is required but not set. Aborting."; exit 1; }
+
 check-ssm-prefix:
 > @[ -n "$(SSM_PREFIX)" ] || { echo >&2 "SSM_PREFIX is required but not set. Aborting."; exit 1; }
+
+check-deploy-vars: check-ecr-registry check-env check-ssm-prefix
 
 # Ensure uv is installed
 check-uv:
@@ -119,10 +124,10 @@ diff-dev:
 diff-stg:
 > cd infra && sceptre --var-file=vars-stg.yaml diff stg
 
-deploy-dev: push-batch-dev push-lambda-dev
+deploy-dev: check-deploy-vars push-batch-dev push-lambda-dev
 > cd infra && sceptre --var-file=vars-dev.yaml launch dev
 
-deploy-stg: push-batch-stg push-lambda-stg
+deploy-stg: check-deploy-vars push-batch-stg push-lambda-stg
 > cd infra && sceptre --var-file=vars-stg.yaml launch stg
 
 

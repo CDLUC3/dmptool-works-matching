@@ -191,7 +191,10 @@ Resources:
     Properties:
       Name: !Sub dmpworks-${Env}-version-checker-schedule
       ScheduleExpression: cron(0 15 ? * MON-FRI *)
-      Description: Weekday version check at 15:00 UTC (07:00 PDT in winter, 08:00 PDT in summer)
+      Description: >-
+        Weekday version check at 15:00 UTC (08:00 PDT).
+        Runs first to give dataset-ingest time to kick off before later jobs.
+        Weekdays only so runs are likely monitored.
       State: ENABLED
       Targets:
         - Id: VersionCheckerFunction
@@ -597,8 +600,11 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: !Sub dmpworks-${Env}-process-works-schedule
-      ScheduleExpression: cron(0 16 8-14 * MON *)
-      Description: Start process-works on the second Monday of each month at 16:00 UTC
+      ScheduleExpression: cron(0 16 ? * 2#2 *)
+      Description: >-
+        Second Monday of each month at 16:00 UTC (09:00 PDT).
+        Runs after version-checker has had time to trigger dataset-ingest.
+        Weekday to ensure staff availability.
       State: ENABLED
       Targets:
         - Id: StartProcessWorksFunction
@@ -635,8 +641,11 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: !Sub dmpworks-${Env}-process-dmps-schedule
-      ScheduleExpression: cron(0 17 ? * * *)
-      Description: Start process-dmps daily at 17:00 UTC
+      ScheduleExpression: cron(0 3 ? * TUE-SAT *)
+      Description: >-
+        Weekday evenings at 03:00 UTC (20:00 PDT previous day).
+        TUE-SAT in UTC corresponds to MON-FRI evenings PDT.
+        Runs at end of work day; weekdays only so runs are likely monitored.
       State: ENABLED
       Targets:
         - Id: StartProcessDMPsFunction

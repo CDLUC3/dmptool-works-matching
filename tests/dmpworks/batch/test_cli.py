@@ -3,8 +3,6 @@ import logging
 from dmpworks.cli import cli
 import pytest
 
-SETUP_LOGGING = "dmpworks.utils.setup_multiprocessing_logging"
-
 CROSSREF_TRANSFORM_VARS = [
     "CROSSREF_METADATA_TRANSFORM_BATCH_SIZE",
     "CROSSREF_METADATA_TRANSFORM_ROW_GROUP_SIZE",
@@ -74,10 +72,6 @@ def clear_env(monkeypatch, *var_groups):
 
 
 class TestCrossrefMetadataCLI:
-    @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(monkeypatch, CROSSREF_TRANSFORM_VARS)
@@ -166,10 +160,6 @@ class TestCrossrefMetadataCLI:
 
 class TestDataCiteCLI:
     @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
-    @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(monkeypatch, DATACITE_TRANSFORM_VARS)
 
@@ -216,10 +206,6 @@ class TestDataCiteCLI:
 
 class TestOpenAlexWorksCLI:
     @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
-    @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(monkeypatch, OPENALEX_TRANSFORM_VARS)
 
@@ -265,10 +251,6 @@ class TestOpenAlexWorksCLI:
 
 
 class TestRorCLI:
-    @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
     @pytest.fixture
     def mock_download(self, mocker):
         return mocker.patch("dmpworks.batch.ror.download")
@@ -316,10 +298,6 @@ class TestRorCLI:
 
 class TestSQLMeshCLI:
     @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
-    @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(monkeypatch, RUN_ID_VARS)
         # Clear a representative sample of SQLMesh config vars
@@ -350,10 +328,6 @@ class TestSQLMeshCLI:
 
 
 class TestOpenSearchCLI:
-    @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(
@@ -457,4 +431,123 @@ class TestOpenSearchCLI:
                 mysql_pwd="secret",
             ),
             batch_size=1000,
+        )
+
+    def test_sync_dmps(self, monkeypatch, mocker):
+        from dmpworks.cli_utils import MySQLConfig, OpenSearchClientConfig
+
+        monkeypatch.setenv("MYSQL_HOST", "db.example.com")
+        monkeypatch.setenv("MYSQL_TCP_PORT", "3306")
+        monkeypatch.setenv("MYSQL_USER", "admin")
+        monkeypatch.setenv("MYSQL_DATABASE", "dmpworks")
+        monkeypatch.setenv("MYSQL_PWD", "secret")
+
+        mock = mocker.patch("dmpworks.batch.opensearch.sync_dmps_cmd")
+        cli(["aws-batch", "opensearch", "sync-dmps", "my-bucket", "dmps-index"])
+
+        mock.assert_called_once_with(
+            bucket_name="my-bucket",
+            index_name="dmps-index",
+            client_config=OpenSearchClientConfig(),
+            mysql_config=MySQLConfig(
+                mysql_host="db.example.com",
+                mysql_tcp_port=3306,
+                mysql_user="admin",
+                mysql_database="dmpworks",
+                mysql_pwd="secret",
+            ),
+            dmp_subset=None,
+        )
+
+
+class TestDataCitationCorpusCLI:
+    @pytest.fixture
+    def mock_download(self, mocker):
+        return mocker.patch("dmpworks.batch.data_citation_corpus.download")
+
+    def test_download(self, mock_download):
+        cli(
+            [
+                "aws-batch",
+                "data-citation-corpus",
+                "download",
+                "my-bucket",
+                "2025-01-01",
+                "https://zenodo.org/records/123/files/dcc.json.zip",
+            ]
+        )
+
+        mock_download.assert_called_once_with(
+            bucket_name="my-bucket",
+            run_id="2025-01-01",
+            download_url="https://zenodo.org/records/123/files/dcc.json.zip",
+            file_hash=None,
+        )
+
+
+class TestDatasetSubsetCLI:
+    @pytest.fixture
+    def mock_datacite_subset(self, mocker):
+        return mocker.patch("dmpworks.batch.datacite.dataset_subset")
+
+    @pytest.fixture
+    def mock_crossref_subset(self, mocker):
+        return mocker.patch("dmpworks.batch.crossref_metadata.dataset_subset")
+
+    @pytest.fixture
+    def mock_openalex_subset(self, mocker):
+        return mocker.patch("dmpworks.batch.openalex_works.dataset_subset")
+
+    def test_datacite_dataset_subset(self, mock_datacite_subset):
+        from dmpworks.cli_utils import DatasetSubsetAWS
+
+        cli(["aws-batch", "datacite", "dataset-subset", "my-bucket", "2025-01-01", "--dataset-subset.enable=false"])
+
+        mock_datacite_subset.assert_called_once_with(
+            bucket_name="my-bucket",
+            run_id="2025-01-01",
+            ds_config=DatasetSubsetAWS(),
+            prev_run_id=None,
+        )
+
+    def test_crossref_metadata_dataset_subset(self, mock_crossref_subset):
+        from dmpworks.cli_utils import DatasetSubsetAWS
+
+        cli(
+            [
+                "aws-batch",
+                "crossref-metadata",
+                "dataset-subset",
+                "my-bucket",
+                "2025-01-01",
+                "--dataset-subset.enable=false",
+            ]
+        )
+
+        mock_crossref_subset.assert_called_once_with(
+            bucket_name="my-bucket",
+            run_id="2025-01-01",
+            ds_config=DatasetSubsetAWS(),
+            prev_run_id=None,
+        )
+
+    def test_openalex_works_dataset_subset(self, mock_openalex_subset):
+        from dmpworks.cli_utils import DatasetSubsetAWS
+
+        cli(
+            [
+                "aws-batch",
+                "openalex-works",
+                "dataset-subset",
+                "my-bucket",
+                "2025-01-01",
+                "--dataset-subset.enable=false",
+            ]
+        )
+
+        mock_openalex_subset.assert_called_once_with(
+            bucket_name="my-bucket",
+            run_id="2025-01-01",
+            ds_config=DatasetSubsetAWS(),
+            prev_run_id=None,
         )
