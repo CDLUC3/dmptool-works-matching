@@ -226,7 +226,7 @@ def sqlmesh_env(
         "AUDIT_NESTED_OBJECT_LIMIT": "1000",
         # Other settings
         "MAX_DOI_STATES": "10",
-        "RUN_ID_PROCESS_WORKS": "2024-06-15",
+        "RUN_ID_SQLMESH": "2024-06-15",
         "MAX_RELATION_DEGREES": "3",
     }
 

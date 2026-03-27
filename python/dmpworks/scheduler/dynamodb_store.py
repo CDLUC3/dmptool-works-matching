@@ -28,12 +28,14 @@ class DatasetReleaseRecord(Model):
     Attributes:
         dataset: The dataset identifier (hash key).
         publication_date: ISO date string "YYYY-MM-DD" (range key, sortable).
-        status: Lifecycle status — DISCOVERED | STARTED | COMPLETED | FAILED.
+        status: Lifecycle status — DISCOVERED | STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL.
         file_name: File to download, if applicable.
         download_url: Direct download URL, if applicable.
         file_hash: MD5 checksum for the file, if applicable.
         metadata: Arbitrary extra key/value pairs.
         step_function_execution_arn: ARN of the associated Step Functions execution, if started.
+        approval_token: Task token for the parent SM's approval wait state, if awaiting retry approval.
+        approval_task_name: Name of the child task awaiting retry approval.
         created_at: ISO datetime string of record creation.
         updated_at: ISO datetime string of last update.
     """
@@ -53,6 +55,8 @@ class DatasetReleaseRecord(Model):
     file_hash = UnicodeAttribute(null=True)
     metadata = MapAttribute(default=dict)
     step_function_execution_arn = UnicodeAttribute(null=True)
+    approval_token = UnicodeAttribute(null=True)
+    approval_task_name = UnicodeAttribute(null=True)
     created_at = UnicodeAttribute()
     updated_at = UnicodeAttribute()
 
@@ -338,22 +342,29 @@ def delete_task_checkpoint(*, workflow_key: str, task_name: str, date: str) -> T
     return record
 
 
-def scan_task_checkpoints(*, workflow_key: str, task_name: str) -> list[TaskCheckpointRecord]:
-    """Return all checkpoints for a workflow task across all dates.
+def scan_task_checkpoints(
+    *, workflow_key: str, task_name: str, start_date: str | None = None, end_date: str | None = None
+) -> list[TaskCheckpointRecord]:
+    """Return checkpoints for a workflow task, optionally filtered by date range.
 
     Args:
         workflow_key: Workflow type identifier, e.g. "openalex-works".
         task_name: Task within the workflow, e.g. "download".
+        start_date: Optional ISO date lower bound (inclusive).
+        end_date: Optional ISO date upper bound (inclusive).
 
     Returns:
-        List of all TaskCheckpointRecord instances for the given task.
+        List of TaskCheckpointRecord instances for the given task.
     """
-    return list(
-        TaskCheckpointRecord.query(
-            workflow_key,
-            TaskCheckpointRecord.task_key.startswith(f"{task_name}#"),
-        )
-    )
+    if start_date and end_date:
+        range_condition = TaskCheckpointRecord.task_key.between(f"{task_name}#{start_date}", f"{task_name}#{end_date}")
+    elif start_date:
+        range_condition = TaskCheckpointRecord.task_key >= f"{task_name}#{start_date}"
+    elif end_date:
+        range_condition = TaskCheckpointRecord.task_key.between(f"{task_name}#", f"{task_name}#{end_date}")
+    else:
+        range_condition = TaskCheckpointRecord.task_key.startswith(f"{task_name}#")
+    return list(TaskCheckpointRecord.query(workflow_key, range_condition))
 
 
 class ProcessWorksRunRecord(Model):
@@ -380,6 +391,8 @@ class ProcessWorksRunRecord(Model):
         publication_date_crossref_metadata: Publication date of the Crossref Metadata release used.
         publication_date_ror: Publication date of the ROR release used.
         publication_date_data_citation_corpus: Publication date of the Data Citation Corpus release used.
+        approval_token: Task token for the parent SM's approval wait state, if awaiting retry approval.
+        approval_task_name: Name of the child task awaiting retry approval.
         error: Error message if FAILED.
         created_at: ISO datetime string of record creation.
         updated_at: ISO datetime string of last update.
@@ -408,6 +421,8 @@ class ProcessWorksRunRecord(Model):
     publication_date_crossref_metadata = UnicodeAttribute(null=True)
     publication_date_ror = UnicodeAttribute(null=True)
     publication_date_data_citation_corpus = UnicodeAttribute(null=True)
+    approval_token = UnicodeAttribute(null=True)
+    approval_task_name = UnicodeAttribute(null=True)
     error = UnicodeAttribute(null=True)
     created_at = UnicodeAttribute()
     updated_at = UnicodeAttribute()
@@ -417,7 +432,7 @@ def update_release_status(
     *,
     dataset: str,
     publication_date: str,
-    status: Literal["DISCOVERED", "STARTED", "COMPLETED", "FAILED"],
+    status: Literal["DISCOVERED", "STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"],
     **kwargs,
 ) -> None:
     """Update the status and timestamp of a DatasetReleaseRecord.
@@ -527,7 +542,7 @@ def set_process_works_run_status(
     *,
     run_date: str,
     run_id: str,
-    status: Literal["STARTED", "COMPLETED", "FAILED"],
+    status: Literal["STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"],
     **kwargs,
 ) -> None:
     """Update the status and timestamp of a ProcessWorksRunRecord.
@@ -535,7 +550,7 @@ def set_process_works_run_status(
     Args:
         run_date: Hash key identifying the monthly run date.
         run_id: Range key identifying the specific run.
-        status: Target lifecycle status — STARTED | COMPLETED | FAILED.
+        status: Target lifecycle status — STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL.
         **kwargs: Additional ProcessWorksRunRecord attribute names and values to set,
             e.g. step_function_execution_arn="arn:...", run_id_sqlmesh="20250101T...", or error="...".
     """
@@ -560,8 +575,10 @@ class ProcessDMPsRunRecord(Model):
     Attributes:
         run_date: ISO date string "YYYY-MM-DD" identifying the daily run (hash key).
         run_id: Unique execution ID (range key), e.g. "20250101T060000-abc123".
-        status: Lifecycle status — STARTED | COMPLETED | FAILED.
+        status: Lifecycle status — STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL.
         step_function_execution_arn: ARN of the enclosing Step Functions execution.
+        approval_token: Task token for the parent SM's approval wait state, if awaiting retry approval.
+        approval_task_name: Name of the child task awaiting retry approval.
         error: Error message if FAILED.
         run_id_sync_dmps: Run ID of the sync-dmps task.
         run_id_enrich_dmps: Run ID of the enrich-dmps task.
@@ -582,6 +599,8 @@ class ProcessDMPsRunRecord(Model):
     run_id = UnicodeAttribute(range_key=True)
     status = UnicodeAttribute(default="STARTED")
     step_function_execution_arn = UnicodeAttribute(null=True)
+    approval_token = UnicodeAttribute(null=True)
+    approval_task_name = UnicodeAttribute(null=True)
     error = UnicodeAttribute(null=True)
     run_id_sync_dmps = UnicodeAttribute(null=True)
     run_id_enrich_dmps = UnicodeAttribute(null=True)
@@ -621,21 +640,45 @@ def create_process_dmps_run(
     return record
 
 
-def scan_all_process_works_runs() -> list[ProcessWorksRunRecord]:
-    """Return all ProcessWorksRunRecord entries across all run dates.
+def scan_all_process_works_runs(
+    *, start_date: str | None = None, end_date: str | None = None
+) -> list[ProcessWorksRunRecord]:
+    """Return ProcessWorksRunRecord entries, optionally filtered by run_date range.
+
+    Uses a DynamoDB scan with server-side filter expression when dates are provided.
+    run_date is the hash key so range queries are not possible.
+
+    Args:
+        start_date: Optional ISO date lower bound (inclusive).
+        end_date: Optional ISO date upper bound (inclusive).
 
     Returns:
-        List of all ProcessWorksRunRecord instances.
+        List of ProcessWorksRunRecord instances.
     """
+    if start_date and end_date:
+        condition = ProcessWorksRunRecord.run_date.between(start_date, end_date)
+        return list(ProcessWorksRunRecord.scan(filter_condition=condition))
     return list(ProcessWorksRunRecord.scan())
 
 
-def scan_all_process_dmps_runs() -> list[ProcessDMPsRunRecord]:
-    """Return all ProcessDMPsRunRecord entries across all run dates.
+def scan_all_process_dmps_runs(
+    *, start_date: str | None = None, end_date: str | None = None
+) -> list[ProcessDMPsRunRecord]:
+    """Return ProcessDMPsRunRecord entries, optionally filtered by run_date range.
+
+    Uses a DynamoDB scan with server-side filter expression when dates are provided.
+    run_date is the hash key so range queries are not possible.
+
+    Args:
+        start_date: Optional ISO date lower bound (inclusive).
+        end_date: Optional ISO date upper bound (inclusive).
 
     Returns:
-        List of all ProcessDMPsRunRecord instances.
+        List of ProcessDMPsRunRecord instances.
     """
+    if start_date and end_date:
+        condition = ProcessDMPsRunRecord.run_date.between(start_date, end_date)
+        return list(ProcessDMPsRunRecord.scan(filter_condition=condition))
     return list(ProcessDMPsRunRecord.scan())
 
 
@@ -662,12 +705,14 @@ def set_process_dmps_run_status(
     *,
     run_date: str,
     run_id: str,
-    status: Literal["STARTED", "COMPLETED", "FAILED"] | None = None,
+    status: Literal["STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"] | None = None,
     error: str | None = None,
     run_id_sync_dmps: str | None = None,
     run_id_enrich_dmps: str | None = None,
     run_id_dmp_works_search: str | None = None,
     run_id_merge_related_works: str | None = None,
+    approval_token: str | None = None,
+    approval_task_name: str | None = None,
 ) -> None:
     """Update fields on a ProcessDMPsRunRecord.
 
@@ -677,12 +722,14 @@ def set_process_dmps_run_status(
     Args:
         run_date: Hash key identifying the daily run date.
         run_id: Range key identifying the specific run.
-        status: Target lifecycle status — STARTED | COMPLETED | FAILED. If None, not updated.
+        status: Target lifecycle status — STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL. If None, not updated.
         error: Error message for FAILED status. If None, not updated.
         run_id_sync_dmps: Run ID of the sync-dmps task. If None, not updated.
         run_id_enrich_dmps: Run ID of the enrich-dmps task. If None, not updated.
         run_id_dmp_works_search: Run ID of the dmp-works-search task. If None, not updated.
         run_id_merge_related_works: Run ID of the merge-related-works task. If None, not updated.
+        approval_token: Task token for the parent SM's approval wait state. If None, not updated.
+        approval_task_name: Name of the child task awaiting retry approval. If None, not updated.
     """
     record = ProcessDMPsRunRecord.get(run_date, run_id)
     actions = [ProcessDMPsRunRecord.updated_at.set(datetime.now(UTC).isoformat())]
@@ -698,5 +745,88 @@ def set_process_dmps_run_status(
         actions.append(ProcessDMPsRunRecord.run_id_dmp_works_search.set(run_id_dmp_works_search))
     if run_id_merge_related_works is not None:
         actions.append(ProcessDMPsRunRecord.run_id_merge_related_works.set(run_id_merge_related_works))
+    if approval_token is not None:
+        actions.append(ProcessDMPsRunRecord.approval_token.set(approval_token))
+    if approval_task_name is not None:
+        actions.append(ProcessDMPsRunRecord.approval_task_name.set(approval_task_name))
     record.update(actions=actions)
     log.info(f"Set process DMPs run status: run_date={run_date} run_id={run_id} status={status}")
+
+
+def clear_approval_token(*, workflow_key: str, **keys) -> None:
+    """Clear approval_token and approval_task_name from a run record.
+
+    Routes to the correct model based on workflow_key. For dataset-ingest workflows,
+    keys should include dataset and publication_date. For process-works/process-dmps,
+    keys should include run_date and run_id.
+
+    Args:
+        workflow_key: Workflow identifier (e.g. "openalex-works", "process-works", "process-dmps").
+        **keys: Primary key fields for the record.
+    """
+    if workflow_key == "process-dmps":
+        model_cls = ProcessDMPsRunRecord
+        record = model_cls.get(keys["run_date"], keys["run_id"])
+    elif workflow_key == "process-works":
+        model_cls = ProcessWorksRunRecord
+        record = model_cls.get(keys["run_date"], keys["run_id"])
+    else:
+        model_cls = DatasetReleaseRecord
+        record = model_cls.get(keys["dataset"], keys["publication_date"])
+
+    now = datetime.now(UTC).isoformat()
+    record.update(actions=[
+        model_cls.approval_token.remove(),
+        model_cls.approval_task_name.remove(),
+        model_cls.updated_at.set(now),
+    ])
+    log.info(f"Cleared approval token: workflow_key={workflow_key} keys={keys}")
+
+
+def get_runs_awaiting_approval() -> list[dict]:
+    """Scan all run record tables for records with a non-null approval_token.
+
+    Returns:
+        List of dicts with keys: workflow_key, approval_token, approval_task_name,
+        and the primary key fields for each record type.
+    """
+    results = [
+        {
+            "workflow_key": record.dataset,
+            "dataset": record.dataset,
+            "publication_date": record.publication_date,
+            "approval_token": record.approval_token,
+            "approval_task_name": record.approval_task_name,
+        }
+        for record in DatasetReleaseRecord.scan(
+            filter_condition=DatasetReleaseRecord.approval_token.exists(),
+        )
+    ]
+
+    results.extend(
+        {
+            "workflow_key": "process-works",
+            "run_date": record.run_date,
+            "run_id": record.run_id,
+            "approval_token": record.approval_token,
+            "approval_task_name": record.approval_task_name,
+        }
+        for record in ProcessWorksRunRecord.scan(
+            filter_condition=ProcessWorksRunRecord.approval_token.exists(),
+        )
+    )
+
+    results.extend(
+        {
+            "workflow_key": "process-dmps",
+            "run_date": record.run_date,
+            "run_id": record.run_id,
+            "approval_token": record.approval_token,
+            "approval_task_name": record.approval_task_name,
+        }
+        for record in ProcessDMPsRunRecord.scan(
+            filter_condition=ProcessDMPsRunRecord.approval_token.exists(),
+        )
+    )
+
+    return results

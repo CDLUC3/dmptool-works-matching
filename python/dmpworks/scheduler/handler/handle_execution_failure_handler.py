@@ -49,9 +49,13 @@ def handle_execution_failure_handler(event: dict, context: LambdaContext) -> Non
         f"Execution failed: workflow_key={workflow_key} publication_date={publication_date} executionArn={detail['executionArn']}"
     )
 
+    # Child SMs with a TaskToken are managed by the parent's Catch → approval flow.
+    # The parent handles the retry lifecycle, so we skip marking the parent record as FAILED.
+    is_managed_child = "TaskToken" in execution_input
+
     if workflow_key == "process-works":
         task_run_id = execution_input.get("run_id")
-        if task_run_id:
+        if task_run_id and not is_managed_child:
             log.info(f"Marking process works run FAILED: run_date={publication_date} run_id={task_run_id}")
             set_process_works_run_status(
                 run_date=publication_date,
@@ -60,10 +64,10 @@ def handle_execution_failure_handler(event: dict, context: LambdaContext) -> Non
                 error=error_message,
             )
         else:
-            log.info(f"No run_id in execution input for process-works failure (executionArn={detail['executionArn']})")
+            log.info(f"Skipping parent record update for process-works failure (executionArn={detail['executionArn']})")
     elif workflow_key == "process-dmps":
         task_run_id = execution_input.get("run_id")
-        if task_run_id:
+        if task_run_id and not is_managed_child:
             log.info(f"Marking process DMPs run FAILED: run_date={publication_date} run_id={task_run_id}")
             set_process_dmps_run_status(
                 run_date=publication_date,
@@ -72,7 +76,9 @@ def handle_execution_failure_handler(event: dict, context: LambdaContext) -> Non
                 error=error_message,
             )
         else:
-            log.info(f"No run_id in execution input for process-dmps failure (executionArn={detail['executionArn']})")
+            log.info(f"Skipping parent record update for process-dmps failure (executionArn={detail['executionArn']})")
+    elif is_managed_child:
+        log.info(f"Skipping parent record update for managed child failure (executionArn={detail['executionArn']})")
     else:
         update_release_status(dataset=workflow_key, publication_date=publication_date, status="FAILED")
 

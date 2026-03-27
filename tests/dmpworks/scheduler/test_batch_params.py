@@ -37,6 +37,53 @@ BASE_EVENT = {
 }
 
 
+class TestComputeBatchParamsRunId:
+    @patch("dmpworks.scheduler.batch_params.get_task_checkpoint")
+    @patch("dmpworks.scheduler.batch_params.JOB_FACTORIES")
+    def test_uses_preassigned_run_id_when_present(self, mock_factories, mock_get_checkpoint):
+        """compute_batch_params uses the run_id from the event when provided by the parent SM."""
+        captured_kwargs = {}
+
+        def fake_factory(**kwargs):
+            captured_kwargs.update(kwargs)
+            return {
+                "run_name": "openalex-works-transform",
+                "JobName": "j",
+                "JobQueue": "q",
+                "JobDefinition": "d",
+                "ContainerOverrides": {"Command": ["/bin/bash", "-c", "echo"], "Vcpus": 1, "Memory": 1024, "Environment": []},
+            }
+
+        mock_factories.__getitem__ = MagicMock(return_value=fake_factory)
+        event = {**BASE_EVENT, "run_id": "preassigned-run-id-123"}
+
+        result = compute_batch_params(event, make_config())
+
+        assert result["run_id"] == "preassigned-run-id-123"
+        assert captured_kwargs["run_id"] == "preassigned-run-id-123"
+
+    @patch("dmpworks.scheduler.batch_params.get_task_checkpoint")
+    @patch("dmpworks.scheduler.batch_params.JOB_FACTORIES")
+    def test_generates_run_id_when_absent(self, mock_factories, mock_get_checkpoint):
+        """compute_batch_params generates a fresh run_id when none is provided."""
+        def fake_factory(**kwargs):
+            return {
+                "run_name": "openalex-works-transform",
+                "JobName": "j",
+                "JobQueue": "q",
+                "JobDefinition": "d",
+                "ContainerOverrides": {"Command": ["/bin/bash", "-c", "echo"], "Vcpus": 1, "Memory": 1024, "Environment": []},
+            }
+
+        mock_factories.__getitem__ = MagicMock(return_value=fake_factory)
+
+        result = compute_batch_params(BASE_EVENT, make_config())
+
+        assert result["run_id"] is not None
+        assert len(result["run_id"]) > 0
+        assert result["run_id"] != ""
+
+
 class TestComputeBatchParamsPredecessor:
     @patch("dmpworks.scheduler.batch_params.get_task_checkpoint")
     @patch("dmpworks.scheduler.batch_params.JOB_FACTORIES")

@@ -7,8 +7,17 @@ from typing import Annotated, Literal
 from cyclopts import App, Parameter
 
 app = App(name="pipeline", help="Interactive pipeline management commands.")
-run_app = App(name="run", help="Start a Step Function execution interactively.")
-app.command(run_app)
+show_app = App(name="show", help="Read-only inspection commands.")
+runs_app = App(name="runs", help="Workflow run history and run actions.")
+start_app = App(name="start", help="Start a Step Function execution interactively.")
+schedules_app = App(name="schedules", help="Show, pause, or resume EventBridge schedule rules.")
+admin_app = App(name="admin", help="Operational and maintenance commands.")
+
+app.command(show_app)
+app.command(runs_app)
+runs_app.command(start_app)
+app.command(schedules_app)
+app.command(admin_app)
 
 EnvTypes = Literal["dev", "stg", "prd"]
 
@@ -20,10 +29,6 @@ DATASET_WORKFLOW_KEYS = (
     "ror",
     "data-citation-corpus",
 )
-PIPELINE_WORKFLOW_KEYS = (
-    "process-works",
-    "process-dmps",
-)
 
 # Known task names per workflow for checkpoint scanning.
 DATASET_TASK_NAMES = ("download", "subset", "transform")
@@ -31,18 +36,36 @@ PROCESS_WORKS_TASK_NAMES = ("sqlmesh", "sync-works")
 PROCESS_DMPS_TASK_NAMES = ("sync-dmps", "enrich-dmps", "dmp-works-search", "merge-related-works")
 
 
-@app.command(name="status")
-def status_cmd(
+# ---------------------------------------------------------------------------
+# show
+# ---------------------------------------------------------------------------
+
+
+@show_app.command(name="status")
+def show_status_cmd(
     env: Annotated[
         EnvTypes,
         Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
     ],
+    start_date: Annotated[
+        str | None,
+        Parameter(help="Start date filter (YYYY-MM-DD). Defaults to 3 months ago."),
+    ] = None,
+    end_date: Annotated[
+        str | None,
+        Parameter(help="End date filter (YYYY-MM-DD). Defaults to today."),
+    ] = None,
 ) -> None:
-    """Display the current pipeline state from DynamoDB."""
-    import os
+    """Display the full pipeline dashboard from DynamoDB (releases, checkpoints, process runs)."""
+    from datetime import UTC, datetime, timedelta
 
-    os.environ["AWS_ENV"] = env
-    os.environ.setdefault("AWS_REGION", "us-west-2")
+    from dmpworks.pipeline.aws import set_env
+
+    set_env(env=env)
+
+    now = datetime.now(UTC)
+    end_date = end_date or now.strftime("%Y-%m-%d")
+    start_date = start_date or (now - timedelta(days=90)).strftime("%Y-%m-%d")
 
     from dmpworks.pipeline.display import (
         display_dataset_releases,
@@ -57,95 +80,132 @@ def status_cmd(
         scan_task_checkpoints,
     )
 
-    # Dataset releases — query latest per dataset.
+    print(f"Showing records from {start_date} to {end_date}")
+
+    # Dataset releases — query per dataset with date filter.
     releases = []
     for dataset in DATASET_WORKFLOW_KEYS:
-        releases.extend(DatasetReleaseRecord.query(dataset, scan_index_forward=False, limit=3))
+        releases.extend(
+            DatasetReleaseRecord.query(
+                dataset,
+                DatasetReleaseRecord.publication_date >= start_date,
+                scan_index_forward=False,
+            )
+        )
     display_dataset_releases(records=releases)
 
-    # Task checkpoints — scan all known workflow/task combos.
-    checkpoints = []
-    for wk in DATASET_WORKFLOW_KEYS:
-        for tn in DATASET_TASK_NAMES:
-            checkpoints.extend(scan_task_checkpoints(workflow_key=wk, task_name=tn))
-    for tn in PROCESS_WORKS_TASK_NAMES:
-        checkpoints.extend(scan_task_checkpoints(workflow_key="process-works", task_name=tn))
-    for tn in PROCESS_DMPS_TASK_NAMES:
-        checkpoints.extend(scan_task_checkpoints(workflow_key="process-dmps", task_name=tn))
+    # Task checkpoints — scan all known workflow/task combos with date filter.
+    checkpoints = _scan_all_checkpoints(scan_task_checkpoints=scan_task_checkpoints, start_date=start_date, end_date=end_date)
     display_task_checkpoints(records=checkpoints)
 
     # Process runs.
-    display_process_works_runs(records=scan_all_process_works_runs())
-    display_process_dmps_runs(records=scan_all_process_dmps_runs())
+    display_process_works_runs(records=scan_all_process_works_runs(start_date=start_date, end_date=end_date))
+    display_process_dmps_runs(records=scan_all_process_dmps_runs(start_date=start_date, end_date=end_date))
 
 
-@app.command(name="schedules")
-def schedules_cmd(
+@show_app.command(name="releases")
+def show_releases_cmd(
     env: Annotated[
         EnvTypes,
         Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
     ],
-    pause: Annotated[
-        bool,
-        Parameter(help="Disable all (or the specified) EventBridge rules."),
-    ] = False,
-    resume: Annotated[
-        bool,
-        Parameter(help="Enable all (or the specified) EventBridge rules."),
-    ] = False,
-    rule: Annotated[
+    start_date: Annotated[
         str | None,
-        Parameter(help="Specific rule suffix to pause/resume (e.g., version-checker-schedule)."),
+        Parameter(help="Start date filter (YYYY-MM-DD). Defaults to 3 months ago."),
     ] = None,
 ) -> None:
-    """Show, pause, or resume EventBridge schedule rules."""
-    import boto3
+    """Display dataset releases from DynamoDB."""
+    from datetime import UTC, datetime, timedelta
 
-    from dmpworks.pipeline.aws import SCHEDULE_RULES, get_eventbridge_rule_name
-    from dmpworks.pipeline.display import display_schedules
+    from dmpworks.pipeline.aws import set_env
 
-    events = boto3.client("events")
+    set_env(env=env)
 
-    target_rules = [rule] if rule else list(SCHEDULE_RULES)
+    start_date = start_date or (datetime.now(UTC) - timedelta(days=90)).strftime("%Y-%m-%d")
 
-    if pause or resume:
-        for r in target_rules:
-            rule_name = get_eventbridge_rule_name(env=env, rule=r)
-            if pause:
-                events.disable_rule(Name=rule_name)
-                print(f"Disabled: {rule_name}")
-            else:
-                events.enable_rule(Name=rule_name)
-                print(f"Enabled: {rule_name}")
+    from dmpworks.pipeline.display import display_dataset_releases
+    from dmpworks.scheduler.dynamodb_store import DatasetReleaseRecord
 
-    # Always show current state after any action.
-    rules_info = []
-    for r in SCHEDULE_RULES:
-        rule_name = get_eventbridge_rule_name(env=env, rule=r)
-        try:
-            resp = events.describe_rule(Name=rule_name)
-            rules_info.append(
-                {
-                    "name": rule_name,
-                    "schedule_expression": resp.get("ScheduleExpression", ""),
-                    "state": resp.get("State", "UNKNOWN"),
-                    "description": resp.get("Description", ""),
-                }
+    releases = []
+    for dataset in DATASET_WORKFLOW_KEYS:
+        releases.extend(
+            DatasetReleaseRecord.query(
+                dataset,
+                DatasetReleaseRecord.publication_date >= start_date,
+                scan_index_forward=False,
             )
-        except events.exceptions.ResourceNotFoundException:
-            rules_info.append(
-                {
-                    "name": rule_name,
-                    "schedule_expression": "",
-                    "state": "NOT FOUND",
-                    "description": "",
-                }
-            )
-    display_schedules(rules=rules_info)
+        )
+    display_dataset_releases(records=releases)
 
 
-@app.command(name="check-versions")
-def check_versions_cmd(
+@show_app.command(name="checkpoints")
+def show_checkpoints_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+    start_date: Annotated[
+        str | None,
+        Parameter(help="Start date filter (YYYY-MM-DD). Defaults to 3 months ago."),
+    ] = None,
+    end_date: Annotated[
+        str | None,
+        Parameter(help="End date filter (YYYY-MM-DD). Defaults to today."),
+    ] = None,
+) -> None:
+    """Display task checkpoints from DynamoDB."""
+    from datetime import UTC, datetime, timedelta
+
+    from dmpworks.pipeline.aws import set_env
+
+    set_env(env=env)
+
+    now = datetime.now(UTC)
+    end_date = end_date or now.strftime("%Y-%m-%d")
+    start_date = start_date or (now - timedelta(days=90)).strftime("%Y-%m-%d")
+
+    from dmpworks.pipeline.display import display_task_checkpoints
+    from dmpworks.scheduler.dynamodb_store import scan_task_checkpoints
+
+    checkpoints = _scan_all_checkpoints(scan_task_checkpoints=scan_task_checkpoints, start_date=start_date, end_date=end_date)
+    display_task_checkpoints(records=checkpoints)
+
+
+@show_app.command(name="processes")
+def show_processes_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+    start_date: Annotated[
+        str | None,
+        Parameter(help="Start date filter (YYYY-MM-DD). Defaults to 3 months ago."),
+    ] = None,
+    end_date: Annotated[
+        str | None,
+        Parameter(help="End date filter (YYYY-MM-DD). Defaults to today."),
+    ] = None,
+) -> None:
+    """Display process-works and process-dmps runs from DynamoDB."""
+    from datetime import UTC, datetime, timedelta
+
+    from dmpworks.pipeline.aws import set_env
+
+    set_env(env=env)
+
+    now = datetime.now(UTC)
+    end_date = end_date or now.strftime("%Y-%m-%d")
+    start_date = start_date or (now - timedelta(days=90)).strftime("%Y-%m-%d")
+
+    from dmpworks.pipeline.display import display_process_dmps_runs, display_process_works_runs
+    from dmpworks.scheduler.dynamodb_store import scan_all_process_dmps_runs, scan_all_process_works_runs
+
+    display_process_works_runs(records=scan_all_process_works_runs(start_date=start_date, end_date=end_date))
+    display_process_dmps_runs(records=scan_all_process_dmps_runs(start_date=start_date, end_date=end_date))
+
+
+@show_app.command(name="new-versions")
+def show_new_versions_cmd(
     env: Annotated[
         EnvTypes,
         Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
@@ -171,8 +231,189 @@ def check_versions_cmd(
     display_discovered_versions(result=result)
 
 
-@app.command(name="cleanup")
-def cleanup_cmd(
+# ---------------------------------------------------------------------------
+# runs
+# ---------------------------------------------------------------------------
+
+
+@runs_app.command(name="list")
+def runs_list_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+    start_date: Annotated[
+        str | None,
+        Parameter(help="Start date filter (YYYY-MM-DD). Defaults to 3 months ago."),
+    ] = None,
+    end_date: Annotated[
+        str | None,
+        Parameter(help="End date filter (YYYY-MM-DD). Defaults to today."),
+    ] = None,
+    status: Annotated[
+        str | None,
+        Parameter(help="Filter by status (RUNNING, SUCCEEDED, FAILED, TIMED_OUT, ABORTED)."),
+    ] = None,
+) -> None:
+    """Show Step Functions execution history with nested child executions."""
+    from dmpworks.pipeline.aws import list_sfn_executions
+    from dmpworks.pipeline.display import display_executions
+
+    start_dt, end_dt = _parse_date_range(start_date=start_date, end_date=end_date)
+
+    all_executions = list_sfn_executions(env=env, start_dt=start_dt, end_dt=end_dt, status_filter=status)
+    display_executions(executions=all_executions, start_dt=start_dt, end_dt=end_dt)
+
+
+@start_app.command(name="ingest")
+def start_ingest_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+    bucket_name: Annotated[
+        str | None,
+        Parameter(env_var="BUCKET_NAME", help="S3 bucket name. Defaults to dmpworks-{env}-s3."),
+    ] = None,
+) -> None:
+    """Interactively start a dataset ingest SFN execution."""
+    from dmpworks.pipeline.aws import resolve_bucket_name, set_env
+
+    set_env(env=env)
+    bucket_name = resolve_bucket_name(env=env, bucket_name=bucket_name)
+
+    from dmpworks.pipeline.interactive import run_ingest_wizard
+
+    run_ingest_wizard(env=env, bucket_name=bucket_name)
+
+
+@start_app.command(name="process-works")
+def start_process_works_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+    bucket_name: Annotated[
+        str | None,
+        Parameter(env_var="BUCKET_NAME", help="S3 bucket name. Defaults to dmpworks-{env}-s3."),
+    ] = None,
+) -> None:
+    """Interactively start a process-works SFN execution."""
+    from dmpworks.pipeline.aws import resolve_bucket_name, set_env
+
+    set_env(env=env)
+    bucket_name = resolve_bucket_name(env=env, bucket_name=bucket_name)
+
+    from dmpworks.pipeline.interactive import run_process_works_wizard
+
+    run_process_works_wizard(env=env, bucket_name=bucket_name)
+
+
+@start_app.command(name="process-dmps")
+def start_process_dmps_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+    bucket_name: Annotated[
+        str | None,
+        Parameter(env_var="BUCKET_NAME", help="S3 bucket name. Defaults to dmpworks-{env}-s3."),
+    ] = None,
+) -> None:
+    """Interactively start a process-dmps SFN execution."""
+    from dmpworks.pipeline.aws import resolve_bucket_name, set_env
+
+    set_env(env=env)
+    bucket_name = resolve_bucket_name(env=env, bucket_name=bucket_name)
+
+    from dmpworks.pipeline.interactive import run_process_dmps_wizard
+
+    run_process_dmps_wizard(env=env, bucket_name=bucket_name)
+
+
+@runs_app.command(name="approve-retry")
+def approve_retry_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+) -> None:
+    """Approve a failed child workflow for retry.
+
+    Browse runs awaiting approval, select one, and send approval so the parent
+    re-invokes the child with a fresh run_id.
+    """
+    from dmpworks.pipeline.aws import set_env
+    from dmpworks.pipeline.interactive import run_approve_retry_wizard
+
+    set_env(env=env)
+    run_approve_retry_wizard()
+
+
+# ---------------------------------------------------------------------------
+# schedules
+# ---------------------------------------------------------------------------
+
+
+@schedules_app.command(name="list")
+def schedules_list_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+) -> None:
+    """List all EventBridge schedule rules."""
+    from dmpworks.pipeline.aws import fetch_schedule_rules
+    from dmpworks.pipeline.display import display_schedules
+
+    display_schedules(rules=fetch_schedule_rules(env=env))
+
+
+@schedules_app.command(name="pause")
+def schedules_pause_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+    rule: Annotated[
+        str | None,
+        Parameter(help="Specific rule suffix to pause (e.g., version-checker-schedule)."),
+    ] = None,
+) -> None:
+    """Disable EventBridge schedule rules."""
+    from dmpworks.pipeline.aws import fetch_schedule_rules, toggle_schedule_rules
+    from dmpworks.pipeline.display import display_schedules
+
+    toggle_schedule_rules(env=env, rule=rule, enable=False)
+    display_schedules(rules=fetch_schedule_rules(env=env))
+
+
+@schedules_app.command(name="resume")
+def schedules_resume_cmd(
+    env: Annotated[
+        EnvTypes,
+        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
+    ],
+    rule: Annotated[
+        str | None,
+        Parameter(help="Specific rule suffix to resume (e.g., version-checker-schedule)."),
+    ] = None,
+) -> None:
+    """Enable EventBridge schedule rules."""
+    from dmpworks.pipeline.aws import fetch_schedule_rules, toggle_schedule_rules
+    from dmpworks.pipeline.display import display_schedules
+
+    toggle_schedule_rules(env=env, rule=rule, enable=True)
+    display_schedules(rules=fetch_schedule_rules(env=env))
+
+
+# ---------------------------------------------------------------------------
+# admin
+# ---------------------------------------------------------------------------
+
+
+@admin_app.command(name="cleanup-s3")
+def admin_cleanup_s3_cmd(
     env: Annotated[
         EnvTypes,
         Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
@@ -217,88 +458,22 @@ def cleanup_cmd(
     print(f"Scheduled {result.get('scheduled_count', 0)} prefixes for expiry.")
 
 
-@run_app.command(name="ingest")
-def run_ingest_cmd(
+@admin_app.command(name="delete-checkpoints")
+def admin_delete_checkpoints_cmd(
     env: Annotated[
         EnvTypes,
         Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
     ],
     bucket_name: Annotated[
-        str,
-        Parameter(env_var="BUCKET_NAME", help="S3 bucket name."),
-    ],
-) -> None:
-    """Interactively start a dataset ingest SFN execution."""
-    import os
-
-    os.environ["AWS_ENV"] = env
-    os.environ.setdefault("AWS_REGION", "us-west-2")
-
-    from dmpworks.pipeline.interactive import run_ingest_wizard
-
-    run_ingest_wizard(env=env, bucket_name=bucket_name)
-
-
-@run_app.command(name="process-works")
-def run_process_works_cmd(
-    env: Annotated[
-        EnvTypes,
-        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
-    ],
-    bucket_name: Annotated[
-        str,
-        Parameter(env_var="BUCKET_NAME", help="S3 bucket name."),
-    ],
-) -> None:
-    """Interactively start a process-works SFN execution."""
-    import os
-
-    os.environ["AWS_ENV"] = env
-    os.environ.setdefault("AWS_REGION", "us-west-2")
-
-    from dmpworks.pipeline.interactive import run_process_works_wizard
-
-    run_process_works_wizard(env=env, bucket_name=bucket_name)
-
-
-@run_app.command(name="process-dmps")
-def run_process_dmps_cmd(
-    env: Annotated[
-        EnvTypes,
-        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
-    ],
-    bucket_name: Annotated[
-        str,
-        Parameter(env_var="BUCKET_NAME", help="S3 bucket name."),
-    ],
-) -> None:
-    """Interactively start a process-dmps SFN execution."""
-    import os
-
-    os.environ["AWS_ENV"] = env
-    os.environ.setdefault("AWS_REGION", "us-west-2")
-
-    from dmpworks.pipeline.interactive import run_process_dmps_wizard
-
-    run_process_dmps_wizard(env=env, bucket_name=bucket_name)
-
-
-@app.command(name="delete-checkpoints")
-def delete_checkpoints_cmd(
-    env: Annotated[
-        EnvTypes,
-        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
-    ],
-    bucket_name: Annotated[
-        str,
-        Parameter(env_var="BUCKET_NAME", help="S3 bucket name (for scheduling old prefix expiry)."),
-    ],
+        str | None,
+        Parameter(env_var="BUCKET_NAME", help="S3 bucket name. Defaults to dmpworks-{env}-s3."),
+    ] = None,
 ) -> None:
     """Interactively select and delete task checkpoints."""
-    import os
+    from dmpworks.pipeline.aws import resolve_bucket_name, set_env
 
-    os.environ["AWS_ENV"] = env
-    os.environ.setdefault("AWS_REGION", "us-west-2")
+    set_env(env=env)
+    bucket_name = resolve_bucket_name(env=env, bucket_name=bucket_name)
 
     import questionary
 
@@ -306,15 +481,7 @@ def delete_checkpoints_cmd(
     from dmpworks.pipeline.interactive import _delete_checkpoint_and_cleanup
     from dmpworks.scheduler.dynamodb_store import scan_task_checkpoints
 
-    # Scan all known checkpoints.
-    all_checkpoints = []
-    for wk in DATASET_WORKFLOW_KEYS:
-        for tn in DATASET_TASK_NAMES:
-            all_checkpoints.extend(scan_task_checkpoints(workflow_key=wk, task_name=tn))
-    for tn in PROCESS_WORKS_TASK_NAMES:
-        all_checkpoints.extend(scan_task_checkpoints(workflow_key="process-works", task_name=tn))
-    for tn in PROCESS_DMPS_TASK_NAMES:
-        all_checkpoints.extend(scan_task_checkpoints(workflow_key="process-dmps", task_name=tn))
+    all_checkpoints = _scan_all_checkpoints(scan_task_checkpoints=scan_task_checkpoints)
 
     if not all_checkpoints:
         print("No checkpoints found.")
@@ -349,3 +516,58 @@ def delete_checkpoints_cmd(
         )
 
     print(f"Deleted {len(selected)} checkpoint(s).")
+
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+
+def _parse_date_range(*, start_date: str | None, end_date: str | None) -> tuple:
+    """Parse optional date strings into a (start_dt, end_dt) datetime range.
+
+    Args:
+        start_date: Start date as YYYY-MM-DD, or None for 90 days before end_dt.
+        end_date: End date as YYYY-MM-DD, or None for today. The returned end_dt
+            is set to the start of the following day for inclusive filtering.
+
+    Returns:
+        Tuple of (start_dt, end_dt) as timezone-aware datetimes.
+    """
+    from datetime import UTC, datetime, timedelta
+
+    end_dt = (
+        datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=UTC) + timedelta(days=1)
+        if end_date
+        else datetime.now(UTC) + timedelta(days=1)
+    )
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=UTC) if start_date else end_dt - timedelta(days=90)
+    return start_dt, end_dt
+
+
+def _scan_all_checkpoints(*, scan_task_checkpoints, start_date=None, end_date=None):
+    """Scan all known workflow/task combos for task checkpoints.
+
+    Args:
+        scan_task_checkpoints: The scan function from dynamodb_store.
+        start_date: Optional start date filter.
+        end_date: Optional end date filter.
+
+    Returns:
+        List of TaskCheckpointRecord instances.
+    """
+    kwargs = {}
+    if start_date is not None:
+        kwargs["start_date"] = start_date
+    if end_date is not None:
+        kwargs["end_date"] = end_date
+
+    checkpoints = []
+    for wk in DATASET_WORKFLOW_KEYS:
+        for tn in DATASET_TASK_NAMES:
+            checkpoints.extend(scan_task_checkpoints(workflow_key=wk, task_name=tn, **kwargs))
+    for tn in PROCESS_WORKS_TASK_NAMES:
+        checkpoints.extend(scan_task_checkpoints(workflow_key="process-works", task_name=tn, **kwargs))
+    for tn in PROCESS_DMPS_TASK_NAMES:
+        checkpoints.extend(scan_task_checkpoints(workflow_key="process-dmps", task_name=tn, **kwargs))
+    return checkpoints

@@ -109,6 +109,8 @@ Resources:
                   - !GetAtt SetProcessWorksRunStatusFunction.Arn
                   - !GetAtt CreateProcessDMPsRunFunction.Arn
                   - !GetAtt SetProcessDMPsRunStatusFunction.Arn
+                  - !GetAtt GenerateChildRunIdFunction.Arn
+                  - !GetAtt StoreApprovalTokenFunction.Arn
               - Effect: Allow
                 Action: dynamodb:GetItem
                 Resource:
@@ -148,7 +150,9 @@ Resources:
                   - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-dmp-works-search
                   - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:dmpworks-${Env}-merge-related-works
               - Effect: Allow
-                Action: states:SendTaskSuccess
+                Action:
+                  - states:SendTaskSuccess
+                  - states:SendTaskFailure
                 Resource: "*"
               - Effect: Allow
                 Action:
@@ -257,6 +261,38 @@ Resources:
         Variables:
           AWS_ENV: !Ref Env
 
+  GenerateChildRunIdFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub dmpworks-${Env}-generate-child-run-id
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.generate_child_run_id_handler"]
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
+  StoreApprovalTokenFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub dmpworks-${Env}-store-approval-token
+      PackageType: Image
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt LambdaExecutionRole.Arn
+      ImageConfig:
+        Command: ["dmpworks.scheduler.handler.store_approval_token_handler"]
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          AWS_ENV: !Ref Env
+
   DownloadWorkflowStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
@@ -311,6 +347,8 @@ Resources:
         DownloadWorkflowStateMachine: !GetAtt DownloadWorkflowStateMachine.Arn
         SubsetWorkflowStateMachine: !GetAtt SubsetWorkflowStateMachine.Arn
         TransformWorkflowStateMachine: !GetAtt TransformWorkflowStateMachine.Arn
+        GenerateChildRunIdFunction: !GetAtt GenerateChildRunIdFunction.Arn
+        StoreApprovalTokenFunction: !GetAtt StoreApprovalTokenFunction.Arn
       StateMachineType: STANDARD
       RoleArn: !GetAtt StateMachineExecutionRole.Arn
 
@@ -553,6 +591,8 @@ Resources:
         EnrichDmpsWorkflowStateMachine: !GetAtt EnrichDmpsWorkflowStateMachine.Arn
         DmpWorksSearchWorkflowStateMachine: !GetAtt DmpWorksSearchWorkflowStateMachine.Arn
         MergeRelatedWorksWorkflowStateMachine: !GetAtt MergeRelatedWorksWorkflowStateMachine.Arn
+        GenerateChildRunIdFunction: !GetAtt GenerateChildRunIdFunction.Arn
+        StoreApprovalTokenFunction: !GetAtt StoreApprovalTokenFunction.Arn
       StateMachineType: STANDARD
       RoleArn: !GetAtt StateMachineExecutionRole.Arn
 
@@ -574,6 +614,8 @@ Resources:
         SqlmeshWorkflowStateMachine: !GetAtt SqlmeshWorkflowStateMachine.Arn
         SyncWorksWorkflowStateMachine: !GetAtt SyncWorksWorkflowStateMachine.Arn
         ProcessDmpsStateMachine: !GetAtt ProcessDmpsStateMachine.Arn
+        GenerateChildRunIdFunction: !GetAtt GenerateChildRunIdFunction.Arn
+        StoreApprovalTokenFunction: !GetAtt StoreApprovalTokenFunction.Arn
       StateMachineType: STANDARD
       RoleArn: !GetAtt StateMachineExecutionRole.Arn
 

@@ -54,7 +54,14 @@
         "batch_params.$": "$.Payload.batch_params"
       },
       "ResultPath": "$.current",
-      "Next": "SubmitTransform"
+      "Next": "SubmitTransform",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
     },
     "SubmitTransform": {
       "Type": "Task",
@@ -67,7 +74,14 @@
         "ContainerOverrides.$": "$.current.batch_params.ContainerOverrides"
       },
       "ResultPath": null,
-      "Next": "SetTransformTaskRunComplete"
+      "Next": "SetTransformTaskRunComplete",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
     },
     "SetTransformTaskRunComplete": {
       "Type": "Task",
@@ -83,7 +97,14 @@
         }
       },
       "ResultPath": null,
-      "Next": "SendTaskSuccess"
+      "Next": "SendTaskSuccess",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
     },
     "SendTaskSuccess": {
       "Type": "Task",
@@ -95,6 +116,23 @@
       },
       "ResultPath": null,
       "End": true
+    },
+    "SendTaskFailure": {
+      "Type": "Task",
+      "Comment": "Notify the parent that this child failed via task token callback",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskFailure",
+      "Parameters": {
+        "TaskToken.$": "$.TaskToken",
+        "Error": "ChildExecutionFailed",
+        "Cause.$": "States.JsonToString($.error_info)"
+      },
+      "ResultPath": null,
+      "Next": "ChildFailed"
+    },
+    "ChildFailed": {
+      "Type": "Fail",
+      "Error": "ChildExecutionFailed",
+      "Cause": "Child failed after notifying parent"
     }
   }
 }

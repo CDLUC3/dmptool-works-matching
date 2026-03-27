@@ -49,7 +49,26 @@
           "Next": "CheckHasTransform"
         }
       ],
-      "Default": "InvokeDownloadChildSM"
+      "Default": "GenerateDownloadRunId"
+    },
+    "GenerateDownloadRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the download child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "download",
+          "date.$": "$.publication_date",
+          "workflow_prefix.$": "$.workflow_key"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeDownloadChildSM"
     },
     "InvokeDownloadChildSM": {
       "Type": "Task",
@@ -57,7 +76,7 @@
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${DownloadWorkflowStateMachine}",
-        "Name.$": "States.Format('{}-download-{}-{}', $.workflow_key, $.publication_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key.$": "$.workflow_key",
@@ -69,12 +88,37 @@
           "file_hash.$": "$.file_hash",
           "file_name.$": "$.file_name",
           "use_subset.$": "$.use_subset",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
       "ResultPath": null,
       "TimeoutSeconds": 604800,
-      "Next": "CheckHasTransform"
+      "Next": "CheckHasTransform",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForDownloadApproval"
+        }
+      ]
+    },
+    "WaitForDownloadApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the download child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key.$": "$.workflow_key",
+          "task_name": "download",
+          "publication_date.$": "$.publication_date",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateDownloadRunId"
     },
     "CheckHasTransform": {
       "Type": "Choice",
@@ -139,7 +183,26 @@
           "Next": "GetTransformTaskRunStatus"
         }
       ],
-      "Default": "InvokeSubsetChildSM"
+      "Default": "GenerateSubsetRunId"
+    },
+    "GenerateSubsetRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the subset child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "subset",
+          "date.$": "$.publication_date",
+          "workflow_prefix.$": "$.workflow_key"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeSubsetChildSM"
     },
     "InvokeSubsetChildSM": {
       "Type": "Task",
@@ -147,7 +210,7 @@
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${SubsetWorkflowStateMachine}",
-        "Name.$": "States.Format('{}-subset-{}-{}', $.workflow_key, $.publication_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key.$": "$.workflow_key",
@@ -159,12 +222,37 @@
           "file_hash.$": "$.file_hash",
           "file_name.$": "$.file_name",
           "use_subset.$": "$.use_subset",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
       "ResultPath": null,
       "TimeoutSeconds": 604800,
-      "Next": "GetTransformTaskRunStatus"
+      "Next": "GetTransformTaskRunStatus",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForSubsetApproval"
+        }
+      ]
+    },
+    "WaitForSubsetApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the subset child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key.$": "$.workflow_key",
+          "task_name": "subset",
+          "publication_date.$": "$.publication_date",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateSubsetRunId"
     },
     "GetTransformTaskRunStatus": {
       "Type": "Task",
@@ -197,7 +285,26 @@
           "Next": "MarkReleaseCompleted"
         }
       ],
-      "Default": "InvokeTransformChildSM"
+      "Default": "GenerateTransformRunId"
+    },
+    "GenerateTransformRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the transform child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "transform",
+          "date.$": "$.publication_date",
+          "workflow_prefix.$": "$.workflow_key"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeTransformChildSM"
     },
     "InvokeTransformChildSM": {
       "Type": "Task",
@@ -205,7 +312,7 @@
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${TransformWorkflowStateMachine}",
-        "Name.$": "States.Format('{}-transform-{}-{}', $.workflow_key, $.publication_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key.$": "$.workflow_key",
@@ -217,12 +324,37 @@
           "file_hash.$": "$.file_hash",
           "file_name.$": "$.file_name",
           "use_subset.$": "$.use_subset",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
       "ResultPath": null,
       "TimeoutSeconds": 604800,
-      "Next": "MarkReleaseCompleted"
+      "Next": "MarkReleaseCompleted",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForTransformApproval"
+        }
+      ]
+    },
+    "WaitForTransformApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the transform child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key.$": "$.workflow_key",
+          "task_name": "transform",
+          "publication_date.$": "$.publication_date",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateTransformRunId"
     },
     "MarkReleaseCompleted": {
       "Type": "Task",

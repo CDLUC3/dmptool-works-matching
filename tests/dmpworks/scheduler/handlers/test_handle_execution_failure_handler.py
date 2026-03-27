@@ -48,8 +48,8 @@ class TestParentSmFailure:
 class TestChildSmFailureWithTaskRun:
     """Failure events from a child state machine when a task run record exists."""
 
-    def test_marks_release_and_task_run_failed(self):
-        """Child SM failure marks the release AND the specific task run FAILED."""
+    def test_managed_child_skips_release_but_marks_task_run_failed(self):
+        """Managed child SM failure (with TaskToken) skips release update but marks task run FAILED."""
         child_input = {**BASE_INPUT, "TaskToken": "token-abc123"}
         event = make_event(
             state_machine_arn=CHILD_SM_ARN,
@@ -73,7 +73,7 @@ class TestChildSmFailureWithTaskRun:
             mock_index.query.return_value = iter([mock_task_run])
             handle_execution_failure_handler(event, None)
 
-        mock_release.assert_called_once_with(dataset="openalex-works", publication_date="2025-01-01", status="FAILED")
+        mock_release.assert_not_called()
         mock_index.query.assert_called_once_with(EXECUTION_ARN)
         mock_task.assert_called_once_with(
             run_name="openalex-works-download",
@@ -86,8 +86,8 @@ class TestChildSmFailureWithTaskRun:
 class TestChildSmFailureWithoutTaskRun:
     """Failure events from a child SM when no task run record exists yet."""
 
-    def test_marks_release_failed_only(self):
-        """Child SM failure with no matching task run marks only the release FAILED (no crash)."""
+    def test_managed_child_without_task_run_skips_release_update(self):
+        """Managed child SM failure with no matching task run skips release update (no crash)."""
         child_input = {**BASE_INPUT, "TaskToken": "token-abc123"}
         event = make_event(
             state_machine_arn=CHILD_SM_ARN,
@@ -106,7 +106,7 @@ class TestChildSmFailureWithoutTaskRun:
             mock_index.query.return_value = iter([])
             handle_execution_failure_handler(event, None)
 
-        mock_release.assert_called_once_with(dataset="openalex-works", publication_date="2025-01-01", status="FAILED")
+        mock_release.assert_not_called()
         mock_task.assert_not_called()
 
 
@@ -165,8 +165,8 @@ class TestProcessDmpsFailure:
         mock_release.assert_not_called()
         mock_task.assert_not_called()
 
-    def test_child_sm_marks_run_and_task_run_failed(self):
-        """Child SM failure marks both ProcessDMPsRunRecord and TaskRunRecord FAILED."""
+    def test_managed_child_skips_run_update_but_marks_task_run_failed(self):
+        """Managed child SM failure skips ProcessDMPsRunRecord update but marks TaskRunRecord FAILED."""
         child_input = {**PROCESS_DMPS_INPUT, "run_id": "20250115T170000-abcd1234", "TaskToken": "token-xyz"}
         event = make_event(
             state_machine_arn=CHILD_SM_ARN,
@@ -193,12 +193,7 @@ class TestProcessDmpsFailure:
             mock_index.query.return_value = iter([mock_task_run])
             handle_execution_failure_handler(event, None)
 
-        mock_dmps.assert_called_once_with(
-            run_date="2025-01-15",
-            run_id="20250115T170000-abcd1234",
-            status="FAILED",
-            error="Batch job failed",
-        )
+        mock_dmps.assert_not_called()
         mock_release.assert_not_called()
         mock_task.assert_called_once_with(
             run_name="sync-dmps",

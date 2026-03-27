@@ -41,7 +41,7 @@ def compute_batch_params(event: dict[str, Any], config: LambdaConfig) -> dict[st
     """
     workflow_key = event["workflow_key"]
     task_type = event["task_type"]
-    run_id = generate_run_id()
+    run_id = event.get("run_id") or generate_run_id()
 
     # Build flat keyword args: config env vars (lowercased) + event fields
     factory_kwargs: dict[str, Any] = {k.lower(): v for k, v in config.to_env_dict().items() if v is not None}

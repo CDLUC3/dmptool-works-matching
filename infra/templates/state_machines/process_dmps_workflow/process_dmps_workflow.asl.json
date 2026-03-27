@@ -85,7 +85,7 @@
           "Next": "ExtractSyncDmpsRunId"
         }
       ],
-      "Default": "InvokeSyncDmpsChildSM"
+      "Default": "GenerateSyncDmpsRunId"
     },
     "ExtractSyncDmpsRunId": {
       "Type": "Pass",
@@ -97,13 +97,32 @@
       "ResultPath": "$.sync_dmps_check",
       "Next": "RecordSyncDmpsRunId"
     },
+    "GenerateSyncDmpsRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the sync-dmps child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "sync-dmps",
+          "date.$": "$.run_date",
+          "workflow_prefix": "process-dmps"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeSyncDmpsChildSM"
+    },
     "InvokeSyncDmpsChildSM": {
       "Type": "Task",
       "Comment": "Invoke the sync-dmps child state machine and wait for its task token callback; captures run_id from child output",
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${SyncDmpsWorkflowStateMachine}",
-        "Name.$": "States.Format('process-dmps-sync-dmps-{}-{}', $.run_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-dmps",
@@ -112,6 +131,7 @@
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -121,7 +141,32 @@
       },
       "ResultPath": "$.sync_dmps_check",
       "TimeoutSeconds": 604800,
-      "Next": "RecordSyncDmpsRunId"
+      "Next": "RecordSyncDmpsRunId",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForSyncDmpsApproval"
+        }
+      ]
+    },
+    "WaitForSyncDmpsApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the sync-dmps child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key": "process-dmps",
+          "task_name": "sync-dmps",
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateSyncDmpsRunId"
     },
     "RecordSyncDmpsRunId": {
       "Type": "Task",
@@ -169,7 +214,7 @@
           "Next": "ExtractEnrichDmpsRunId"
         }
       ],
-      "Default": "InvokeEnrichDmpsChildSM"
+      "Default": "GenerateEnrichDmpsRunId"
     },
     "ExtractEnrichDmpsRunId": {
       "Type": "Pass",
@@ -181,13 +226,32 @@
       "ResultPath": "$.enrich_dmps_check",
       "Next": "RecordEnrichDmpsRunId"
     },
+    "GenerateEnrichDmpsRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the enrich-dmps child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "enrich-dmps",
+          "date.$": "$.run_date",
+          "workflow_prefix": "process-dmps"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeEnrichDmpsChildSM"
+    },
     "InvokeEnrichDmpsChildSM": {
       "Type": "Task",
       "Comment": "Invoke the enrich-dmps child state machine and wait for its task token callback; captures run_id from child output",
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${EnrichDmpsWorkflowStateMachine}",
-        "Name.$": "States.Format('process-dmps-enrich-dmps-{}-{}', $.run_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-dmps",
@@ -196,6 +260,7 @@
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -205,7 +270,32 @@
       },
       "ResultPath": "$.enrich_dmps_check",
       "TimeoutSeconds": 604800,
-      "Next": "RecordEnrichDmpsRunId"
+      "Next": "RecordEnrichDmpsRunId",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForEnrichDmpsApproval"
+        }
+      ]
+    },
+    "WaitForEnrichDmpsApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the enrich-dmps child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key": "process-dmps",
+          "task_name": "enrich-dmps",
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateEnrichDmpsRunId"
     },
     "RecordEnrichDmpsRunId": {
       "Type": "Task",
@@ -253,7 +343,7 @@
           "Next": "ExtractDmpWorksSearchRunId"
         }
       ],
-      "Default": "InvokeDmpWorksSearchChildSM"
+      "Default": "GenerateDmpWorksSearchRunId"
     },
     "ExtractDmpWorksSearchRunId": {
       "Type": "Pass",
@@ -265,13 +355,32 @@
       "ResultPath": "$.dws_check",
       "Next": "RecordDmpWorksSearchRunId"
     },
+    "GenerateDmpWorksSearchRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the dmp-works-search child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "dmp-works-search",
+          "date.$": "$.run_date",
+          "workflow_prefix": "process-dmps"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeDmpWorksSearchChildSM"
+    },
     "InvokeDmpWorksSearchChildSM": {
       "Type": "Task",
       "Comment": "Invoke the dmp-works-search child state machine and wait for its task token callback; captures run_id from child output",
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${DmpWorksSearchWorkflowStateMachine}",
-        "Name.$": "States.Format('process-dmps-dmp-works-search-{}-{}', $.run_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-dmps",
@@ -281,6 +390,7 @@
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
           "run_all_dmps.$": "$.run_all_dmps",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -290,7 +400,32 @@
       },
       "ResultPath": "$.dws_check",
       "TimeoutSeconds": 604800,
-      "Next": "RecordDmpWorksSearchRunId"
+      "Next": "RecordDmpWorksSearchRunId",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForDmpWorksSearchApproval"
+        }
+      ]
+    },
+    "WaitForDmpWorksSearchApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the dmp-works-search child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key": "process-dmps",
+          "task_name": "dmp-works-search",
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateDmpWorksSearchRunId"
     },
     "RecordDmpWorksSearchRunId": {
       "Type": "Task",
@@ -338,7 +473,7 @@
           "Next": "ExtractMergeRelatedWorksRunId"
         }
       ],
-      "Default": "InvokeMergeRelatedWorksChildSM"
+      "Default": "GenerateMergeRelatedWorksRunId"
     },
     "ExtractMergeRelatedWorksRunId": {
       "Type": "Pass",
@@ -350,13 +485,32 @@
       "ResultPath": "$.mrw_check",
       "Next": "MarkProcessDMPsCompleted"
     },
+    "GenerateMergeRelatedWorksRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the merge-related-works child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "merge-related-works",
+          "date.$": "$.run_date",
+          "workflow_prefix": "process-dmps"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeMergeRelatedWorksChildSM"
+    },
     "InvokeMergeRelatedWorksChildSM": {
       "Type": "Task",
       "Comment": "Invoke the merge-related-works child state machine and wait for its task token callback; captures run_id from child output",
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${MergeRelatedWorksWorkflowStateMachine}",
-        "Name.$": "States.Format('process-dmps-merge-related-works-{}-{}', $.run_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-dmps",
@@ -366,6 +520,7 @@
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
           "search_run_id.$": "$.dws_check.task_run_id",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -375,7 +530,32 @@
       },
       "ResultPath": "$.mrw_check",
       "TimeoutSeconds": 604800,
-      "Next": "MarkProcessDMPsCompleted"
+      "Next": "MarkProcessDMPsCompleted",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForMergeRelatedWorksApproval"
+        }
+      ]
+    },
+    "WaitForMergeRelatedWorksApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the merge-related-works child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key": "process-dmps",
+          "task_name": "merge-related-works",
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateMergeRelatedWorksRunId"
     },
     "MarkProcessDMPsCompleted": {
       "Type": "Task",

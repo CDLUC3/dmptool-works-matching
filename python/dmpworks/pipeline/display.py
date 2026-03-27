@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from cron_descriptor import get_description
+from croniter import croniter
 from rich.console import Console
 from rich.table import Table
+from rich.tree import Tree
 
 if TYPE_CHECKING:
     from dmpworks.scheduler.dynamodb_store import (
@@ -108,6 +112,174 @@ def display_process_dmps_runs(*, records: list[ProcessDMPsRunRecord]) -> None:
     console.print(table)
 
 
+def _status_style(*, status: str) -> str:
+    """Return the Rich style string for an execution status.
+
+    Args:
+        status: SFN execution status.
+
+    Returns:
+        Rich markup style name.
+    """
+    if status == "SUCCEEDED":
+        return "green"
+    if status == "RUNNING":
+        return "yellow"
+    return "red"
+
+
+def _format_duration(*, start: datetime, stop: datetime | None) -> str:
+    """Format the duration between two datetimes as a human-readable string.
+
+    Args:
+        start: Start datetime.
+        stop: Stop datetime, or None if still running.
+
+    Returns:
+        Duration string like "2h30m" or "running".
+    """
+    if stop is None:
+        return ""
+    delta = stop - start
+    total_seconds = int(delta.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, _ = divmod(remainder, 60)
+    if hours > 0:
+        return f"{hours}h{minutes}m"
+    return f"{minutes}m"
+
+
+def _format_time_local(*, dt: datetime) -> str:
+    """Format a datetime in the system timezone.
+
+    Args:
+        dt: A timezone-aware datetime.
+
+    Returns:
+        Formatted string like "Mar 20 08:00".
+    """
+    return dt.astimezone().strftime("%b %d %H:%M")
+
+
+def display_executions(*, executions: list[dict], start_dt: datetime, end_dt: datetime) -> None:
+    """Render Step Functions executions as a Rich tree with nested children.
+
+    Args:
+        executions: List of execution dicts with workflow, name, status, start_date,
+            stop_date, and children keys.
+        start_dt: Start of the date range filter.
+        end_dt: End of the date range filter.
+    """
+    if not executions:
+        console.print("[dim]No executions found in the specified date range.[/dim]")
+        return
+
+    start_label = start_dt.strftime("%Y-%m-%d")
+    end_label = (end_dt).strftime("%Y-%m-%d")
+    tree = Tree(f"[bold]State Machine Executions ({start_label} \u2192 {end_label})[/bold]")
+
+    # Group executions by workflow.
+    workflows: dict[str, list[dict]] = {}
+    for ex in executions:
+        workflows.setdefault(ex["workflow"], []).append(ex)
+
+    for workflow, execs in workflows.items():
+        workflow_branch = tree.add(f"[bold cyan]{workflow}[/bold cyan]")
+        for ex in sorted(execs, key=lambda e: e["start_date"], reverse=True):
+            style = _status_style(status=ex["status"])
+            start_str = _format_time_local(dt=ex["start_date"])
+            stop_str = _format_time_local(dt=ex["stop_date"]) if ex.get("stop_date") else "..."
+            duration = _format_duration(start=ex["start_date"], stop=ex.get("stop_date"))
+            duration_str = f"  ({duration})" if duration else ""
+
+            exec_label = f"{ex['name']}  [{style}]{ex['status']}[/{style}]  {start_str} \u2192 {stop_str}{duration_str}"
+            exec_branch = workflow_branch.add(exec_label)
+
+            for child in ex.get("children", []):
+                child_style = _status_style(status=child["status"])
+                child_start = _format_time_local(dt=child["start_date"])
+                child_stop = _format_time_local(dt=child["stop_date"]) if child.get("stop_date") else "..."
+                child_duration = _format_duration(start=child["start_date"], stop=child.get("stop_date"))
+                child_duration_str = f"  ({child_duration})" if child_duration else ""
+                child_label = child["name"]
+                exec_branch.add(
+                    f"{child_label}  [{child_style}]{child['status']}[/{child_style}]  {child_start} \u2192 {child_stop}{child_duration_str}"
+                )
+
+    console.print(tree)
+    console.print(f"[dim]{len(executions)} execution(s) shown.[/dim]")
+
+
+def _parse_eventbridge_cron(*, expression: str) -> str | None:
+    """Extract the 5-field cron expression from an EventBridge schedule expression.
+
+    Strips the ``cron(...)`` wrapper and drops the year field (6th field) since
+    ``cron-descriptor`` works with standard 5-field cron expressions.
+
+    Args:
+        expression: EventBridge schedule expression (e.g., ``cron(0 15 ? * MON-FRI *)``).
+
+    Returns:
+        5-field cron string, or None if the expression is not a cron expression.
+    """
+    if not expression.startswith("cron("):
+        return None
+    inner = expression[5:-1].strip()
+    fields = inner.split()
+    # EventBridge cron has 6 fields (min hour dom month dow year); standard cron has 5.
+    eventbridge_cron_field_count = 6
+    if len(fields) == eventbridge_cron_field_count:
+        fields = fields[:5]
+    return " ".join(fields)
+
+
+def _cron_to_english(*, expression: str, cron_expr: str | None = None) -> str:
+    """Convert an EventBridge cron expression to a human-readable UTC description.
+
+    Args:
+        expression: EventBridge schedule expression (used as fallback).
+        cron_expr: Pre-parsed 5-field cron string, or None to parse from expression.
+
+    Returns:
+        Human-readable description, or the raw expression on parse failure.
+    """
+    if cron_expr is None:
+        cron_expr = _parse_eventbridge_cron(expression=expression)
+    if cron_expr is None:
+        return expression
+    try:
+        return f"{get_description(cron_expr)} UTC"
+    except Exception:
+        return expression
+
+
+def _next_runs_local(*, expression: str, cron_expr: str | None = None, count: int = 3) -> str:
+    """Compute the next run times for a cron expression in the system timezone.
+
+    Args:
+        expression: EventBridge schedule expression (used for parsing if cron_expr not provided).
+        cron_expr: Pre-parsed 5-field cron string, or None to parse from expression.
+        count: Number of upcoming run times to show.
+
+    Returns:
+        Formatted string of next run times in local timezone, or empty string on failure.
+    """
+    if cron_expr is None:
+        cron_expr = _parse_eventbridge_cron(expression=expression)
+    if cron_expr is None:
+        return ""
+    try:
+        now_utc = datetime.now(UTC)
+        cron = croniter(cron_expr, now_utc)
+        runs = []
+        for _ in range(count):
+            next_run = cron.get_next(datetime).astimezone()
+            runs.append(next_run.strftime("%a %b %d %H:%M %Z"))
+        return "\n".join(runs)
+    except Exception:
+        return ""
+
+
 def display_schedules(*, rules: list[dict[str, str]]) -> None:
     """Render EventBridge schedule rules as a rich table.
 
@@ -116,13 +288,16 @@ def display_schedules(*, rules: list[dict[str, str]]) -> None:
     """
     table = Table(title="EventBridge Schedules")
     table.add_column("Name", style="cyan")
-    table.add_column("Schedule")
+    table.add_column("Schedule (UTC)")
     table.add_column("State")
-    table.add_column("Description", max_width=60)
+    table.add_column("Next Runs (Local)", max_width=60)
 
     for r in rules:
         style = "green" if r["state"] == "ENABLED" else "red"
-        table.add_row(r["name"], r["schedule_expression"], f"[{style}]{r['state']}[/{style}]", r.get("description", ""))
+        parsed = _parse_eventbridge_cron(expression=r["schedule_expression"])
+        utc_desc = _cron_to_english(expression=r["schedule_expression"], cron_expr=parsed)
+        local_runs = _next_runs_local(expression=r["schedule_expression"], cron_expr=parsed)
+        table.add_row(r["name"], utc_desc, f"[{style}]{r['state']}[/{style}]", local_runs)
 
     console.print(table)
 

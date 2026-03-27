@@ -195,7 +195,7 @@
           "Next": "ExtractSqlmeshRunId"
         }
       ],
-      "Default": "InvokeSqlmeshChildSM"
+      "Default": "GenerateSqlmeshRunId"
     },
     "ExtractSqlmeshRunId": {
       "Type": "Pass",
@@ -207,13 +207,32 @@
       "ResultPath": "$.sqlmesh_check",
       "Next": "GetSyncWorksTaskRunStatus"
     },
+    "GenerateSqlmeshRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the sqlmesh child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "sqlmesh",
+          "date.$": "$.publication_date",
+          "workflow_prefix": "process-works"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeSqlmeshChildSM"
+    },
     "InvokeSqlmeshChildSM": {
       "Type": "Task",
       "Comment": "Invoke the SQLMesh child state machine and wait for its task token callback; captures run_id from child output",
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${SqlmeshWorkflowStateMachine}",
-        "Name.$": "States.Format('process-works-sqlmesh-{}-{}', $.publication_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-works",
@@ -228,6 +247,7 @@
           "run_id_crossref_metadata.$": "$.run_id_crossref_metadata",
           "run_id_ror.$": "$.run_id_ror",
           "run_id_data_citation_corpus.$": "$.run_id_data_citation_corpus",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -237,7 +257,32 @@
       },
       "ResultPath": "$.sqlmesh_check",
       "TimeoutSeconds": 604800,
-      "Next": "GetSyncWorksTaskRunStatus"
+      "Next": "GetSyncWorksTaskRunStatus",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForSqlmeshApproval"
+        }
+      ]
+    },
+    "WaitForSqlmeshApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the sqlmesh child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key": "process-works",
+          "task_name": "sqlmesh",
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateSqlmeshRunId"
     },
     "GetSyncWorksTaskRunStatus": {
       "Type": "Task",
@@ -270,7 +315,26 @@
           "Next": "MarkProcessWorksCompleted"
         }
       ],
-      "Default": "InvokeSyncWorksChildSM"
+      "Default": "GenerateSyncWorksRunId"
+    },
+    "GenerateSyncWorksRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the sync-works child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateChildRunIdFunction}",
+        "Payload": {
+          "task_name": "sync-works",
+          "date.$": "$.publication_date",
+          "workflow_prefix": "process-works"
+        }
+      },
+      "ResultSelector": {
+        "child_run_id.$": "$.Payload.child_run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeSyncWorksChildSM"
     },
     "InvokeSyncWorksChildSM": {
       "Type": "Task",
@@ -278,7 +342,7 @@
       "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
       "Parameters": {
         "StateMachineArn": "${SyncWorksWorkflowStateMachine}",
-        "Name.$": "States.Format('process-works-sync-works-{}-{}', $.publication_date, $.run_id)",
+        "Name.$": "$.child_meta.execution_name",
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-works",
@@ -288,12 +352,38 @@
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
           "sqlmesh_run_id.$": "$.sqlmesh_check.task_run_id",
+          "run_id.$": "$.child_meta.child_run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
       "ResultPath": null,
       "TimeoutSeconds": 604800,
-      "Next": "MarkProcessWorksCompleted"
+      "Next": "MarkProcessWorksCompleted",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForSyncWorksApproval"
+        }
+      ]
+    },
+    "WaitForSyncWorksApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the sync-works child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key": "process-works",
+          "task_name": "sync-works",
+          "run_date.$": "$.run_date",
+          "run_id.$": "$.run_id",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateSyncWorksRunId"
     },
     "MarkProcessWorksCompleted": {
       "Type": "Task",

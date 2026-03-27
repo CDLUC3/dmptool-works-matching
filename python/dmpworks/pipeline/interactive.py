@@ -11,16 +11,22 @@ import questionary
 from rich.console import Console
 from rich.table import Table
 
-from dmpworks.pipeline.aws import SCHEDULE_RULES, get_eventbridge_rule_name, get_state_machine_arn
+from dmpworks.pipeline.aws import (
+    SCHEDULE_RULES,
+    get_eventbridge_rule_name,
+    get_state_machine_arn,
+)
+from dmpworks.pipeline.cli import DATASET_WORKFLOW_KEYS
 from dmpworks.pipeline.s3 import get_prefix_type, schedule_prefix_expiry
 from dmpworks.scheduler.batch_params import generate_run_id
 from dmpworks.scheduler.config import load_lambda_config
 from dmpworks.scheduler.dynamodb_store import (
     DatasetReleaseRecord,
+    clear_approval_token,
     delete_task_checkpoint,
+    get_runs_awaiting_approval,
     get_task_checkpoint,
     scan_all_process_works_runs,
-    scan_task_checkpoints,
 )
 
 log = logging.getLogger(__name__)
@@ -86,6 +92,36 @@ def _start_execution(*, sm_arn: str, execution_name: str, sfn_input: dict) -> st
     return response["executionArn"]
 
 
+def _confirm_and_start(
+    *, sm_arn: str, execution_name: str, sfn_input: dict, hide_keys: set[str] | None = None
+) -> None:
+    """Display execution summary, confirm with user, and start the SFN execution.
+
+    Args:
+        sm_arn: State machine ARN.
+        execution_name: Name for the SFN execution.
+        sfn_input: Input dict for the SFN execution.
+        hide_keys: Optional set of keys to hide from the summary display.
+    """
+    console.print(f"\n[bold]Start New Execution:[/bold] {execution_name}")
+    console.print("\n[bold]Execution Summary:[/bold]")
+    table = Table()
+    table.add_column("Field")
+    table.add_column("Value")
+    for k, v in sorted(sfn_input.items(), key=lambda x: x[0].lower()):
+        if hide_keys and k in hide_keys:
+            continue
+        table.add_row(k, str(v))
+    console.print(table)
+
+    if not questionary.confirm("Start execution?").ask():
+        console.print("Cancelled.")
+        return
+
+    arn = _start_execution(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+    console.print(f"\n[green]Started execution:[/green] {arn}")
+
+
 def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
     """Interactive wizard for starting a dataset ingest SFN execution.
 
@@ -94,8 +130,7 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
         bucket_name: S3 bucket name for the execution input.
     """
     # 1. List datasets with releases.
-    datasets = ["openalex-works", "datacite", "crossref-metadata", "ror", "data-citation-corpus"]
-    dataset = questionary.select("Select dataset:", choices=datasets).ask()
+    dataset = questionary.select("Select dataset:", choices=list(DATASET_WORKFLOW_KEYS)).ask()
     if dataset is None:
         return
 
@@ -195,24 +230,9 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
         "skip_transform": skip_transform,
     }
 
-    # 9. Confirm.
+    # 9. Confirm and start.
     execution_name = f"{dataset}-{publication_date}-{run_id}"
-    console.print("\n[bold]Execution summary:[/bold]")
-    table = Table()
-    table.add_column("Field")
-    table.add_column("Value")
-    for k, v in sfn_input.items():
-        table.add_row(k, str(v))
-    table.add_row("execution_name", execution_name)
-    console.print(table)
-
-    if not questionary.confirm("Start execution?").ask():
-        console.print("Cancelled.")
-        return
-
-    # 10. Start.
-    arn = _start_execution(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
-    console.print(f"\n[green]Started execution:[/green] {arn}")
+    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
 
 
 def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
@@ -243,34 +263,47 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         else:
             console.print(f"  [yellow]{tn}[/yellow]: no checkpoint")
 
-    # Select steps to re-run.
-    default_rerun = [tn for tn in task_names if tn not in checkpoints]
-    rerun_choices = questionary.checkbox(
-        "Steps to re-run:",
-        choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
-    ).ask()
-    if rerun_choices is None:
-        return
+    # Select steps to re-run — skip prompt if no checkpoints exist (all must run).
+    if checkpoints:
+        default_rerun = [tn for tn in task_names if tn not in checkpoints]
+        rerun_choices = questionary.checkbox(
+            "Steps to re-run:",
+            choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
+        ).ask()
+        if rerun_choices is None:
+            return
+
+        # Validate: skipped steps must have checkpoints (ExtractRunId needs them).
+        if "sqlmesh" not in rerun_choices and "sqlmesh" not in checkpoints:
+            console.print(
+                "[red]Error: Cannot skip sqlmesh — no checkpoint exists. The workflow needs a sqlmesh run_id.[/red]"
+            )
+            return
+    else:
+        console.print("[dim]No checkpoints found — all steps will run.[/dim]")
+        rerun_choices = list(task_names)
 
     skip_sqlmesh = "sqlmesh" not in rerun_choices
     skip_sync_works = "sync-works" not in rerun_choices
 
-    # Validate: skipped steps must have checkpoints (ExtractRunId needs them).
-    if skip_sqlmesh and "sqlmesh" not in checkpoints:
-        console.print(
-            "[red]Error: Cannot skip sqlmesh — no checkpoint exists. The workflow needs a sqlmesh run_id.[/red]"
-        )
-        return
-
-    # Validate: check all 5 dataset checkpoints exist.
-    dataset_workflow_keys = ["openalex-works", "datacite", "crossref-metadata", "ror", "data-citation-corpus"]
+    # Show which datasets will be used.
+    dataset_table = Table(title="Datasets")
+    dataset_table.add_column("Dataset", style="cyan")
+    dataset_table.add_column("Date")
+    dataset_table.add_column("Run ID", max_width=30)
     missing_datasets = []
-    for wk in dataset_workflow_keys:
-        # Check for transform checkpoint (or download for ror/data-citation-corpus).
+    for wk in DATASET_WORKFLOW_KEYS:
         task = "download" if wk in ("ror", "data-citation-corpus") else "transform"
-        cps = scan_task_checkpoints(workflow_key=wk, task_name=task)
-        if not cps:
+        cp = get_task_checkpoint(workflow_key=wk, task_name=task)
+        if cp:
+            parts = cp.task_key.split("#", 1)
+            date = parts[1] if len(parts) > 1 else ""
+            dataset_table.add_row(wk, date, cp.run_id)
+        else:
+            dataset_table.add_row(wk, "[yellow]missing[/yellow]", "")
             missing_datasets.append(wk)
+    console.print(dataset_table)
+
     if missing_datasets:
         console.print(f"[yellow]Warning: Missing dataset checkpoints: {', '.join(missing_datasets)}[/yellow]")
         console.print("[dim]The workflow will poll until all datasets are ready (up to 1 week).[/dim]")
@@ -303,21 +336,7 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
     run_id = generate_run_id()
     execution_name = f"process-works-{run_date}-{run_id}"
 
-    console.print("\n[bold]Execution summary:[/bold]")
-    table = Table()
-    table.add_column("Field")
-    table.add_column("Value")
-    for k, v in sfn_input.items():
-        table.add_row(k, str(v))
-    table.add_row("execution_name", execution_name)
-    console.print(table)
-
-    if not questionary.confirm("Start execution?").ask():
-        console.print("Cancelled.")
-        return
-
-    arn = _start_execution(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
-    console.print(f"\n[green]Started execution:[/green] {arn}")
+    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, hide_keys={"publication_date"})
 
 
 def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
@@ -348,25 +367,29 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
         else:
             console.print(f"  [yellow]{tn}[/yellow]: no checkpoint")
 
-    # Select steps to re-run.
-    default_rerun = [tn for tn in task_names if tn not in checkpoints]
-    rerun_choices = questionary.checkbox(
-        "Steps to re-run:",
-        choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
-    ).ask()
-    if rerun_choices is None:
-        return
+    # Select steps to re-run — skip prompt if no checkpoints exist (all must run).
+    if checkpoints:
+        default_rerun = [tn for tn in task_names if tn not in checkpoints]
+        rerun_choices = questionary.checkbox(
+            "Steps to re-run:",
+            choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
+        ).ask()
+        if rerun_choices is None:
+            return
+
+        # Validate: skipped steps must have checkpoints (ExtractRunId needs them).
+        for tn in task_names:
+            if tn not in rerun_choices and tn not in checkpoints:
+                console.print(f"[red]Error: Cannot skip {tn} — no checkpoint exists. The workflow needs its run_id.[/red]")
+                return
+    else:
+        console.print("[dim]No checkpoints found — all steps will run.[/dim]")
+        rerun_choices = list(task_names)
 
     skip_sync_dmps = "sync-dmps" not in rerun_choices
     skip_enrich_dmps = "enrich-dmps" not in rerun_choices
     skip_dmp_works_search = "dmp-works-search" not in rerun_choices
     skip_merge_related_works = "merge-related-works" not in rerun_choices
-
-    # Validate: skipped steps must have checkpoints (ExtractRunId needs them).
-    for tn in task_names:
-        if tn not in rerun_choices and tn not in checkpoints:
-            console.print(f"[red]Error: Cannot skip {tn} — no checkpoint exists. The workflow needs its run_id.[/red]")
-            return
 
     # Validate: check that a completed process-works run exists.
     works_runs = scan_all_process_works_runs()
@@ -414,18 +437,49 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
     run_id = generate_run_id()
     execution_name = f"process-dmps-{run_date}-{run_id}"
 
-    console.print("\n[bold]Execution summary:[/bold]")
-    table = Table()
-    table.add_column("Field")
-    table.add_column("Value")
-    for k, v in sfn_input.items():
-        table.add_row(k, str(v))
-    table.add_row("execution_name", execution_name)
-    console.print(table)
+    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, hide_keys={"publication_date"})
 
-    if not questionary.confirm("Start execution?").ask():
-        console.print("Cancelled.")
+
+def run_approve_retry_wizard() -> None:
+    """Interactive wizard for approving a failed child workflow for retry.
+
+    Queries DynamoDB for run records with non-null approval_token (parents waiting
+    for manual approval), lets the user pick one, then sends SendTaskSuccess to the
+    parent so it re-invokes the child with a fresh run_id.
+    """
+    console.print("[dim]Searching for runs awaiting approval...[/dim]")
+
+    awaiting = get_runs_awaiting_approval()
+
+    if not awaiting:
+        console.print("[yellow]No runs are currently awaiting retry approval.[/yellow]")
         return
 
-    arn = _start_execution(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
-    console.print(f"\n[green]Started execution:[/green] {arn}")
+    choices = []
+    for run in awaiting:
+        if "publication_date" in run:
+            label = f"{run['workflow_key']}  task={run['approval_task_name']}  publication_date={run['publication_date']}"
+        else:
+            label = f"{run['workflow_key']}  task={run['approval_task_name']}  run_date={run['run_date']}  run_id={run['run_id']}"
+        choices.append(questionary.Choice(label, value=run))
+
+    selected = questionary.select("Select run to approve for retry:", choices=choices).ask()
+    if selected is None:
+        return
+
+    if not questionary.confirm(f"Send approval to retry {selected['approval_task_name']}?", default=True).ask():
+        return
+
+    sfn = boto3.client("stepfunctions")
+    sfn.send_task_success(taskToken=selected["approval_token"], output="{}")
+    console.print(f"[green]Approved retry for {selected['approval_task_name']}. Parent will re-invoke the child.[/green]")
+
+    # Clear the approval token from the record.
+    clear_kwargs = {"workflow_key": selected["workflow_key"]}
+    if "publication_date" in selected:
+        clear_kwargs["dataset"] = selected["dataset"]
+        clear_kwargs["publication_date"] = selected["publication_date"]
+    else:
+        clear_kwargs["run_date"] = selected["run_date"]
+        clear_kwargs["run_id"] = selected["run_id"]
+    clear_approval_token(**clear_kwargs)

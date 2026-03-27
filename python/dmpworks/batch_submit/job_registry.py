@@ -688,7 +688,7 @@ def sqlmesh_process_works_factory(
         job_definition=standard_job_definition,
         vcpus=SQLMESH_QUEUE_VCPUS,
         memory=SQLMESH_QUEUE_MEMORY,
-        command="dmpworks aws-batch sqlmesh plan",
+        command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME",
         env_vars={
             "RUN_ID_SQLMESH": run_id,
             "RUN_ID_SQLMESH_PREV": run_id_sqlmesh_prev,

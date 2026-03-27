@@ -54,6 +54,8 @@ MOCK_SUBSTITUTIONS = {
     "DownloadWorkflowStateMachine": f"arn:aws:states:{MOCK_REGION}:{MOCK_ACCOUNT}:stateMachine:{DOWNLOAD_SM_NAME}",
     "SubsetWorkflowStateMachine": f"arn:aws:states:{MOCK_REGION}:{MOCK_ACCOUNT}:stateMachine:{SUBSET_SM_NAME}",
     "TransformWorkflowStateMachine": f"arn:aws:states:{MOCK_REGION}:{MOCK_ACCOUNT}:stateMachine:{TRANSFORM_SM_NAME}",
+    "GenerateChildRunIdFunction": f"arn:aws:lambda:{MOCK_REGION}:{MOCK_ACCOUNT}:function:GenerateChildRunId",
+    "StoreApprovalTokenFunction": f"arn:aws:lambda:{MOCK_REGION}:{MOCK_ACCOUNT}:function:StoreApprovalToken",
 }
 
 
@@ -98,18 +100,28 @@ def _adapt_for_sfn_local(path: Path, asl: str) -> str:
     data = json.loads(asl)
     states = data["States"]
     if path == ASL_PATH:
+        # Remove approval wait states (WaitFor*Approval) from the parent SM.
+        # These are only reachable via Catch blocks and would create infinite loops under SFN Local.
+        approval_states = [name for name in states if name.startswith("WaitFor") and name.endswith("Approval")]
+        for name in approval_states:
+            del states[name]
         for state in states.values():
             if state.get("Resource", "").endswith(".waitForTaskToken"):
                 state["Resource"] = state["Resource"].replace(".waitForTaskToken", ".sync:2")
                 state.get("Parameters", {}).get("Input", {}).pop("TaskToken.$", None)
                 state.pop("TimeoutSeconds", None)
+            # Remove Catch blocks that route to (now-deleted) approval wait states.
+            state.pop("Catch", None)
     else:
         if "SendTaskSuccess" in states:
             for state in states.values():
                 if state.get("Next") == "SendTaskSuccess":
                     del state["Next"]
                     state["End"] = True
+                state.pop("Catch", None)
             del states["SendTaskSuccess"]
+            states.pop("SendTaskFailure", None)
+            states.pop("ChildFailed", None)
     return json.dumps(data)
 
 
@@ -123,7 +135,17 @@ class MockLambdaHandler(BaseHTTPRequestHandler):
         # Path: /2015-03-31/functions/{name}/invocations
         function_name = self.path.split("/")[3]
 
-        if "GetBatchJobParams" in function_name:
+        if "GenerateChildRunId" in function_name:
+            import secrets
+            task_name = body.get("task_name", "unknown")
+            prefix = body.get("workflow_prefix", "test")
+            date = body.get("date", "2025-01-01")
+            run_id = f"20250101T060000-{secrets.token_hex(4)}"
+            response = {
+                "child_run_id": run_id,
+                "execution_name": f"{prefix}-{task_name}-{date}-{run_id}",
+            }
+        elif "GetBatchJobParams" in function_name:
             task_type = body.get("task_type", "download")
             response = {
                 **body,
