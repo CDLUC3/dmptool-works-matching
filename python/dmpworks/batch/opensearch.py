@@ -10,6 +10,7 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_files_to_s3,
 )
+from dmpworks.batch_submit.job_registry import PROCESS_DMPS_DMP_WORKS_SEARCH, PROCESS_WORKS_SQLMESH
 from dmpworks.cli_utils import (
     DMPSubsetAWS,
     DMPWorksSearchConfig,
@@ -22,9 +23,7 @@ from dmpworks.dataset_subset import load_dois, load_institutions
 
 log = logging.getLogger(__name__)
 
-SQLMESH_DIR = "sqlmesh"
 MATCHES_DIR = "matches"
-DMP_WORKS_SEARCH_DIR = "dmp-works-search"
 META_DIR = "meta"
 DATASET = "opensearch"
 
@@ -90,15 +89,15 @@ def sync_works_cmd(
 
     level = logging.getLevelName(log_level)
 
-    works_index_export = local_path(SQLMESH_DIR, sqlmesh_run_id, "works_index_export")
-    doi_state_export = local_path(SQLMESH_DIR, sqlmesh_run_id, "doi_state_export")
+    works_index_export = local_path(PROCESS_WORKS_SQLMESH, sqlmesh_run_id, "works_index_export")
+    doi_state_export = local_path(PROCESS_WORKS_SQLMESH, sqlmesh_run_id, "doi_state_export")
     try:
         # Download Works Index Parquet files from S3
-        works_index_source_uri = s3_uri(bucket_name, SQLMESH_DIR, sqlmesh_run_id, "works_index_export/*")
+        works_index_source_uri = s3_uri(bucket_name, PROCESS_WORKS_SQLMESH, sqlmesh_run_id, "works_index_export/*")
         download_files_from_s3(works_index_source_uri, works_index_export)
 
         # Download DOI State Parquet files from S3
-        doi_state_source_uri = s3_uri(bucket_name, SQLMESH_DIR, sqlmesh_run_id, "doi_state_export/*")
+        doi_state_source_uri = s3_uri(bucket_name, PROCESS_WORKS_SQLMESH, sqlmesh_run_id, "doi_state_export/*")
         download_files_from_s3(doi_state_source_uri, doi_state_export)
 
         # Run process
@@ -217,10 +216,10 @@ def dmp_works_search_cmd(
     if dmp_works_search_config is None:
         dmp_works_search_config = DMPWorksSearchConfig()
 
-    out_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
+    out_dir = local_path(PROCESS_DMPS_DMP_WORKS_SEARCH, run_id, MATCHES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    meta_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, META_DIR)
+    meta_dir = local_path(PROCESS_DMPS_DMP_WORKS_SEARCH, run_id, META_DIR)
     meta_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -256,7 +255,7 @@ def dmp_works_search_cmd(
         )
 
         # Upload all Parquet files to S3
-        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_DIR, run_id, f"{MATCHES_DIR}/")
+        target_uri = s3_uri(bucket_name, PROCESS_DMPS_DMP_WORKS_SEARCH, run_id, f"{MATCHES_DIR}/")
         upload_files_to_s3(out_dir, target_uri, glob_pattern="*.parquet")
     finally:
         shutil.rmtree(out_dir, ignore_errors=True)
@@ -281,11 +280,11 @@ def merge_related_works_cmd(
     """
     from dmpworks.dmsp.merge import merge_related_works  # noqa: PLC0415
 
-    matches_dir = local_path(DMP_WORKS_SEARCH_DIR, search_run_id, MATCHES_DIR)
+    matches_dir = local_path(PROCESS_DMPS_DMP_WORKS_SEARCH, search_run_id, MATCHES_DIR)
     matches_dir.mkdir(parents=True, exist_ok=True)
     try:
         # Download all Parquet files from S3
-        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_DIR, search_run_id, MATCHES_DIR, "*.parquet")
+        source_uri = s3_uri(bucket_name, PROCESS_DMPS_DMP_WORKS_SEARCH, search_run_id, MATCHES_DIR, "*.parquet")
         download_files_from_s3(source_uri, matches_dir)
 
         # Upsert data

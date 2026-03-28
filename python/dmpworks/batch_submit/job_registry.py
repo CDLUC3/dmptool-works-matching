@@ -32,6 +32,28 @@ OPENSEARCH_QUEUE_MEMORY = 28_762
 TQDM_POSITION = "-1"
 TQDM_MININTERVAL = "120"
 
+# Run name constants — each doubles as the S3 prefix for tasks that write to S3.
+# Dataset ingest
+ROR_DOWNLOAD = "ror-download"
+DATA_CITATION_CORPUS_DOWNLOAD = "data-citation-corpus-download"
+OPENALEX_WORKS_DOWNLOAD = "openalex-works-download"
+OPENALEX_WORKS_SUBSET = "openalex-works-subset"
+OPENALEX_WORKS_TRANSFORM = "openalex-works-transform"
+CROSSREF_METADATA_DOWNLOAD = "crossref-metadata-download"
+CROSSREF_METADATA_SUBSET = "crossref-metadata-subset"
+CROSSREF_METADATA_TRANSFORM = "crossref-metadata-transform"
+DATACITE_DOWNLOAD = "datacite-download"
+DATACITE_SUBSET = "datacite-subset"
+DATACITE_TRANSFORM = "datacite-transform"
+# Process-works
+PROCESS_WORKS_SQLMESH = "process-works-sqlmesh"
+PROCESS_WORKS_SYNC_WORKS = "process-works-sync-works"
+# Process-dmps
+PROCESS_DMPS_SYNC_DMPS = "process-dmps-sync-dmps"
+PROCESS_DMPS_ENRICH_DMPS = "process-dmps-enrich-dmps"
+PROCESS_DMPS_DMP_WORKS_SEARCH = "process-dmps-dmp-works-search"
+PROCESS_DMPS_MERGE_RELATED_WORKS = "process-dmps-merge-related-works"
+
 
 def standard_job_definition(env: AWSEnv) -> str:
     """Get the standard job definition name for the given environment.
@@ -103,7 +125,7 @@ def download_job_queue(env: AWSEnv) -> str:
 def transform_job_queue(env: AWSEnv) -> str:
     """Get the transform job queue name for the given environment.
 
-    Used for dataset-subset and transform jobs on c5ad.8xlarge.
+    Used for subset and transform jobs on c5ad.8xlarge.
 
     Args:
         env: The environment name.
@@ -250,7 +272,7 @@ def ror_download_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="ror-download",
+        run_name=ROR_DOWNLOAD,
         env=env,
         queue=small_job_queue,
         job_definition=standard_job_definition,
@@ -291,7 +313,7 @@ def dcc_download_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="data-citation-corpus-download",
+        run_name=DATA_CITATION_CORPUS_DOWNLOAD,
         env=env,
         queue=small_job_queue,
         job_definition=standard_job_definition,
@@ -330,7 +352,7 @@ def openalex_works_download_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="openalex-works-download",
+        run_name=OPENALEX_WORKS_DOWNLOAD,
         env=env,
         queue=download_job_queue,
         job_definition=standard_job_definition,
@@ -370,7 +392,7 @@ def crossref_metadata_download_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="crossref-metadata-download",
+        run_name=CROSSREF_METADATA_DOWNLOAD,
         env=env,
         queue=download_job_queue,
         job_definition=standard_job_definition,
@@ -409,7 +431,7 @@ def datacite_download_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="datacite-download",
+        run_name=DATACITE_DOWNLOAD,
         env=env,
         queue=download_job_queue,
         job_definition=datacite_download_job_definition,
@@ -463,7 +485,7 @@ def dataset_subset_factory(
         job_definition=standard_job_definition,
         vcpus=TRANSFORM_QUEUE_VCPUS,
         memory=TRANSFORM_QUEUE_MEMORY,
-        command="dmpworks aws-batch $DATASET dataset-subset $BUCKET_NAME $RUN_ID",
+        command="dmpworks aws-batch $DATASET subset $BUCKET_NAME $RUN_ID",
         env_vars={
             "RUN_ID": run_id,
             "BUCKET_NAME": bucket_name,
@@ -513,7 +535,7 @@ def openalex_works_transform_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="openalex-works-transform",
+        run_name=OPENALEX_WORKS_TRANSFORM,
         env=env,
         queue=transform_job_queue,
         job_definition=standard_job_definition,
@@ -570,7 +592,7 @@ def crossref_metadata_transform_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="crossref-metadata-transform",
+        run_name=CROSSREF_METADATA_TRANSFORM,
         env=env,
         queue=transform_job_queue,
         job_definition=standard_job_definition,
@@ -626,7 +648,7 @@ def datacite_transform_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="datacite-transform",
+        run_name=DATACITE_TRANSFORM,
         env=env,
         queue=transform_job_queue,
         job_definition=standard_job_definition,
@@ -649,7 +671,7 @@ def datacite_transform_factory(
     )
 
 
-def sqlmesh_process_works_factory(
+def process_works_sqlmesh_factory(
     *,
     run_id: str,
     env: AWSEnv,
@@ -682,7 +704,7 @@ def sqlmesh_process_works_factory(
     # Collect SQLMesh config env vars from kwargs (uppercase keys from config)
     sqlmesh_config_vars = {k.upper(): v for k, v in kwargs.items() if isinstance(v, str)}
     return build_batch_params(
-        run_name="process-works-sqlmesh",
+        run_name=PROCESS_WORKS_SQLMESH,
         env=env,
         queue=sqlmesh_job_queue,
         job_definition=standard_job_definition,
@@ -703,7 +725,7 @@ def sqlmesh_process_works_factory(
     )
 
 
-def sync_works_process_works_factory(
+def process_works_sync_works_factory(
     *,
     run_id: str,
     env: AWSEnv,
@@ -725,7 +747,7 @@ def sync_works_process_works_factory(
     """
     opensearch_config_vars = {k.upper(): v for k, v in kwargs.items() if isinstance(v, str)}
     return build_batch_params(
-        run_name="process-works-sync-works",
+        run_name=PROCESS_WORKS_SYNC_WORKS,
         env=env,
         queue=opensearch_job_queue,
         job_definition=standard_job_definition,
@@ -743,7 +765,7 @@ def sync_works_process_works_factory(
     )
 
 
-def sync_dmps_process_dmps_factory(
+def process_dmps_sync_dmps_factory(
     *,
     run_id: str,  # noqa: ARG001
     env: AWSEnv,
@@ -765,7 +787,7 @@ def sync_dmps_process_dmps_factory(
     """
     config_vars = {k.upper(): v for k, v in kwargs.items() if isinstance(v, str)}
     return build_batch_params(
-        run_name="process-dmps-sync-dmps",
+        run_name=PROCESS_DMPS_SYNC_DMPS,
         env=env,
         queue=opensearch_job_queue,
         job_definition=database_job_definition,
@@ -782,7 +804,7 @@ def sync_dmps_process_dmps_factory(
     )
 
 
-def enrich_dmps_process_dmps_factory(
+def process_dmps_enrich_dmps_factory(
     *,
     run_id: str,  # noqa: ARG001
     env: AWSEnv,
@@ -804,7 +826,7 @@ def enrich_dmps_process_dmps_factory(
     """
     config_vars = {k.upper(): v for k, v in kwargs.items() if isinstance(v, str)}
     return build_batch_params(
-        run_name="process-dmps-enrich-dmps",
+        run_name=PROCESS_DMPS_ENRICH_DMPS,
         env=env,
         queue=opensearch_job_queue,
         job_definition=standard_job_definition,
@@ -821,7 +843,7 @@ def enrich_dmps_process_dmps_factory(
     )
 
 
-def dmp_works_search_process_dmps_factory(
+def process_dmps_dmp_works_search_factory(
     *,
     run_id: str,
     env: AWSEnv,
@@ -853,7 +875,7 @@ def dmp_works_search_process_dmps_factory(
     if run_all_dmps:
         config_vars["DMP_WORKS_SEARCH_APPLY_MODIFICATION_WINDOW"] = "false"
     return build_batch_params(
-        run_name="process-dmps-dmp-works-search",
+        run_name=PROCESS_DMPS_DMP_WORKS_SEARCH,
         env=env,
         queue=opensearch_job_queue,
         job_definition=standard_job_definition,
@@ -872,7 +894,7 @@ def dmp_works_search_process_dmps_factory(
     )
 
 
-def merge_related_works_process_dmps_factory(
+def process_dmps_merge_related_works_factory(
     *,
     run_id: str,
     env: AWSEnv,
@@ -896,7 +918,7 @@ def merge_related_works_process_dmps_factory(
         dict: SFN-compatible Batch params including run_name.
     """
     return build_batch_params(
-        run_name="process-dmps-merge-related-works",
+        run_name=PROCESS_DMPS_MERGE_RELATED_WORKS,
         env=env,
         queue=opensearch_job_queue,
         job_definition=database_job_definition,
@@ -919,16 +941,16 @@ JOB_FACTORIES: dict[tuple[str, str], Callable[..., dict[str, Any]]] = {
     ("openalex-works", "download"): openalex_works_download_factory,
     ("crossref-metadata", "download"): crossref_metadata_download_factory,
     ("datacite", "download"): datacite_download_factory,
-    ("openalex-works", "subset"): partial(dataset_subset_factory, run_name="openalex-works-dataset-subset"),
-    ("crossref-metadata", "subset"): partial(dataset_subset_factory, run_name="crossref-metadata-dataset-subset"),
-    ("datacite", "subset"): partial(dataset_subset_factory, run_name="datacite-dataset-subset"),
+    ("openalex-works", "subset"): partial(dataset_subset_factory, run_name=OPENALEX_WORKS_SUBSET),
+    ("crossref-metadata", "subset"): partial(dataset_subset_factory, run_name=CROSSREF_METADATA_SUBSET),
+    ("datacite", "subset"): partial(dataset_subset_factory, run_name=DATACITE_SUBSET),
     ("openalex-works", "transform"): openalex_works_transform_factory,
     ("crossref-metadata", "transform"): crossref_metadata_transform_factory,
     ("datacite", "transform"): datacite_transform_factory,
-    ("process-works", "sqlmesh"): sqlmesh_process_works_factory,
-    ("process-works", "sync-works"): sync_works_process_works_factory,
-    ("process-dmps", "sync-dmps"): sync_dmps_process_dmps_factory,
-    ("process-dmps", "enrich-dmps"): enrich_dmps_process_dmps_factory,
-    ("process-dmps", "dmp-works-search"): dmp_works_search_process_dmps_factory,
-    ("process-dmps", "merge-related-works"): merge_related_works_process_dmps_factory,
+    ("process-works", "sqlmesh"): process_works_sqlmesh_factory,
+    ("process-works", "sync-works"): process_works_sync_works_factory,
+    ("process-dmps", "sync-dmps"): process_dmps_sync_dmps_factory,
+    ("process-dmps", "enrich-dmps"): process_dmps_enrich_dmps_factory,
+    ("process-dmps", "dmp-works-search"): process_dmps_dmp_works_search_factory,
+    ("process-dmps", "merge-related-works"): process_dmps_merge_related_works_factory,
 }

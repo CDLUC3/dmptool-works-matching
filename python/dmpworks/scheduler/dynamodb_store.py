@@ -775,11 +775,13 @@ def clear_approval_token(*, workflow_key: str, **keys) -> None:
         record = model_cls.get(keys["dataset"], keys["publication_date"])
 
     now = datetime.now(UTC).isoformat()
-    record.update(actions=[
-        model_cls.approval_token.remove(),
-        model_cls.approval_task_name.remove(),
-        model_cls.updated_at.set(now),
-    ])
+    record.update(
+        actions=[
+            model_cls.approval_token.remove(),
+            model_cls.approval_task_name.remove(),
+            model_cls.updated_at.set(now),
+        ]
+    )
     log.info(f"Cleared approval token: workflow_key={workflow_key} keys={keys}")
 
 
@@ -830,3 +832,15 @@ def get_runs_awaiting_approval() -> list[dict]:
     )
 
     return results
+
+
+def scan_task_runs_by_run_name(*, run_name: str) -> list[TaskRunRecord]:
+    """Query all TaskRunRecords for a given run_name.
+
+    Args:
+        run_name: The run_name hash key (e.g. "openalex-works-download").
+
+    Returns:
+        List of TaskRunRecord instances.
+    """
+    return list(TaskRunRecord.query(run_name))

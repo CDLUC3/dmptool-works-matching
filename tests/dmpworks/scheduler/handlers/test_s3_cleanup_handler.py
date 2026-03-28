@@ -100,7 +100,7 @@ class TestLifecycleRulesWritten:
         assert rules[0]["Filter"] == {"Prefix": "openalex-works-download/run-abc/"}
 
     def test_rule_expiration_days_is_one(self):
-        stale = [make_stale("sqlmesh", "run-x")]
+        stale = [make_stale("process-works-sqlmesh", "run-x")]
         mock_s3 = make_s3_mock()
         run_handler(stale, mock_s3=mock_s3)
         rules = mock_s3.put_bucket_lifecycle_configuration.call_args.kwargs["LifecycleConfiguration"]["Rules"]
@@ -111,7 +111,7 @@ class TestLifecycleRulesWritten:
         stale = [
             make_stale("openalex-works-download", "run-1"),
             make_stale("datacite-subset", "run-2"),
-            make_stale("dmp-works-search", "run-3"),
+            make_stale("process-dmps-dmp-works-search", "run-3"),
         ]
         mock_s3 = make_s3_mock()
         run_handler(stale, mock_s3=mock_s3)
@@ -144,9 +144,9 @@ class TestExistingLifecycleConfig:
         assert "cleanup-openalex-works-download-new-run" in ids
 
     def test_no_existing_config_starts_from_empty(self):
-        stale = [make_stale("sqlmesh", "run-1")]
+        stale = [make_stale("process-works-sqlmesh", "run-1")]
         mock_s3 = make_s3_mock(existing_rules=None)  # raises NoSuchLifecycleConfiguration
         run_handler(stale, mock_s3=mock_s3)
         rules = mock_s3.put_bucket_lifecycle_configuration.call_args.kwargs["LifecycleConfiguration"]["Rules"]
         assert len(rules) == 1
-        assert rules[0]["ID"] == "cleanup-sqlmesh-run-1"
+        assert rules[0]["ID"] == "cleanup-process-works-sqlmesh-run-1"

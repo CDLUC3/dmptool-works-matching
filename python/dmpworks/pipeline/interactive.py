@@ -17,7 +17,6 @@ from dmpworks.pipeline.aws import (
     get_state_machine_arn,
 )
 from dmpworks.pipeline.cli import DATASET_WORKFLOW_KEYS
-from dmpworks.pipeline.s3 import get_prefix_type, schedule_prefix_expiry
 from dmpworks.scheduler.batch_params import generate_run_id
 from dmpworks.scheduler.config import load_lambda_config
 from dmpworks.scheduler.dynamodb_store import (
@@ -67,18 +66,14 @@ def _check_schedules_enabled(*, env: str) -> bool:
     return True
 
 
-def _delete_checkpoint_and_cleanup(*, workflow_key: str, task_name: str, date: str, bucket_name: str) -> None:
-    """Delete a checkpoint and schedule the old S3 prefix for expiry."""
+def _delete_checkpoint(*, workflow_key: str, task_name: str, date: str) -> None:
+    """Delete a task checkpoint record from DynamoDB."""
     old_record = delete_task_checkpoint(workflow_key=workflow_key, task_name=task_name, date=date)
     if old_record is None:
         return
     console.print(
         f"  Deleted checkpoint: {workflow_key}/{task_name}#{date} (run_id={old_record.run_id}, completed_at={old_record.completed_at})"
     )
-    prefix_type = get_prefix_type(workflow_key=workflow_key, task_name=task_name)
-    if prefix_type:
-        schedule_prefix_expiry(bucket_name=bucket_name, prefix_type=prefix_type, run_id=old_record.run_id)
-        console.print(f"  Scheduled S3 expiry: {prefix_type}/{old_record.run_id}/")
 
 
 def _start_execution(*, sm_arn: str, execution_name: str, sfn_input: dict) -> str:
@@ -92,9 +87,7 @@ def _start_execution(*, sm_arn: str, execution_name: str, sfn_input: dict) -> st
     return response["executionArn"]
 
 
-def _confirm_and_start(
-    *, sm_arn: str, execution_name: str, sfn_input: dict, hide_keys: set[str] | None = None
-) -> None:
+def _confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict, hide_keys: set[str] | None = None) -> None:
     """Display execution summary, confirm with user, and start the SFN execution.
 
     Args:
@@ -195,9 +188,7 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
     # 6. Delete checkpoints for steps being re-run.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint_and_cleanup(
-                workflow_key=dataset, task_name=tn, date=publication_date, bucket_name=bucket_name
-            )
+            _delete_checkpoint(workflow_key=dataset, task_name=tn, date=publication_date)
 
     # 7. Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="dataset-ingest")
@@ -311,9 +302,7 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
     # Delete checkpoints for re-run steps.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint_and_cleanup(
-                workflow_key="process-works", task_name=tn, date=run_date, bucket_name=bucket_name
-            )
+            _delete_checkpoint(workflow_key="process-works", task_name=tn, date=run_date)
 
     # Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="process-works")
@@ -336,7 +325,9 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
     run_id = generate_run_id()
     execution_name = f"process-works-{run_date}-{run_id}"
 
-    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, hide_keys={"publication_date"})
+    _confirm_and_start(
+        sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, hide_keys={"publication_date"}
+    )
 
 
 def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
@@ -380,7 +371,9 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
         # Validate: skipped steps must have checkpoints (ExtractRunId needs them).
         for tn in task_names:
             if tn not in rerun_choices and tn not in checkpoints:
-                console.print(f"[red]Error: Cannot skip {tn} — no checkpoint exists. The workflow needs its run_id.[/red]")
+                console.print(
+                    f"[red]Error: Cannot skip {tn} — no checkpoint exists. The workflow needs its run_id.[/red]"
+                )
                 return
     else:
         console.print("[dim]No checkpoints found — all steps will run.[/dim]")
@@ -409,9 +402,7 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
     # Delete checkpoints for re-run steps.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint_and_cleanup(
-                workflow_key="process-dmps", task_name=tn, date=run_date, bucket_name=bucket_name
-            )
+            _delete_checkpoint(workflow_key="process-dmps", task_name=tn, date=run_date)
 
     # Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="process-dmps")
@@ -437,7 +428,9 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
     run_id = generate_run_id()
     execution_name = f"process-dmps-{run_date}-{run_id}"
 
-    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, hide_keys={"publication_date"})
+    _confirm_and_start(
+        sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, hide_keys={"publication_date"}
+    )
 
 
 def run_approve_retry_wizard() -> None:
@@ -458,7 +451,9 @@ def run_approve_retry_wizard() -> None:
     choices = []
     for run in awaiting:
         if "publication_date" in run:
-            label = f"{run['workflow_key']}  task={run['approval_task_name']}  publication_date={run['publication_date']}"
+            label = (
+                f"{run['workflow_key']}  task={run['approval_task_name']}  publication_date={run['publication_date']}"
+            )
         else:
             label = f"{run['workflow_key']}  task={run['approval_task_name']}  run_date={run['run_date']}  run_id={run['run_id']}"
         choices.append(questionary.Choice(label, value=run))
@@ -472,7 +467,9 @@ def run_approve_retry_wizard() -> None:
 
     sfn = boto3.client("stepfunctions")
     sfn.send_task_success(taskToken=selected["approval_token"], output="{}")
-    console.print(f"[green]Approved retry for {selected['approval_task_name']}. Parent will re-invoke the child.[/green]")
+    console.print(
+        f"[green]Approved retry for {selected['approval_task_name']}. Parent will re-invoke the child.[/green]"
+    )
 
     # Clear the approval token from the record.
     clear_kwargs = {"workflow_key": selected["workflow_key"]}

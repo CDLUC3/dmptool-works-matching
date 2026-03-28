@@ -22,9 +22,9 @@ app = App(name="batch-submit", help="Commands to submit AWS Batch jobs.")
 
 EnvTypes = Literal["dev", "stg", "prd"]
 ROR_JOBS: tuple[str, ...] = ("download",)
-CROSSREF_METADATA_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
-DATACITE_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
-OPENALEX_WORKS_JOBS: tuple[str, ...] = ("download", "dataset-subset", "transform")
+CROSSREF_METADATA_JOBS: tuple[str, ...] = ("download", "subset", "transform")
+DATACITE_JOBS: tuple[str, ...] = ("download", "subset", "transform")
+OPENALEX_WORKS_JOBS: tuple[str, ...] = ("download", "subset", "transform")
 PROCESS_WORKS_JOBS: tuple[str, ...] = ("sqlmesh-transform", "sync-works")
 PROCESS_DMPS_JOBS: tuple[str, ...] = (
     "sync-dmps",
@@ -205,7 +205,7 @@ def crossref_metadata_cmd(
     # Add dataset subset task
     task_order = list(CROSSREF_METADATA_JOBS)
     if use_subset:
-        task_definitions["dataset-subset"] = partial(
+        task_definitions["subset"] = partial(
             submit_factory_job,
             factory_key=("crossref-metadata", "subset"),
             run_id=run_id,
@@ -215,7 +215,7 @@ def crossref_metadata_cmd(
             **config_to_kwargs(dataset_subset),
         )
     else:
-        task_order.remove("dataset-subset")
+        task_order.remove("subset")
 
     run_job_pipeline(
         task_definitions=task_definitions,
@@ -308,7 +308,7 @@ def datacite_cmd(
     # Add dataset subset task
     task_order = list(DATACITE_JOBS)
     if use_subset:
-        task_definitions["dataset-subset"] = partial(
+        task_definitions["subset"] = partial(
             submit_factory_job,
             factory_key=("datacite", "subset"),
             run_id=run_id,
@@ -318,7 +318,7 @@ def datacite_cmd(
             **config_to_kwargs(dataset_subset),
         )
     else:
-        task_order.remove("dataset-subset")
+        task_order.remove("subset")
 
     run_job_pipeline(
         task_definitions=task_definitions,
@@ -410,7 +410,7 @@ def openalex_works_cmd(
     # Add dataset subset task
     task_order = list(OPENALEX_WORKS_JOBS)
     if use_subset:
-        task_definitions["dataset-subset"] = partial(
+        task_definitions["subset"] = partial(
             submit_factory_job,
             factory_key=("openalex-works", "subset"),
             run_id=run_id,
@@ -420,7 +420,7 @@ def openalex_works_cmd(
             **config_to_kwargs(dataset_subset),
         )
     else:
-        task_order.remove("dataset-subset")
+        task_order.remove("subset")
 
     run_job_pipeline(
         task_definitions=task_definitions,

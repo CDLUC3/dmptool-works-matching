@@ -137,6 +137,7 @@ class MockLambdaHandler(BaseHTTPRequestHandler):
 
         if "GenerateChildRunId" in function_name:
             import secrets
+
             task_name = body.get("task_name", "unknown")
             prefix = body.get("workflow_prefix", "test")
             date = body.get("date", "2025-01-01")

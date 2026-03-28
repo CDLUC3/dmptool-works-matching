@@ -51,7 +51,12 @@ class TestComputeBatchParamsRunId:
                 "JobName": "j",
                 "JobQueue": "q",
                 "JobDefinition": "d",
-                "ContainerOverrides": {"Command": ["/bin/bash", "-c", "echo"], "Vcpus": 1, "Memory": 1024, "Environment": []},
+                "ContainerOverrides": {
+                    "Command": ["/bin/bash", "-c", "echo"],
+                    "Vcpus": 1,
+                    "Memory": 1024,
+                    "Environment": [],
+                },
             }
 
         mock_factories.__getitem__ = MagicMock(return_value=fake_factory)
@@ -66,13 +71,19 @@ class TestComputeBatchParamsRunId:
     @patch("dmpworks.scheduler.batch_params.JOB_FACTORIES")
     def test_generates_run_id_when_absent(self, mock_factories, mock_get_checkpoint):
         """compute_batch_params generates a fresh run_id when none is provided."""
+
         def fake_factory(**kwargs):
             return {
                 "run_name": "openalex-works-transform",
                 "JobName": "j",
                 "JobQueue": "q",
                 "JobDefinition": "d",
-                "ContainerOverrides": {"Command": ["/bin/bash", "-c", "echo"], "Vcpus": 1, "Memory": 1024, "Environment": []},
+                "ContainerOverrides": {
+                    "Command": ["/bin/bash", "-c", "echo"],
+                    "Vcpus": 1,
+                    "Memory": 1024,
+                    "Environment": [],
+                },
             }
 
         mock_factories.__getitem__ = MagicMock(return_value=fake_factory)

@@ -101,7 +101,9 @@ def set_env(*, env: str) -> None:
     """
     region = os.environ.get("AWS_REGION") or boto3.session.Session().region_name
     if not region:
-        raise SystemExit("AWS region could not be determined. Set AWS_REGION or configure a default region in ~/.aws/config.")
+        raise SystemExit(
+            "AWS region could not be determined. Set AWS_REGION or configure a default region in ~/.aws/config."
+        )
     os.environ["AWS_REGION"] = region
     os.environ["AWS_ENV"] = env
 
@@ -274,5 +276,3 @@ def list_sfn_executions(
             )
 
     return all_executions
-
-

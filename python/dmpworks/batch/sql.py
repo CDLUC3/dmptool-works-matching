@@ -3,12 +3,11 @@ import os
 import pathlib
 
 from dmpworks.batch.utils import download_files_from_s3, local_path, s3_uri, upload_files_to_s3
+from dmpworks.batch_submit.job_registry import PROCESS_WORKS_SQLMESH
 from dmpworks.cli_utils import RunIdentifiers, SQLMeshConfig
 from dmpworks.sql.commands import run_plan
 
 log = logging.getLogger(__name__)
-
-DATASET = "sqlmesh"
 
 
 def plan(
@@ -45,7 +44,7 @@ def plan(
     doi_state_export_prev_dir = (
         pathlib.Path("/data") / "sqlmesh" / run_identifiers.run_id_sqlmesh_prev / "doi_state_export"
     )
-    target_uri = s3_uri(bucket_name, "sqlmesh", run_identifiers.run_id_sqlmesh_prev, "doi_state_export/*")
+    target_uri = s3_uri(bucket_name, PROCESS_WORKS_SQLMESH, run_identifiers.run_id_sqlmesh_prev, "doi_state_export/*")
     download_files_from_s3(target_uri, doi_state_export_prev_dir)
     os.environ["DOI_STATE_EXPORT_PREV_PATH"] = str(doi_state_export_prev_dir)
 
@@ -117,5 +116,5 @@ def plan(
     run_plan()
 
     # Upload exported Parquet files
-    sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{run_identifiers.run_id_sqlmesh}/"
+    sql_mesh_s3_uri = f"s3://{bucket_name}/{PROCESS_WORKS_SQLMESH}/{run_identifiers.run_id_sqlmesh}/"
     upload_files_to_s3(sqlmesh_data_dir, sql_mesh_s3_uri, "*")

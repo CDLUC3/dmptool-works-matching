@@ -73,7 +73,7 @@ class TestCrossrefMetadataCmd:
 
         kwargs = mock_pipeline.call_args.kwargs
         assert kwargs["task_order"] == ["download", "transform"]
-        assert "dataset-subset" not in kwargs["task_order"]
+        assert "subset" not in kwargs["task_order"]
         task_defs = kwargs["task_definitions"]
         assert set(task_defs.keys()) == {"download", "transform"}
         assert task_defs["download"].func is submit_factory_job
@@ -95,10 +95,10 @@ class TestCrossrefMetadataCmd:
         kwargs = mock_pipeline.call_args.kwargs
         assert kwargs["task_order"] == list(CROSSREF_METADATA_JOBS)
         task_defs = kwargs["task_definitions"]
-        assert set(task_defs.keys()) == {"download", "dataset-subset", "transform"}
-        assert task_defs["dataset-subset"].func is submit_factory_job
-        assert task_defs["dataset-subset"].keywords["factory_key"] == ("crossref-metadata", "subset")
-        assert task_defs["dataset-subset"].keywords["dataset"] == "crossref-metadata"
+        assert set(task_defs.keys()) == {"download", "subset", "transform"}
+        assert task_defs["subset"].func is submit_factory_job
+        assert task_defs["subset"].keywords["factory_key"] == ("crossref-metadata", "subset")
+        assert task_defs["subset"].keywords["dataset"] == "crossref-metadata"
 
     def test_disabled_dataset_subset_treated_as_no_subset(self):
         ds = DatasetSubsetAWS(enable=False)
@@ -113,7 +113,7 @@ class TestCrossrefMetadataCmd:
             )
 
         kwargs = mock_pipeline.call_args.kwargs
-        assert "dataset-subset" not in kwargs["task_order"]
+        assert "subset" not in kwargs["task_order"]
 
     def test_start_job_passed_through(self):
         with patch("dmpworks.batch_submit.jobs.run_job_pipeline") as mock_pipeline:
@@ -140,7 +140,7 @@ class TestDataCiteCmd:
 
         kwargs = mock_pipeline.call_args.kwargs
         assert kwargs["task_order"] == ["download", "transform"]
-        assert "dataset-subset" not in kwargs["task_order"]
+        assert "subset" not in kwargs["task_order"]
         task_defs = kwargs["task_definitions"]
         assert set(task_defs.keys()) == {"download", "transform"}
         assert task_defs["download"].func is submit_factory_job
@@ -160,9 +160,9 @@ class TestDataCiteCmd:
         kwargs = mock_pipeline.call_args.kwargs
         assert kwargs["task_order"] == list(DATACITE_JOBS)
         task_defs = kwargs["task_definitions"]
-        assert "dataset-subset" in task_defs
-        assert task_defs["dataset-subset"].keywords["factory_key"] == ("datacite", "subset")
-        assert task_defs["dataset-subset"].keywords["dataset"] == "datacite"
+        assert "subset" in task_defs
+        assert task_defs["subset"].keywords["factory_key"] == ("datacite", "subset")
+        assert task_defs["subset"].keywords["dataset"] == "datacite"
 
     def test_start_job_passed_through(self):
         with patch("dmpworks.batch_submit.jobs.run_job_pipeline") as mock_pipeline:
@@ -188,7 +188,7 @@ class TestOpenAlexWorksCmd:
 
         kwargs = mock_pipeline.call_args.kwargs
         assert kwargs["task_order"] == ["download", "transform"]
-        assert "dataset-subset" not in kwargs["task_order"]
+        assert "subset" not in kwargs["task_order"]
         task_defs = kwargs["task_definitions"]
         assert set(task_defs.keys()) == {"download", "transform"}
         assert task_defs["download"].func is submit_factory_job
@@ -208,9 +208,9 @@ class TestOpenAlexWorksCmd:
         kwargs = mock_pipeline.call_args.kwargs
         assert kwargs["task_order"] == list(OPENALEX_WORKS_JOBS)
         task_defs = kwargs["task_definitions"]
-        assert "dataset-subset" in task_defs
-        assert task_defs["dataset-subset"].keywords["factory_key"] == ("openalex-works", "subset")
-        assert task_defs["dataset-subset"].keywords["dataset"] == "openalex-works"
+        assert "subset" in task_defs
+        assert task_defs["subset"].keywords["factory_key"] == ("openalex-works", "subset")
+        assert task_defs["subset"].keywords["dataset"] == "openalex-works"
 
     def test_start_job_passed_through(self):
         with patch("dmpworks.batch_submit.jobs.run_job_pipeline") as mock_pipeline:

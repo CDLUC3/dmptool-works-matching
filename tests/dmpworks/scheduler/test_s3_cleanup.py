@@ -2,14 +2,28 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from dmpworks.scheduler.s3_cleanup import DATASET_TASKS, SQLMESH_TASK, build_cleanup_plan
+from dmpworks.scheduler.s3_cleanup import (
+    DATASET_TASKS,
+    S3_RUN_NAMES,
+    SQLMESH_TASK,
+    ZOMBIE_THRESHOLD_DAYS,
+    build_cleanup_plan,
+)
 
 PATCH_BASE = "dmpworks.scheduler.s3_cleanup"
 BUCKET = "my-bucket"
+
+
+@pytest.fixture(autouse=True)
+def _no_task_run_scan(monkeypatch):
+    """Patch scan_task_runs_by_run_name to return [] by default for all tests."""
+    monkeypatch.setattr(f"{PATCH_BASE}.scan_task_runs_by_run_name", lambda *, run_name: [])
+
 
 # Default publication dates for test records.
 KEEP_PUB_DATE = "2025-02-01"
@@ -54,6 +68,15 @@ def make_checkpoint(run_id: str) -> MagicMock:
     cp = MagicMock()
     cp.run_id = run_id
     return cp
+
+
+def make_task_run(run_id: str, status: str, *, created_at: str | None = None) -> MagicMock:
+    """Build a minimal mock TaskRunRecord."""
+    r = MagicMock()
+    r.run_id = run_id
+    r.status = status
+    r.created_at = created_at or datetime.now(tz=UTC).isoformat()
+    return r
 
 
 def run_id_for(workflow_key: str, task_name: str, run_date: str) -> str:
@@ -285,7 +308,7 @@ class TestDmpWorksSearchCleanup:
         ):
             result = build_cleanup_plan(bucket_name=BUCKET)
 
-        dmp_items = [item for item in result if item["prefix_type"] == "dmp-works-search"]
+        dmp_items = [item for item in result if item["prefix_type"] == "process-dmps-dmp-works-search"]
         assert len(dmp_items) == 1
         assert dmp_items[0]["run_id"] == "dmp-search-2025-02-08"
 
@@ -307,7 +330,7 @@ class TestDmpWorksSearchCleanup:
         ):
             result = build_cleanup_plan(bucket_name=BUCKET)
 
-        dmp_items = [item for item in result if item["prefix_type"] == "dmp-works-search"]
+        dmp_items = [item for item in result if item["prefix_type"] == "process-dmps-dmp-works-search"]
         assert dmp_items == []
 
     def test_dmp_works_search_no_checkpoint_skipped(self):
@@ -327,7 +350,7 @@ class TestDmpWorksSearchCleanup:
         ):
             result = build_cleanup_plan(bucket_name=BUCKET)
 
-        dmp_items = [item for item in result if item["prefix_type"] == "dmp-works-search"]
+        dmp_items = [item for item in result if item["prefix_type"] == "process-dmps-dmp-works-search"]
         assert dmp_items == []
 
     def test_started_failed_dmps_not_deleted(self):
@@ -346,7 +369,7 @@ class TestDmpWorksSearchCleanup:
         ):
             result = build_cleanup_plan(bucket_name=BUCKET)
 
-        dmp_items = [item for item in result if item["prefix_type"] == "dmp-works-search"]
+        dmp_items = [item for item in result if item["prefix_type"] == "process-dmps-dmp-works-search"]
         assert dmp_items == []
 
 
@@ -448,9 +471,9 @@ class TestPublicationDateMismatch:
             result = build_cleanup_plan(bucket_name=BUCKET)
 
         # Dataset tasks are protected — only sqlmesh stale entry should appear
-        dataset_items = [item for item in result if item["prefix_type"] != "sqlmesh"]
+        dataset_items = [item for item in result if item["prefix_type"] != "process-works-sqlmesh"]
         assert dataset_items == []
-        sqlmesh_items = [item for item in result if item["prefix_type"] == "sqlmesh"]
+        sqlmesh_items = [item for item in result if item["prefix_type"] == "process-works-sqlmesh"]
         assert len(sqlmesh_items) == 1
 
     def test_orphaned_release_cleaned_up(self):
@@ -511,6 +534,71 @@ class TestPublicationDateMismatch:
 
         # Only sqlmesh should be cleaned for the old record
         prefix_types = [item["prefix_type"] for item in result]
-        assert "sqlmesh" in prefix_types
-        dataset_prefixes = [p for p in prefix_types if p != "sqlmesh"]
+        assert "process-works-sqlmesh" in prefix_types
+        dataset_prefixes = [p for p in prefix_types if p != "process-works-sqlmesh"]
         assert dataset_prefixes == []
+
+
+class TestTaskRunRecordCleanup:
+    """Tests for FAILED and zombie-STARTED TaskRunRecord cleanup."""
+
+    def _run_with_task_runs(self, task_runs_by_name, *, protected_run_ids=None):
+        """Run build_cleanup_plan with a baseline completed works run and custom TaskRunRecords.
+
+        Args:
+            task_runs_by_name: Dict mapping run_name -> list of mock TaskRunRecords.
+            protected_run_ids: Optional set of run_ids that should be protected.
+
+        Returns:
+            List of stale prefix dicts from build_cleanup_plan.
+        """
+        keep = make_works_run("2025-02-10", "run-keep", **default_pub_dates(KEEP_PUB_DATE))
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date))
+
+        def fake_scan_runs(*, run_name):
+            return task_runs_by_name.get(run_name, [])
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", return_value=[]),
+            patch(f"{PATCH_BASE}.scan_task_runs_by_run_name", side_effect=fake_scan_runs),
+        ):
+            return build_cleanup_plan(bucket_name=BUCKET)
+
+    def test_failed_run_included(self):
+        task_runs = {"openalex-works-download": [make_task_run("failed-run", "FAILED")]}
+        result = self._run_with_task_runs(task_runs)
+        assert {"prefix_type": "openalex-works-download", "run_id": "failed-run", "bucket_name": BUCKET} in result
+
+    def test_zombie_started_run_included(self):
+        old_timestamp = (datetime.now(tz=UTC) - timedelta(days=ZOMBIE_THRESHOLD_DAYS + 1)).isoformat()
+        task_runs = {"datacite-download": [make_task_run("zombie-run", "STARTED", created_at=old_timestamp)]}
+        result = self._run_with_task_runs(task_runs)
+        assert {"prefix_type": "datacite-download", "run_id": "zombie-run", "bucket_name": BUCKET} in result
+
+    def test_recent_started_run_not_included(self):
+        recent_timestamp = (datetime.now(tz=UTC) - timedelta(days=1)).isoformat()
+        task_runs = {"datacite-download": [make_task_run("active-run", "STARTED", created_at=recent_timestamp)]}
+        result = self._run_with_task_runs(task_runs)
+        run_ids = [item["run_id"] for item in result]
+        assert "active-run" not in run_ids
+
+    def test_completed_run_not_duplicated(self):
+        task_runs = {"openalex-works-download": [make_task_run("completed-run", "COMPLETED")]}
+        result = self._run_with_task_runs(task_runs)
+        run_ids = [item["run_id"] for item in result]
+        assert "completed-run" not in run_ids
+
+    def test_protected_run_id_not_cleaned(self):
+        """FAILED runs with protected run_ids are not cleaned."""
+        # The protected run_id comes from the keep record's checkpoint lookup.
+        # Use a run_id that matches what fake_checkpoint would return for the keep record.
+        protected_id = run_id_for("openalex-works", "download", KEEP_PUB_DATE)
+        task_runs = {"openalex-works-download": [make_task_run(protected_id, "FAILED")]}
+        result = self._run_with_task_runs(task_runs)
+        run_ids = [item["run_id"] for item in result]
+        assert protected_id not in run_ids

@@ -95,7 +95,9 @@ def show_status_cmd(
     display_dataset_releases(records=releases)
 
     # Task checkpoints — scan all known workflow/task combos with date filter.
-    checkpoints = _scan_all_checkpoints(scan_task_checkpoints=scan_task_checkpoints, start_date=start_date, end_date=end_date)
+    checkpoints = _scan_all_checkpoints(
+        scan_task_checkpoints=scan_task_checkpoints, start_date=start_date, end_date=end_date
+    )
     display_task_checkpoints(records=checkpoints)
 
     # Process runs.
@@ -167,7 +169,9 @@ def show_checkpoints_cmd(
     from dmpworks.pipeline.display import display_task_checkpoints
     from dmpworks.scheduler.dynamodb_store import scan_task_checkpoints
 
-    checkpoints = _scan_all_checkpoints(scan_task_checkpoints=scan_task_checkpoints, start_date=start_date, end_date=end_date)
+    checkpoints = _scan_all_checkpoints(
+        scan_task_checkpoints=scan_task_checkpoints, start_date=start_date, end_date=end_date
+    )
     display_task_checkpoints(records=checkpoints)
 
 
@@ -464,21 +468,16 @@ def admin_delete_checkpoints_cmd(
         EnvTypes,
         Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
     ],
-    bucket_name: Annotated[
-        str | None,
-        Parameter(env_var="BUCKET_NAME", help="S3 bucket name. Defaults to dmpworks-{env}-s3."),
-    ] = None,
 ) -> None:
     """Interactively select and delete task checkpoints."""
-    from dmpworks.pipeline.aws import resolve_bucket_name, set_env
+    from dmpworks.pipeline.aws import set_env
 
     set_env(env=env)
-    bucket_name = resolve_bucket_name(env=env, bucket_name=bucket_name)
 
     import questionary
 
     from dmpworks.pipeline.display import display_task_checkpoints
-    from dmpworks.pipeline.interactive import _delete_checkpoint_and_cleanup
+    from dmpworks.pipeline.interactive import _delete_checkpoint
     from dmpworks.scheduler.dynamodb_store import scan_task_checkpoints
 
     all_checkpoints = _scan_all_checkpoints(scan_task_checkpoints=scan_task_checkpoints)
@@ -511,9 +510,7 @@ def admin_delete_checkpoints_cmd(
         parts = cp.task_key.split("#", 1)
         task_name = parts[0]
         date = parts[1] if len(parts) > 1 else ""
-        _delete_checkpoint_and_cleanup(
-            workflow_key=cp.workflow_key, task_name=task_name, date=date, bucket_name=bucket_name
-        )
+        _delete_checkpoint(workflow_key=cp.workflow_key, task_name=task_name, date=date)
 
     print(f"Deleted {len(selected)} checkpoint(s).")
 
@@ -541,7 +538,9 @@ def _parse_date_range(*, start_date: str | None, end_date: str | None) -> tuple:
         if end_date
         else datetime.now(UTC) + timedelta(days=1)
     )
-    start_dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=UTC) if start_date else end_dt - timedelta(days=90)
+    start_dt = (
+        datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=UTC) if start_date else end_dt - timedelta(days=90)
+    )
     return start_dt, end_dt
 
 

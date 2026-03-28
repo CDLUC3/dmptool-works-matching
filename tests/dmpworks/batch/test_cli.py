@@ -498,10 +498,10 @@ class TestDatasetSubsetCLI:
     def mock_openalex_subset(self, mocker):
         return mocker.patch("dmpworks.batch.openalex_works.dataset_subset")
 
-    def test_datacite_dataset_subset(self, mock_datacite_subset):
+    def test_datacite_subset(self, mock_datacite_subset):
         from dmpworks.cli_utils import DatasetSubsetAWS
 
-        cli(["aws-batch", "datacite", "dataset-subset", "my-bucket", "2025-01-01", "--dataset-subset.enable=false"])
+        cli(["aws-batch", "datacite", "subset", "my-bucket", "2025-01-01", "--dataset-subset.enable=false"])
 
         mock_datacite_subset.assert_called_once_with(
             bucket_name="my-bucket",
@@ -510,14 +510,14 @@ class TestDatasetSubsetCLI:
             prev_run_id=None,
         )
 
-    def test_crossref_metadata_dataset_subset(self, mock_crossref_subset):
+    def test_crossref_metadata_subset(self, mock_crossref_subset):
         from dmpworks.cli_utils import DatasetSubsetAWS
 
         cli(
             [
                 "aws-batch",
                 "crossref-metadata",
-                "dataset-subset",
+                "subset",
                 "my-bucket",
                 "2025-01-01",
                 "--dataset-subset.enable=false",
@@ -531,14 +531,14 @@ class TestDatasetSubsetCLI:
             prev_run_id=None,
         )
 
-    def test_openalex_works_dataset_subset(self, mock_openalex_subset):
+    def test_openalex_works_subset(self, mock_openalex_subset):
         from dmpworks.cli_utils import DatasetSubsetAWS
 
         cli(
             [
                 "aws-batch",
                 "openalex-works",
-                "dataset-subset",
+                "subset",
                 "my-bucket",
                 "2025-01-01",
                 "--dataset-subset.enable=false",

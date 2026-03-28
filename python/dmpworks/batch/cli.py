@@ -86,8 +86,8 @@ def datacite_download_cmd(
     )
 
 
-@datacite_app.command(name="dataset-subset")
-def datacite_dataset_subset_cmd(
+@datacite_app.command(name="subset")
+def datacite_subset_cmd(
     bucket_name: str,
     run_id: str,
     dataset_subset: DatasetSubsetAWS,
@@ -188,8 +188,8 @@ def openalex_works_download_cmd(
     )
 
 
-@openalex_works_app.command(name="dataset-subset")
-def openalex_works_dataset_subset_cmd(
+@openalex_works_app.command(name="subset")
+def openalex_works_subset_cmd(
     bucket_name: str,
     run_id: str,
     dataset_subset: DatasetSubsetAWS = None,
@@ -288,8 +288,8 @@ def crossref_metadata_download_cmd(
     )
 
 
-@crossref_metadata_app.command(name="dataset-subset")
-def crossref_metadata_dataset_subset_cmd(
+@crossref_metadata_app.command(name="subset")
+def crossref_metadata_subset_cmd(
     bucket_name: str,
     run_id: str,
     dataset_subset: DatasetSubsetAWS = None,
