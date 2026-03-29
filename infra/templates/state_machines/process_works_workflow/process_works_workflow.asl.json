@@ -88,7 +88,8 @@
         "release_date_datacite.$": "$.check.datasets.release_date_datacite",
         "release_date_crossref_metadata.$": "$.check.datasets.release_date_crossref_metadata",
         "release_date_ror.$": "$.check.datasets.release_date_ror",
-        "release_date_data_citation_corpus.$": "$.check.datasets.release_date_data_citation_corpus"
+        "release_date_data_citation_corpus.$": "$.check.datasets.release_date_data_citation_corpus",
+        "run_id.$": "$.run_id"
       },
       "Next": "CreateProcessWorksRun"
     },
@@ -112,7 +113,8 @@
           "release_date_crossref_metadata.$": "$.release_date_crossref_metadata",
           "release_date_ror.$": "$.release_date_ror",
           "release_date_data_citation_corpus.$": "$.release_date_data_citation_corpus",
-          "execution_arn.$": "$$.Execution.Id"
+          "execution_arn.$": "$$.Execution.Id",
+          "run_id.$": "$.run_id"
         }
       },
       "ResultSelector": {

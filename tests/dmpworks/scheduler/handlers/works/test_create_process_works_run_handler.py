@@ -13,11 +13,11 @@ BASE_EVENT = {
     "aws_env": "dev",
     "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:abc123",
     "run_id_sqlmesh_prev": "INITIAL",
-    "run_id_openalex_works": "oa-run",
-    "run_id_datacite": "dc-run",
-    "run_id_crossref_metadata": "cr-run",
-    "run_id_ror": "ror-run",
-    "run_id_data_citation_corpus": "dcc-run",
+    "run_id_openalex_works": "20250115T060000-a1b2c3d4",
+    "run_id_datacite": "20250110T060000-b2c3d4e5",
+    "run_id_crossref_metadata": "20250108T060000-c3d4e5f6",
+    "run_id_ror": "20250105T060000-d4e5f6a7",
+    "run_id_data_citation_corpus": "20250103T060000-e5f6a7b8",
     "release_date_openalex_works": "2025-01-10",
     "release_date_datacite": "2025-01-08",
     "release_date_crossref_metadata": "2025-01-05",
@@ -42,11 +42,11 @@ class TestCreateRun:
             run_id="20250113T060000-aabbccdd",
             execution_arn="arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:abc123",
             run_id_sqlmesh_prev="INITIAL",
-            run_id_openalex_works="oa-run",
-            run_id_datacite="dc-run",
-            run_id_crossref_metadata="cr-run",
-            run_id_ror="ror-run",
-            run_id_data_citation_corpus="dcc-run",
+            run_id_openalex_works="20250115T060000-a1b2c3d4",
+            run_id_datacite="20250110T060000-b2c3d4e5",
+            run_id_crossref_metadata="20250108T060000-c3d4e5f6",
+            run_id_ror="20250105T060000-d4e5f6a7",
+            run_id_data_citation_corpus="20250103T060000-e5f6a7b8",
             release_date_openalex_works="2025-01-10",
             release_date_datacite="2025-01-08",
             release_date_crossref_metadata="2025-01-05",
@@ -64,7 +64,7 @@ class TestCreateRun:
 
         assert result["run_id"] == "20250113T060000-aabbccdd"
         assert result["release_date"] == "2025-01-13"
-        assert result["run_id_openalex_works"] == "oa-run"
+        assert result["run_id_openalex_works"] == "20250115T060000-a1b2c3d4"
 
     def test_execution_arn_passed_from_event(self):
         """execution_arn comes from the event, not hardcoded."""

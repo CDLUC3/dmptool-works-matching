@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 def create_process_dmps_run_handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:  # noqa: ARG001
     """Create a ProcessDMPsRunRecord with STARTED status.
 
-    Generates a new run_id, creates the DynamoDB record, and returns the event
-    merged with the new run_id.
+    Uses the run_id from the event if present, otherwise generates a new one.
+    Creates the DynamoDB record and returns the event merged with the run_id.
 
     Args:
         event: Workflow event containing release_date, aws_env, and execution_arn.
@@ -31,7 +31,7 @@ def create_process_dmps_run_handler(event: dict[str, Any], context: LambdaContex
     """
     LambdaEnvSettings()
 
-    run_id = generate_run_id()
+    run_id = event.get("run_id") or generate_run_id()
     release_date = event["release_date"]
 
     log.info(f"Creating process DMPs run: release_date={release_date} run_id={run_id}")

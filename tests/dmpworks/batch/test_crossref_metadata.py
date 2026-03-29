@@ -49,7 +49,7 @@ class TestCrossrefMetadata:
     def test_download(self, mock_download_source_task, mock_run_process):
         bucket = "my-bucket"
         dataset = "crossref-metadata"
-        run_id = "2025-01-01"
+        run_id = "20250101T060000-a1b2c3d4"
         archive_name = "April_2025_Public_Data_File_from_Crossref.tar"
         crossref_bucket = "crossref-source-bucket"
 
@@ -142,7 +142,7 @@ class TestCrossrefMetadata:
 
         bucket = "my-bucket"
         dataset = "crossref-metadata"
-        run_id = "2025-01-01"
+        run_id = "20250101T060000-a1b2c3d4"
 
         crossref_metadata_module.transform(
             bucket_name=bucket,
@@ -172,7 +172,7 @@ class TestCrossrefMetadata:
 
         bucket = "my-bucket"
         dataset = "crossref-metadata"
-        run_id = "2025-01-01"
+        run_id = "20250101T060000-a1b2c3d4"
 
         crossref_metadata_module.transform(
             bucket_name=bucket,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 import logging
 
-from dmpworks.batch_submit.job_registry import (
+from dmpworks.batch_submit.job_factories import (
     CROSSREF_METADATA_DOWNLOAD,
     CROSSREF_METADATA_SUBSET,
     CROSSREF_METADATA_TRANSFORM,
@@ -61,7 +61,7 @@ S3_RUN_NAMES: list[str] = [run_name for _, _, run_name, _ in DATASET_TASKS] + [
 ZOMBIE_THRESHOLD_DAYS = 14
 
 
-def _collect_protected_run_ids(*, records):
+def collect_protected_run_ids(*, records):
     """Build the set of run_ids that must not be deleted.
 
     Looks up checkpoints for each dataset task using the record's release_date_*
@@ -124,7 +124,7 @@ def build_cleanup_plan(*, bucket_name: str) -> list[dict[str, str]]:
     keep_record = completed_works[0]
     started_works = [r for r in all_works if r.status == "STARTED"]
 
-    protected_run_ids = _collect_protected_run_ids(records=[keep_record, *started_works])
+    protected_run_ids = collect_protected_run_ids(records=[keep_record, *started_works])
     log.info(f"Process-works keep date: {keep_record.release_date} ({len(protected_run_ids)} run IDs to protect)")
 
     for wk, tn, prefix_type, _ in DATASET_TASKS:

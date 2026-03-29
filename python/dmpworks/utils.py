@@ -1,4 +1,5 @@
-from collections.abc import Generator, Mapping
+from collections.abc import Callable, Generator, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import gzip
 import importlib
@@ -20,6 +21,23 @@ import simdjson
 from urllib3 import Retry
 
 log = logging.getLogger(__name__)
+
+
+def thread_map[T, R](fn: Callable[[T], R], items: list[T], *, max_workers: int = 5) -> list[R]:
+    """Apply fn to each item in parallel using threads, returning results in input order.
+
+    Args:
+        fn: Function to apply to each item.
+        items: Items to process.
+        max_workers: Maximum number of concurrent threads.
+
+    Returns:
+        List of results in the same order as items.
+    """
+    if not items:
+        return []
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(items))) as pool:
+        return list(pool.map(fn, items))
 
 
 def timed(func):

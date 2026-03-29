@@ -12,7 +12,7 @@ BASE_EVENT = {
     "workflow_key": "openalex-works",
     "release_date": "2025-01-15",
     "release_status": "STARTED",
-    "execution_arn": "arn:aws:states:us-east-1:123:execution:sm:abc",
+    "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-ingest:abc123",
 }
 
 
@@ -30,7 +30,7 @@ class TestStarted:
             dataset="openalex-works",
             release_date="2025-01-15",
             status="STARTED",
-            step_function_execution_arn="arn:aws:states:us-east-1:123:execution:sm:abc",
+            step_function_execution_arn="arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-ingest:abc123",
         )
         assert result is BASE_EVENT
 

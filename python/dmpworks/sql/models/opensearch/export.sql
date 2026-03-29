@@ -18,7 +18,7 @@ MODEL (
 PRAGMA threads=CAST(@VAR('opensearch_export_threads') AS INT64);
 
 -- Make a dummy query
-SELECT CAST(@VAR('run_id_sqlmesh') AS DATE) AS export_date;
+SELECT CAST(@VAR('release_date_process_works') AS DATE) AS export_date;
 
 -- Export data
 @IF(

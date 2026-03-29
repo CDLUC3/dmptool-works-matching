@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from aws_lambda_powertools.utilities.typing import LambdaContext
 
+from dmpworks.constants import SQLMESH_INITIAL_RUN_ID
 from dmpworks.scheduler.config import LambdaEnvSettings
 from dmpworks.scheduler.dynamodb_store import (
-    SQLMESH_INITIAL_RUN_ID,
     get_latest_known_release,
     get_task_checkpoint,
 )

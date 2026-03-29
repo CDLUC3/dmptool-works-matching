@@ -14,7 +14,7 @@ BASE_EVENT = {
     "release_date": "2025-01-15",
     "bucket_name": "dmpworks-dev",
     "aws_env": "dev",
-    "execution_arn": "arn:aws:states:us-east-1:123:execution:sm:abc",
+    "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-ingest:abc123",
 }
 
 MOCK_BATCH_RESULT = {
@@ -49,7 +49,7 @@ class TestGetBatchJobParams:
         mock_create.assert_called_once_with(
             run_name="openalex-works-download",
             run_id="20250115T060000-aabbccdd",
-            execution_arn="arn:aws:states:us-east-1:123:execution:sm:abc",
+            execution_arn="arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-ingest:abc123",
             metadata={
                 "workflow_key": "openalex-works",
                 "release_date": "2025-01-15",

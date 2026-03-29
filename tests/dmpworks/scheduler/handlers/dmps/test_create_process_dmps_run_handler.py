@@ -10,7 +10,7 @@ PATCH_BASE = "dmpworks.scheduler.handler.dmps.create_process_dmps_run_handler"
 
 BASE_EVENT = {
     "release_date": "2025-01-15",
-    "execution_arn": "arn:aws:states:us-east-1:123:execution:sm:abc",
+    "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-dmps:abc123",
     "aws_env": "dev",
 }
 
@@ -29,7 +29,7 @@ class TestCreateRun:
         mock_create.assert_called_once_with(
             release_date="2025-01-15",
             run_id="20250115T060000-aabbccdd",
-            execution_arn="arn:aws:states:us-east-1:123:execution:sm:abc",
+            execution_arn="arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-dmps:abc123",
         )
 
     def test_returns_event_merged_with_run_id(self):

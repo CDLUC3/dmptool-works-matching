@@ -10,7 +10,7 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_files_to_s3,
 )
-from dmpworks.batch_submit.job_registry import PROCESS_DMPS_DMP_WORKS_SEARCH, PROCESS_WORKS_SQLMESH
+from dmpworks.batch_submit.job_factories import PROCESS_DMPS_DMP_WORKS_SEARCH, PROCESS_WORKS_SQLMESH
 from dmpworks.cli_utils import (
     DMPSubsetAWS,
     DMPWorksSearchConfig,
@@ -67,7 +67,7 @@ def load_dmp_subset_from_s3(
 def sync_works_cmd(
     *,
     bucket_name: str,
-    run_id: str,
+    release_date: str,
     sqlmesh_run_id: str,
     index_name: str,
     client_config: OpenSearchClientConfig,
@@ -78,7 +78,7 @@ def sync_works_cmd(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        run_id: a unique ID to represent this sync-works run.
+        release_date: Release date (YYYY-MM-DD) to filter records by updated_date.
         sqlmesh_run_id: the run ID of the SQLMesh job whose output to read.
         index_name: the OpenSearch index name.
         client_config: the OpenSearch client config settings.
@@ -105,7 +105,7 @@ def sync_works_cmd(
             index_name=index_name,
             works_index_export=works_index_export,
             doi_state_export=doi_state_export,
-            run_id=run_id,
+            release_date=release_date,
             client_config=client_config,
             sync_config=sync_config,
             log_level=level,

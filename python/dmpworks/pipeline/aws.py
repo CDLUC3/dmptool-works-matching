@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 import boto3
 
+from dmpworks.utils import thread_map
+
 if TYPE_CHECKING:
     from datetime import datetime
 
@@ -32,7 +34,7 @@ STATE_MACHINE_WORKFLOWS = {
 
 
 @lru_cache(maxsize=1)
-def _get_account_and_region() -> tuple[str, str]:
+def get_account_and_region() -> tuple[str, str]:
     """Return (account_id, region) from the current AWS session."""
     sts = boto3.client("sts")
     identity = sts.get_caller_identity()
@@ -50,7 +52,7 @@ def get_state_machine_arn(*, env: str, workflow: str) -> str:
     Returns:
         Full state machine ARN.
     """
-    account_id, region = _get_account_and_region()
+    account_id, region = get_account_and_region()
     name = f"dmpworks-{env}-{workflow}"
     return f"arn:aws:states:{region}:{account_id}:stateMachine:{name}"
 
@@ -176,11 +178,33 @@ def toggle_schedule_rules(*, env: str, rule: str | None, enable: bool) -> None:
         print(f"{verb}: {rule_name}")
 
 
+def build_execution_dict(*, workflow: str, execution: dict, children: list[dict]) -> dict:
+    """Build a display-ready execution dict from an SFN API execution response.
+
+    Args:
+        workflow: Workflow key/name.
+        execution: SFN API response dict with keys name, status, startDate, stopDate.
+        children: List of child execution dicts from fetch_child_executions.
+
+    Returns:
+        Dict with keys workflow, name, status, start_date, stop_date, children.
+    """
+    return {
+        "workflow": workflow,
+        "name": execution["name"],
+        "status": execution["status"],
+        "start_date": execution["startDate"],
+        "stop_date": execution.get("stopDate"),
+        "children": children,
+    }
+
+
 def fetch_child_executions(*, sfn_client: object, parent_arn: str) -> list[dict]:
     """Fetch child state machine executions for a parent execution.
 
     Paginates through the execution history to find all TaskSubmitted events
-    for nested state machine invocations, then describes each child execution.
+    for nested state machine invocations, then describes each child execution
+    in parallel.
 
     Args:
         sfn_client: boto3 Step Functions client.
@@ -190,7 +214,7 @@ def fetch_child_executions(*, sfn_client: object, parent_arn: str) -> list[dict]
         List of dicts with keys name, status, start_date, stop_date, execution_arn,
         state_machine_arn, input.
     """
-    children = []
+    child_arns = []
     history_kwargs = {"executionArn": parent_arn, "maxResults": 200, "includeExecutionData": True}
     while True:
         history = sfn_client.get_execution_history(**history_kwargs)
@@ -204,24 +228,26 @@ def fetch_child_executions(*, sfn_client: object, parent_arn: str) -> list[dict]
                 output = json.loads(details.get("output", "{}"))
                 child_arn = output.get("ExecutionArn")
                 if child_arn:
-                    child_exec = sfn_client.describe_execution(executionArn=child_arn)
-                    children.append(
-                        {
-                            "name": child_exec["name"],
-                            "status": child_exec["status"],
-                            "start_date": child_exec["startDate"],
-                            "stop_date": child_exec.get("stopDate"),
-                            "execution_arn": child_arn,
-                            "state_machine_arn": child_exec["stateMachineArn"],
-                            "input": json.loads(child_exec.get("input", "{}")),
-                        }
-                    )
+                    child_arns.append(child_arn)
             except (json.JSONDecodeError, KeyError):
                 log.warning(f"Failed to parse child execution from event in {parent_arn}")
         if "nextToken" not in history:
             break
         history_kwargs["nextToken"] = history["nextToken"]
-    return children
+
+    def describe(arn: str) -> dict:
+        child_exec = sfn_client.describe_execution(executionArn=arn)
+        return {
+            "name": child_exec["name"],
+            "status": child_exec["status"],
+            "start_date": child_exec["startDate"],
+            "stop_date": child_exec.get("stopDate"),
+            "execution_arn": arn,
+            "state_machine_arn": child_exec["stateMachineArn"],
+            "input": json.loads(child_exec.get("input", "{}")),
+        }
+
+    return thread_map(describe, child_arns)
 
 
 def list_sfn_executions(
@@ -247,14 +273,14 @@ def list_sfn_executions(
         if status_filter:
             list_kwargs["statusFilter"] = status_filter.upper()
 
-        parent_executions = []
+        parent_execs = []
         while True:
             response = sfn.list_executions(**list_kwargs)
             for ex in response.get("executions", []):
                 if ex["startDate"] < start_dt:
                     break
                 if ex["startDate"] <= end_dt:
-                    parent_executions.append(ex)
+                    parent_execs.append(ex)
             else:
                 next_token = response.get("nextToken")
                 if next_token:
@@ -262,17 +288,11 @@ def list_sfn_executions(
                     continue
             break
 
-        for parent in parent_executions:
-            children = fetch_child_executions(sfn_client=sfn, parent_arn=parent["executionArn"])
-            all_executions.append(
-                {
-                    "workflow": workflow,
-                    "name": parent["name"],
-                    "status": parent["status"],
-                    "start_date": parent["startDate"],
-                    "stop_date": parent.get("stopDate"),
-                    "children": children,
-                }
-            )
+        children_lists = thread_map(
+            lambda parent: fetch_child_executions(sfn_client=sfn, parent_arn=parent["executionArn"]),
+            parent_execs,
+        )
+        for parent, children in zip(parent_execs, children_lists, strict=True):
+            all_executions.append(build_execution_dict(workflow=workflow, execution=parent, children=children))
 
     return all_executions

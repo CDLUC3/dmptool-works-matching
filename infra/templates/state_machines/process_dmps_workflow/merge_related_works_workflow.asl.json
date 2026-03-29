@@ -82,9 +82,16 @@
       "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
       "Parameters": {
         "TaskToken.$": "$.TaskToken",
-        "Output.$": "States.Format('{\"task_run_id\": \"{}\", \"task_run_status\": \"COMPLETED\"}', $.current.run_id)"
+        "Output.$": "States.Format('\\{\"task_run_id\": \"{}\", \"task_run_status\": \"COMPLETED\"\\}', $.current.run_id)"
       },
       "ResultPath": null,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ],
       "End": true
     },
     "SendTaskFailure": {

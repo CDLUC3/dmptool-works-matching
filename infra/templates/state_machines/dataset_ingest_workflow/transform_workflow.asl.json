@@ -115,6 +115,13 @@
         "Output": "{}"
       },
       "ResultPath": null,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ],
       "End": true
     },
     "SendTaskFailure": {

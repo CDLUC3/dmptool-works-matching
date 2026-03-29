@@ -216,7 +216,7 @@ class RelatedWorksLoader:
         """
         log.info("Loading work versions into staging table...")
         sql = "INSERT INTO stagingWorkVersions (doi,hash,workType,publicationDate,title,abstractText,authors,institutions,funders,awards,publicationVenue,sourceName,sourceUrl) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        self._batch_insert(sql, rows_iterator, batch_size)
+        self.batch_insert(sql, rows_iterator, batch_size)
 
         with self.conn.cursor() as cursor:
             self.print_table(cursor, "stagingWorkVersions", lambda r: f"doi={r.get('doi')}")
@@ -230,14 +230,14 @@ class RelatedWorksLoader:
         """
         log.info("Loading related works into staging table...")
         sql = "INSERT INTO stagingRelatedWorks (planId,dmpDoi,workDoi,hash,sourceType,score,scoreMax,status,doiMatch,contentMatch,authorMatches,institutionMatches,funderMatches,awardMatches) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        self._batch_insert(sql, rows_iterator, batch_size)
+        self.batch_insert(sql, rows_iterator, batch_size)
 
         with self.conn.cursor() as cursor:
             self.print_table(
                 cursor, "stagingRelatedWorks", lambda r: f"dmpDoi={r.get('dmpDoi')}, status={r.get('status')}"
             )
 
-    def _batch_insert(self, sql: str, rows: Iterable[list[Any]], batch_size: int):
+    def batch_insert(self, sql: str, rows: Iterable[list[Any]], batch_size: int):
         """Execute batch insert.
 
         Args:

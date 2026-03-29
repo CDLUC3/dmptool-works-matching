@@ -385,7 +385,7 @@ Resources:
     Type: AWS::Events::Rule
     DependsOn: HandleExecutionFailureFunction
     Properties:
-      Description: Route Step Functions FAILED executions to the failure handler
+      Description: Route Step Functions FAILED and ABORTED executions to the failure handler
       EventPattern:
         source:
           - aws.states
@@ -407,6 +407,7 @@ Resources:
             - !GetAtt MergeRelatedWorksWorkflowStateMachine.Arn
           status:
             - FAILED
+            - ABORTED
       State: ENABLED
       Targets:
         - Id: HandleExecutionFailureFunction

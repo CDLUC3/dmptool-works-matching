@@ -18,7 +18,7 @@ MODEL (
 PRAGMA threads=CAST(@VAR('works_index_export_threads') AS INT64);
 
 -- Make a dummy query
-SELECT CAST(@VAR('run_id_sqlmesh') AS DATE) AS export_date;
+SELECT CAST(@VAR('release_date_process_works') AS DATE) AS export_date;
 
 -- Export data
 @IF(
@@ -27,7 +27,7 @@ SELECT CAST(@VAR('run_id_sqlmesh') AS DATE) AS export_date;
     WITH target_upserts AS (
       SELECT doi, hash
       FROM opensearch.next_doi_state
-      WHERE state = 'UPSERT' AND updated_date = CAST(@VAR('run_id_sqlmesh') AS DATE)
+      WHERE state = 'UPSERT' AND updated_date = CAST(@VAR('release_date_process_works') AS DATE)
     )
 
     SELECT

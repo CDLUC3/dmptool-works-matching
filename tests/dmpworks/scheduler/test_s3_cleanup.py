@@ -20,7 +20,7 @@ BUCKET = "my-bucket"
 
 
 @pytest.fixture(autouse=True)
-def _no_task_run_scan(monkeypatch):
+def no_task_run_scan(monkeypatch):
     """Patch scan_task_runs_by_run_name to return [] by default for all tests."""
     monkeypatch.setattr(f"{PATCH_BASE}.scan_task_runs_by_run_name", lambda *, run_name: [])
 
@@ -542,7 +542,7 @@ class TestReleaseDateMismatch:
 class TestTaskRunRecordCleanup:
     """Tests for FAILED and zombie-STARTED TaskRunRecord cleanup."""
 
-    def _run_with_task_runs(self, task_runs_by_name, *, protected_run_ids=None):
+    def run_with_task_runs(self, task_runs_by_name, *, protected_run_ids=None):
         """Run build_cleanup_plan with a baseline completed works run and custom TaskRunRecords.
 
         Args:
@@ -571,25 +571,25 @@ class TestTaskRunRecordCleanup:
 
     def test_failed_run_included(self):
         task_runs = {"openalex-works-download": [make_task_run("failed-run", "FAILED")]}
-        result = self._run_with_task_runs(task_runs)
+        result = self.run_with_task_runs(task_runs)
         assert {"prefix_type": "openalex-works-download", "run_id": "failed-run", "bucket_name": BUCKET} in result
 
     def test_zombie_started_run_included(self):
         old_timestamp = (datetime.now(tz=UTC) - timedelta(days=ZOMBIE_THRESHOLD_DAYS + 1)).isoformat()
         task_runs = {"datacite-download": [make_task_run("zombie-run", "STARTED", created_at=old_timestamp)]}
-        result = self._run_with_task_runs(task_runs)
+        result = self.run_with_task_runs(task_runs)
         assert {"prefix_type": "datacite-download", "run_id": "zombie-run", "bucket_name": BUCKET} in result
 
     def test_recent_started_run_not_included(self):
         recent_timestamp = (datetime.now(tz=UTC) - timedelta(days=1)).isoformat()
         task_runs = {"datacite-download": [make_task_run("active-run", "STARTED", created_at=recent_timestamp)]}
-        result = self._run_with_task_runs(task_runs)
+        result = self.run_with_task_runs(task_runs)
         run_ids = [item["run_id"] for item in result]
         assert "active-run" not in run_ids
 
     def test_completed_run_not_duplicated(self):
         task_runs = {"openalex-works-download": [make_task_run("completed-run", "COMPLETED")]}
-        result = self._run_with_task_runs(task_runs)
+        result = self.run_with_task_runs(task_runs)
         run_ids = [item["run_id"] for item in result]
         assert "completed-run" not in run_ids
 
@@ -599,6 +599,6 @@ class TestTaskRunRecordCleanup:
         # Use a run_id that matches what fake_checkpoint would return for the keep record.
         protected_id = run_id_for("openalex-works", "download", KEEP_RELEASE_DATE)
         task_runs = {"openalex-works-download": [make_task_run(protected_id, "FAILED")]}
-        result = self._run_with_task_runs(task_runs)
+        result = self.run_with_task_runs(task_runs)
         run_ids = [item["run_id"] for item in result]
         assert protected_id not in run_ids

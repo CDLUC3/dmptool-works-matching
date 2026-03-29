@@ -47,13 +47,13 @@ class TestOpenSearchCLI:
         works_export.mkdir()
         doi_export.mkdir()
 
-        cli(["opensearch", "sync-works", "works-index", str(works_export), str(doi_export), "run-123"])
+        cli(["opensearch", "sync-works", "works-index", str(works_export), str(doi_export), "20250101T060000-a1b2c3d4"])
 
         mock_sync_works.assert_called_once_with(
             index_name="works-index",
             works_index_export=works_export,
             doi_state_export=doi_export,
-            run_id="run-123",
+            run_id="20250101T060000-a1b2c3d4",
             client_config=OpenSearchClientConfig(),
             sync_config=OpenSearchSyncConfig(),
             log_level=logging.INFO,

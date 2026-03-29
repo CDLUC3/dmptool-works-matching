@@ -7,7 +7,7 @@ from typing import Any, TypedDict
 import boto3
 import pendulum
 
-from dmpworks.batch_submit.job_registry import (
+from dmpworks.batch_submit.job_factories import (
     DOWNLOAD_QUEUE_MEMORY,  # noqa: F401
     DOWNLOAD_QUEUE_VCPUS,  # noqa: F401
     JOB_FACTORIES,

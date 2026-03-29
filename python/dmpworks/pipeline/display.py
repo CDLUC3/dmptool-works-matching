@@ -35,11 +35,7 @@ def display_dataset_releases(*, records: list[DatasetReleaseRecord]) -> None:
     table.add_column("Download URL", max_width=60)
 
     for r in sorted(records, key=lambda x: (x.dataset, x.release_date), reverse=True):
-        style = (
-            "green"
-            if r.status == "COMPLETED"
-            else "yellow" if r.status == "STARTED" else "red" if r.status == "FAILED" else ""
-        )
+        style = record_status_style(status=r.status)
         table.add_row(r.dataset, r.release_date, f"[{style}]{r.status}[/{style}]", r.download_url or "")
 
     console.print(table)
@@ -80,12 +76,9 @@ def display_process_works_runs(*, records: list[ProcessWorksRunRecord]) -> None:
     table.add_column("Status")
 
     for r in sorted(records, key=lambda x: (x.release_date, x.run_id), reverse=True):
-        style = (
-            "green"
-            if r.status == "COMPLETED"
-            else "yellow" if r.status == "STARTED" else "red" if r.status == "FAILED" else ""
-        )
-        table.add_row(r.release_date, r.run_id, f"[{style}]{r.status}[/{style}]")
+        style = record_status_style(status=r.status)
+        status_cell = f"[{style}]{r.status}[/{style}]" if style else r.status
+        table.add_row(r.release_date, r.run_id, status_cell)
 
     console.print(table)
 
@@ -102,17 +95,32 @@ def display_process_dmps_runs(*, records: list[ProcessDMPsRunRecord]) -> None:
     table.add_column("Status")
 
     for r in sorted(records, key=lambda x: (x.release_date, x.run_id), reverse=True):
-        style = (
-            "green"
-            if r.status == "COMPLETED"
-            else "yellow" if r.status == "STARTED" else "red" if r.status == "FAILED" else ""
-        )
-        table.add_row(r.release_date, r.run_id, f"[{style}]{r.status}[/{style}]")
+        style = record_status_style(status=r.status)
+        status_cell = f"[{style}]{r.status}[/{style}]" if style else r.status
+        table.add_row(r.release_date, r.run_id, status_cell)
 
     console.print(table)
 
 
-def _status_style(*, status: str) -> str:
+def record_status_style(*, status: str) -> str:
+    """Return the Rich style string for a DynamoDB record status.
+
+    Args:
+        status: Record lifecycle status (COMPLETED, STARTED, FAILED, ABORTED, etc.).
+
+    Returns:
+        Rich markup style name, or empty string for unknown statuses.
+    """
+    if status == "COMPLETED":
+        return "green"
+    if status == "STARTED":
+        return "yellow"
+    if status in ("FAILED", "ABORTED"):
+        return "red"
+    return ""
+
+
+def status_style(*, status: str) -> str:
     """Return the Rich style string for an execution status.
 
     Args:
@@ -128,7 +136,7 @@ def _status_style(*, status: str) -> str:
     return "red"
 
 
-def _format_duration(*, start: datetime, stop: datetime | None) -> str:
+def format_duration(*, start: datetime, stop: datetime | None) -> str:
     """Format the duration between two datetimes as a human-readable string.
 
     Args:
@@ -149,7 +157,7 @@ def _format_duration(*, start: datetime, stop: datetime | None) -> str:
     return f"{minutes}m"
 
 
-def _format_time_local(*, dt: datetime) -> str:
+def format_time_local(*, dt: datetime) -> str:
     """Format a datetime in the system timezone.
 
     Args:
@@ -159,6 +167,51 @@ def _format_time_local(*, dt: datetime) -> str:
         Formatted string like "Mar 20 08:00".
     """
     return dt.astimezone().strftime("%b %d %H:%M")
+
+
+def build_execution_tree(*, title: str, executions: list[dict], retryable_children: frozenset[str] = frozenset()) -> Tree:
+    """Build a Rich tree of Step Functions executions with optional retry markers on children.
+
+    Args:
+        title: The root label of the tree.
+        executions: List of execution dicts with workflow, name, status, start_date,
+            stop_date, and children keys.
+        retryable_children: Set of child execution names that should be annotated with
+            a retry marker.
+
+    Returns:
+        A Rich Tree ready for printing.
+    """
+    tree = Tree(f"[bold]{title}[/bold]")
+
+    workflows: dict[str, list[dict]] = {}
+    for ex in executions:
+        workflows.setdefault(ex["workflow"], []).append(ex)
+
+    for workflow, execs in workflows.items():
+        workflow_branch = tree.add(f"[bold cyan]{workflow}[/bold cyan]")
+        for ex in sorted(execs, key=lambda e: e["start_date"], reverse=True):
+            style = status_style(status=ex["status"])
+            start_str = format_time_local(dt=ex["start_date"])
+            stop_str = format_time_local(dt=ex["stop_date"]) if ex.get("stop_date") else "..."
+            duration = format_duration(start=ex["start_date"], stop=ex.get("stop_date"))
+            duration_str = f"  ({duration})" if duration else ""
+
+            exec_label = f"{ex['name']}  [{style}]{ex['status']}[/{style}]  {start_str} \u2192 {stop_str}{duration_str}"
+            exec_branch = workflow_branch.add(exec_label)
+
+            for child in ex.get("children", []):
+                child_style = status_style(status=child["status"])
+                child_start = format_time_local(dt=child["start_date"])
+                child_stop = format_time_local(dt=child["stop_date"]) if child.get("stop_date") else "..."
+                child_duration = format_duration(start=child["start_date"], stop=child.get("stop_date"))
+                child_duration_str = f"  ({child_duration})" if child_duration else ""
+                retry_marker = "  [bold green]\u27f3 retry available[/bold green]" if child["name"] in retryable_children else ""
+                exec_branch.add(
+                    f"{child['name']}  [{child_style}]{child['status']}[/{child_style}]  {child_start} \u2192 {child_stop}{child_duration_str}{retry_marker}"
+                )
+
+    return tree
 
 
 def display_executions(*, executions: list[dict], start_dt: datetime, end_dt: datetime) -> None:
@@ -175,42 +228,13 @@ def display_executions(*, executions: list[dict], start_dt: datetime, end_dt: da
         return
 
     start_label = start_dt.strftime("%Y-%m-%d")
-    end_label = (end_dt).strftime("%Y-%m-%d")
-    tree = Tree(f"[bold]State Machine Executions ({start_label} \u2192 {end_label})[/bold]")
-
-    # Group executions by workflow.
-    workflows: dict[str, list[dict]] = {}
-    for ex in executions:
-        workflows.setdefault(ex["workflow"], []).append(ex)
-
-    for workflow, execs in workflows.items():
-        workflow_branch = tree.add(f"[bold cyan]{workflow}[/bold cyan]")
-        for ex in sorted(execs, key=lambda e: e["start_date"], reverse=True):
-            style = _status_style(status=ex["status"])
-            start_str = _format_time_local(dt=ex["start_date"])
-            stop_str = _format_time_local(dt=ex["stop_date"]) if ex.get("stop_date") else "..."
-            duration = _format_duration(start=ex["start_date"], stop=ex.get("stop_date"))
-            duration_str = f"  ({duration})" if duration else ""
-
-            exec_label = f"{ex['name']}  [{style}]{ex['status']}[/{style}]  {start_str} \u2192 {stop_str}{duration_str}"
-            exec_branch = workflow_branch.add(exec_label)
-
-            for child in ex.get("children", []):
-                child_style = _status_style(status=child["status"])
-                child_start = _format_time_local(dt=child["start_date"])
-                child_stop = _format_time_local(dt=child["stop_date"]) if child.get("stop_date") else "..."
-                child_duration = _format_duration(start=child["start_date"], stop=child.get("stop_date"))
-                child_duration_str = f"  ({child_duration})" if child_duration else ""
-                child_label = child["name"]
-                exec_branch.add(
-                    f"{child_label}  [{child_style}]{child['status']}[/{child_style}]  {child_start} \u2192 {child_stop}{child_duration_str}"
-                )
-
-    console.print(tree)
+    end_label = end_dt.strftime("%Y-%m-%d")
+    title = f"State Machine Executions ({start_label} \u2192 {end_label})"
+    console.print(build_execution_tree(title=title, executions=executions))
     console.print(f"[dim]{len(executions)} execution(s) shown.[/dim]")
 
 
-def _parse_eventbridge_cron(*, expression: str) -> str | None:
+def parse_eventbridge_cron(*, expression: str) -> str | None:
     """Extract the 5-field cron expression from an EventBridge schedule expression.
 
     Strips the ``cron(...)`` wrapper and drops the year field (6th field) since
@@ -233,7 +257,7 @@ def _parse_eventbridge_cron(*, expression: str) -> str | None:
     return " ".join(fields)
 
 
-def _cron_to_english(*, expression: str, cron_expr: str | None = None) -> str:
+def cron_to_english(*, expression: str, cron_expr: str | None = None) -> str:
     """Convert an EventBridge cron expression to a human-readable UTC description.
 
     Args:
@@ -244,7 +268,7 @@ def _cron_to_english(*, expression: str, cron_expr: str | None = None) -> str:
         Human-readable description, or the raw expression on parse failure.
     """
     if cron_expr is None:
-        cron_expr = _parse_eventbridge_cron(expression=expression)
+        cron_expr = parse_eventbridge_cron(expression=expression)
     if cron_expr is None:
         return expression
     try:
@@ -253,7 +277,7 @@ def _cron_to_english(*, expression: str, cron_expr: str | None = None) -> str:
         return expression
 
 
-def _next_runs_local(*, expression: str, cron_expr: str | None = None, count: int = 3) -> str:
+def next_runs_local(*, expression: str, cron_expr: str | None = None, count: int = 3) -> str:
     """Compute the next run times for a cron expression in the system timezone.
 
     Args:
@@ -265,7 +289,7 @@ def _next_runs_local(*, expression: str, cron_expr: str | None = None, count: in
         Formatted string of next run times in local timezone, or empty string on failure.
     """
     if cron_expr is None:
-        cron_expr = _parse_eventbridge_cron(expression=expression)
+        cron_expr = parse_eventbridge_cron(expression=expression)
     if cron_expr is None:
         return ""
     try:
@@ -294,9 +318,9 @@ def display_schedules(*, rules: list[dict[str, str]]) -> None:
 
     for r in rules:
         style = "green" if r["state"] == "ENABLED" else "red"
-        parsed = _parse_eventbridge_cron(expression=r["schedule_expression"])
-        utc_desc = _cron_to_english(expression=r["schedule_expression"], cron_expr=parsed)
-        local_runs = _next_runs_local(expression=r["schedule_expression"], cron_expr=parsed)
+        parsed = parse_eventbridge_cron(expression=r["schedule_expression"])
+        utc_desc = cron_to_english(expression=r["schedule_expression"], cron_expr=parsed)
+        local_runs = next_runs_local(expression=r["schedule_expression"], cron_expr=parsed)
         table.add_row(r["name"], utc_desc, f"[{style}]{r['state']}[/{style}]", local_runs)
 
     console.print(table)

@@ -438,7 +438,7 @@ def opensearch_sync_works_cmd(
     setup_multiprocessing_logging(level)
     opensearch.sync_works_cmd(
         bucket_name=bucket_name,
-        run_id=run_identifiers.run_id_sqlmesh,
+        release_date=run_identifiers.release_date_process_works,
         sqlmesh_run_id=run_identifiers.run_id_sqlmesh,
         index_name=index_name,
         client_config=client_config,

@@ -649,6 +649,13 @@ class RunIdentifiers:
             help="SQLMesh Run ID",
         ),
     ] = None
+    release_date_process_works: Annotated[
+        str | None,
+        Parameter(
+            env_var="RELEASE_DATE_PROCESS_WORKS",
+            help="Release date (YYYY-MM-DD) for the process-works pipeline run.",
+        ),
+    ] = None
 
 
 @dataclass

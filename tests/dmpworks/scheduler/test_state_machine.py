@@ -78,10 +78,10 @@ def resolve_asl(path: Path | None = None) -> str:
     raw = (path or ASL_PATH).read_text()
     for key, arn in MOCK_SUBSTITUTIONS.items():
         raw = raw.replace(f"${{{key}}}", arn)
-    return _adapt_for_sfn_local(path or ASL_PATH, raw)
+    return adapt_for_sfn_local(path or ASL_PATH, raw)
 
 
-def _adapt_for_sfn_local(path: Path, asl: str) -> str:
+def adapt_for_sfn_local(path: Path, asl: str) -> str:
     """Rewrite ASL to work around SFN Local limitations.
 
     SFN Local supports sync:2 for nested SM invocations but not
@@ -241,15 +241,15 @@ class MockBatchHandler(BaseHTTPRequestHandler):
                         "container": {},
                     }
                 )
-            self._send_json(200, {"jobs": results})
+            self.send_json(200, {"jobs": results})
         else:
             # POST /v1/submitjob
             job_id = f"mock-job-{len(self._jobs)}"
             MockBatchHandler._jobs[job_id] = "FAILED" if MockBatchHandler.fail_next else "SUCCEEDED"
             MockBatchHandler.fail_next = False
-            self._send_json(200, {"jobId": job_id, "jobName": body.get("jobName", "mock")})
+            self.send_json(200, {"jobId": job_id, "jobName": body.get("jobName", "mock")})
 
-    def _send_json(self, code: int, data: dict):
+    def send_json(self, code: int, data: dict):
         payload = json.dumps(data).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")

@@ -1,3 +1,20 @@
+"""Job factory functions for building AWS Batch job parameters.
+
+Each factory builds a command string with $VAR references and an env_vars dict.
+build_batch_params() combines these into SFN-compatible Batch parameters.
+
+Two call paths invoke these factories:
+
+1. **Lambda path** (Step Functions → Lambda → factory):
+   compute_batch_params() in scheduler/batch_params.py merges config.to_env_dict()
+   (lowercased) with SFN event fields, then calls factory(**merged_kwargs).
+   Config vars flow through **kwargs and are uppercased back into env_vars.
+
+2. **CLI path** (batch-submit CLI → submit_factory_job → factory):
+   CLI commands in batch_submit/cli.py build partial() objects with explicit kwargs
+   + config_to_kwargs() expansions, then submit_factory_job() calls the factory directly.
+"""
+
 from __future__ import annotations
 
 from functools import partial
@@ -31,6 +48,14 @@ OPENSEARCH_QUEUE_MEMORY = 28_762
 
 TQDM_POSITION = "-1"
 TQDM_MININTERVAL = "120"
+
+# Default OpenSearch index names
+WORKS_INDEX_NAME = "works-index"
+DMPS_INDEX_NAME = "dmps-index"
+
+# Default values for dataset-ingest transform factories
+DEFAULT_USE_SUBSET = "false"
+DEFAULT_LOG_LEVEL = "INFO"
 
 # Run name constants — each doubles as the S3 prefix for tasks that write to S3.
 # Dataset ingest
@@ -505,8 +530,8 @@ def openalex_works_transform_factory(
     run_id: str,
     bucket_name: str,
     env: AWSEnv,
-    use_subset: str | bool = "false",
-    log_level: str = "INFO",
+    use_subset: str | bool = DEFAULT_USE_SUBSET,
+    log_level: str = DEFAULT_LOG_LEVEL,
     prev_job_run_id: str | None = None,
     openalex_works_transform_batch_size: str | int,
     openalex_works_transform_row_group_size: str | int,
@@ -564,8 +589,8 @@ def crossref_metadata_transform_factory(
     run_id: str,
     bucket_name: str,
     env: AWSEnv,
-    use_subset: str | bool = "false",
-    log_level: str = "INFO",
+    use_subset: str | bool = DEFAULT_USE_SUBSET,
+    log_level: str = DEFAULT_LOG_LEVEL,
     prev_job_run_id: str | None = None,
     crossref_metadata_transform_batch_size: str | int,
     crossref_metadata_transform_row_group_size: str | int,
@@ -620,8 +645,8 @@ def datacite_transform_factory(
     run_id: str,
     bucket_name: str,
     env: AWSEnv,
-    use_subset: str | bool = "false",
-    log_level: str = "INFO",
+    use_subset: str | bool = DEFAULT_USE_SUBSET,
+    log_level: str = DEFAULT_LOG_LEVEL,
     prev_job_run_id: str | None = None,
     datacite_transform_batch_size: str | int,
     datacite_transform_row_group_size: str | int,
@@ -676,6 +701,7 @@ def process_works_sqlmesh_factory(
     run_id: str,
     env: AWSEnv,
     bucket_name: str,
+    release_date: str,
     run_id_sqlmesh_prev: str,
     run_id_openalex_works: str,
     run_id_datacite: str,
@@ -690,6 +716,7 @@ def process_works_sqlmesh_factory(
         run_id: Unique run ID for this SQLMesh execution (RUN_ID_SQLMESH).
         env: AWS environment (dev/stg/prd).
         bucket_name: S3 bucket for SQLMesh data.
+        release_date: Release date (YYYY-MM-DD) for the process-works pipeline run.
         run_id_sqlmesh_prev: Run ID of the prior SQLMesh execution for incremental runs.
         run_id_openalex_works: Run ID of the OpenAlex Works transform checkpoint.
         run_id_datacite: Run ID of the DataCite transform checkpoint.
@@ -713,6 +740,7 @@ def process_works_sqlmesh_factory(
         command="dmpworks aws-batch sqlmesh plan $BUCKET_NAME",
         env_vars={
             "RUN_ID_SQLMESH": run_id,
+            "RELEASE_DATE_PROCESS_WORKS": release_date,
             "RUN_ID_SQLMESH_PREV": run_id_sqlmesh_prev,
             "RUN_ID_OPENALEX_WORKS": run_id_openalex_works,
             "RUN_ID_DATACITE": run_id_datacite,
@@ -727,19 +755,23 @@ def process_works_sqlmesh_factory(
 
 def process_works_sync_works_factory(
     *,
-    run_id: str,
+    run_id: str,  # noqa: ARG001
     env: AWSEnv,
     bucket_name: str,
+    release_date: str,
     sqlmesh_run_id: str,
+    works_index_name: str = WORKS_INDEX_NAME,
     **kwargs: Any,
 ) -> dict[str, Any]:
     """Build SFN-compatible Batch params for the process-works OpenSearch sync-works job.
 
     Args:
-        run_id: Unique run ID for this sync-works execution (RUN_ID_SYNC_WORKS).
+        run_id: Unique run ID for this execution (not used in the batch command, absorbed).
         env: AWS environment (dev/stg/prd).
         bucket_name: S3 bucket containing SQLMesh-transformed data.
+        release_date: Release date (YYYY-MM-DD) for the process-works pipeline run.
         sqlmesh_run_id: Run ID of the SQLMesh job whose output to read (RUN_ID_SQLMESH).
+        works_index_name: Name of the OpenSearch works index to sync to.
         **kwargs: OpenSearch config vars from config.to_env_dict() (lowercased keys).
 
     Returns:
@@ -755,9 +787,10 @@ def process_works_sync_works_factory(
         memory=OPENSEARCH_QUEUE_MEMORY,
         command="dmpworks aws-batch opensearch sync-works $BUCKET_NAME $INDEX_NAME",
         env_vars={
-            "RUN_ID_SYNC_WORKS": run_id,
+            "RELEASE_DATE_PROCESS_WORKS": release_date,
             "RUN_ID_SQLMESH": sqlmesh_run_id,
             "BUCKET_NAME": bucket_name,
+            "INDEX_NAME": works_index_name,
             "TQDM_POSITION": TQDM_POSITION,
             "TQDM_MININTERVAL": TQDM_MININTERVAL,
             **opensearch_config_vars,
@@ -770,7 +803,7 @@ def process_dmps_sync_dmps_factory(
     run_id: str,  # noqa: ARG001
     env: AWSEnv,
     bucket_name: str,
-    dmps_index_name: str = "dmps-index",
+    dmps_index_name: str = DMPS_INDEX_NAME,
     **kwargs: Any,
 ) -> dict[str, Any]:
     """Build SFN-compatible Batch params for the process-dmps sync-dmps job.
@@ -809,7 +842,7 @@ def process_dmps_enrich_dmps_factory(
     run_id: str,  # noqa: ARG001
     env: AWSEnv,
     bucket_name: str,
-    dmps_index_name: str = "dmps-index",
+    dmps_index_name: str = DMPS_INDEX_NAME,
     **kwargs: Any,
 ) -> dict[str, Any]:
     """Build SFN-compatible Batch params for the process-dmps enrich-dmps job.
@@ -848,8 +881,8 @@ def process_dmps_dmp_works_search_factory(
     run_id: str,
     env: AWSEnv,
     bucket_name: str,
-    dmps_index_name: str = "dmps-index",
-    works_index_name: str = "works-index",
+    dmps_index_name: str = DMPS_INDEX_NAME,
+    works_index_name: str = WORKS_INDEX_NAME,
     run_all_dmps: bool = False,
     **kwargs: Any,
 ) -> dict[str, Any]:

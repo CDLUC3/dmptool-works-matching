@@ -5,7 +5,7 @@ import pytest
 import vcr
 
 from dmpworks.funders.nih_funder_api import (
-    _pubmed_ids_to_dois,
+    pubmed_ids_to_dois_batch,
     nih_core_project_to_appl_ids,
     nih_fetch_award_publication_dois,
     pubmed_ids_to_dois,
@@ -41,10 +41,10 @@ class TestNIHFunderAPI:
                 }
             ]
 
-    def test_pubmed_ids_to_dois_raw(self):
-        with vcr.use_cassette(os.path.join(FIXTURES_FOLDER, "_pubmed_ids_to_dois.yaml")):
+    def testpubmed_ids_to_dois_batch_raw(self):
+        with vcr.use_cassette(os.path.join(FIXTURES_FOLDER, "pubmed_ids_to_dois_batch.yaml")):
             # PubMed IDs
-            results = _pubmed_ids_to_dois([39747675, 38286823, 38096378], "pmid")
+            results = pubmed_ids_to_dois_batch([39747675, 38286823, 38096378], "pmid")
             results.sort(key=lambda x: x["pmid"])
             assert results == [
                 {
@@ -65,7 +65,7 @@ class TestNIHFunderAPI:
             ]
 
             # PubMed PMC IDs
-            results = _pubmed_ids_to_dois([10990768, 10874502, 10908861], "pmcid")
+            results = pubmed_ids_to_dois_batch([10990768, 10874502, 10908861], "pmcid")
             results.sort(key=lambda x: x["pmcid"])
             assert results == [
                 {
@@ -99,7 +99,7 @@ class TestPubmedIdsToDoisBatching:
         ],
     )
     def test_batches_in_chunks_of_200(self, count, expected_batches):
-        with patch("dmpworks.funders.nih_funder_api._pubmed_ids_to_dois") as func:
+        with patch("dmpworks.funders.nih_funder_api.pubmed_ids_to_dois_batch") as func:
             func.return_value = []
             pubmed_ids_to_dois([38096378] * count, "pmid")
             assert func.call_count == expected_batches

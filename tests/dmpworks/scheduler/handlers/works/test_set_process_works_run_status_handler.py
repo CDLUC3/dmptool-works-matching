@@ -17,7 +17,7 @@ class TestMarkStarted:
             "release_date": "2025-01-13",
             "run_id": "20250113T060000-aabbccdd",
             "process_works_status": "STARTED",
-            "execution_arn": "arn:aws:states:us-east-1:123:execution:sm:abc",
+            "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:abc123",
         }
 
         with (
@@ -30,7 +30,7 @@ class TestMarkStarted:
             release_date="2025-01-13",
             run_id="20250113T060000-aabbccdd",
             status="STARTED",
-            step_function_execution_arn="arn:aws:states:us-east-1:123:execution:sm:abc",
+            step_function_execution_arn="arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:abc123",
         )
         assert result is event
 

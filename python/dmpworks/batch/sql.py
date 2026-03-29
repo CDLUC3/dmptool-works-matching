@@ -3,7 +3,7 @@ import os
 import pathlib
 
 from dmpworks.batch.utils import download_files_from_s3, local_path, s3_uri, upload_files_to_s3
-from dmpworks.batch_submit.job_registry import PROCESS_WORKS_SQLMESH
+from dmpworks.batch_submit.job_factories import PROCESS_WORKS_SQLMESH
 from dmpworks.cli_utils import RunIdentifiers, SQLMeshConfig
 from dmpworks.sql.commands import run_plan
 
@@ -61,6 +61,7 @@ def plan(
 
     # Remaining SQLMesh settings
     os.environ["RUN_ID_SQLMESH"] = str(run_identifiers.run_id_sqlmesh)
+    os.environ["RELEASE_DATE_PROCESS_WORKS"] = str(run_identifiers.release_date_process_works)
     os.environ["DUCKDB_DATABASE"] = str(duckdb_dir)
     os.environ["DUCKDB_THREADS"] = str(sqlmesh_config.duckdb_threads)
     os.environ["DUCKDB_MEMORY_LIMIT"] = str(sqlmesh_config.duckdb_memory_limit)

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from dmpworks.batch_submit.job_registry import (
+from dmpworks.batch_submit.job_factories import (
     JOB_FACTORIES,
     datacite_download_job_definition,
     standard_job_definition,

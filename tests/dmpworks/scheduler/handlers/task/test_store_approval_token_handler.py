@@ -10,7 +10,7 @@ from dmpworks.scheduler.handler.task.store_approval_token_handler import store_a
 
 
 @pytest.fixture(autouse=True)
-def _mock_env():
+def mock_env():
     with patch("dmpworks.scheduler.handler.task.store_approval_token_handler.LambdaEnvSettings"):
         yield
 

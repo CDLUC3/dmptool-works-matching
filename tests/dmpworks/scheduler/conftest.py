@@ -43,7 +43,7 @@ def dynamodb_local():
 
 
 @pytest.fixture
-def release_table(dynamodb_local):
+def dynamodb_release_table(dynamodb_local):
     """Create the dataset releases table for one test, then drop it."""
     DatasetReleaseRecord.create_table(wait=True)
     yield
@@ -51,7 +51,7 @@ def release_table(dynamodb_local):
 
 
 @pytest.fixture
-def task_run_table(dynamodb_local):
+def dynamodb_task_run_table(dynamodb_local):
     """Create the task runs table for one test, then drop it."""
     TaskRunRecord.create_table(wait=True)
     yield
@@ -59,7 +59,7 @@ def task_run_table(dynamodb_local):
 
 
 @pytest.fixture
-def task_checkpoint_table(dynamodb_local):
+def dynamodb_task_checkpoint_table(dynamodb_local):
     """Create the task checkpoints table for one test, then drop it."""
     TaskCheckpointRecord.create_table(wait=True)
     yield
@@ -67,7 +67,7 @@ def task_checkpoint_table(dynamodb_local):
 
 
 @pytest.fixture
-def tables(dynamodb_local):
+def dynamodb_tables(dynamodb_local):
     """Create all DynamoDB tables for one test, then drop them."""
     DatasetReleaseRecord.create_table(wait=True)
     TaskRunRecord.create_table(wait=True)

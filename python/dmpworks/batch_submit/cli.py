@@ -504,6 +504,7 @@ def process_works_cmd(
             run_id=run_identifiers.run_id_sqlmesh,
             env=env,
             bucket_name=bucket_name,
+            release_date=run_identifiers.release_date_process_works,
             sqlmesh_run_id=run_identifiers.run_id_sqlmesh,
             index_name=works_index_name,
             **os_kwargs,

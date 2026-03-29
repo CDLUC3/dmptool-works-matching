@@ -124,3 +124,56 @@ class TestApproveRetry:
         cli(["pipeline", "runs", "approve-retry", "--env", "dev"])
 
         mock_wizard.assert_called_once_with()
+
+
+class TestShowStatus:
+    def test_queries_latest_per_group(self, mocker):
+        mock_query = mocker.patch("dmpworks.scheduler.dynamodb_store.DatasetReleaseRecord.query", return_value=[])
+        mock_get_cp = mocker.patch("dmpworks.scheduler.dynamodb_store.get_task_checkpoint", return_value=None)
+        mocker.patch("dmpworks.scheduler.dynamodb_store.scan_all_process_works_runs", return_value=[])
+        mocker.patch("dmpworks.scheduler.dynamodb_store.scan_all_process_dmps_runs", return_value=[])
+        mocker.patch("dmpworks.pipeline.display.display_dataset_releases")
+        mocker.patch("dmpworks.pipeline.display.display_task_checkpoints")
+        mocker.patch("dmpworks.pipeline.display.display_process_works_runs")
+        mocker.patch("dmpworks.pipeline.display.display_process_dmps_runs")
+
+        cli(["pipeline", "show", "status", "--env", "dev"])
+
+        # One query per dataset, last 2, newest-first — no date condition.
+        assert mock_query.call_count == 5
+        for call in mock_query.call_args_list:
+            assert call.kwargs.get("limit") == 2
+            assert call.kwargs.get("scan_index_forward") is False
+
+        # One get_task_checkpoint per (workflow, task) combo: 5*3 + 2 + 4 = 21.
+        assert mock_get_cp.call_count == 21
+
+    def test_slices_process_runs(self, mocker):
+        mocker.patch("dmpworks.scheduler.dynamodb_store.DatasetReleaseRecord.query", return_value=[])
+        mocker.patch("dmpworks.scheduler.dynamodb_store.get_task_checkpoint", return_value=None)
+        mocker.patch("dmpworks.pipeline.display.display_dataset_releases")
+        mocker.patch("dmpworks.pipeline.display.display_task_checkpoints")
+
+        def make_run(release_date, run_id):
+            r = mocker.MagicMock()
+            r.release_date = release_date
+            r.run_id = run_id
+            return r
+
+        works_records = [make_run(f"2025-0{i}-01", f"run-{i}") for i in range(1, 11)]
+        dmps_records = [make_run(f"2025-01-{i:02d}", f"run-{i}") for i in range(1, 21)]
+        mocker.patch("dmpworks.scheduler.dynamodb_store.scan_all_process_works_runs", return_value=works_records)
+        mocker.patch("dmpworks.scheduler.dynamodb_store.scan_all_process_dmps_runs", return_value=dmps_records)
+
+        mock_display_works = mocker.patch("dmpworks.pipeline.display.display_process_works_runs")
+        mock_display_dmps = mocker.patch("dmpworks.pipeline.display.display_process_dmps_runs")
+
+        cli(["pipeline", "show", "status", "--env", "dev"])
+
+        works_passed = mock_display_works.call_args.kwargs["records"]
+        dmps_passed = mock_display_dmps.call_args.kwargs["records"]
+        assert len(works_passed) == 3
+        assert len(dmps_passed) == 7
+        # Verify newest-first ordering.
+        assert works_passed == sorted(works_passed, key=lambda r: (r.release_date, r.run_id), reverse=True)
+        assert dmps_passed == sorted(dmps_passed, key=lambda r: (r.release_date, r.run_id), reverse=True)

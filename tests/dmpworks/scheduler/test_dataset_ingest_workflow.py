@@ -23,7 +23,7 @@ from dmpworks.scheduler.dynamodb_store import (
     set_task_checkpoint,
     set_task_run_status,
 )
-from tests.aws_test_env import dynamodb_local, make_release_record, tables  # noqa: F401
+from tests.dmpworks.scheduler.conftest import make_release_record
 
 BASE_EVENT = {
     "workflow_key": "ror",
@@ -56,7 +56,7 @@ class TestGetBatchJobParamsHandler:
         )
         monkeypatch.setattr(mod, "load_lambda_config", MagicMock(return_value=config))
 
-    def test_generates_unique_run_id(self, tables):
+    def test_generates_unique_run_id(self, dynamodb_tables):
         """Each invocation produces a different run_id."""
         make_release_record("ror", "2025-01-01")
         event = {**BASE_EVENT, "task_type": "download"}
@@ -66,7 +66,7 @@ class TestGetBatchJobParamsHandler:
 
         assert result1["run_id"] != result2["run_id"]
 
-    def test_creates_task_run_record(self, tables):
+    def test_creates_task_run_record(self, dynamodb_tables):
         """get_batch_job_params_handler creates a STARTED TaskRunRecord."""
         make_release_record("ror", "2025-01-01")
         event = {**BASE_EVENT, "task_type": "download"}
@@ -78,7 +78,7 @@ class TestGetBatchJobParamsHandler:
         assert record.metadata["workflow_key"] == "ror"
         assert record.metadata["release_date"] == "2025-01-01"
 
-    def test_returns_batch_params(self, tables):
+    def test_returns_batch_params(self, dynamodb_tables):
         """get_batch_job_params_handler returns run_id, run_name, and batch_params."""
         make_release_record("ror", "2025-01-01")
         event = {**BASE_EVENT, "task_type": "download"}
@@ -90,7 +90,7 @@ class TestGetBatchJobParamsHandler:
         assert "batch_params" in result
         assert result["batch_params"]["JobName"].startswith("ror-download-")
 
-    def test_subset_boolean_env_var_is_lowercase(self, tables):
+    def test_subset_boolean_env_var_is_lowercase(self, dynamodb_tables):
         """DATASET_SUBSET_ENABLE is serialized as 'true', not 'True'."""
         make_release_record("datacite", "2025-01-01")
         event = {**BASE_EVENT, "workflow_key": "datacite", "task_type": "subset", "use_subset": True}
@@ -100,7 +100,7 @@ class TestGetBatchJobParamsHandler:
         env_vars = {e["Name"]: e["Value"] for e in result["batch_params"]["ContainerOverrides"]["Environment"]}
         assert env_vars["DATASET_SUBSET_ENABLE"] == "true"
 
-    def test_subset_path_env_vars_are_present(self, tables):
+    def test_subset_path_env_vars_are_present(self, dynamodb_tables):
         """DATASET_SUBSET_INSTITUTIONS_S3_PATH and DATASET_SUBSET_DOIS_S3_PATH come from Lambda config."""
         make_release_record("datacite", "2025-01-01")
         event = {**BASE_EVENT, "workflow_key": "datacite", "task_type": "subset", "use_subset": True}
@@ -111,14 +111,14 @@ class TestGetBatchJobParamsHandler:
         assert env_vars["DATASET_SUBSET_INSTITUTIONS_S3_PATH"] == "meta/institutions.json"
         assert env_vars["DATASET_SUBSET_DOIS_S3_PATH"] == "meta/work_dois.json"
 
-    def test_prev_run_id_is_read_from_dynamodb(self, tables):
+    def test_prev_run_id_is_read_from_dynamodb(self, dynamodb_tables):
         """For transform task type, PREV_JOB_RUN_ID is resolved from DynamoDB."""
         make_release_record("openalex-works", "2025-01-01")
         set_task_checkpoint(
             workflow_key="openalex-works",
             task_name="download",
             date="2025-01-01",
-            run_id="2025-01-01T060000-prev1234",
+            run_id="20250101T060000-b2c3d4e5",
         )
 
         event = {
@@ -132,18 +132,18 @@ class TestGetBatchJobParamsHandler:
         result = get_batch_job_params_handler(event, None)
 
         env_vars = {e["Name"]: e["Value"] for e in result["batch_params"]["ContainerOverrides"]["Environment"]}
-        assert env_vars["PREV_JOB_RUN_ID"] == "2025-01-01T060000-prev1234"
+        assert env_vars["PREV_JOB_RUN_ID"] == "20250101T060000-b2c3d4e5"
 
 
 class TestSetTaskRunCompleteHandler:
     """Tests for set_task_run_complete_handler."""
 
-    def test_marks_run_completed_and_writes_run_id(self, tables):
+    def test_marks_run_completed_and_writes_run_id(self, dynamodb_tables):
         """Completes TaskRunRecord and writes run_id to DatasetReleaseRecord."""
         make_release_record("ror", "2025-01-01")
         create_task_run(
             run_name="ror-download",
-            run_id="2025-01-01T060000-a1b2c3d4",
+            run_id="20250101T060000-a1b2c3d4",
             execution_arn="arn:aws:states:us-east-1:123456789012:execution:test:exec-1",
             metadata={},
         )
@@ -151,13 +151,13 @@ class TestSetTaskRunCompleteHandler:
         event = {
             **BASE_EVENT,
             "task_type": "download",
-            "current": {"run_name": "ror-download", "run_id": "2025-01-01T060000-a1b2c3d4"},
+            "current": {"run_name": "ror-download", "run_id": "20250101T060000-a1b2c3d4"},
         }
 
         set_task_run_complete_handler(event, None)
 
-        run_record = TaskRunRecord.get("ror-download", "2025-01-01T060000-a1b2c3d4")
+        run_record = TaskRunRecord.get("ror-download", "20250101T060000-a1b2c3d4")
         assert run_record.status == "COMPLETED"
 
         checkpoint = TaskCheckpointRecord.get("ror", "download#2025-01-01")
-        assert checkpoint.run_id == "2025-01-01T060000-a1b2c3d4"
+        assert checkpoint.run_id == "20250101T060000-a1b2c3d4"

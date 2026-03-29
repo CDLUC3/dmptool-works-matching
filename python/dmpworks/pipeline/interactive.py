@@ -13,10 +13,13 @@ from rich.table import Table
 
 from dmpworks.pipeline.aws import (
     SCHEDULE_RULES,
+    build_execution_dict,
+    fetch_child_executions,
     get_eventbridge_rule_name,
     get_state_machine_arn,
 )
 from dmpworks.pipeline.cli import DATASET_WORKFLOW_KEYS
+from dmpworks.pipeline.display import build_execution_tree
 from dmpworks.scheduler.batch_params import generate_run_id
 from dmpworks.scheduler.config import load_lambda_config
 from dmpworks.scheduler.dynamodb_store import (
@@ -27,12 +30,13 @@ from dmpworks.scheduler.dynamodb_store import (
     get_task_checkpoint,
     scan_all_process_works_runs,
 )
+from dmpworks.utils import thread_map
 
 log = logging.getLogger(__name__)
 console = Console()
 
 
-def _check_running_executions(*, sm_arn: str) -> bool:
+def check_running_executions(*, sm_arn: str) -> bool:
     """Check for running executions and warn the user. Returns True if user wants to continue."""
     sfn = boto3.client("stepfunctions")
     response = sfn.list_executions(stateMachineArn=sm_arn, statusFilter="RUNNING", maxResults=5)
@@ -45,7 +49,7 @@ def _check_running_executions(*, sm_arn: str) -> bool:
     return True
 
 
-def _check_schedules_enabled(*, env: str) -> bool:
+def check_schedules_enabled(*, env: str) -> bool:
     """Check if any EventBridge schedules are enabled and warn. Returns True if user wants to continue."""
     events = boto3.client("events")
     enabled_rules = []
@@ -66,7 +70,7 @@ def _check_schedules_enabled(*, env: str) -> bool:
     return True
 
 
-def _delete_checkpoint(*, workflow_key: str, task_name: str, date: str) -> None:
+def delete_checkpoint(*, workflow_key: str, task_name: str, date: str) -> None:
     """Delete a task checkpoint record from DynamoDB."""
     old_record = delete_task_checkpoint(workflow_key=workflow_key, task_name=task_name, date=date)
     if old_record is None:
@@ -76,7 +80,7 @@ def _delete_checkpoint(*, workflow_key: str, task_name: str, date: str) -> None:
     )
 
 
-def _start_execution(*, sm_arn: str, execution_name: str, sfn_input: dict) -> str:
+def start_execution(*, sm_arn: str, execution_name: str, sfn_input: dict) -> str:
     """Start a Step Functions execution and return the execution ARN."""
     sfn = boto3.client("stepfunctions")
     response = sfn.start_execution(
@@ -87,7 +91,7 @@ def _start_execution(*, sm_arn: str, execution_name: str, sfn_input: dict) -> st
     return response["executionArn"]
 
 
-def _confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict) -> None:
+def confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict) -> None:
     """Display execution summary, confirm with user, and start the SFN execution.
 
     Args:
@@ -108,7 +112,7 @@ def _confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict) -> 
         console.print("Cancelled.")
         return
 
-    arn = _start_execution(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+    arn = start_execution(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
     console.print(f"\n[green]Started execution:[/green] {arn}")
 
 
@@ -185,13 +189,13 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
     # 6. Delete checkpoints for steps being re-run.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint(workflow_key=dataset, task_name=tn, date=release_date)
+            delete_checkpoint(workflow_key=dataset, task_name=tn, date=release_date)
 
     # 7. Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="dataset-ingest")
-    if not _check_running_executions(sm_arn=sm_arn):
+    if not check_running_executions(sm_arn=sm_arn):
         return
-    if not _check_schedules_enabled(env=env):
+    if not check_schedules_enabled(env=env):
         return
 
     # 8. Build SFN input.
@@ -220,7 +224,7 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
 
     # 9. Confirm and start.
     execution_name = f"{dataset}-{release_date}-{run_id}"
-    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+    confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
 
 
 def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
@@ -299,29 +303,29 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
     # Delete checkpoints for re-run steps.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint(workflow_key="process-works", task_name=tn, date=release_date)
+            delete_checkpoint(workflow_key="process-works", task_name=tn, date=release_date)
 
     # Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="process-works")
-    if not _check_running_executions(sm_arn=sm_arn):
+    if not check_running_executions(sm_arn=sm_arn):
         return
-    if not _check_schedules_enabled(env=env):
+    if not check_schedules_enabled(env=env):
         return
 
     # Build SFN input.
+    run_id = generate_run_id()
     sfn_input = {
         "workflow_key": "process-works",
         "release_date": release_date,
+        "run_id": run_id,
         "aws_env": env,
         "bucket_name": bucket_name,
         "skip_sqlmesh": skip_sqlmesh,
         "skip_sync_works": skip_sync_works,
     }
-
-    run_id = generate_run_id()
     execution_name = f"process-works-{release_date}-{run_id}"
 
-    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+    confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
 
 
 def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
@@ -396,19 +400,21 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
     # Delete checkpoints for re-run steps.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
+            delete_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
 
     # Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="process-dmps")
-    if not _check_running_executions(sm_arn=sm_arn):
+    if not check_running_executions(sm_arn=sm_arn):
         return
-    if not _check_schedules_enabled(env=env):
+    if not check_schedules_enabled(env=env):
         return
 
     # Build SFN input.
+    run_id = generate_run_id()
     sfn_input = {
         "workflow_key": "process-dmps",
         "release_date": release_date,
+        "run_id": run_id,
         "aws_env": env,
         "bucket_name": bucket_name,
         "run_all_dmps": run_all_dmps,
@@ -417,19 +423,52 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
         "skip_dmp_works_search": skip_dmp_works_search,
         "skip_merge_related_works": skip_merge_related_works,
     }
-
-    run_id = generate_run_id()
     execution_name = f"process-dmps-{release_date}-{run_id}"
 
-    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+    confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+
+
+def extract_run_id_from_execution_name(*, execution_name: str, workflow_key: str, release_date: str) -> str | None:
+    """Extract the run_id from a Step Functions execution name.
+
+    Execution names follow the pattern ``{workflow_key}-{release_date}-{run_id}``.
+
+    Args:
+        execution_name: The SFN execution name.
+        workflow_key: The workflow key prefix.
+        release_date: The release date component.
+
+    Returns:
+        The run_id suffix, or None if the name doesn't match the expected pattern.
+    """
+    prefix = f"{workflow_key}-{release_date}-"
+    result = execution_name.removeprefix(prefix)
+    return result if result != execution_name else None
+
+
+def clear_approval(run: dict) -> None:
+    """Clear approval_token from a run record dict.
+
+    Args:
+        run: A run dict from get_runs_awaiting_approval().
+    """
+    clear_kwargs: dict = {"workflow_key": run["workflow_key"]}
+    if "dataset" in run:
+        clear_kwargs["dataset"] = run["dataset"]
+        clear_kwargs["release_date"] = run["release_date"]
+    else:
+        clear_kwargs["release_date"] = run["release_date"]
+        clear_kwargs["run_id"] = run["run_id"]
+    clear_approval_token(**clear_kwargs)
 
 
 def run_approve_retry_wizard() -> None:
     """Interactive wizard for approving a failed child workflow for retry.
 
     Queries DynamoDB for run records with non-null approval_token (parents waiting
-    for manual approval), lets the user pick one, then sends SendTaskSuccess to the
-    parent so it re-invokes the child with a fresh run_id.
+    for manual approval), validates each parent execution is still RUNNING,
+    auto-clears stale tokens from dead parents, and presents a tree view of the
+    retryable executions before prompting the user to select one.
     """
     console.print("[dim]Searching for runs awaiting approval...[/dim]")
 
@@ -439,33 +478,128 @@ def run_approve_retry_wizard() -> None:
         console.print("[yellow]No runs are currently awaiting retry approval.[/yellow]")
         return
 
-    choices = []
-    for run in awaiting:
-        if "dataset" in run:
-            label = f"{run['workflow_key']}  task={run['approval_task_name']}  release_date={run['release_date']}"
-        else:
-            label = f"{run['workflow_key']}  task={run['approval_task_name']}  release_date={run['release_date']}  run_id={run['run_id']}"
-        choices.append(questionary.Choice(label, value=run))
-
-    selected = questionary.select("Select run to approve for retry:", choices=choices).ask()
-    if selected is None:
-        return
-
-    if not questionary.confirm(f"Send approval to retry {selected['approval_task_name']}?", default=True).ask():
-        return
-
+    # Validate parent executions are still RUNNING; store describe_execution response alongside each run.
     sfn = boto3.client("stepfunctions")
+    live: list[tuple[dict, dict | None]] = []
+    for run in awaiting:
+        arn = run.get("step_function_execution_arn")
+        if not arn:
+            live.append((run, None))
+            continue
+        try:
+            resp = sfn.describe_execution(executionArn=arn)
+            if resp["status"] == "RUNNING":
+                # For dataset-ingest records (no run_id field), extract run_id from execution name.
+                if "dataset" in run and "run_id" not in run:
+                    run_id = extract_run_id_from_execution_name(
+                        execution_name=resp["name"],
+                        workflow_key=run["workflow_key"],
+                        release_date=run["release_date"],
+                    )
+                    if run_id:
+                        run["run_id"] = run_id
+                live.append((run, resp))
+            else:
+                console.print(
+                    f"[dim]Clearing stale token: {run['workflow_key']} "
+                    f"release_date={run['release_date']} (parent {resp['status']})[/dim]"
+                )
+                clear_approval(run)
+        except (sfn.exceptions.ExecutionDoesNotExist, sfn.exceptions.InvalidArn):
+            log.warning(f"Execution not found: {arn}")
+            clear_approval(run)
+        except Exception:
+            log.warning(f"Failed to describe execution {arn}", exc_info=True)
+            live.append((run, None))
+
+    if not live:
+        console.print("[yellow]No runs are currently awaiting retry approval.[/yellow]")
+        return
+
+    # Build execution tree structures, deduplicated by parent ARN.
+    parent_executions: dict[str, dict] = {}
+    retryable_children: set[str] = set()
+    run_by_child_name: dict[str, dict] = {}
+    runs_without_parent: list[tuple[None, dict]] = []
+
+    # Collect unique parent ARNs with their run/resp data.
+    parents_to_fetch: dict[str, tuple[dict, dict]] = {}
+    for run, parent_resp in live:
+        if parent_resp is None:
+            runs_without_parent.append((None, run))
+            continue
+        arn = run["step_function_execution_arn"]
+        if arn not in parents_to_fetch:
+            parents_to_fetch[arn] = (run, parent_resp)
+
+    # Fetch children in parallel.
+    arns = list(parents_to_fetch.keys())
+    children_lists = thread_map(
+        lambda arn: fetch_child_executions(sfn_client=sfn, parent_arn=arn), arns
+    )
+
+    for arn, children in zip(arns, children_lists, strict=True):
+        run, parent_resp = parents_to_fetch[arn]
+        parent_executions[arn] = build_execution_dict(
+            workflow=run["workflow_key"], execution=parent_resp, children=children
+        )
+
+    # Match retryable children — one approval token per run, so only keep the latest failure per token.
+    candidates: dict[str, tuple[dict, dict]] = {}  # token → (latest_child, run)
+    for run, parent_resp in live:
+        if parent_resp is None:
+            continue
+        arn = run["step_function_execution_arn"]
+        token = run["approval_token"]
+        for child in parent_executions[arn]["children"]:
+            if child["status"] == "FAILED" and run["approval_task_name"] in child["name"]:
+                prev = candidates.get(token)
+                if prev is None or child["start_date"] > prev[0]["start_date"]:
+                    candidates[token] = (child, run)
+
+    for child, run in candidates.values():
+        retryable_children.add(child["name"])
+        run_by_child_name[child["name"]] = run
+
+    if parent_executions:
+        console.print(
+            build_execution_tree(
+                title="State Machine Executions",
+                executions=list(parent_executions.values()),
+                retryable_children=frozenset(retryable_children),
+            )
+        )
+        console.print(f"[dim]{len(parent_executions)} execution(s) shown.[/dim]")
+
+    all_retryable: list[tuple[str | None, dict]] = list(run_by_child_name.items()) + runs_without_parent
+
+    if not all_retryable:
+        console.print("[yellow]No retryable children found.[/yellow]")
+        return
+
+    if len(all_retryable) == 1:
+        child_name, selected = all_retryable[0]
+        task_name = selected["approval_task_name"]
+        prompt = f"Retry {task_name} ({child_name})?" if child_name else f"Retry {task_name}?"
+        if not questionary.confirm(prompt, default=True).ask():
+            return
+    else:
+        choices = [
+            questionary.Choice(
+                child_name if child_name else run["approval_task_name"],
+                value=(child_name, run),
+            )
+            for child_name, run in all_retryable
+        ]
+        result = questionary.select("Select execution to retry:", choices=choices).ask()
+        if result is None:
+            return
+        child_name, selected = result
+        if not questionary.confirm(f"Send approval to retry {selected['approval_task_name']}?", default=True).ask():
+            return
+
     sfn.send_task_success(taskToken=selected["approval_token"], output="{}")
     console.print(
         f"[green]Approved retry for {selected['approval_task_name']}. Parent will re-invoke the child.[/green]"
     )
-
-    # Clear the approval token from the record.
-    clear_kwargs = {"workflow_key": selected["workflow_key"]}
-    if "dataset" in selected:
-        clear_kwargs["dataset"] = selected["dataset"]
-        clear_kwargs["release_date"] = selected["release_date"]
-    else:
-        clear_kwargs["release_date"] = selected["release_date"]
-        clear_kwargs["run_id"] = selected["run_id"]
-    clear_approval_token(**clear_kwargs)
+    clear_approval(selected)

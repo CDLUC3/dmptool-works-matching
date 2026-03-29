@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from dmpworks.scheduler.dynamodb_store import SQLMESH_INITIAL_RUN_ID
+from dmpworks.constants import SQLMESH_INITIAL_RUN_ID
 from dmpworks.scheduler.handler.works.check_datasets_ready_handler import (
     REQUIRED_CHECKPOINTS,
     check_datasets_ready_handler,
@@ -22,7 +22,7 @@ CHECKPOINT_TASK_KEYS = {
 }
 
 
-def make_checkpoint(run_id: str, *, task_key: str = "task#2025-01-15") -> MagicMock:
+def make_checkpoint(run_id: str, *, task_key: str = "transform#2025-01-15") -> MagicMock:
     """Build a minimal mock TaskCheckpointRecord."""
     cp = MagicMock()
     cp.run_id = run_id
@@ -38,11 +38,11 @@ def make_release(status: str) -> MagicMock:
 
 
 CHECKPOINT_RUN_IDS = {
-    "run_id_openalex_works": "oa-run",
-    "run_id_datacite": "dc-run",
-    "run_id_crossref_metadata": "cr-run",
-    "run_id_ror": "ror-run",
-    "run_id_data_citation_corpus": "dcc-run",
+    "run_id_openalex_works": "20250115T060000-a1b2c3d4",
+    "run_id_datacite": "20250110T060000-b2c3d4e5",
+    "run_id_crossref_metadata": "20250108T060000-c3d4e5f6",
+    "run_id_ror": "20250105T060000-d4e5f6a7",
+    "run_id_data_citation_corpus": "20250103T060000-e5f6a7b8",
 }
 
 
@@ -50,7 +50,7 @@ class TestAllReady:
     """All datasets have completed checkpoints and none are in-flight."""
 
     def test_returns_all_ready_with_run_ids_and_release_dates(self):
-        sqlmesh_checkpoint = make_checkpoint("sqlmesh-prev-run", task_key="sqlmesh#2025-01-13")
+        sqlmesh_checkpoint = make_checkpoint("20250113T060000-f6a7b8c9", task_key="sqlmesh#2025-01-13")
 
         def mock_get_checkpoint(*, workflow_key, task_name, **kwargs):
             if workflow_key == "process-works" and task_name == "sqlmesh":
@@ -66,12 +66,12 @@ class TestAllReady:
             result = check_datasets_ready_handler({}, None)
 
         assert result["all_ready"] is True
-        assert result["run_id_openalex_works"] == "oa-run"
-        assert result["run_id_datacite"] == "dc-run"
-        assert result["run_id_crossref_metadata"] == "cr-run"
-        assert result["run_id_ror"] == "ror-run"
-        assert result["run_id_data_citation_corpus"] == "dcc-run"
-        assert result["run_id_sqlmesh_prev"] == "sqlmesh-prev-run"
+        assert result["run_id_openalex_works"] == "20250115T060000-a1b2c3d4"
+        assert result["run_id_datacite"] == "20250110T060000-b2c3d4e5"
+        assert result["run_id_crossref_metadata"] == "20250108T060000-c3d4e5f6"
+        assert result["run_id_ror"] == "20250105T060000-d4e5f6a7"
+        assert result["run_id_data_citation_corpus"] == "20250103T060000-e5f6a7b8"
+        assert result["run_id_sqlmesh_prev"] == "20250113T060000-f6a7b8c9"
         assert result["release_date_openalex_works"] == "2025-01-15"
         assert result["release_date_datacite"] == "2025-01-10"
         assert result["release_date_crossref_metadata"] == "2025-01-08"
@@ -83,7 +83,7 @@ class TestAllReady:
 
         def mock_get_checkpoint(*, workflow_key, task_name, **kwargs):
             if workflow_key == "process-works":
-                return make_checkpoint("sqlmesh-prev", task_key="sqlmesh#2025-01-13")
+                return make_checkpoint("20250113T060000-f6a7b8c9", task_key="sqlmesh#2025-01-13")
             pool_key = next(k for k, (wk, tn) in REQUIRED_CHECKPOINTS.items() if wk == workflow_key and tn == task_name)
             return make_checkpoint(CHECKPOINT_RUN_IDS[pool_key], task_key=CHECKPOINT_TASK_KEYS[pool_key])
 

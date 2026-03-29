@@ -29,7 +29,7 @@ def isolate_env(monkeypatch):
         monkeypatch.delenv(var, raising=False)
 
 
-def _set_mysql_env(monkeypatch):
+def set_mysql_env(monkeypatch):
     monkeypatch.setenv("MYSQL_HOST", "db.example.com")
     monkeypatch.setenv("MYSQL_TCP_PORT", "3306")
     monkeypatch.setenv("MYSQL_USER", "admin")
@@ -39,7 +39,7 @@ def _set_mysql_env(monkeypatch):
 
 class TestLoadMigration:
     def test_calls_load_related_works(self, monkeypatch, mocker):
-        _set_mysql_env(monkeypatch)
+        set_mysql_env(monkeypatch)
         mocker.patch("pymysql.connect")
         mocker.patch("dmpworks.opensearch.utils.make_opensearch_client")
         mocker.patch("dmpworks.dmsp.migration.fetch_migration_related_works")
@@ -52,7 +52,7 @@ class TestLoadMigration:
 
 class TestLoadGroundTruth:
     def test_calls_load_related_works(self, monkeypatch, mocker, tmp_path):
-        _set_mysql_env(monkeypatch)
+        set_mysql_env(monkeypatch)
         csv_file = tmp_path / "matches.csv"
         csv_file.write_text("header\nrow\n")
 
@@ -68,7 +68,7 @@ class TestLoadGroundTruth:
 
 class TestMerge:
     def test_calls_merge_related_works(self, monkeypatch, mocker, tmp_path):
-        _set_mysql_env(monkeypatch)
+        set_mysql_env(monkeypatch)
         mock_connect = mocker.patch("pymysql.connect")
         mock_merge = mocker.patch("dmpworks.dmsp.merge.merge_related_works")
 

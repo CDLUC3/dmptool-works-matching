@@ -43,6 +43,7 @@ def start_execution(*, workflow_key: str, release_date: str, payload: dict[str, 
             {
                 "workflow_key": workflow_key,
                 "release_date": release_date,
+                "run_id": run_id,
                 "aws_env": settings.aws_env,
                 "bucket_name": settings.bucket_name,
                 **payload,

@@ -12,8 +12,6 @@ from pynamodb.exceptions import DoesNotExist
 from pynamodb.indexes import GlobalSecondaryIndex, KeysOnlyProjection
 from pynamodb.models import Model
 
-SQLMESH_INITIAL_RUN_ID = "INITIAL"
-
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -300,15 +298,15 @@ def create_task_run(*, run_name: str, run_id: str, execution_arn: str, metadata:
 
 
 def set_task_run_status(
-    *, run_name: str, run_id: str, status: Literal["COMPLETED", "FAILED"], error: str | None = None
+    *, run_name: str, run_id: str, status: Literal["COMPLETED", "FAILED", "ABORTED"], error: str | None = None
 ) -> None:
     """Update the status of a TaskRunRecord.
 
     Args:
         run_name: Hash key identifying the run name.
         run_id: Range key identifying the specific run.
-        status: Target status — COMPLETED or FAILED.
-        error: Optional error message or cause string (only meaningful when status is FAILED).
+        status: Target status — COMPLETED, FAILED, or ABORTED.
+        error: Optional error message or cause string (only meaningful when status is FAILED or ABORTED).
     """
     record = TaskRunRecord.get(run_name, run_id)
     actions = [
@@ -483,7 +481,7 @@ def update_release_status(
     *,
     dataset: str,
     release_date: str,
-    status: Literal["DISCOVERED", "STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"],
+    status: Literal["DISCOVERED", "STARTED", "COMPLETED", "FAILED", "ABORTED", "WAITING_FOR_APPROVAL"],
     **kwargs,
 ) -> None:
     """Update the status and timestamp of a DatasetReleaseRecord.
@@ -491,7 +489,7 @@ def update_release_status(
     Args:
         dataset: The dataset identifier.
         release_date: ISO date string "YYYY-MM-DD".
-        status: Target lifecycle status — DISCOVERED | STARTED | COMPLETED | FAILED.
+        status: Target lifecycle status — DISCOVERED | STARTED | COMPLETED | FAILED | ABORTED.
         **kwargs: Additional DatasetReleaseRecord attribute names and values to set,
             e.g. step_function_execution_arn="arn:...".
     """
@@ -578,7 +576,7 @@ def set_process_works_run_status(
     *,
     release_date: str,
     run_id: str,
-    status: Literal["STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"],
+    status: Literal["STARTED", "COMPLETED", "FAILED", "ABORTED", "WAITING_FOR_APPROVAL"],
     **kwargs,
 ) -> None:
     """Update the status and timestamp of a ProcessWorksRunRecord.
@@ -586,7 +584,7 @@ def set_process_works_run_status(
     Args:
         release_date: Hash key identifying the monthly run date.
         run_id: Range key identifying the specific run.
-        status: Target lifecycle status — STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL.
+        status: Target lifecycle status — STARTED | COMPLETED | FAILED | ABORTED | WAITING_FOR_APPROVAL.
         **kwargs: Additional ProcessWorksRunRecord attribute names and values to set,
             e.g. step_function_execution_arn="arn:...", run_id_sqlmesh="20250101T...", or error="...".
     """
@@ -714,7 +712,7 @@ def set_process_dmps_run_status(
     *,
     release_date: str,
     run_id: str,
-    status: Literal["STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"] | None = None,
+    status: Literal["STARTED", "COMPLETED", "FAILED", "ABORTED", "WAITING_FOR_APPROVAL"] | None = None,
     **kwargs,
 ) -> None:
     """Update fields on a ProcessDMPsRunRecord.
@@ -770,7 +768,7 @@ def get_runs_awaiting_approval() -> list[dict]:
 
     Returns:
         List of dicts with keys: workflow_key, approval_token, approval_task_name,
-        and the primary key fields for each record type.
+        step_function_execution_arn, and the primary key fields for each record type.
     """
     results = [
         {
@@ -779,6 +777,7 @@ def get_runs_awaiting_approval() -> list[dict]:
             "release_date": record.release_date,
             "approval_token": record.approval_token,
             "approval_task_name": record.approval_task_name,
+            "step_function_execution_arn": record.step_function_execution_arn,
         }
         for record in DatasetReleaseRecord.scan(
             filter_condition=DatasetReleaseRecord.approval_token.exists(),
@@ -792,6 +791,7 @@ def get_runs_awaiting_approval() -> list[dict]:
             "run_id": record.run_id,
             "approval_token": record.approval_token,
             "approval_task_name": record.approval_task_name,
+            "step_function_execution_arn": record.step_function_execution_arn,
         }
         for record in ProcessWorksRunRecord.scan(
             filter_condition=ProcessWorksRunRecord.approval_token.exists(),
@@ -805,6 +805,7 @@ def get_runs_awaiting_approval() -> list[dict]:
             "run_id": record.run_id,
             "approval_token": record.approval_token,
             "approval_task_name": record.approval_task_name,
+            "step_function_execution_arn": record.step_function_execution_arn,
         }
         for record in ProcessDMPsRunRecord.scan(
             filter_condition=ProcessDMPsRunRecord.approval_token.exists(),

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import secrets
 from typing import TYPE_CHECKING, Any
 
-from dmpworks.batch_submit.job_registry import JOB_FACTORIES
+from dmpworks.batch_submit.job_factories import JOB_FACTORIES
 from dmpworks.scheduler.dynamodb_store import get_task_checkpoint
 
 if TYPE_CHECKING:

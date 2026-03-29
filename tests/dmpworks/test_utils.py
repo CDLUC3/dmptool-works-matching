@@ -1,8 +1,17 @@
 import pathlib
 
-from dmpworks.utils import ParquetBatchWriter, read_parquet_files, run_process, write_rows_to_parquet
+from dmpworks.utils import ParquetBatchWriter, read_parquet_files, run_process, thread_map, write_rows_to_parquet
 import pyarrow as pa
 import pytest
+
+
+class TestThreadMap:
+    def test_applies_fn_to_each_item_preserving_order(self):
+        result = thread_map(lambda x: x * 2, [1, 2, 3])
+        assert result == [2, 4, 6]
+
+    def test_returns_empty_list_for_empty_input(self):
+        assert thread_map(lambda x: x, []) == []
 
 
 class TestRunProcess:

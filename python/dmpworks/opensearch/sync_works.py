@@ -81,7 +81,7 @@ def sync_works(
     index_name: str,
     works_index_export: pathlib.Path,
     doi_state_export: pathlib.Path,
-    run_id: str,
+    release_date: str,
     client_config: OpenSearchClientConfig,
     sync_config: OpenSearchSyncConfig,
     log_level: int = logging.INFO,
@@ -92,7 +92,7 @@ def sync_works(
         index_name: The name of the works index.
         works_index_export: The directory containing the works index export.
         doi_state_export: The directory containing the DOI state export.
-        run_id: The run ID (date string) to filter records.
+        release_date: Release date (YYYY-MM-DD) to filter records by updated_date.
         client_config: The OpenSearch client configuration.
         sync_config: The sync configuration.
         log_level: The logging level.
@@ -126,7 +126,7 @@ def sync_works(
         delete_docs(
             index_name=index_name,
             doi_state_dir=doi_state_export,
-            run_id=run_id,
+            release_date=release_date,
             client_config=client_config,
         )
     finally:
