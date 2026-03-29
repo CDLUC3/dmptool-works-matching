@@ -14,8 +14,10 @@ from dmpworks.cli_utils import (
     OpenSearchSyncConfig,
     QueryBuilder,
 )
+from dmpworks.opensearch.cli_roles import app as roles_app
 
 app = App(name="opensearch", help="OpenSearch utilities.")
+app.command(roles_app)
 
 
 def load_dmp_subset_local(

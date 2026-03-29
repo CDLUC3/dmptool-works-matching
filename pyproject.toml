@@ -132,6 +132,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/cli.py" = ["PLC0415"]
+"**/cli_roles.py" = ["PLC0415"]
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]

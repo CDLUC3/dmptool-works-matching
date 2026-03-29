@@ -116,20 +116,75 @@ make push-lambda-dev   # build + push Lambda image (dmpworks-lambda:latest) + up
 make push-batch-dev    # build + push Batch job image (dmpworks-batch:latest)
 ```
 
-## 5. Manual Trigger
+## 5. OpenSearch Role Setup
 
-Get the physical function name from CloudFormation and invoke it:
+OpenSearch security roles must be configured after the cluster is first deployed,
+and any time role ARNs change (e.g. after a Terraform/CloudFormation rename).
+
+Connections are made via `aws-sigv4-proxy`, which signs requests locally so no
+AWS auth is needed in the CLI itself.
+
+### Prerequisites
+
+Clone and build the proxy (one-time):
 
 ```bash
-aws lambda invoke \
-  --function-name $(aws cloudformation describe-stack-resource \
-    --stack-name dmpworks-dev-scheduler \
-    --logical-resource-id VersionCheckerFunction \
-    --query "StackResourceDetail.PhysicalResourceId" \
-    --output text) \
-  --payload '{}' \
-  --cli-binary-format raw-in-base64-out \
-  response.json && cat response.json
+git clone git@github.com:awslabs/aws-sigv4-proxy.git
+cd aws-sigv4-proxy && docker build -t aws-sigv4-proxy .
 ```
 
-The response is `{"triggered": [...]}` — one entry per dataset execution started.
+### Connect
+
+Port-forward the OpenSearch domain using the CDL session tool:
+
+```bash
+session port <cluster_name>/opensearch-proxy <opensearch_endpoint> 4443:443
+```
+
+Export your AWS credentials, then run the proxy:
+
+```bash
+export AWS_ACCESS_KEY_ID="..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_SESSION_TOKEN="..."
+
+docker run --rm -ti \
+  --network host \
+  -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
+  -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
+  -e "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" \
+  aws-sigv4-proxy \
+    --verbose --log-failed-requests --log-signing-process --no-verify-ssl \
+    --name es --region us-west-2 \
+    --host localhost:4443 \
+    --sign-host us-west-2.es.amazonaws.com
+```
+
+The proxy now listens on `localhost:8080`. Pass `--client-config.port 8080` to
+all `dmpworks opensearch roles` commands below.
+
+### Commands
+
+**Grant an AWS SSO admin principal full cluster access** (`all_access` + `security_manager`):
+
+```bash
+dmpworks opensearch roles principal --client-config.port 8080 \
+  "arn:aws:iam::<account_id>:role/aws-reserved/sso.amazonaws.com/<region>/AWSReservedSSO_<profile>_<id>"
+```
+
+**Create the `aws_batch` role and map the Batch job role**:
+
+```bash
+dmpworks opensearch roles aws-batch --client-config.port 8080 \
+  "arn:aws:iam::<account_id>:role/dmpworks-<env>-batch-job-role"
+```
+
+**Create the `apollo_server` role and map the Apollo ECS Task Role**:
+
+```bash
+dmpworks opensearch roles apollo-server --client-config.port 8080 \
+  "arn:aws:iam::<account_id>:role/dmp-tool-<env>-ecs-apollo-EcsTaskRole-<id>"
+```
+
+Each command replaces the role definition and mapping in full, so re-running
+after an ARN change or permission update is safe.
