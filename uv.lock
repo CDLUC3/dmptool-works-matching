@@ -772,7 +772,7 @@ requires-dist = [
     { name = "rapidfuzz", specifier = ">=3,<4" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11.13,<1" },
     { name = "scipy", specifier = ">=1.16.3,<2" },
-    { name = "sqlmesh", specifier = "==0.231.0" },
+    { name = "sqlmesh", specifier = "==0.231.1" },
     { name = "tqdm", specifier = ">=4,<5" },
     { name = "vcrpy", marker = "extra == 'dev'", specifier = ">=7,<9" },
 ]
@@ -3671,7 +3671,7 @@ wheels = [
 
 [[package]]
 name = "sqlmesh"
-version = "0.231.0"
+version = "0.231.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astor" },
@@ -3695,9 +3695,9 @@ dependencies = [
     { name = "tenacity" },
     { name = "time-machine" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/50/fa/8076225e255de3da2572f008ca660f14774c17737e47351f69fc6139f723/sqlmesh-0.231.0.tar.gz", hash = "sha256:dfffe8d07fff70fe13ec4e2ab89daf9050b2515323aac2ee44cff08750c4f327", size = 13306736, upload-time = "2026-03-03T18:16:49.263Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/20/e8/d050a77c4e15fd4fd22665bebe9aff26e034785d794c20030a6707be5301/sqlmesh-0.231.1.tar.gz", hash = "sha256:20bb81b0745d18f9f47743ab354ae52226f0bbe63717527f064363e1fea96140", size = 13309376, upload-time = "2026-03-06T18:05:31.459Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/83/78/1a0d447212c492f4dd8329354ad70c5563afc201757ce3084108447b7de6/sqlmesh-0.231.0-py3-none-any.whl", hash = "sha256:ccbd07948c567b995d1807c1e211e2c9aa3f3c55c7bce279676c9f0d1cabb9da", size = 5598100, upload-time = "2026-03-03T18:16:46.715Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/4f/5d935879e6111ad7d0a72d9dc806d50c844d9f948c487d519e5f18ae3481/sqlmesh-0.231.1-py3-none-any.whl", hash = "sha256:ba9fc6d2e4b4cc8c511256d2897f02e4a76e0da7870069113f95128ae59df36e", size = 5598217, upload-time = "2026-03-06T18:05:28.075Z" },
 ]
 
 [[package]]
