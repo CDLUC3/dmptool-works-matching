@@ -22,13 +22,13 @@ class TestStoreApprovalTokenHandler:
             "workflow_key": "process-dmps",
             "task_name": "sync-dmps",
             "approval_token": "token-abc",
-            "run_date": "2026-03-28",
+            "release_date": "2026-03-28",
             "run_id": "20260328T120000-a1b2c3d4",
         }
         store_approval_token_handler(event, None)
 
         mock_set_status.assert_called_once_with(
-            run_date="2026-03-28",
+            release_date="2026-03-28",
             run_id="20260328T120000-a1b2c3d4",
             status="WAITING_FOR_APPROVAL",
             approval_token="token-abc",
@@ -41,13 +41,13 @@ class TestStoreApprovalTokenHandler:
             "workflow_key": "process-works",
             "task_name": "sqlmesh",
             "approval_token": "token-xyz",
-            "run_date": "2026-03-28",
+            "release_date": "2026-03-28",
             "run_id": "20260328T120000-deadbeef",
         }
         store_approval_token_handler(event, None)
 
         mock_set_status.assert_called_once_with(
-            run_date="2026-03-28",
+            release_date="2026-03-28",
             run_id="20260328T120000-deadbeef",
             status="WAITING_FOR_APPROVAL",
             approval_token="token-xyz",
@@ -60,13 +60,13 @@ class TestStoreApprovalTokenHandler:
             "workflow_key": "openalex-works",
             "task_name": "download",
             "approval_token": "token-123",
-            "publication_date": "2026-01-15",
+            "release_date": "2026-01-15",
         }
         store_approval_token_handler(event, None)
 
         mock_update.assert_called_once_with(
             dataset="openalex-works",
-            publication_date="2026-01-15",
+            release_date="2026-01-15",
             status="WAITING_FOR_APPROVAL",
             approval_token="token-123",
             approval_task_name="download",

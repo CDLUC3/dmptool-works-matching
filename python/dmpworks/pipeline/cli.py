@@ -88,7 +88,7 @@ def show_status_cmd(
         releases.extend(
             DatasetReleaseRecord.query(
                 dataset,
-                DatasetReleaseRecord.publication_date >= start_date,
+                DatasetReleaseRecord.release_date >= start_date,
                 scan_index_forward=False,
             )
         )
@@ -133,7 +133,7 @@ def show_releases_cmd(
         releases.extend(
             DatasetReleaseRecord.query(
                 dataset,
-                DatasetReleaseRecord.publication_date >= start_date,
+                DatasetReleaseRecord.release_date >= start_date,
                 scan_index_forward=False,
             )
         )

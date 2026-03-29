@@ -23,12 +23,12 @@ def create_process_works_run_handler(event: dict[str, Any], context: LambdaConte
     merged with the new run_id.
 
     Args:
-        event: Workflow event containing run_date, aws_env, run_id_openalex_works,
+        event: Workflow event containing release_date, aws_env, run_id_openalex_works,
             run_id_datacite, run_id_crossref_metadata, run_id_ror,
             run_id_data_citation_corpus, run_id_sqlmesh_prev,
-            publication_date_openalex_works, publication_date_datacite,
-            publication_date_crossref_metadata, publication_date_ror,
-            and publication_date_data_citation_corpus.
+            release_date_openalex_works, release_date_datacite,
+            release_date_crossref_metadata, release_date_ror,
+            and release_date_data_citation_corpus.
         context: Lambda context.
 
     Returns:
@@ -37,12 +37,12 @@ def create_process_works_run_handler(event: dict[str, Any], context: LambdaConte
     LambdaEnvSettings()
 
     run_id = generate_run_id()
-    run_date = event["run_date"]
+    release_date = event["release_date"]
 
-    log.info(f"Creating process works run: run_date={run_date} run_id={run_id}")
+    log.info(f"Creating process works run: release_date={release_date} run_id={run_id}")
 
     create_process_works_run(
-        run_date=run_date,
+        release_date=release_date,
         run_id=run_id,
         execution_arn=event["execution_arn"],
         run_id_sqlmesh_prev=event["run_id_sqlmesh_prev"],
@@ -51,12 +51,12 @@ def create_process_works_run_handler(event: dict[str, Any], context: LambdaConte
         run_id_crossref_metadata=event["run_id_crossref_metadata"],
         run_id_ror=event["run_id_ror"],
         run_id_data_citation_corpus=event["run_id_data_citation_corpus"],
-        publication_date_openalex_works=event["publication_date_openalex_works"],
-        publication_date_datacite=event["publication_date_datacite"],
-        publication_date_crossref_metadata=event["publication_date_crossref_metadata"],
-        publication_date_ror=event["publication_date_ror"],
-        publication_date_data_citation_corpus=event["publication_date_data_citation_corpus"],
+        release_date_openalex_works=event["release_date_openalex_works"],
+        release_date_datacite=event["release_date_datacite"],
+        release_date_crossref_metadata=event["release_date_crossref_metadata"],
+        release_date_ror=event["release_date_ror"],
+        release_date_data_citation_corpus=event["release_date_data_citation_corpus"],
     )
 
-    log.info(f"Created process works run: run_date={run_date} run_id={run_id}")
+    log.info(f"Created process works run: release_date={release_date} run_id={run_id}")
     return {**event, "run_id": run_id}

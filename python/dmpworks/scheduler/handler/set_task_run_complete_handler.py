@@ -19,10 +19,10 @@ log = logging.getLogger(__name__)
 INPUT_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["workflow_key", "publication_date", "task_type", "current"],
+    "required": ["workflow_key", "release_date", "task_type", "current"],
     "properties": {
         "workflow_key": {"type": "string"},
-        "publication_date": {"type": "string"},
+        "release_date": {"type": "string"},
         "task_type": {"type": "string"},
         "current": {
             "type": "object",
@@ -38,10 +38,10 @@ INPUT_SCHEMA = {
 OUTPUT_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["workflow_key", "publication_date", "task_type", "current"],
+    "required": ["workflow_key", "release_date", "task_type", "current"],
     "properties": {
         "workflow_key": {"type": "string"},
-        "publication_date": {"type": "string"},
+        "release_date": {"type": "string"},
         "task_type": {"type": "string"},
         "current": {
             "type": "object",
@@ -60,7 +60,7 @@ def set_task_run_complete_handler(event: dict, context: LambdaContext) -> dict: 
     """Mark current task run COMPLETED and write run_id to DatasetReleaseRecord.
 
     Args:
-        event: Workflow event containing dataset, publication_date, task_type,
+        event: Workflow event containing dataset, release_date, task_type,
             and current dict with run_name and run_id.
         context: Lambda context.
 
@@ -76,7 +76,7 @@ def set_task_run_complete_handler(event: dict, context: LambdaContext) -> dict: 
     set_task_checkpoint(
         workflow_key=event["workflow_key"],
         task_name=event["task_type"],
-        date=event["publication_date"],
+        date=event["release_date"],
         run_id=event["current"]["run_id"],
     )
     return event

@@ -14,7 +14,7 @@ class TestMarkStarted:
 
     def test_calls_set_status_with_started(self):
         event = {
-            "run_date": "2025-01-13",
+            "release_date": "2025-01-13",
             "run_id": "20250113T060000-aabbccdd",
             "process_works_status": "STARTED",
             "execution_arn": "arn:aws:states:us-east-1:123:execution:sm:abc",
@@ -27,7 +27,7 @@ class TestMarkStarted:
             result = set_process_works_run_status_handler(event, None)
 
         mock_set.assert_called_once_with(
-            run_date="2025-01-13",
+            release_date="2025-01-13",
             run_id="20250113T060000-aabbccdd",
             status="STARTED",
             step_function_execution_arn="arn:aws:states:us-east-1:123:execution:sm:abc",
@@ -36,7 +36,7 @@ class TestMarkStarted:
 
     def test_omits_execution_arn_when_absent(self):
         event = {
-            "run_date": "2025-01-13",
+            "release_date": "2025-01-13",
             "run_id": "20250113T060000-aabbccdd",
             "process_works_status": "STARTED",
         }
@@ -56,7 +56,7 @@ class TestMarkCompleted:
 
     def test_calls_set_status_with_completed(self):
         event = {
-            "run_date": "2025-01-13",
+            "release_date": "2025-01-13",
             "run_id": "20250113T060000-aabbccdd",
             "process_works_status": "COMPLETED",
         }
@@ -68,7 +68,7 @@ class TestMarkCompleted:
             set_process_works_run_status_handler(event, None)
 
         mock_set.assert_called_once_with(
-            run_date="2025-01-13",
+            release_date="2025-01-13",
             run_id="20250113T060000-aabbccdd",
             status="COMPLETED",
         )

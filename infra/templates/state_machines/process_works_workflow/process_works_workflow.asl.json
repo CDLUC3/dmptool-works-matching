@@ -73,8 +73,7 @@
       "Comment": "Flatten dataset run_ids and sqlmesh_prev from check result into top-level state",
       "Parameters": {
         "workflow_key.$": "$.workflow_key",
-        "publication_date.$": "$.publication_date",
-        "run_date.$": "$.run_date",
+        "release_date.$": "$.release_date",
         "aws_env.$": "$.aws_env",
         "bucket_name.$": "$.bucket_name",
         "skip_sqlmesh.$": "$.skip_sqlmesh",
@@ -85,11 +84,11 @@
         "run_id_ror.$": "$.check.datasets.run_id_ror",
         "run_id_data_citation_corpus.$": "$.check.datasets.run_id_data_citation_corpus",
         "run_id_sqlmesh_prev.$": "$.check.datasets.run_id_sqlmesh_prev",
-        "publication_date_openalex_works.$": "$.check.datasets.publication_date_openalex_works",
-        "publication_date_datacite.$": "$.check.datasets.publication_date_datacite",
-        "publication_date_crossref_metadata.$": "$.check.datasets.publication_date_crossref_metadata",
-        "publication_date_ror.$": "$.check.datasets.publication_date_ror",
-        "publication_date_data_citation_corpus.$": "$.check.datasets.publication_date_data_citation_corpus"
+        "release_date_openalex_works.$": "$.check.datasets.release_date_openalex_works",
+        "release_date_datacite.$": "$.check.datasets.release_date_datacite",
+        "release_date_crossref_metadata.$": "$.check.datasets.release_date_crossref_metadata",
+        "release_date_ror.$": "$.check.datasets.release_date_ror",
+        "release_date_data_citation_corpus.$": "$.check.datasets.release_date_data_citation_corpus"
       },
       "Next": "CreateProcessWorksRun"
     },
@@ -100,7 +99,7 @@
       "Parameters": {
         "FunctionName": "${CreateProcessWorksRunFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "run_id_sqlmesh_prev.$": "$.run_id_sqlmesh_prev",
           "run_id_openalex_works.$": "$.run_id_openalex_works",
@@ -108,11 +107,11 @@
           "run_id_crossref_metadata.$": "$.run_id_crossref_metadata",
           "run_id_ror.$": "$.run_id_ror",
           "run_id_data_citation_corpus.$": "$.run_id_data_citation_corpus",
-          "publication_date_openalex_works.$": "$.publication_date_openalex_works",
-          "publication_date_datacite.$": "$.publication_date_datacite",
-          "publication_date_crossref_metadata.$": "$.publication_date_crossref_metadata",
-          "publication_date_ror.$": "$.publication_date_ror",
-          "publication_date_data_citation_corpus.$": "$.publication_date_data_citation_corpus",
+          "release_date_openalex_works.$": "$.release_date_openalex_works",
+          "release_date_datacite.$": "$.release_date_datacite",
+          "release_date_crossref_metadata.$": "$.release_date_crossref_metadata",
+          "release_date_ror.$": "$.release_date_ror",
+          "release_date_data_citation_corpus.$": "$.release_date_data_citation_corpus",
           "execution_arn.$": "$$.Execution.Id"
         }
       },
@@ -127,8 +126,7 @@
       "Comment": "Merge the new run_id into top-level state",
       "Parameters": {
         "workflow_key.$": "$.workflow_key",
-        "publication_date.$": "$.publication_date",
-        "run_date.$": "$.run_date",
+        "release_date.$": "$.release_date",
         "aws_env.$": "$.aws_env",
         "bucket_name.$": "$.bucket_name",
         "skip_sqlmesh.$": "$.skip_sqlmesh",
@@ -140,11 +138,11 @@
         "run_id_ror.$": "$.run_id_ror",
         "run_id_data_citation_corpus.$": "$.run_id_data_citation_corpus",
         "run_id_sqlmesh_prev.$": "$.run_id_sqlmesh_prev",
-        "publication_date_openalex_works.$": "$.publication_date_openalex_works",
-        "publication_date_datacite.$": "$.publication_date_datacite",
-        "publication_date_crossref_metadata.$": "$.publication_date_crossref_metadata",
-        "publication_date_ror.$": "$.publication_date_ror",
-        "publication_date_data_citation_corpus.$": "$.publication_date_data_citation_corpus"
+        "release_date_openalex_works.$": "$.release_date_openalex_works",
+        "release_date_datacite.$": "$.release_date_datacite",
+        "release_date_crossref_metadata.$": "$.release_date_crossref_metadata",
+        "release_date_ror.$": "$.release_date_ror",
+        "release_date_data_citation_corpus.$": "$.release_date_data_citation_corpus"
       },
       "Next": "MarkProcessWorksStarted"
     },
@@ -155,7 +153,7 @@
       "Parameters": {
         "FunctionName": "${SetProcessWorksRunStatusFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "process_works_status": "STARTED",
           "execution_arn.$": "$$.Execution.Id"
@@ -172,7 +170,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S": "process-works"},
-          "task_key": {"S.$": "States.Format('sqlmesh#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('sqlmesh#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.sqlmesh_check",
@@ -215,7 +213,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "sqlmesh",
-          "date.$": "$.publication_date",
+          "date.$": "$.release_date",
           "workflow_prefix": "process-works"
         }
       },
@@ -236,8 +234,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-works",
-          "publication_date.$": "$.publication_date",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -275,7 +272,7 @@
         "Payload": {
           "workflow_key": "process-works",
           "task_name": "sqlmesh",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "approval_token.$": "$$.Task.Token"
         }
@@ -292,7 +289,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S": "process-works"},
-          "task_key": {"S.$": "States.Format('sync-works#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('sync-works#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.sync_works_check",
@@ -325,7 +322,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "sync-works",
-          "date.$": "$.publication_date",
+          "date.$": "$.release_date",
           "workflow_prefix": "process-works"
         }
       },
@@ -346,8 +343,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-works",
-          "publication_date.$": "$.publication_date",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -376,7 +372,7 @@
         "Payload": {
           "workflow_key": "process-works",
           "task_name": "sync-works",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "approval_token.$": "$$.Task.Token"
         }
@@ -392,7 +388,7 @@
       "Parameters": {
         "FunctionName": "${SetProcessWorksRunStatusFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "process_works_status": "COMPLETED"
         }
@@ -408,8 +404,7 @@
         "StateMachineArn": "${ProcessDmpsStateMachine}",
         "Input": {
           "workflow_key": "process-dmps",
-          "publication_date.$": "$.publication_date",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "run_all_dmps": true,

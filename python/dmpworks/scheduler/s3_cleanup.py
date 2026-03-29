@@ -31,24 +31,24 @@ from dmpworks.scheduler.dynamodb_store import (
 log = logging.getLogger(__name__)
 
 # Maps each dataset ingest task to its S3 prefix type and the ProcessWorksRunRecord
-# attribute holding the dataset's publication_date (used for checkpoint lookup).
+# attribute holding the dataset's release_date (used for checkpoint lookup).
 # Download/subset/transform each have their own TaskCheckpointRecord and their own run_id.
 DATASET_TASKS: list[tuple[str, str, str, str]] = [
-    # (workflow_key, task_name, run_name, publication_date_attr)
-    ("crossref-metadata", "download", CROSSREF_METADATA_DOWNLOAD, "publication_date_crossref_metadata"),
-    ("crossref-metadata", "subset", CROSSREF_METADATA_SUBSET, "publication_date_crossref_metadata"),
-    ("crossref-metadata", "transform", CROSSREF_METADATA_TRANSFORM, "publication_date_crossref_metadata"),
-    ("openalex-works", "download", OPENALEX_WORKS_DOWNLOAD, "publication_date_openalex_works"),
-    ("openalex-works", "subset", OPENALEX_WORKS_SUBSET, "publication_date_openalex_works"),
-    ("openalex-works", "transform", OPENALEX_WORKS_TRANSFORM, "publication_date_openalex_works"),
-    ("datacite", "download", DATACITE_DOWNLOAD, "publication_date_datacite"),
-    ("datacite", "subset", DATACITE_SUBSET, "publication_date_datacite"),
-    ("datacite", "transform", DATACITE_TRANSFORM, "publication_date_datacite"),
-    ("ror", "download", ROR_DOWNLOAD, "publication_date_ror"),
-    ("data-citation-corpus", "download", DATA_CITATION_CORPUS_DOWNLOAD, "publication_date_data_citation_corpus"),
+    # (workflow_key, task_name, run_name, release_date_attr)
+    ("crossref-metadata", "download", CROSSREF_METADATA_DOWNLOAD, "release_date_crossref_metadata"),
+    ("crossref-metadata", "subset", CROSSREF_METADATA_SUBSET, "release_date_crossref_metadata"),
+    ("crossref-metadata", "transform", CROSSREF_METADATA_TRANSFORM, "release_date_crossref_metadata"),
+    ("openalex-works", "download", OPENALEX_WORKS_DOWNLOAD, "release_date_openalex_works"),
+    ("openalex-works", "subset", OPENALEX_WORKS_SUBSET, "release_date_openalex_works"),
+    ("openalex-works", "transform", OPENALEX_WORKS_TRANSFORM, "release_date_openalex_works"),
+    ("datacite", "download", DATACITE_DOWNLOAD, "release_date_datacite"),
+    ("datacite", "subset", DATACITE_SUBSET, "release_date_datacite"),
+    ("datacite", "transform", DATACITE_TRANSFORM, "release_date_datacite"),
+    ("ror", "download", ROR_DOWNLOAD, "release_date_ror"),
+    ("data-citation-corpus", "download", DATA_CITATION_CORPUS_DOWNLOAD, "release_date_data_citation_corpus"),
 ]
 
-# SQLMesh checkpoint date matches the process-works run_date directly.
+# SQLMesh checkpoint date matches the process-works release_date directly.
 SQLMESH_TASK: tuple[str, str, str] = ("process-works", "sqlmesh", PROCESS_WORKS_SQLMESH)
 
 # All run_names that produce S3 data — used for TaskRunRecord-based cleanup.
@@ -64,8 +64,8 @@ ZOMBIE_THRESHOLD_DAYS = 14
 def _collect_protected_run_ids(*, records):
     """Build the set of run_ids that must not be deleted.
 
-    Looks up checkpoints for each dataset task using the record's publication_date_*
-    fields, and for sqlmesh using the record's run_date.
+    Looks up checkpoints for each dataset task using the record's release_date_*
+    fields, and for sqlmesh using the record's release_date.
 
     Args:
         records: ProcessWorksRunRecord instances to protect.
@@ -75,13 +75,13 @@ def _collect_protected_run_ids(*, records):
     """
     protected: set[str] = set()
     for record in records:
-        for wk, tn, _, pub_date_attr in DATASET_TASKS:
-            pub_date = getattr(record, pub_date_attr, None)
-            if pub_date is not None:
-                cp = get_task_checkpoint(workflow_key=wk, task_name=tn, date=pub_date)
+        for wk, tn, _, release_date_attr in DATASET_TASKS:
+            rel_date = getattr(record, release_date_attr, None)
+            if rel_date is not None:
+                cp = get_task_checkpoint(workflow_key=wk, task_name=tn, date=rel_date)
                 if cp:
                     protected.add(cp.run_id)
-        cp = get_task_checkpoint(workflow_key=SQLMESH_TASK[0], task_name=SQLMESH_TASK[1], date=record.run_date)
+        cp = get_task_checkpoint(workflow_key=SQLMESH_TASK[0], task_name=SQLMESH_TASK[1], date=record.release_date)
         if cp:
             protected.add(cp.run_id)
     return protected
@@ -96,11 +96,11 @@ def build_cleanup_plan(*, bucket_name: str) -> list[dict[str, str]]:
     superseded before any process-works run consumed them.
 
     For dataset ingest tasks (download/subset/transform), checkpoint dates are the
-    dataset's publication_date, not the process-works run_date. The publication dates
-    stored on ProcessWorksRunRecord are used for correct checkpoint lookup.
+    dataset's release_date. The release dates stored on ProcessWorksRunRecord are
+    used for correct checkpoint lookup.
 
     For dmp-works-search, all entries predating the latest completed process-works
-    run_date are included — those results were generated against stale works data.
+    release_date are included — those results were generated against stale works data.
 
     Args:
         bucket_name: The S3 bucket containing the run data.
@@ -114,7 +114,7 @@ def build_cleanup_plan(*, bucket_name: str) -> list[dict[str, str]]:
     all_works = scan_all_process_works_runs()
     completed_works = sorted(
         [r for r in all_works if r.status == "COMPLETED"],
-        key=lambda r: (r.run_date, r.run_id),
+        key=lambda r: (r.release_date, r.run_id),
         reverse=True,
     )
 
@@ -125,7 +125,7 @@ def build_cleanup_plan(*, bucket_name: str) -> list[dict[str, str]]:
     started_works = [r for r in all_works if r.status == "STARTED"]
 
     protected_run_ids = _collect_protected_run_ids(records=[keep_record, *started_works])
-    log.info(f"Process-works keep date: {keep_record.run_date} ({len(protected_run_ids)} run IDs to protect)")
+    log.info(f"Process-works keep date: {keep_record.release_date} ({len(protected_run_ids)} run IDs to protect)")
 
     for wk, tn, prefix_type, _ in DATASET_TASKS:
         stale_prefixes.extend(
@@ -141,11 +141,11 @@ def build_cleanup_plan(*, bucket_name: str) -> list[dict[str, str]]:
     )
 
     # --- dmp-works-search: keep all results from the current process-works cycle ---
-    keep_date = keep_record.run_date
+    keep_date = keep_record.release_date
     all_dmps = scan_all_process_dmps_runs()
-    stale_dmps = [r for r in all_dmps if r.status == "COMPLETED" and r.run_date < keep_date]
+    stale_dmps = [r for r in all_dmps if r.status == "COMPLETED" and r.release_date < keep_date]
     for record in stale_dmps:
-        cp = get_task_checkpoint(workflow_key="process-dmps", task_name="dmp-works-search", date=record.run_date)
+        cp = get_task_checkpoint(workflow_key="process-dmps", task_name="dmp-works-search", date=record.release_date)
         if cp:
             stale_prefixes.append(
                 {"prefix_type": PROCESS_DMPS_DMP_WORKS_SEARCH, "run_id": cp.run_id, "bucket_name": bucket_name}

@@ -131,11 +131,11 @@ def detect_openalex_version(
 
     Args:
         openalex_bucket_name: Name of the OpenAlex S3 bucket.
-        start_dt: Only return a version if its publication date is on or after this datetime.
+        start_dt: Only return a version if its release date is on or after this datetime.
             If None, no lower bound is applied.
 
     Returns:
-        DatasetRelease with publication_date set, or None if unavailable or no new version detected.
+        DatasetRelease with release_date set, or None if unavailable or no new version detected.
     """
     s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
     try:
@@ -165,7 +165,7 @@ def detect_openalex_version(
     if start_dt is not None and latest_date < start_dt.date():
         return None
 
-    return DatasetRelease(publication_date=latest_date)
+    return DatasetRelease(release_date=latest_date)
 
 
 def detect_datacite_version(
@@ -184,13 +184,13 @@ def detect_datacite_version(
     Args:
         datacite_bucket_name: Name of the DataCite S3 bucket.
         datacite_bucket_region: Region of the DataCite S3 bucket.
-        start_dt: Only return a version if its publication date is on or after this datetime.
+        start_dt: Only return a version if its release date is on or after this datetime.
             If None, no lower bound is applied.
         account_id: DataCite account ID. Falls back to ``DATACITE_ACCOUNT_ID`` env var if not provided.
         password: DataCite password. Falls back to ``DATACITE_PASSWORD`` env var if not provided.
 
     Returns:
-        DatasetRelease with publication_date set, or None if unavailable or no new version detected.
+        DatasetRelease with release_date set, or None if unavailable or no new version detected.
     """
     try:
         access_key_id, secret_access_key, session_token = fetch_datacite_aws_credentials(
@@ -223,17 +223,17 @@ def detect_datacite_version(
         return None
 
     try:
-        publication_date = parse_pendulum_date(dt_str)
+        release_date = parse_pendulum_date(dt_str)
     except (TypeError, ValueError):
         log.exception(f"Failed to parse DataCite datetime from STATUS.json: {dt_str}")
         return None
 
-    log.info(f"DataCite STATUS.json: status={status.get('status')} publication_date={publication_date}")
+    log.info(f"DataCite STATUS.json: status={status.get('status')} release_date={release_date}")
 
-    if start_dt is not None and publication_date < start_dt.date():
+    if start_dt is not None and release_date < start_dt.date():
         return None
 
-    return DatasetRelease(publication_date=publication_date)
+    return DatasetRelease(release_date=release_date)
 
 
 def detect_crossref_version(
@@ -243,11 +243,11 @@ def detect_crossref_version(
 
     Args:
         crossref_bucket_name: Name of the Crossref Metadata S3 bucket.
-        start_dt: Only return a version if its publication date is on or after this datetime.
+        start_dt: Only return a version if its release date is on or after this datetime.
             If None, no lower bound is applied.
 
     Returns:
-        DatasetRelease with publication_date and file_name set, or None if unavailable or no new version detected.
+        DatasetRelease with release_date and file_name set, or None if unavailable or no new version detected.
     """
     s3 = boto3.client("s3")
     try:
@@ -277,7 +277,7 @@ def detect_crossref_version(
                     pass
 
     if best_date is not None:
-        log.info(f"Crossref best file found: file_name={best_file} publication_date={best_date}")
+        log.info(f"Crossref best file found: file_name={best_file} release_date={best_date}")
 
     if best_date is None:
         return None
@@ -285,18 +285,18 @@ def detect_crossref_version(
     if start_dt is not None and best_date < start_dt.date():
         return None
 
-    return DatasetRelease(publication_date=best_date, file_name=best_file)
+    return DatasetRelease(release_date=best_date, file_name=best_file)
 
 
 def detect_ror_version(*, start_dt: pendulum.DateTime | None = None) -> DatasetRelease | None:
     """Detect the latest ROR version from Zenodo.
 
     Args:
-        start_dt: Publication datetime of the most recent known version. Used as the
+        start_dt: Release datetime of the most recent known version. Used as the
             inclusive lower bound for the Zenodo search. If None, no lower bound is applied.
 
     Returns:
-        DatasetRelease with publication_date, download_url, file_name, and file_hash set,
+        DatasetRelease with release_date, download_url, file_name, and file_hash set,
         or None if no dataset or no new version was detected.
     """
     end_date = pendulum.now("UTC")
@@ -312,7 +312,7 @@ def detect_ror_version(*, start_dt: pendulum.DateTime | None = None) -> DatasetR
 
     file = latest.files[0]
     return DatasetRelease(
-        publication_date=latest.publication_date,
+        release_date=latest.publication_date,
         download_url=file.link,
         file_name=file.file_name,
         file_hash=file.file_hash,
@@ -323,11 +323,11 @@ def detect_dcc_version(*, start_dt: pendulum.DateTime | None = None) -> DatasetR
     """Detect the latest Data Citation Corpus version from Zenodo.
 
     Args:
-        start_dt: Publication datetime of the most recent known version. Used as the
+        start_dt: Release datetime of the most recent known version. Used as the
             inclusive lower bound for the Zenodo search. If None, no lower bound is applied.
 
     Returns:
-        DatasetRelease with publication_date, download_url, file_name, and file_hash set,
+        DatasetRelease with release_date, download_url, file_name, and file_hash set,
         or None if no dataset or no new version was detected.
     """
     end_date = pendulum.now("UTC")
@@ -350,7 +350,7 @@ def detect_dcc_version(*, start_dt: pendulum.DateTime | None = None) -> DatasetR
 
     log.info(f"DCC selected json file: file_name={json_file.file_name}")
     return DatasetRelease(
-        publication_date=latest.publication_date,
+        release_date=latest.publication_date,
         download_url=json_file.link,
         file_name=json_file.file_name,
         file_hash=json_file.file_hash,

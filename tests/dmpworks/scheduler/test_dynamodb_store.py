@@ -34,7 +34,7 @@ class TestPersistDiscoveredRelease:
     def test_new_release_is_persisted(self, release_table):
         """A new release is saved with all normalized fields."""
         release = DatasetRelease(
-            publication_date=pendulum.date(2026, 3, 12),
+            release_date=pendulum.date(2026, 3, 12),
             download_url="https://zenodo.org/api/records/18985120/files/v2.4-2026-03-12-ror-data.zip/content",
             file_name="v2.4-2026-03-12-ror-data.zip",
             file_hash="md5:b04f7419253f96846365a0a36b5041aa",
@@ -44,7 +44,7 @@ class TestPersistDiscoveredRelease:
 
         record = DatasetReleaseRecord.get("ror", "2026-03-12")
         assert record.dataset == "ror"
-        assert record.publication_date == "2026-03-12"
+        assert record.release_date == "2026-03-12"
         assert record.status == "DISCOVERED"
         assert (
             record.download_url == "https://zenodo.org/api/records/18985120/files/v2.4-2026-03-12-ror-data.zip/content"
@@ -56,7 +56,7 @@ class TestPersistDiscoveredRelease:
 
     def test_duplicate_is_noop(self, release_table):
         """A duplicate (same dataset + date) returns None without overwriting."""
-        release = DatasetRelease(publication_date=pendulum.date(2026, 3, 12))
+        release = DatasetRelease(release_date=pendulum.date(2026, 3, 12))
 
         persist_discovered_release(dataset="ror", release=release)
         second = persist_discovered_release(dataset="ror", release=release)
@@ -69,17 +69,17 @@ class TestGetLatestKnownRelease:
     """Tests for get_latest_known_release."""
 
     def test_returns_most_recent_record(self, release_table):
-        """Query returns the record with the latest publication_date."""
+        """Query returns the record with the latest release_date."""
         for date_str in ("2024-01-01", "2024-06-01", "2024-03-01"):
             persist_discovered_release(
                 dataset="crossref",
-                release=DatasetRelease(publication_date=pendulum.date(*[int(p) for p in date_str.split("-")])),
+                release=DatasetRelease(release_date=pendulum.date(*[int(p) for p in date_str.split("-")])),
             )
 
         record = get_latest_known_release(dataset="crossref")
 
         assert record is not None
-        assert record.publication_date == "2024-06-01"
+        assert record.release_date == "2024-06-01"
 
     def test_returns_none_when_no_records(self, release_table):
         """Returns None when no records exist for the dataset."""
@@ -93,7 +93,7 @@ class TestDiscoverLatestRelease:
     def test_detector_returning_release_is_persisted(self, release_table):
         """When detector returns a DatasetRelease it is persisted."""
         release = DatasetRelease(
-            publication_date=pendulum.date(2026, 3, 12),
+            release_date=pendulum.date(2026, 3, 12),
             download_url="https://zenodo.org/api/records/18985120/files/v2.4-2026-03-12-ror-data.zip/content",
             file_name="v2.4-2026-03-12-ror-data.zip",
             file_hash="md5:b04f7419253f96846365a0a36b5041aa",
@@ -110,7 +110,7 @@ class TestDiscoverLatestRelease:
 
         record = DatasetReleaseRecord.get("ror", "2026-03-12")
         assert record.dataset == "ror"
-        assert record.publication_date == "2026-03-12"
+        assert record.release_date == "2026-03-12"
         assert (
             record.download_url == "https://zenodo.org/api/records/18985120/files/v2.4-2026-03-12-ror-data.zip/content"
         )
@@ -145,7 +145,7 @@ class TestTaskRunRecord:
             run_name="ror-download",
             run_id="2025-01-01T060000-a1b2c3d4",
             execution_arn="arn:aws:states:us-east-1:123456789012:execution:test:exec-1",
-            metadata={"dataset": "ror", "publication_date": "2025-01-01"},
+            metadata={"dataset": "ror", "release_date": "2025-01-01"},
         )
 
         assert record.run_name == "ror-download"
@@ -153,7 +153,7 @@ class TestTaskRunRecord:
         assert record.status == "STARTED"
         assert record.step_function_execution_arn == "arn:aws:states:us-east-1:123456789012:execution:test:exec-1"
         assert record.metadata["dataset"] == "ror"
-        assert record.metadata["publication_date"] == "2025-01-01"
+        assert record.metadata["release_date"] == "2025-01-01"
 
         fetched = TaskRunRecord.get("ror-download", "2025-01-01T060000-a1b2c3d4")
         assert fetched.status == "STARTED"
@@ -275,7 +275,7 @@ class TestUpdateReleaseStatus:
 
         update_release_status(
             dataset="ror",
-            publication_date="2025-01-01",
+            release_date="2025-01-01",
             status="STARTED",
             step_function_execution_arn="arn:aws:states:us-east-1:123456789012:execution:test:exec-1",
         )
@@ -288,7 +288,7 @@ class TestUpdateReleaseStatus:
         """COMPLETED sets status=COMPLETED."""
         make_release_record("ror", "2025-01-01")
 
-        update_release_status(dataset="ror", publication_date="2025-01-01", status="COMPLETED")
+        update_release_status(dataset="ror", release_date="2025-01-01", status="COMPLETED")
 
         record = DatasetReleaseRecord.get("ror", "2025-01-01")
         assert record.status == "COMPLETED"
@@ -297,7 +297,7 @@ class TestUpdateReleaseStatus:
         """FAILED sets status=FAILED."""
         make_release_record("ror", "2025-01-01")
 
-        update_release_status(dataset="ror", publication_date="2025-01-01", status="FAILED")
+        update_release_status(dataset="ror", release_date="2025-01-01", status="FAILED")
 
         record = DatasetReleaseRecord.get("ror", "2025-01-01")
         assert record.status == "FAILED"

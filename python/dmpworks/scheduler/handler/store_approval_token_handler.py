@@ -28,10 +28,9 @@ INPUT_SCHEMA = {
         "workflow_key": {"type": "string"},
         "task_name": {"type": "string"},
         "approval_token": {"type": "string"},
-        "run_date": {"type": "string"},
+        "release_date": {"type": "string"},
         "run_id": {"type": "string"},
         "dataset": {"type": "string"},
-        "publication_date": {"type": "string"},
     },
 }
 
@@ -41,9 +40,9 @@ def store_approval_token_handler(event: dict, context: LambdaContext) -> dict:  
     """Store an approval token in the appropriate run record so the CLI can resume the parent.
 
     Routes to the correct DynamoDB model based on workflow_key:
-    - "process-dmps" -> ProcessDMPsRunRecord (keyed by run_date, run_id)
-    - "process-works" -> ProcessWorksRunRecord (keyed by run_date, run_id)
-    - dataset workflows -> DatasetReleaseRecord (keyed by dataset, publication_date)
+    - "process-dmps" -> ProcessDMPsRunRecord (keyed by release_date, run_id)
+    - "process-works" -> ProcessWorksRunRecord (keyed by release_date, run_id)
+    - dataset workflows -> DatasetReleaseRecord (keyed by dataset, release_date)
 
     Args:
         event: Dict with workflow_key, task_name, approval_token, and primary key fields.
@@ -59,7 +58,7 @@ def store_approval_token_handler(event: dict, context: LambdaContext) -> dict:  
 
     if workflow_key == "process-dmps":
         set_process_dmps_run_status(
-            run_date=event["run_date"],
+            release_date=event["release_date"],
             run_id=event["run_id"],
             status="WAITING_FOR_APPROVAL",
             approval_token=approval_token,
@@ -67,7 +66,7 @@ def store_approval_token_handler(event: dict, context: LambdaContext) -> dict:  
         )
     elif workflow_key == "process-works":
         set_process_works_run_status(
-            run_date=event["run_date"],
+            release_date=event["release_date"],
             run_id=event["run_id"],
             status="WAITING_FOR_APPROVAL",
             approval_token=approval_token,
@@ -76,7 +75,7 @@ def store_approval_token_handler(event: dict, context: LambdaContext) -> dict:  
     else:
         update_release_status(
             dataset=event["workflow_key"],
-            publication_date=event["publication_date"],
+            release_date=event["release_date"],
             status="WAITING_FOR_APPROVAL",
             approval_token=approval_token,
             approval_task_name=task_name,

@@ -87,14 +87,13 @@ def _start_execution(*, sm_arn: str, execution_name: str, sfn_input: dict) -> st
     return response["executionArn"]
 
 
-def _confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict, hide_keys: set[str] | None = None) -> None:
+def _confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict) -> None:
     """Display execution summary, confirm with user, and start the SFN execution.
 
     Args:
         sm_arn: State machine ARN.
         execution_name: Name for the SFN execution.
         sfn_input: Input dict for the SFN execution.
-        hide_keys: Optional set of keys to hide from the summary display.
     """
     console.print(f"\n[bold]Start New Execution:[/bold] {execution_name}")
     console.print("\n[bold]Execution Summary:[/bold]")
@@ -102,8 +101,6 @@ def _confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict, hid
     table.add_column("Field")
     table.add_column("Value")
     for k, v in sorted(sfn_input.items(), key=lambda x: x[0].lower()):
-        if hide_keys and k in hide_keys:
-            continue
         table.add_row(k, str(v))
     console.print(table)
 
@@ -127,24 +124,24 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
     if dataset is None:
         return
 
-    # 2. List publication dates for this dataset.
+    # 2. List release dates for this dataset.
     releases = list(DatasetReleaseRecord.query(dataset, scan_index_forward=False, limit=10))
     if not releases:
         console.print(f"[red]No releases found for {dataset}.[/red]")
         return
 
-    date_choices = [f"{r.publication_date}  ({r.status})" for r in releases]
-    selected = questionary.select("Select publication date:", choices=date_choices).ask()
+    date_choices = [f"{r.release_date}  ({r.status})" for r in releases]
+    selected = questionary.select("Select release date:", choices=date_choices).ask()
     if selected is None:
         return
-    publication_date = selected.split()[0]
-    release = next(r for r in releases if r.publication_date == publication_date)
+    release_date = selected.split()[0]
+    release = next(r for r in releases if r.release_date == release_date)
 
     # 3. Show existing checkpoints.
     task_names = ["download", "subset", "transform"]
     checkpoints = {}
     for tn in task_names:
-        cp = get_task_checkpoint(workflow_key=dataset, task_name=tn, date=publication_date)
+        cp = get_task_checkpoint(workflow_key=dataset, task_name=tn, date=release_date)
         if cp:
             checkpoints[tn] = cp
 
@@ -171,7 +168,7 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
 
     # 5. Validations.
     if not skip_transform and skip_download:
-        cp = get_task_checkpoint(workflow_key=dataset, task_name="download", date=publication_date)
+        cp = get_task_checkpoint(workflow_key=dataset, task_name="download", date=release_date)
         if not cp:
             console.print(
                 "[red]Error: Cannot run transform without a download checkpoint (transform needs predecessor run_id).[/red]"
@@ -180,15 +177,15 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
 
     if not skip_download:
         latest = list(DatasetReleaseRecord.query(dataset, scan_index_forward=False, limit=1))
-        if latest and latest[0].publication_date != publication_date and dataset in ("openalex-works", "datacite"):
+        if latest and latest[0].release_date != release_date and dataset in ("openalex-works", "datacite"):
             console.print(
-                f"[yellow]Warning: Re-downloading {dataset} for {publication_date} — source URLs may be stale (latest is {latest[0].publication_date}).[/yellow]"
+                f"[yellow]Warning: Re-downloading {dataset} for {release_date} — source URLs may be stale (latest is {latest[0].release_date}).[/yellow]"
             )
 
     # 6. Delete checkpoints for steps being re-run.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint(workflow_key=dataset, task_name=tn, date=publication_date)
+            _delete_checkpoint(workflow_key=dataset, task_name=tn, date=release_date)
 
     # 7. Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="dataset-ingest")
@@ -208,7 +205,7 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
 
     sfn_input = {
         "workflow_key": dataset,
-        "publication_date": publication_date,
+        "release_date": release_date,
         "run_id": run_id,
         "aws_env": env,
         "bucket_name": bucket_name,
@@ -222,7 +219,7 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
     }
 
     # 9. Confirm and start.
-    execution_name = f"{dataset}-{publication_date}-{run_id}"
+    execution_name = f"{dataset}-{release_date}-{run_id}"
     _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
 
 
@@ -234,15 +231,15 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         bucket_name: S3 bucket name for the execution input.
     """
     today = datetime.now(UTC).strftime("%Y-%m-%d")
-    run_date = questionary.text("Run date (YYYY-MM-DD):", default=today).ask()
-    if run_date is None:
+    release_date = questionary.text("Release date (YYYY-MM-DD):", default=today).ask()
+    if release_date is None:
         return
 
     # Show checkpoint status.
     task_names = ["sqlmesh", "sync-works"]
     checkpoints = {}
     for tn in task_names:
-        cp = get_task_checkpoint(workflow_key="process-works", task_name=tn, date=run_date)
+        cp = get_task_checkpoint(workflow_key="process-works", task_name=tn, date=release_date)
         if cp:
             checkpoints[tn] = cp
 
@@ -302,7 +299,7 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
     # Delete checkpoints for re-run steps.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint(workflow_key="process-works", task_name=tn, date=run_date)
+            _delete_checkpoint(workflow_key="process-works", task_name=tn, date=release_date)
 
     # Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="process-works")
@@ -314,8 +311,7 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
     # Build SFN input.
     sfn_input = {
         "workflow_key": "process-works",
-        "publication_date": run_date,
-        "run_date": run_date,
+        "release_date": release_date,
         "aws_env": env,
         "bucket_name": bucket_name,
         "skip_sqlmesh": skip_sqlmesh,
@@ -323,11 +319,9 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
     }
 
     run_id = generate_run_id()
-    execution_name = f"process-works-{run_date}-{run_id}"
+    execution_name = f"process-works-{release_date}-{run_id}"
 
-    _confirm_and_start(
-        sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, hide_keys={"publication_date"}
-    )
+    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
 
 
 def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
@@ -338,15 +332,15 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
         bucket_name: S3 bucket name for the execution input.
     """
     today = datetime.now(UTC).strftime("%Y-%m-%d")
-    run_date = questionary.text("Run date (YYYY-MM-DD):", default=today).ask()
-    if run_date is None:
+    release_date = questionary.text("Release date (YYYY-MM-DD):", default=today).ask()
+    if release_date is None:
         return
 
     # Show checkpoint status.
     task_names = ["sync-dmps", "enrich-dmps", "dmp-works-search", "merge-related-works"]
     checkpoints = {}
     for tn in task_names:
-        cp = get_task_checkpoint(workflow_key="process-dmps", task_name=tn, date=run_date)
+        cp = get_task_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
         if cp:
             checkpoints[tn] = cp
 
@@ -402,7 +396,7 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
     # Delete checkpoints for re-run steps.
     for tn in rerun_choices:
         if tn in checkpoints:
-            _delete_checkpoint(workflow_key="process-dmps", task_name=tn, date=run_date)
+            _delete_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
 
     # Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="process-dmps")
@@ -414,8 +408,7 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
     # Build SFN input.
     sfn_input = {
         "workflow_key": "process-dmps",
-        "publication_date": run_date,
-        "run_date": run_date,
+        "release_date": release_date,
         "aws_env": env,
         "bucket_name": bucket_name,
         "run_all_dmps": run_all_dmps,
@@ -426,11 +419,9 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
     }
 
     run_id = generate_run_id()
-    execution_name = f"process-dmps-{run_date}-{run_id}"
+    execution_name = f"process-dmps-{release_date}-{run_id}"
 
-    _confirm_and_start(
-        sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, hide_keys={"publication_date"}
-    )
+    _confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
 
 
 def run_approve_retry_wizard() -> None:
@@ -450,12 +441,10 @@ def run_approve_retry_wizard() -> None:
 
     choices = []
     for run in awaiting:
-        if "publication_date" in run:
-            label = (
-                f"{run['workflow_key']}  task={run['approval_task_name']}  publication_date={run['publication_date']}"
-            )
+        if "dataset" in run:
+            label = f"{run['workflow_key']}  task={run['approval_task_name']}  release_date={run['release_date']}"
         else:
-            label = f"{run['workflow_key']}  task={run['approval_task_name']}  run_date={run['run_date']}  run_id={run['run_id']}"
+            label = f"{run['workflow_key']}  task={run['approval_task_name']}  release_date={run['release_date']}  run_id={run['run_id']}"
         choices.append(questionary.Choice(label, value=run))
 
     selected = questionary.select("Select run to approve for retry:", choices=choices).ask()
@@ -473,10 +462,10 @@ def run_approve_retry_wizard() -> None:
 
     # Clear the approval token from the record.
     clear_kwargs = {"workflow_key": selected["workflow_key"]}
-    if "publication_date" in selected:
+    if "dataset" in selected:
         clear_kwargs["dataset"] = selected["dataset"]
-        clear_kwargs["publication_date"] = selected["publication_date"]
+        clear_kwargs["release_date"] = selected["release_date"]
     else:
-        clear_kwargs["run_date"] = selected["run_date"]
+        clear_kwargs["release_date"] = selected["release_date"]
         clear_kwargs["run_id"] = selected["run_id"]
     clear_approval_token(**clear_kwargs)

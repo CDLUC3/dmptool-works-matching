@@ -16,12 +16,12 @@ Resources:
       KeySchema:
         - AttributeName: dataset
           KeyType: HASH
-        - AttributeName: publication_date
+        - AttributeName: release_date
           KeyType: RANGE
       AttributeDefinitions:
         - AttributeName: dataset
           AttributeType: S
-        - AttributeName: publication_date
+        - AttributeName: release_date
           AttributeType: S
 
   TaskRunsTable:
@@ -74,12 +74,12 @@ Resources:
       TableName: !Sub "dmpworks-${Env}-process-works-runs"
       BillingMode: PAY_PER_REQUEST
       KeySchema:
-        - AttributeName: run_date
+        - AttributeName: release_date
           KeyType: HASH
         - AttributeName: run_id
           KeyType: RANGE
       AttributeDefinitions:
-        - AttributeName: run_date
+        - AttributeName: release_date
           AttributeType: S
         - AttributeName: run_id
           AttributeType: S
@@ -91,12 +91,12 @@ Resources:
       TableName: !Sub "dmpworks-${Env}-process-dmps-runs"
       BillingMode: PAY_PER_REQUEST
       KeySchema:
-        - AttributeName: run_date
+        - AttributeName: release_date
           KeyType: HASH
         - AttributeName: run_id
           KeyType: RANGE
       AttributeDefinitions:
-        - AttributeName: run_date
+        - AttributeName: release_date
           AttributeType: S
         - AttributeName: run_id
           AttributeType: S

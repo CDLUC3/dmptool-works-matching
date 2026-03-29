@@ -47,10 +47,10 @@ OUTPUT_SCHEMA = {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["dataset", "publication_date"],
+                "required": ["dataset", "release_date"],
                 "properties": {
                     "dataset": {"type": "string"},
-                    "publication_date": {"type": "string"},
+                    "release_date": {"type": "string"},
                 },
             },
             "description": "List of datasets for which a new SFN execution was started.",
@@ -59,10 +59,10 @@ OUTPUT_SCHEMA = {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["dataset", "publication_date"],
+                "required": ["dataset", "release_date"],
                 "properties": {
                     "dataset": {"type": "string"},
-                    "publication_date": {"type": "string"},
+                    "release_date": {"type": "string"},
                     "download_url": {"type": "string"},
                 },
             },
@@ -131,10 +131,10 @@ def version_checker_handler(event: dict, context: LambdaContext) -> dict:  # noq
 
         detector, extra_kwargs = dataset_detectors[dataset]
         latest = get_latest_known_release(dataset=dataset)
-        start_dt = pendulum.parse(latest.publication_date) if latest else None
+        start_dt = pendulum.parse(latest.release_date) if latest else None
 
         if latest:
-            log.info(f"Latest known release: dataset={dataset} publication_date={latest.publication_date}")
+            log.info(f"Latest known release: dataset={dataset} release_date={latest.release_date}")
         else:
             log.info(f"No prior release found for dataset={dataset}")
 
@@ -151,28 +151,28 @@ def version_checker_handler(event: dict, context: LambdaContext) -> dict:  # noq
         discovered.append(
             {
                 "dataset": dataset,
-                "publication_date": record.publication_date,
+                "release_date": record.release_date,
                 "download_url": record.download_url,
             }
         )
 
         if dry_run:
             log.info(
-                f"Dry run — discovered but not starting SFN: dataset={dataset} publication_date={record.publication_date}"
+                f"Dry run — discovered but not starting SFN: dataset={dataset} release_date={record.release_date}"
             )
             continue
 
         run_id = generate_run_id()
-        execution_name = f"{dataset}-{record.publication_date}-{run_id}"
+        execution_name = f"{dataset}-{record.release_date}-{run_id}"
 
-        log.info(f"Starting SFN execution: dataset={dataset} publication_date={record.publication_date}")
+        log.info(f"Starting SFN execution: dataset={dataset} release_date={record.release_date}")
         sfn.start_execution(
             stateMachineArn=settings.state_machine_arn,
             name=execution_name,
             input=json.dumps(
                 {
                     "workflow_key": dataset,
-                    "publication_date": record.publication_date,
+                    "release_date": record.release_date,
                     "run_id": run_id,
                     "aws_env": settings.aws_env,
                     "bucket_name": settings.bucket_name,
@@ -183,11 +183,11 @@ def version_checker_handler(event: dict, context: LambdaContext) -> dict:  # noq
                 }
             ),
         )
-        log.info(f"Started SFN execution: dataset={dataset} publication_date={record.publication_date}")
+        log.info(f"Started SFN execution: dataset={dataset} release_date={record.release_date}")
         triggered.append(
             {
                 "dataset": dataset,
-                "publication_date": record.publication_date,
+                "release_date": record.release_date,
             }
         )
 

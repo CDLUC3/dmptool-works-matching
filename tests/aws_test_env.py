@@ -78,17 +78,17 @@ def tables(dynamodb_local):
     TaskCheckpointRecord.delete_table()
 
 
-def make_release_record(dataset: str, publication_date: str) -> DatasetReleaseRecord:
+def make_release_record(dataset: str, release_date: str) -> DatasetReleaseRecord:
     """Insert a minimal DatasetReleaseRecord with DISCOVERED status.
 
     Args:
         dataset: The dataset identifier.
-        publication_date: ISO date string "YYYY-MM-DD".
+        release_date: ISO date string "YYYY-MM-DD".
 
     Returns:
         The persisted DatasetReleaseRecord.
     """
     return persist_discovered_release(
         dataset=dataset,
-        release=DatasetRelease(publication_date=pendulum.parse(publication_date).date()),
+        release=DatasetRelease(release_date=pendulum.parse(release_date).date()),
     )

@@ -42,11 +42,11 @@ def handle_execution_failure_handler(event: dict, context: LambdaContext) -> Non
     detail = event["detail"]
     execution_input = json.loads(detail["input"])
     workflow_key = execution_input["workflow_key"]
-    publication_date = execution_input["publication_date"]
+    release_date = execution_input["release_date"]
     error_message = detail.get("cause")
 
     log.info(
-        f"Execution failed: workflow_key={workflow_key} publication_date={publication_date} executionArn={detail['executionArn']}"
+        f"Execution failed: workflow_key={workflow_key} release_date={release_date} executionArn={detail['executionArn']}"
     )
 
     # Child SMs with a TaskToken are managed by the parent's Catch → approval flow.
@@ -56,9 +56,9 @@ def handle_execution_failure_handler(event: dict, context: LambdaContext) -> Non
     if workflow_key == "process-works":
         task_run_id = execution_input.get("run_id")
         if task_run_id and not is_managed_child:
-            log.info(f"Marking process works run FAILED: run_date={publication_date} run_id={task_run_id}")
+            log.info(f"Marking process works run FAILED: release_date={release_date} run_id={task_run_id}")
             set_process_works_run_status(
-                run_date=publication_date,
+                release_date=release_date,
                 run_id=task_run_id,
                 status="FAILED",
                 error=error_message,
@@ -68,9 +68,9 @@ def handle_execution_failure_handler(event: dict, context: LambdaContext) -> Non
     elif workflow_key == "process-dmps":
         task_run_id = execution_input.get("run_id")
         if task_run_id and not is_managed_child:
-            log.info(f"Marking process DMPs run FAILED: run_date={publication_date} run_id={task_run_id}")
+            log.info(f"Marking process DMPs run FAILED: release_date={release_date} run_id={task_run_id}")
             set_process_dmps_run_status(
-                run_date=publication_date,
+                release_date=release_date,
                 run_id=task_run_id,
                 status="FAILED",
                 error=error_message,
@@ -80,7 +80,7 @@ def handle_execution_failure_handler(event: dict, context: LambdaContext) -> Non
     elif is_managed_child:
         log.info(f"Skipping parent record update for managed child failure (executionArn={detail['executionArn']})")
     else:
-        update_release_status(dataset=workflow_key, publication_date=publication_date, status="FAILED")
+        update_release_status(dataset=workflow_key, release_date=release_date, status="FAILED")
 
     if "TaskToken" in execution_input:
         task_run = next(

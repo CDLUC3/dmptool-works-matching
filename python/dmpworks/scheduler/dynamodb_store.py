@@ -27,7 +27,7 @@ class DatasetReleaseRecord(Model):
 
     Attributes:
         dataset: The dataset identifier (hash key).
-        publication_date: ISO date string "YYYY-MM-DD" (range key, sortable).
+        release_date: ISO date string "YYYY-MM-DD" (range key, sortable).
         status: Lifecycle status — DISCOVERED | STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL.
         file_name: File to download, if applicable.
         download_url: Direct download URL, if applicable.
@@ -48,7 +48,7 @@ class DatasetReleaseRecord(Model):
         region = os.environ.get("AWS_REGION", "")
 
     dataset = UnicodeAttribute(hash_key=True)
-    publication_date = UnicodeAttribute(range_key=True)
+    release_date = UnicodeAttribute(range_key=True)
     status = UnicodeAttribute(default="DISCOVERED")
     file_name = UnicodeAttribute(null=True)
     download_url = UnicodeAttribute(null=True)
@@ -87,7 +87,7 @@ class TaskRunRecord(Model):
         status: STARTED | COMPLETED | FAILED.
         step_function_execution_arn: ARN of the child SM execution that created this task run.
             Indexed via StepFunctionExecutionArnIndex for EventBridge-based failure lookups.
-        metadata: Type-specific context (dataset, publication_date, etc.).
+        metadata: Type-specific context (dataset, release_date, etc.).
         error: Error message if FAILED.
         created_at: ISO datetime string of record creation.
         updated_at: ISO datetime string of last update.
@@ -158,7 +158,7 @@ def get_latest_known_release(*, dataset: str) -> DatasetReleaseRecord | None:
 
 
 def persist_discovered_release(*, dataset: str, release: DatasetRelease) -> DatasetReleaseRecord | None:
-    """Persist a newly discovered release, deduplicating by (dataset, publication_date).
+    """Persist a newly discovered release, deduplicating by (dataset, release_date).
 
     Args:
         dataset: The dataset identifier.
@@ -166,22 +166,22 @@ def persist_discovered_release(*, dataset: str, release: DatasetRelease) -> Data
 
     Returns:
         The persisted DatasetReleaseRecord, or None if a record for this
-        (dataset, publication_date) already exists.
+        (dataset, release_date) already exists.
     """
-    publication_date_str = release.publication_date.to_date_string()
+    release_date_str = release.release_date.to_date_string()
 
     try:
-        DatasetReleaseRecord.get(dataset, publication_date_str)
+        DatasetReleaseRecord.get(dataset, release_date_str)
     except DoesNotExist:
         pass
     else:
-        log.debug(f"Release already exists: dataset={dataset} publication_date={publication_date_str}")
+        log.debug(f"Release already exists: dataset={dataset} release_date={release_date_str}")
         return None
 
     now = datetime.now(UTC).isoformat()
     record = DatasetReleaseRecord(
         dataset=dataset,
-        publication_date=publication_date_str,
+        release_date=release_date_str,
         status="DISCOVERED",
         file_name=release.file_name,
         download_url=release.download_url,
@@ -191,7 +191,7 @@ def persist_discovered_release(*, dataset: str, release: DatasetRelease) -> Data
         updated_at=now,
     )
     record.save()
-    log.info(f"Persisted new release: dataset={dataset} publication_date={publication_date_str}")
+    log.info(f"Persisted new release: dataset={dataset} release_date={release_date_str}")
     return record
 
 
@@ -217,7 +217,7 @@ def discover_latest_release(
         log.info(f"Detector returned None for dataset={dataset}")
         return None
 
-    log.info(f"Detector found release: dataset={dataset} publication_date={release.publication_date}")
+    log.info(f"Detector found release: dataset={dataset} release_date={release.release_date}")
     return persist_discovered_release(dataset=dataset, release=release)
 
 
@@ -228,7 +228,7 @@ def create_task_run(*, run_name: str, run_id: str, execution_arn: str, metadata:
         run_name: Job name matching the factory run_name, e.g. "openalex-works-download".
         run_id: Unique execution ID for this stage run.
         execution_arn: ARN of the enclosing Step Functions execution.
-        metadata: Type-specific context dict, e.g. {"dataset": ..., "publication_date": ...}.
+        metadata: Type-specific context dict, e.g. {"dataset": ..., "release_date": ...}.
 
     Returns:
         The persisted TaskRunRecord.
@@ -326,7 +326,7 @@ def delete_task_checkpoint(*, workflow_key: str, task_name: str, date: str) -> T
     Args:
         workflow_key: Workflow type identifier, e.g. "openalex-works".
         task_name: Task within the workflow, e.g. "download".
-        date: Publication date (YYYY-MM-DD).
+        date: Release date (YYYY-MM-DD).
 
     Returns:
         The deleted TaskCheckpointRecord, or None if it did not exist.
@@ -370,12 +370,12 @@ def scan_task_checkpoints(
 class ProcessWorksRunRecord(Model):
     """One record per process-works pipeline run.
 
-    Keyed by (run_date, run_id). Created when all prerequisite dataset checkpoints
+    Keyed by (release_date, run_id). Created when all prerequisite dataset checkpoints
     are confirmed ready; updated as the pipeline progresses through SQLMesh and
     OpenSearch sync stages.
 
     Attributes:
-        run_date: ISO date string "YYYY-MM-DD" identifying the monthly run (hash key).
+        release_date: ISO date string "YYYY-MM-DD" identifying the monthly run (hash key).
         run_id: Unique execution ID (range key), e.g. "20250101T060000-abc123".
         status: Lifecycle status — STARTED | COMPLETED | FAILED.
         step_function_execution_arn: ARN of the enclosing Step Functions execution.
@@ -386,11 +386,11 @@ class ProcessWorksRunRecord(Model):
         run_id_ror: Run ID of the ROR download checkpoint.
         run_id_data_citation_corpus: Run ID of the Data Citation Corpus download checkpoint.
         run_id_sqlmesh: Run ID of the completed SQLMesh execution (set after sqlmesh completes).
-        publication_date_openalex_works: Publication date of the OpenAlex Works release used.
-        publication_date_datacite: Publication date of the DataCite release used.
-        publication_date_crossref_metadata: Publication date of the Crossref Metadata release used.
-        publication_date_ror: Publication date of the ROR release used.
-        publication_date_data_citation_corpus: Publication date of the Data Citation Corpus release used.
+        release_date_openalex_works: Release date of the OpenAlex Works release used.
+        release_date_datacite: Release date of the DataCite release used.
+        release_date_crossref_metadata: Release date of the Crossref Metadata release used.
+        release_date_ror: Release date of the ROR release used.
+        release_date_data_citation_corpus: Release date of the Data Citation Corpus release used.
         approval_token: Task token for the parent SM's approval wait state, if awaiting retry approval.
         approval_task_name: Name of the child task awaiting retry approval.
         error: Error message if FAILED.
@@ -405,7 +405,7 @@ class ProcessWorksRunRecord(Model):
         billing_mode = "PAY_PER_REQUEST"
         region = os.environ.get("AWS_REGION", "")
 
-    run_date = UnicodeAttribute(hash_key=True)
+    release_date = UnicodeAttribute(hash_key=True)
     run_id = UnicodeAttribute(range_key=True)
     status = UnicodeAttribute(default="STARTED")
     step_function_execution_arn = UnicodeAttribute(null=True)
@@ -416,11 +416,11 @@ class ProcessWorksRunRecord(Model):
     run_id_ror = UnicodeAttribute(null=True)
     run_id_data_citation_corpus = UnicodeAttribute(null=True)
     run_id_sqlmesh = UnicodeAttribute(null=True)
-    publication_date_openalex_works = UnicodeAttribute(null=True)
-    publication_date_datacite = UnicodeAttribute(null=True)
-    publication_date_crossref_metadata = UnicodeAttribute(null=True)
-    publication_date_ror = UnicodeAttribute(null=True)
-    publication_date_data_citation_corpus = UnicodeAttribute(null=True)
+    release_date_openalex_works = UnicodeAttribute(null=True)
+    release_date_datacite = UnicodeAttribute(null=True)
+    release_date_crossref_metadata = UnicodeAttribute(null=True)
+    release_date_ror = UnicodeAttribute(null=True)
+    release_date_data_citation_corpus = UnicodeAttribute(null=True)
     approval_token = UnicodeAttribute(null=True)
     approval_task_name = UnicodeAttribute(null=True)
     error = UnicodeAttribute(null=True)
@@ -431,7 +431,7 @@ class ProcessWorksRunRecord(Model):
 def update_release_status(
     *,
     dataset: str,
-    publication_date: str,
+    release_date: str,
     status: Literal["DISCOVERED", "STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"],
     **kwargs,
 ) -> None:
@@ -439,12 +439,12 @@ def update_release_status(
 
     Args:
         dataset: The dataset identifier.
-        publication_date: ISO date string "YYYY-MM-DD".
+        release_date: ISO date string "YYYY-MM-DD".
         status: Target lifecycle status — DISCOVERED | STARTED | COMPLETED | FAILED.
         **kwargs: Additional DatasetReleaseRecord attribute names and values to set,
             e.g. step_function_execution_arn="arn:...".
     """
-    record = DatasetReleaseRecord.get(dataset, publication_date)
+    record = DatasetReleaseRecord.get(dataset, release_date)
     actions = [
         DatasetReleaseRecord.status.set(status),
         DatasetReleaseRecord.updated_at.set(datetime.now(UTC).isoformat()),
@@ -453,12 +453,12 @@ def update_release_status(
         actions.append(getattr(DatasetReleaseRecord, key).set(value))
 
     record.update(actions=actions)
-    log.info(f"Marked release {status}: dataset={dataset} publication_date={publication_date}")
+    log.info(f"Marked release {status}: dataset={dataset} release_date={release_date}")
 
 
 def create_process_works_run(
     *,
-    run_date: str,
+    release_date: str,
     run_id: str,
     execution_arn: str,
     run_id_sqlmesh_prev: str,
@@ -467,16 +467,16 @@ def create_process_works_run(
     run_id_crossref_metadata: str,
     run_id_ror: str,
     run_id_data_citation_corpus: str,
-    publication_date_openalex_works: str,
-    publication_date_datacite: str,
-    publication_date_crossref_metadata: str,
-    publication_date_ror: str,
-    publication_date_data_citation_corpus: str,
+    release_date_openalex_works: str,
+    release_date_datacite: str,
+    release_date_crossref_metadata: str,
+    release_date_ror: str,
+    release_date_data_citation_corpus: str,
 ) -> ProcessWorksRunRecord:
     """Create a new ProcessWorksRunRecord with STARTED status.
 
     Args:
-        run_date: ISO date string "YYYY-MM-DD" identifying the monthly run.
+        release_date: ISO date string "YYYY-MM-DD" identifying the monthly run.
         run_id: Unique execution ID for this run.
         execution_arn: ARN of the enclosing Step Functions execution.
         run_id_sqlmesh_prev: Run ID of the prior SQLMesh execution.
@@ -485,18 +485,18 @@ def create_process_works_run(
         run_id_crossref_metadata: Run ID of the Crossref Metadata transform checkpoint.
         run_id_ror: Run ID of the ROR download checkpoint.
         run_id_data_citation_corpus: Run ID of the Data Citation Corpus download checkpoint.
-        publication_date_openalex_works: Publication date of the OpenAlex Works release used.
-        publication_date_datacite: Publication date of the DataCite release used.
-        publication_date_crossref_metadata: Publication date of the Crossref Metadata release used.
-        publication_date_ror: Publication date of the ROR release used.
-        publication_date_data_citation_corpus: Publication date of the Data Citation Corpus release used.
+        release_date_openalex_works: Release date of the OpenAlex Works release used.
+        release_date_datacite: Release date of the DataCite release used.
+        release_date_crossref_metadata: Release date of the Crossref Metadata release used.
+        release_date_ror: Release date of the ROR release used.
+        release_date_data_citation_corpus: Release date of the Data Citation Corpus release used.
 
     Returns:
         The persisted ProcessWorksRunRecord.
     """
     now = datetime.now(UTC).isoformat()
     record = ProcessWorksRunRecord(
-        run_date=run_date,
+        release_date=release_date,
         run_id=run_id,
         status="STARTED",
         step_function_execution_arn=execution_arn,
@@ -506,31 +506,31 @@ def create_process_works_run(
         run_id_crossref_metadata=run_id_crossref_metadata,
         run_id_ror=run_id_ror,
         run_id_data_citation_corpus=run_id_data_citation_corpus,
-        publication_date_openalex_works=publication_date_openalex_works,
-        publication_date_datacite=publication_date_datacite,
-        publication_date_crossref_metadata=publication_date_crossref_metadata,
-        publication_date_ror=publication_date_ror,
-        publication_date_data_citation_corpus=publication_date_data_citation_corpus,
+        release_date_openalex_works=release_date_openalex_works,
+        release_date_datacite=release_date_datacite,
+        release_date_crossref_metadata=release_date_crossref_metadata,
+        release_date_ror=release_date_ror,
+        release_date_data_citation_corpus=release_date_data_citation_corpus,
         created_at=now,
         updated_at=now,
     )
     record.save()
-    log.info(f"Created process works run: run_date={run_date} run_id={run_id}")
+    log.info(f"Created process works run: release_date={release_date} run_id={run_id}")
     return record
 
 
-def get_latest_process_works_run(*, run_date: str) -> ProcessWorksRunRecord | None:
-    """Return the most recent ProcessWorksRunRecord for a given run_date.
+def get_latest_process_works_run(*, release_date: str) -> ProcessWorksRunRecord | None:
+    """Return the most recent ProcessWorksRunRecord for a given release_date.
 
     Args:
-        run_date: ISO date string "YYYY-MM-DD" identifying the monthly run.
+        release_date: ISO date string "YYYY-MM-DD" identifying the monthly run.
 
     Returns:
         The most recent ProcessWorksRunRecord, or None if no records exist.
     """
     return next(
         ProcessWorksRunRecord.query(
-            run_date,
+            release_date,
             scan_index_forward=False,
             limit=1,
         ),
@@ -540,7 +540,7 @@ def get_latest_process_works_run(*, run_date: str) -> ProcessWorksRunRecord | No
 
 def set_process_works_run_status(
     *,
-    run_date: str,
+    release_date: str,
     run_id: str,
     status: Literal["STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"],
     **kwargs,
@@ -548,13 +548,13 @@ def set_process_works_run_status(
     """Update the status and timestamp of a ProcessWorksRunRecord.
 
     Args:
-        run_date: Hash key identifying the monthly run date.
+        release_date: Hash key identifying the monthly run date.
         run_id: Range key identifying the specific run.
         status: Target lifecycle status — STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL.
         **kwargs: Additional ProcessWorksRunRecord attribute names and values to set,
             e.g. step_function_execution_arn="arn:...", run_id_sqlmesh="20250101T...", or error="...".
     """
-    record = ProcessWorksRunRecord.get(run_date, run_id)
+    record = ProcessWorksRunRecord.get(release_date, run_id)
     actions = [
         ProcessWorksRunRecord.status.set(status),
         ProcessWorksRunRecord.updated_at.set(datetime.now(UTC).isoformat()),
@@ -563,17 +563,17 @@ def set_process_works_run_status(
         actions.append(getattr(ProcessWorksRunRecord, key).set(value))
 
     record.update(actions=actions)
-    log.info(f"Set process works run status: run_date={run_date} run_id={run_id} status={status}")
+    log.info(f"Set process works run status: release_date={release_date} run_id={run_id} status={status}")
 
 
 class ProcessDMPsRunRecord(Model):
-    """One record per process-dmps pipeline run. Keyed by (run_date, run_id).
+    """One record per process-dmps pipeline run. Keyed by (release_date, run_id).
 
     Created when the pipeline starts and updated as each task completes.
     Task run IDs are recorded as each stage finishes for observability.
 
     Attributes:
-        run_date: ISO date string "YYYY-MM-DD" identifying the daily run (hash key).
+        release_date: ISO date string "YYYY-MM-DD" identifying the daily run (hash key).
         run_id: Unique execution ID (range key), e.g. "20250101T060000-abc123".
         status: Lifecycle status — STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL.
         step_function_execution_arn: ARN of the enclosing Step Functions execution.
@@ -595,7 +595,7 @@ class ProcessDMPsRunRecord(Model):
         billing_mode = "PAY_PER_REQUEST"
         region = os.environ.get("AWS_REGION", "")
 
-    run_date = UnicodeAttribute(hash_key=True)
+    release_date = UnicodeAttribute(hash_key=True)
     run_id = UnicodeAttribute(range_key=True)
     status = UnicodeAttribute(default="STARTED")
     step_function_execution_arn = UnicodeAttribute(null=True)
@@ -612,14 +612,14 @@ class ProcessDMPsRunRecord(Model):
 
 def create_process_dmps_run(
     *,
-    run_date: str,
+    release_date: str,
     run_id: str,
     execution_arn: str,
 ) -> ProcessDMPsRunRecord:
     """Create a new ProcessDMPsRunRecord with STARTED status.
 
     Args:
-        run_date: ISO date string "YYYY-MM-DD" identifying the daily run.
+        release_date: ISO date string "YYYY-MM-DD" identifying the daily run.
         run_id: Unique execution ID for this run.
         execution_arn: ARN of the enclosing Step Functions execution.
 
@@ -628,7 +628,7 @@ def create_process_dmps_run(
     """
     now = datetime.now(UTC).isoformat()
     record = ProcessDMPsRunRecord(
-        run_date=run_date,
+        release_date=release_date,
         run_id=run_id,
         status="STARTED",
         step_function_execution_arn=execution_arn,
@@ -636,17 +636,17 @@ def create_process_dmps_run(
         updated_at=now,
     )
     record.save()
-    log.info(f"Created process DMPs run: run_date={run_date} run_id={run_id}")
+    log.info(f"Created process DMPs run: release_date={release_date} run_id={run_id}")
     return record
 
 
 def scan_all_process_works_runs(
     *, start_date: str | None = None, end_date: str | None = None
 ) -> list[ProcessWorksRunRecord]:
-    """Return ProcessWorksRunRecord entries, optionally filtered by run_date range.
+    """Return ProcessWorksRunRecord entries, optionally filtered by release_date range.
 
     Uses a DynamoDB scan with server-side filter expression when dates are provided.
-    run_date is the hash key so range queries are not possible.
+    release_date is the hash key so range queries are not possible.
 
     Args:
         start_date: Optional ISO date lower bound (inclusive).
@@ -656,7 +656,7 @@ def scan_all_process_works_runs(
         List of ProcessWorksRunRecord instances.
     """
     if start_date and end_date:
-        condition = ProcessWorksRunRecord.run_date.between(start_date, end_date)
+        condition = ProcessWorksRunRecord.release_date.between(start_date, end_date)
         return list(ProcessWorksRunRecord.scan(filter_condition=condition))
     return list(ProcessWorksRunRecord.scan())
 
@@ -664,10 +664,10 @@ def scan_all_process_works_runs(
 def scan_all_process_dmps_runs(
     *, start_date: str | None = None, end_date: str | None = None
 ) -> list[ProcessDMPsRunRecord]:
-    """Return ProcessDMPsRunRecord entries, optionally filtered by run_date range.
+    """Return ProcessDMPsRunRecord entries, optionally filtered by release_date range.
 
     Uses a DynamoDB scan with server-side filter expression when dates are provided.
-    run_date is the hash key so range queries are not possible.
+    release_date is the hash key so range queries are not possible.
 
     Args:
         start_date: Optional ISO date lower bound (inclusive).
@@ -677,23 +677,23 @@ def scan_all_process_dmps_runs(
         List of ProcessDMPsRunRecord instances.
     """
     if start_date and end_date:
-        condition = ProcessDMPsRunRecord.run_date.between(start_date, end_date)
+        condition = ProcessDMPsRunRecord.release_date.between(start_date, end_date)
         return list(ProcessDMPsRunRecord.scan(filter_condition=condition))
     return list(ProcessDMPsRunRecord.scan())
 
 
-def get_latest_process_dmps_run(*, run_date: str) -> ProcessDMPsRunRecord | None:
-    """Return the most recent ProcessDMPsRunRecord for a given run_date.
+def get_latest_process_dmps_run(*, release_date: str) -> ProcessDMPsRunRecord | None:
+    """Return the most recent ProcessDMPsRunRecord for a given release_date.
 
     Args:
-        run_date: ISO date string "YYYY-MM-DD" identifying the daily run.
+        release_date: ISO date string "YYYY-MM-DD" identifying the daily run.
 
     Returns:
         The most recent ProcessDMPsRunRecord, or None if no records exist.
     """
     return next(
         ProcessDMPsRunRecord.query(
-            run_date,
+            release_date,
             scan_index_forward=False,
             limit=1,
         ),
@@ -703,7 +703,7 @@ def get_latest_process_dmps_run(*, run_date: str) -> ProcessDMPsRunRecord | None
 
 def set_process_dmps_run_status(
     *,
-    run_date: str,
+    release_date: str,
     run_id: str,
     status: Literal["STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"] | None = None,
     error: str | None = None,
@@ -720,7 +720,7 @@ def set_process_dmps_run_status(
     This allows both full status updates and partial task run_id recording in a single function.
 
     Args:
-        run_date: Hash key identifying the daily run date.
+        release_date: Hash key identifying the daily run date.
         run_id: Range key identifying the specific run.
         status: Target lifecycle status — STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL. If None, not updated.
         error: Error message for FAILED status. If None, not updated.
@@ -731,7 +731,7 @@ def set_process_dmps_run_status(
         approval_token: Task token for the parent SM's approval wait state. If None, not updated.
         approval_task_name: Name of the child task awaiting retry approval. If None, not updated.
     """
-    record = ProcessDMPsRunRecord.get(run_date, run_id)
+    record = ProcessDMPsRunRecord.get(release_date, run_id)
     actions = [ProcessDMPsRunRecord.updated_at.set(datetime.now(UTC).isoformat())]
     if status is not None:
         actions.append(ProcessDMPsRunRecord.status.set(status))
@@ -750,15 +750,15 @@ def set_process_dmps_run_status(
     if approval_task_name is not None:
         actions.append(ProcessDMPsRunRecord.approval_task_name.set(approval_task_name))
     record.update(actions=actions)
-    log.info(f"Set process DMPs run status: run_date={run_date} run_id={run_id} status={status}")
+    log.info(f"Set process DMPs run status: release_date={release_date} run_id={run_id} status={status}")
 
 
 def clear_approval_token(*, workflow_key: str, **keys) -> None:
     """Clear approval_token and approval_task_name from a run record.
 
     Routes to the correct model based on workflow_key. For dataset-ingest workflows,
-    keys should include dataset and publication_date. For process-works/process-dmps,
-    keys should include run_date and run_id.
+    keys should include dataset and release_date. For process-works/process-dmps,
+    keys should include release_date and run_id.
 
     Args:
         workflow_key: Workflow identifier (e.g. "openalex-works", "process-works", "process-dmps").
@@ -766,13 +766,13 @@ def clear_approval_token(*, workflow_key: str, **keys) -> None:
     """
     if workflow_key == "process-dmps":
         model_cls = ProcessDMPsRunRecord
-        record = model_cls.get(keys["run_date"], keys["run_id"])
+        record = model_cls.get(keys["release_date"], keys["run_id"])
     elif workflow_key == "process-works":
         model_cls = ProcessWorksRunRecord
-        record = model_cls.get(keys["run_date"], keys["run_id"])
+        record = model_cls.get(keys["release_date"], keys["run_id"])
     else:
         model_cls = DatasetReleaseRecord
-        record = model_cls.get(keys["dataset"], keys["publication_date"])
+        record = model_cls.get(keys["dataset"], keys["release_date"])
 
     now = datetime.now(UTC).isoformat()
     record.update(
@@ -796,7 +796,7 @@ def get_runs_awaiting_approval() -> list[dict]:
         {
             "workflow_key": record.dataset,
             "dataset": record.dataset,
-            "publication_date": record.publication_date,
+            "release_date": record.release_date,
             "approval_token": record.approval_token,
             "approval_task_name": record.approval_task_name,
         }
@@ -808,7 +808,7 @@ def get_runs_awaiting_approval() -> list[dict]:
     results.extend(
         {
             "workflow_key": "process-works",
-            "run_date": record.run_date,
+            "release_date": record.release_date,
             "run_id": record.run_id,
             "approval_token": record.approval_token,
             "approval_task_name": record.approval_task_name,
@@ -821,7 +821,7 @@ def get_runs_awaiting_approval() -> list[dict]:
     results.extend(
         {
             "workflow_key": "process-dmps",
-            "run_date": record.run_date,
+            "release_date": record.release_date,
             "run_id": record.run_id,
             "approval_token": record.approval_token,
             "approval_task_name": record.approval_task_name,

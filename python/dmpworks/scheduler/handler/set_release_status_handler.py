@@ -19,10 +19,10 @@ log = logging.getLogger(__name__)
 INPUT_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["workflow_key", "publication_date", "release_status"],
+    "required": ["workflow_key", "release_date", "release_status"],
     "properties": {
         "workflow_key": {"type": "string"},
-        "publication_date": {"type": "string"},
+        "release_date": {"type": "string"},
         "release_status": {"type": "string"},
         "execution_arn": {"type": "string"},
     },
@@ -31,10 +31,10 @@ INPUT_SCHEMA = {
 OUTPUT_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["workflow_key", "publication_date", "release_status"],
+    "required": ["workflow_key", "release_date", "release_status"],
     "properties": {
         "workflow_key": {"type": "string"},
-        "publication_date": {"type": "string"},
+        "release_date": {"type": "string"},
         "release_status": {"type": "string"},
         "execution_arn": {"type": "string"},
     },
@@ -46,7 +46,7 @@ def set_release_status_handler(event: dict, context: LambdaContext) -> dict:  # 
     """Mark a DatasetReleaseRecord with the given status.
 
     Args:
-        event: Workflow event containing dataset, publication_date, status, and
+        event: Workflow event containing dataset, release_date, status, and
             optionally execution_arn.
         context: Lambda context.
 
@@ -58,7 +58,7 @@ def set_release_status_handler(event: dict, context: LambdaContext) -> dict:  # 
     kwargs = {"step_function_execution_arn": event.get("execution_arn", "")} if status == "STARTED" else {}
     update_release_status(
         dataset=event["workflow_key"],
-        publication_date=event["publication_date"],
+        release_date=event["release_date"],
         status=status,
         **kwargs,
     )

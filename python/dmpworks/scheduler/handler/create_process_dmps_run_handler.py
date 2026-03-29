@@ -23,7 +23,7 @@ def create_process_dmps_run_handler(event: dict[str, Any], context: LambdaContex
     merged with the new run_id.
 
     Args:
-        event: Workflow event containing run_date, aws_env, and execution_arn.
+        event: Workflow event containing release_date, aws_env, and execution_arn.
         context: Lambda context.
 
     Returns:
@@ -32,15 +32,15 @@ def create_process_dmps_run_handler(event: dict[str, Any], context: LambdaContex
     LambdaEnvSettings()
 
     run_id = generate_run_id()
-    run_date = event["run_date"]
+    release_date = event["release_date"]
 
-    log.info(f"Creating process DMPs run: run_date={run_date} run_id={run_id}")
+    log.info(f"Creating process DMPs run: release_date={release_date} run_id={run_id}")
 
     create_process_dmps_run(
-        run_date=run_date,
+        release_date=release_date,
         run_id=run_id,
         execution_arn=event["execution_arn"],
     )
 
-    log.info(f"Created process DMPs run: run_date={run_date} run_id={run_id}")
+    log.info(f"Created process DMPs run: release_date={release_date} run_id={run_id}")
     return {**event, "run_id": run_id}

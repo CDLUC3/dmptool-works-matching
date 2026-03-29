@@ -20,11 +20,11 @@ log = logging.getLogger(__name__)
 INPUT_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["workflow_key", "task_type", "publication_date", "bucket_name", "aws_env", "execution_arn"],
+    "required": ["workflow_key", "task_type", "release_date", "bucket_name", "aws_env", "execution_arn"],
     "properties": {
         "workflow_key": {"type": "string"},
         "task_type": {"type": "string"},
-        "publication_date": {"type": "string"},
+        "release_date": {"type": "string"},
         "bucket_name": {"type": "string"},
         "aws_env": {"type": "string"},
         "execution_arn": {"type": "string"},
@@ -37,7 +37,7 @@ OUTPUT_SCHEMA = {
     "required": [
         "workflow_key",
         "task_type",
-        "publication_date",
+        "release_date",
         "bucket_name",
         "aws_env",
         "execution_arn",
@@ -48,7 +48,7 @@ OUTPUT_SCHEMA = {
     "properties": {
         "workflow_key": {"type": "string"},
         "task_type": {"type": "string"},
-        "publication_date": {"type": "string"},
+        "release_date": {"type": "string"},
         "bucket_name": {"type": "string"},
         "aws_env": {"type": "string"},
         "execution_arn": {"type": "string"},
@@ -98,7 +98,7 @@ def get_batch_job_params_handler(event: dict, context: LambdaContext) -> dict:  
     """Compute Batch params and create a TaskRunRecord (STARTED).
 
     Args:
-        event: Workflow event containing dataset, task_type, publication_date,
+        event: Workflow event containing dataset, task_type, release_date,
             bucket_name, aws_env, execution_arn, and task-type-specific fields.
         context: Lambda context.
 
@@ -115,7 +115,7 @@ def get_batch_job_params_handler(event: dict, context: LambdaContext) -> dict:  
         execution_arn=event.get("execution_arn", ""),
         metadata={
             "workflow_key": event["workflow_key"],
-            "publication_date": event["publication_date"],
+            "release_date": event["release_date"],
         },
     )
     return {**event, **result}

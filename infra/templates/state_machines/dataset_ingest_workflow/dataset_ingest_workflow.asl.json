@@ -11,7 +11,7 @@
         "Payload": {
           "release_status": "STARTED",
           "workflow_key.$": "$.workflow_key",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "execution_arn.$": "$$.Execution.Id"
         }
       },
@@ -26,7 +26,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S.$": "$.workflow_key"},
-          "task_key": {"S.$": "States.Format('download#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('download#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.task_run_check",
@@ -59,7 +59,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "download",
-          "date.$": "$.publication_date",
+          "date.$": "$.release_date",
           "workflow_prefix.$": "$.workflow_key"
         }
       },
@@ -80,7 +80,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key.$": "$.workflow_key",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -112,7 +112,7 @@
         "Payload": {
           "workflow_key.$": "$.workflow_key",
           "task_name": "download",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "approval_token.$": "$$.Task.Token"
         }
       },
@@ -160,7 +160,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S.$": "$.workflow_key"},
-          "task_key": {"S.$": "States.Format('subset#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('subset#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.task_run_check",
@@ -193,7 +193,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "subset",
-          "date.$": "$.publication_date",
+          "date.$": "$.release_date",
           "workflow_prefix.$": "$.workflow_key"
         }
       },
@@ -214,7 +214,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key.$": "$.workflow_key",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -246,7 +246,7 @@
         "Payload": {
           "workflow_key.$": "$.workflow_key",
           "task_name": "subset",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "approval_token.$": "$$.Task.Token"
         }
       },
@@ -262,7 +262,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S.$": "$.workflow_key"},
-          "task_key": {"S.$": "States.Format('transform#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('transform#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.task_run_check",
@@ -295,7 +295,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "transform",
-          "date.$": "$.publication_date",
+          "date.$": "$.release_date",
           "workflow_prefix.$": "$.workflow_key"
         }
       },
@@ -316,7 +316,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key.$": "$.workflow_key",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -348,7 +348,7 @@
         "Payload": {
           "workflow_key.$": "$.workflow_key",
           "task_name": "transform",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "approval_token.$": "$$.Task.Token"
         }
       },
@@ -365,7 +365,7 @@
         "Payload": {
           "release_status": "COMPLETED",
           "workflow_key.$": "$.workflow_key",
-          "publication_date.$": "$.publication_date"
+          "release_date.$": "$.release_date"
         }
       },
       "ResultPath": null,

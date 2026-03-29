@@ -32,7 +32,7 @@ def compute_batch_params(event: dict[str, Any], config: LambdaConfig) -> dict[st
     Supports single-predecessor via predecessor_task_name (existing ingest pipeline).
 
     Args:
-        event: Workflow event containing workflow_key, task_type, publication_date,
+        event: Workflow event containing workflow_key, task_type, release_date,
             bucket_name, aws_env, and optional predecessor fields.
         config: Lambda config loaded from SSM.
 
@@ -54,7 +54,7 @@ def compute_batch_params(event: dict[str, Any], config: LambdaConfig) -> dict[st
     predecessor_task_name = event.get("predecessor_task_name")
     if predecessor_task_name:
         checkpoint = get_task_checkpoint(
-            workflow_key=workflow_key, task_name=predecessor_task_name, date=event["publication_date"]
+            workflow_key=workflow_key, task_name=predecessor_task_name, date=event["release_date"]
         )
         factory_kwargs["prev_job_run_id"] = checkpoint.run_id if checkpoint else None
     else:
@@ -67,7 +67,7 @@ def compute_batch_params(event: dict[str, Any], config: LambdaConfig) -> dict[st
     factory = JOB_FACTORIES[(workflow_key, task_type)]
     result = factory(**factory_kwargs)
     run_name = result.pop("run_name")  # remove non-AWS field; use as DynamoDB run_name
-    result["JobName"] = f"{run_name}-{event['publication_date']}-{run_id}"
+    result["JobName"] = f"{run_name}-{event['release_date']}-{run_id}"
 
     return {
         "run_id": run_id,

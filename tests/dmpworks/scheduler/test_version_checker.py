@@ -51,7 +51,7 @@ CROSSREF_CASSETTE = SCHEDULER_FIXTURES / "crossref_versions.yaml"
 
 
 class TestDetectOpenAlexVersion:
-    def test_returns_latest_publication_date(self):
+    def test_returns_latest_release_date(self):
         """Parses the S3 manifest and returns the latest updated_date across all entries."""
         with vcr.use_cassette(
             OPENALEX_CASSETTE,
@@ -64,8 +64,8 @@ class TestDetectOpenAlexVersion:
             result = detect_openalex_version(openalex_bucket_name="openalex")
 
         assert isinstance(result, DatasetRelease)
-        assert isinstance(result.publication_date, pendulum.Date)
-        assert result.publication_date == pendulum.date(2026, 2, 25)
+        assert isinstance(result.release_date, pendulum.Date)
+        assert result.release_date == pendulum.date(2026, 2, 25)
 
     def test_empty_entries_returns_none(self):
         """Returns None when the manifest has no entries."""
@@ -140,8 +140,8 @@ def vcrpy_clean_response(
 
 
 class TestDetectDataCiteVersion:
-    def test_returns_latest_publication_date(self):
-        """Reads STATUS.json via DataCite credentials and returns the publication date."""
+    def test_returns_latest_release_date(self):
+        """Reads STATUS.json via DataCite credentials and returns the release date."""
         env = {"DATACITE_ACCOUNT_ID": "dummy", "DATACITE_PASSWORD": "dummy"}
         with (
             patch.dict("os.environ", env),
@@ -161,8 +161,8 @@ class TestDetectDataCiteVersion:
             )
 
         assert isinstance(result, DatasetRelease)
-        assert isinstance(result.publication_date, pendulum.Date)
-        assert result.publication_date == pendulum.date(2026, 3, 1)
+        assert isinstance(result.release_date, pendulum.Date)
+        assert result.release_date == pendulum.date(2026, 3, 1)
 
 
 class TestDetectCrossrefVersion:
@@ -187,7 +187,7 @@ class TestDetectCrossrefVersion:
             result = detect_crossref_version(crossref_bucket_name="api-snapshots-reqpays-crossref")
 
         assert isinstance(result, DatasetRelease)
-        assert result.publication_date == pendulum.date(2025, 4, 1)
+        assert result.release_date == pendulum.date(2025, 4, 1)
         assert result.file_name == "April_2025_Public_Data_File_from_Crossref.tar"
 
 
@@ -198,7 +198,7 @@ class TestDetectRorVersion:
             result = detect_ror_version(start_dt=None)
 
         assert isinstance(result, DatasetRelease)
-        assert result.publication_date == pendulum.date(2026, 3, 12)
+        assert result.release_date == pendulum.date(2026, 3, 12)
         assert (
             result.download_url == "https://zenodo.org/api/records/18985120/files/v2.4-2026-03-12-ror-data.zip/content"
         )
@@ -220,7 +220,7 @@ class TestDetectDccVersion:
             result = detect_dcc_version(start_dt=None)
 
         assert isinstance(result, DatasetRelease)
-        assert result.publication_date == pendulum.date(2025, 8, 15)
+        assert result.release_date == pendulum.date(2025, 8, 15)
         assert (
             result.download_url
             == "https://zenodo.org/api/records/16901115/files/2025-08-15-data-citation-corpus-v4.1-json.zip/content"

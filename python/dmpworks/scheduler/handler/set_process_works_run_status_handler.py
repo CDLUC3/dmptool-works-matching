@@ -21,7 +21,7 @@ def set_process_works_run_status_handler(
     """Set the status of a ProcessWorksRunRecord.
 
     Args:
-        event: Workflow event containing run_date, run_id, process_works_status,
+        event: Workflow event containing release_date, run_id, process_works_status,
             and optionally execution_arn.
         context: Lambda context.
 
@@ -30,7 +30,7 @@ def set_process_works_run_status_handler(
     """
     LambdaEnvSettings()
 
-    run_date = event["run_date"]
+    release_date = event["release_date"]
     run_id = event["run_id"]
     status = event["process_works_status"]
 
@@ -38,7 +38,7 @@ def set_process_works_run_status_handler(
     if execution_arn := event.get("execution_arn"):
         kwargs["step_function_execution_arn"] = execution_arn
 
-    log.info(f"Marking process works run status: run_date={run_date} run_id={run_id} status={status}")
-    set_process_works_run_status(run_date=run_date, run_id=run_id, status=status, **kwargs)
+    log.info(f"Marking process works run status: release_date={release_date} run_id={run_id} status={status}")
+    set_process_works_run_status(release_date=release_date, run_id=run_id, status=status, **kwargs)
 
     return event

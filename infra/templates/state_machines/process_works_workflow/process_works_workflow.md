@@ -8,7 +8,7 @@ OpenSearch, and finally fires the process-dmps workflow.
 
 EventBridge scheduled rule: `cron(0 16 8-14 * MON *)` — second Monday of each month
 at 16:00 UTC. The `StartProcessWorksFunction` Lambda computes `second_monday_of_month(today)`
-as the `publication_date` / `run_date` and starts the `ProcessWorksStateMachine`.
+as the `release_date` and starts the `ProcessWorksStateMachine`.
 
 ## Orchestration Diagram
 
@@ -86,7 +86,7 @@ in `STARTED` state before the pipeline proceeds.
 ## DynamoDB Records
 
 - **ProcessWorksRunRecord** (`dmpworks-{env}-process-works-runs`): Keyed by
-  `(run_date, run_id)`. Tracks the overall run status (STARTED → COMPLETED | FAILED)
+  `(release_date, run_id)`. Tracks the overall run status (STARTED → COMPLETED | FAILED)
   and the run IDs of all input datasets plus the SQLMesh output run_id.
 
 - **TaskCheckpointRecord** (`dmpworks-{env}-task-checkpoints`): Written by child SMs

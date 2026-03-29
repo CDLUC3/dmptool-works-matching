@@ -25,7 +25,7 @@ def make_checkpoint(run_id: str):
 BASE_EVENT = {
     "workflow_key": "openalex-works",
     "task_type": "transform",
-    "publication_date": "2025-01-01",
+    "release_date": "2025-01-01",
     "bucket_name": "my-bucket",
     "aws_env": "dev",
     "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:test:exec-1",
@@ -166,7 +166,7 @@ class TestComputeBatchParamsPredecessor:
 # ---------------------------------------------------------------------------
 
 SFN_BASE = {
-    "publication_date": "2026-01-01",
+    "release_date": "2026-01-01",
     "aws_env": "dev",
     "bucket_name": "b",
     "download_url": "http://x",

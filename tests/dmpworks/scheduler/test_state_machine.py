@@ -34,7 +34,7 @@ TRANSFORM_SM_NAME = "dmpworks-test-transform"
 
 BASE_INPUT = {
     "workflow_key": "ror",
-    "publication_date": "2025-01-01",
+    "release_date": "2025-01-01",
     "aws_env": "dev",
     "bucket_name": "test-bucket",
     "execution_arn": f"arn:aws:states:{MOCK_REGION}:{MOCK_ACCOUNT}:execution:{STATE_MACHINE_NAME}:test",
@@ -355,7 +355,7 @@ def start_execution(sfn_client, state_machine_arn: str, workflow_input: dict) ->
     global _exec_counter
     _exec_counter += 1
     # run_id must be unique per execution so child SM names (derived from run_id) don't conflict
-    # across tests that share the same dataset + publication_date.
+    # across tests that share the same dataset + release_date.
     unique_input = {**workflow_input, "run_id": f"20250101T060000-{_exec_counter:08x}"}
     response = sfn_client.start_execution(
         stateMachineArn=state_machine_arn,

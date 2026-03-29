@@ -30,17 +30,17 @@ def display_dataset_releases(*, records: list[DatasetReleaseRecord]) -> None:
     """
     table = Table(title="Dataset Releases")
     table.add_column("Dataset", style="cyan")
-    table.add_column("Publication Date")
+    table.add_column("Release Date")
     table.add_column("Status")
     table.add_column("Download URL", max_width=60)
 
-    for r in sorted(records, key=lambda x: (x.dataset, x.publication_date), reverse=True):
+    for r in sorted(records, key=lambda x: (x.dataset, x.release_date), reverse=True):
         style = (
             "green"
             if r.status == "COMPLETED"
             else "yellow" if r.status == "STARTED" else "red" if r.status == "FAILED" else ""
         )
-        table.add_row(r.dataset, r.publication_date, f"[{style}]{r.status}[/{style}]", r.download_url or "")
+        table.add_row(r.dataset, r.release_date, f"[{style}]{r.status}[/{style}]", r.download_url or "")
 
     console.print(table)
 
@@ -75,17 +75,17 @@ def display_process_works_runs(*, records: list[ProcessWorksRunRecord]) -> None:
         records: List of ProcessWorksRunRecord instances.
     """
     table = Table(title="Process-Works Runs")
-    table.add_column("Run Date", style="cyan")
+    table.add_column("Release Date", style="cyan")
     table.add_column("Run ID", max_width=30)
     table.add_column("Status")
 
-    for r in sorted(records, key=lambda x: (x.run_date, x.run_id), reverse=True):
+    for r in sorted(records, key=lambda x: (x.release_date, x.run_id), reverse=True):
         style = (
             "green"
             if r.status == "COMPLETED"
             else "yellow" if r.status == "STARTED" else "red" if r.status == "FAILED" else ""
         )
-        table.add_row(r.run_date, r.run_id, f"[{style}]{r.status}[/{style}]")
+        table.add_row(r.release_date, r.run_id, f"[{style}]{r.status}[/{style}]")
 
     console.print(table)
 
@@ -97,17 +97,17 @@ def display_process_dmps_runs(*, records: list[ProcessDMPsRunRecord]) -> None:
         records: List of ProcessDMPsRunRecord instances.
     """
     table = Table(title="Process-DMPs Runs")
-    table.add_column("Run Date", style="cyan")
+    table.add_column("Release Date", style="cyan")
     table.add_column("Run ID", max_width=30)
     table.add_column("Status")
 
-    for r in sorted(records, key=lambda x: (x.run_date, x.run_id), reverse=True):
+    for r in sorted(records, key=lambda x: (x.release_date, x.run_id), reverse=True):
         style = (
             "green"
             if r.status == "COMPLETED"
             else "yellow" if r.status == "STARTED" else "red" if r.status == "FAILED" else ""
         )
-        table.add_row(r.run_date, r.run_id, f"[{style}]{r.status}[/{style}]")
+        table.add_row(r.release_date, r.run_id, f"[{style}]{r.status}[/{style}]")
 
     console.print(table)
 
@@ -317,12 +317,12 @@ def display_discovered_versions(*, result: dict) -> None:
 
     table = Table(title="Discovered Versions" if result.get("dry_run") else "Triggered Ingests")
     table.add_column("Dataset", style="cyan")
-    table.add_column("Publication Date")
+    table.add_column("Release Date")
     table.add_column("Download URL", max_width=60)
 
     items = discovered if discovered else triggered
     for item in items:
-        table.add_row(item["dataset"], item["publication_date"], item.get("download_url", ""))
+        table.add_row(item["dataset"], item["release_date"], item.get("download_url", ""))
 
     console.print(table)
 

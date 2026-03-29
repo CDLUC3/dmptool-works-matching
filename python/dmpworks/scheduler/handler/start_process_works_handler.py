@@ -38,7 +38,7 @@ def second_monday_of_month(dt: pendulum.DateTime) -> pendulum.DateTime:
 def start_process_works_handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:  # noqa: ARG001
     """Start the process-works Step Functions execution for the second Monday of the current month.
 
-    Computes the second Monday of the current month as the publication_date (run_date),
+    Computes the second Monday of the current month as the release_date,
     then starts the ProcessWorksStateMachine.
 
     Args:
@@ -46,17 +46,17 @@ def start_process_works_handler(event: dict[str, Any], context: LambdaContext) -
         context: Lambda context.
 
     Returns:
-        Dict with execution_arn and run_date.
+        Dict with execution_arn and release_date.
     """
     settings = StartProcessWorksEnvSettings()
 
     now = pendulum.now("UTC")
-    run_date = second_monday_of_month(now).to_date_string()
+    release_date = second_monday_of_month(now).to_date_string()
 
     run_id = generate_run_id()
-    execution_name = f"process-works-{run_date}-{run_id}"
+    execution_name = f"process-works-{release_date}-{run_id}"
 
-    log.info(f"Starting process-works execution: run_date={run_date} execution_name={execution_name}")
+    log.info(f"Starting process-works execution: release_date={release_date} execution_name={execution_name}")
 
     sfn = boto3.client("stepfunctions")
     response = sfn.start_execution(
@@ -65,8 +65,7 @@ def start_process_works_handler(event: dict[str, Any], context: LambdaContext) -
         input=json.dumps(
             {
                 "workflow_key": "process-works",
-                "publication_date": run_date,
-                "run_date": run_date,
+                "release_date": release_date,
                 "aws_env": settings.aws_env,
                 "bucket_name": settings.bucket_name,
                 "skip_sqlmesh": False,
@@ -75,5 +74,5 @@ def start_process_works_handler(event: dict[str, Any], context: LambdaContext) -
         ),
     )
 
-    log.info(f"Started process-works execution: run_date={run_date} executionArn={response['executionArn']}")
-    return {"execution_arn": response["executionArn"], "run_date": run_date}
+    log.info(f"Started process-works execution: release_date={release_date} executionArn={response['executionArn']}")
+    return {"execution_arn": response["executionArn"], "release_date": release_date}

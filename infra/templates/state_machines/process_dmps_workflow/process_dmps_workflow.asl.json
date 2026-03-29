@@ -9,7 +9,7 @@
       "Parameters": {
         "FunctionName": "${CreateProcessDMPsRunFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "execution_arn.$": "$$.Execution.Id"
         }
@@ -25,8 +25,7 @@
       "Comment": "Merge the new run_id into top-level state",
       "Parameters": {
         "workflow_key.$": "$.workflow_key",
-        "publication_date.$": "$.publication_date",
-        "run_date.$": "$.run_date",
+        "release_date.$": "$.release_date",
         "aws_env.$": "$.aws_env",
         "bucket_name.$": "$.bucket_name",
         "run_all_dmps.$": "$.run_all_dmps",
@@ -45,7 +44,7 @@
       "Parameters": {
         "FunctionName": "${SetProcessDMPsRunStatusFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "process_dmps_status": "STARTED",
           "execution_arn.$": "$$.Execution.Id"
@@ -62,7 +61,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S": "process-dmps"},
-          "task_key": {"S.$": "States.Format('sync-dmps#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('sync-dmps#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.sync_dmps_check",
@@ -105,7 +104,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "sync-dmps",
-          "date.$": "$.run_date",
+          "date.$": "$.release_date",
           "workflow_prefix": "process-dmps"
         }
       },
@@ -126,8 +125,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-dmps",
-          "publication_date.$": "$.publication_date",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -159,7 +157,7 @@
         "Payload": {
           "workflow_key": "process-dmps",
           "task_name": "sync-dmps",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "approval_token.$": "$$.Task.Token"
         }
@@ -175,7 +173,7 @@
       "Parameters": {
         "FunctionName": "${SetProcessDMPsRunStatusFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "run_id_sync_dmps.$": "$.sync_dmps_check.task_run_id"
         }
@@ -191,7 +189,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S": "process-dmps"},
-          "task_key": {"S.$": "States.Format('enrich-dmps#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('enrich-dmps#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.enrich_dmps_check",
@@ -234,7 +232,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "enrich-dmps",
-          "date.$": "$.run_date",
+          "date.$": "$.release_date",
           "workflow_prefix": "process-dmps"
         }
       },
@@ -255,8 +253,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-dmps",
-          "publication_date.$": "$.publication_date",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -288,7 +285,7 @@
         "Payload": {
           "workflow_key": "process-dmps",
           "task_name": "enrich-dmps",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "approval_token.$": "$$.Task.Token"
         }
@@ -304,7 +301,7 @@
       "Parameters": {
         "FunctionName": "${SetProcessDMPsRunStatusFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "run_id_enrich_dmps.$": "$.enrich_dmps_check.task_run_id"
         }
@@ -320,7 +317,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S": "process-dmps"},
-          "task_key": {"S.$": "States.Format('dmp-works-search#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('dmp-works-search#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.dws_check",
@@ -363,7 +360,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "dmp-works-search",
-          "date.$": "$.run_date",
+          "date.$": "$.release_date",
           "workflow_prefix": "process-dmps"
         }
       },
@@ -384,8 +381,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-dmps",
-          "publication_date.$": "$.publication_date",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -418,7 +414,7 @@
         "Payload": {
           "workflow_key": "process-dmps",
           "task_name": "dmp-works-search",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "approval_token.$": "$$.Task.Token"
         }
@@ -434,7 +430,7 @@
       "Parameters": {
         "FunctionName": "${SetProcessDMPsRunStatusFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "run_id_dmp_works_search.$": "$.dws_check.task_run_id"
         }
@@ -450,7 +446,7 @@
         "TableName": "${TaskCheckpointsTableName}",
         "Key": {
           "workflow_key": {"S": "process-dmps"},
-          "task_key": {"S.$": "States.Format('merge-related-works#{}', $.publication_date)"}
+          "task_key": {"S.$": "States.Format('merge-related-works#{}', $.release_date)"}
         }
       },
       "ResultPath": "$.mrw_check",
@@ -493,7 +489,7 @@
         "FunctionName": "${GenerateChildRunIdFunction}",
         "Payload": {
           "task_name": "merge-related-works",
-          "date.$": "$.run_date",
+          "date.$": "$.release_date",
           "workflow_prefix": "process-dmps"
         }
       },
@@ -514,8 +510,7 @@
         "Input": {
           "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
           "workflow_key": "process-dmps",
-          "publication_date.$": "$.publication_date",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
@@ -548,7 +543,7 @@
         "Payload": {
           "workflow_key": "process-dmps",
           "task_name": "merge-related-works",
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "approval_token.$": "$$.Task.Token"
         }
@@ -564,7 +559,7 @@
       "Parameters": {
         "FunctionName": "${SetProcessDMPsRunStatusFunction}",
         "Payload": {
-          "run_date.$": "$.run_date",
+          "release_date.$": "$.release_date",
           "run_id.$": "$.run_id",
           "process_dmps_status": "COMPLETED",
           "run_id_merge_related_works.$": "$.mrw_check.task_run_id"

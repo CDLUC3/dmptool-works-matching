@@ -19,11 +19,11 @@ from dmpworks.scheduler.dynamodb_store import DatasetReleaseRecord
 from dmpworks.scheduler.handler.version_checker_handler import version_checker_handler
 
 
-def make_release_record(dataset: str, publication_date: str, **kwargs) -> DatasetReleaseRecord:
+def make_release_record(dataset: str, release_date: str, **kwargs) -> DatasetReleaseRecord:
     """Build a minimal DatasetReleaseRecord without hitting DynamoDB."""
     record = DatasetReleaseRecord()
     record.dataset = dataset
-    record.publication_date = publication_date
+    record.release_date = release_date
     record.download_url = kwargs.get("download_url", "https://example.com/file.zip")
     record.file_hash = kwargs.get("file_hash", "md5:abc123")
     record.file_name = kwargs.get("file_name", "file.zip")
@@ -72,7 +72,7 @@ class TestVersionCheckerHandlerNewRelease:
 
             result = version_checker_handler({}, None)
 
-        assert result["triggered"] == [{"dataset": "ror", "publication_date": "2026-03-12"}]
+        assert result["triggered"] == [{"dataset": "ror", "release_date": "2026-03-12"}]
         assert result["dry_run"] is False
         assert len(result["discovered"]) == 1
         assert result["discovered"][0]["dataset"] == "ror"
@@ -82,7 +82,7 @@ class TestVersionCheckerHandlerNewRelease:
         assert re.match(r"^ror-2026-03-12-\d{8}T\d{6}-[0-9a-f]{8}$", call_kwargs["name"])
         payload = json.loads(call_kwargs["input"])
         assert payload["workflow_key"] == "ror"
-        assert payload["publication_date"] == "2026-03-12"
+        assert payload["release_date"] == "2026-03-12"
         assert re.match(r"^\d{8}T\d{6}-[0-9a-f]{8}$", payload["run_id"])
         assert payload["aws_env"] == "dev"
         assert payload["bucket_name"] == "my-bucket"
@@ -140,7 +140,7 @@ class TestVersionCheckerHandlerStartDt:
     """Tests for start_dt propagation from latest known release."""
 
     def test_start_dt_from_latest_known_release(self):
-        """When a prior release exists, its publication_date is parsed and passed as start_dt."""
+        """When a prior release exists, its release_date is parsed and passed as start_dt."""
         prior_record = make_release_record("ror", "2026-01-01")
         new_record = make_release_record("ror", "2026-03-12")
 

@@ -29,7 +29,7 @@ from tests.aws_test_env import dynamodb_local, make_release_record, tables  # no
 
 BASE_EVENT = {
     "workflow_key": "ror",
-    "publication_date": "2025-01-01",
+    "release_date": "2025-01-01",
     "aws_env": "dev",
     "bucket_name": "test-bucket",
     "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:test:exec-1",
@@ -78,7 +78,7 @@ class TestGetBatchJobParamsHandler:
         record = TaskRunRecord.get(result["run_name"], result["run_id"])
         assert record.status == "STARTED"
         assert record.metadata["workflow_key"] == "ror"
-        assert record.metadata["publication_date"] == "2025-01-01"
+        assert record.metadata["release_date"] == "2025-01-01"
 
     def test_returns_batch_params(self, tables):
         """get_batch_job_params_handler returns run_id, run_name, and batch_params."""

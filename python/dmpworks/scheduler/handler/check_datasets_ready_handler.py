@@ -44,9 +44,9 @@ def check_datasets_ready_handler(event: dict[str, Any], context: LambdaContext) 
         If not all datasets are ready: ``{"all_ready": False}``.
         If all ready: ``{"all_ready": True, "run_id_openalex_works": ..., "run_id_datacite": ...,
         "run_id_crossref_metadata": ..., "run_id_ror": ..., "run_id_data_citation_corpus": ...,
-        "publication_date_openalex_works": ..., "publication_date_datacite": ...,
-        "publication_date_crossref_metadata": ..., "publication_date_ror": ...,
-        "publication_date_data_citation_corpus": ..., "run_id_sqlmesh_prev": ...}``.
+        "release_date_openalex_works": ..., "release_date_datacite": ...,
+        "release_date_crossref_metadata": ..., "release_date_ror": ...,
+        "release_date_data_citation_corpus": ..., "run_id_sqlmesh_prev": ...}``.
     """
     LambdaEnvSettings()
 
@@ -64,11 +64,11 @@ def check_datasets_ready_handler(event: dict[str, Any], context: LambdaContext) 
             return {"all_ready": False}
 
         run_ids[pool_key] = checkpoint.run_id
-        pub_date_key = pool_key.replace("run_id_", "publication_date_", 1)
-        run_ids[pub_date_key] = checkpoint.task_key.split("#")[1]
+        release_date_key = pool_key.replace("run_id_", "release_date_", 1)
+        run_ids[release_date_key] = checkpoint.task_key.split("#")[1]
         log.info(
             f"Dataset ready: workflow_key={workflow_key} task_name={task_name} "
-            f"run_id={checkpoint.run_id} publication_date={run_ids[pub_date_key]}"
+            f"run_id={checkpoint.run_id} release_date={run_ids[release_date_key]}"
         )
 
     sqlmesh_checkpoint = get_task_checkpoint(workflow_key="process-works", task_name="sqlmesh")

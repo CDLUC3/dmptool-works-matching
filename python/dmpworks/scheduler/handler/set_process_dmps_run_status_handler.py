@@ -20,12 +20,12 @@ def set_process_dmps_run_status_handler(
 ) -> dict[str, Any]:
     """Set status and/or task run IDs on a ProcessDMPsRunRecord.
 
-    All fields beyond run_date and run_id are optional — only those present in the
+    All fields beyond release_date and run_id are optional — only those present in the
     event are updated. This allows both full status updates and partial task run_id
     recording from a single handler.
 
     Args:
-        event: Workflow event containing run_date, run_id, and optionally
+        event: Workflow event containing release_date, run_id, and optionally
             process_dmps_status, run_id_sync_dmps, run_id_enrich_dmps,
             run_id_dmp_works_search, run_id_merge_related_works.
         context: Lambda context.
@@ -35,7 +35,7 @@ def set_process_dmps_run_status_handler(
     """
     LambdaEnvSettings()
 
-    run_date = event["run_date"]
+    release_date = event["release_date"]
     run_id = event["run_id"]
 
     kwargs: dict[str, Any] = {}
@@ -50,7 +50,7 @@ def set_process_dmps_run_status_handler(
     if run_id_merge_related_works := event.get("run_id_merge_related_works"):
         kwargs["run_id_merge_related_works"] = run_id_merge_related_works
 
-    log.info(f"Updating process DMPs run: run_date={run_date} run_id={run_id} fields={list(kwargs)}")
-    set_process_dmps_run_status(run_date=run_date, run_id=run_id, **kwargs)
+    log.info(f"Updating process DMPs run: release_date={release_date} run_id={run_id} fields={list(kwargs)}")
+    set_process_dmps_run_status(release_date=release_date, run_id=run_id, **kwargs)
 
     return event

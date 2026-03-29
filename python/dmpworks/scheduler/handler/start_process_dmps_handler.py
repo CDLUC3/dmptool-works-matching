@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 def start_process_dmps_handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:  # noqa: ARG001
     """Start the process-dmps Step Functions execution for today's date.
 
-    Uses today's UTC date as run_date, then starts the ProcessDmpsStateMachine.
+    Uses today's UTC date as the release_date, then starts the ProcessDmpsStateMachine.
     Sets run_all_dmps to False so the modification window filter applies.
 
     Args:
@@ -30,15 +30,15 @@ def start_process_dmps_handler(event: dict[str, Any], context: LambdaContext) ->
         context: Lambda context.
 
     Returns:
-        Dict with execution_arn and run_date.
+        Dict with execution_arn and release_date.
     """
     settings = StartProcessDMPsEnvSettings()
 
-    run_date = pendulum.now("UTC").to_date_string()
+    release_date = pendulum.now("UTC").to_date_string()
     run_id = generate_run_id()
-    execution_name = f"process-dmps-{run_date}-{run_id}"
+    execution_name = f"process-dmps-{release_date}-{run_id}"
 
-    log.info(f"Starting process-dmps execution: run_date={run_date} execution_name={execution_name}")
+    log.info(f"Starting process-dmps execution: release_date={release_date} execution_name={execution_name}")
 
     sfn = boto3.client("stepfunctions")
     response = sfn.start_execution(
@@ -47,8 +47,7 @@ def start_process_dmps_handler(event: dict[str, Any], context: LambdaContext) ->
         input=json.dumps(
             {
                 "workflow_key": "process-dmps",
-                "publication_date": run_date,
-                "run_date": run_date,
+                "release_date": release_date,
                 "aws_env": settings.aws_env,
                 "bucket_name": settings.bucket_name,
                 "run_all_dmps": False,
@@ -60,5 +59,5 @@ def start_process_dmps_handler(event: dict[str, Any], context: LambdaContext) ->
         ),
     )
 
-    log.info(f"Started process-dmps execution: run_date={run_date} executionArn={response['executionArn']}")
-    return {"execution_arn": response["executionArn"], "run_date": run_date}
+    log.info(f"Started process-dmps execution: release_date={release_date} executionArn={response['executionArn']}")
+    return {"execution_arn": response["executionArn"], "release_date": release_date}

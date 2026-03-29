@@ -25,39 +25,39 @@ def _no_task_run_scan(monkeypatch):
     monkeypatch.setattr(f"{PATCH_BASE}.scan_task_runs_by_run_name", lambda *, run_name: [])
 
 
-# Default publication dates for test records.
-KEEP_PUB_DATE = "2025-02-01"
-STALE_PUB_DATE = "2025-01-01"
+# Default release dates for test records.
+KEEP_RELEASE_DATE = "2025-02-01"
+STALE_RELEASE_DATE = "2025-01-01"
 
 
 def make_works_run(
-    run_date: str,
+    release_date: str,
     run_id: str,
     status: str = "COMPLETED",
     *,
-    publication_date_openalex_works: str | None = None,
-    publication_date_datacite: str | None = None,
-    publication_date_crossref_metadata: str | None = None,
-    publication_date_ror: str | None = None,
-    publication_date_data_citation_corpus: str | None = None,
+    release_date_openalex_works: str | None = None,
+    release_date_datacite: str | None = None,
+    release_date_crossref_metadata: str | None = None,
+    release_date_ror: str | None = None,
+    release_date_data_citation_corpus: str | None = None,
 ) -> MagicMock:
     """Build a minimal mock ProcessWorksRunRecord."""
     r = MagicMock()
-    r.run_date = run_date
+    r.release_date = release_date
     r.run_id = run_id
     r.status = status
-    r.publication_date_openalex_works = publication_date_openalex_works
-    r.publication_date_datacite = publication_date_datacite
-    r.publication_date_crossref_metadata = publication_date_crossref_metadata
-    r.publication_date_ror = publication_date_ror
-    r.publication_date_data_citation_corpus = publication_date_data_citation_corpus
+    r.release_date_openalex_works = release_date_openalex_works
+    r.release_date_datacite = release_date_datacite
+    r.release_date_crossref_metadata = release_date_crossref_metadata
+    r.release_date_ror = release_date_ror
+    r.release_date_data_citation_corpus = release_date_data_citation_corpus
     return r
 
 
-def make_dmps_run(run_date: str, run_id: str, status: str = "COMPLETED") -> MagicMock:
+def make_dmps_run(release_date: str, run_id: str, status: str = "COMPLETED") -> MagicMock:
     """Build a minimal mock ProcessDMPsRunRecord."""
     r = MagicMock()
-    r.run_date = run_date
+    r.release_date = release_date
     r.run_id = run_id
     r.status = status
     return r
@@ -84,14 +84,14 @@ def run_id_for(workflow_key: str, task_name: str, run_date: str) -> str:
     return f"{workflow_key}-{task_name}-{run_date}"
 
 
-def default_pub_dates(pub_date: str) -> dict:
-    """Return kwargs to set all publication_date_* fields to the same date."""
+def default_release_dates(pub_date: str) -> dict:
+    """Return kwargs to set all release_date_* fields to the same date."""
     return {
-        "publication_date_openalex_works": pub_date,
-        "publication_date_datacite": pub_date,
-        "publication_date_crossref_metadata": pub_date,
-        "publication_date_ror": pub_date,
-        "publication_date_data_citation_corpus": pub_date,
+        "release_date_openalex_works": pub_date,
+        "release_date_datacite": pub_date,
+        "release_date_crossref_metadata": pub_date,
+        "release_date_ror": pub_date,
+        "release_date_data_citation_corpus": pub_date,
     }
 
 
@@ -108,7 +108,7 @@ class TestNoCompletedWorksRecords:
         assert result == []
 
     def test_single_completed_record_no_stale_checkpoints(self):
-        keep = make_works_run("2025-01-13", "run-1", **default_pub_dates(KEEP_PUB_DATE))
+        keep = make_works_run("2025-01-13", "run-1", **default_release_dates(KEEP_RELEASE_DATE))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
@@ -126,16 +126,16 @@ class TestNoCompletedWorksRecords:
 
 class TestDatasetTasksCleanup:
     def test_stale_checkpoints_included_in_plan(self):
-        keep = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
-        stale = make_works_run("2025-01-13", "run-1", **default_pub_dates(STALE_PUB_DATE))
+        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
+        stale = make_works_run("2025-01-13", "run-1", **default_release_dates(STALE_RELEASE_DATE))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
 
         def fake_scan_checkpoints(*, workflow_key, task_name):
             return [
-                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_PUB_DATE)),
-                make_checkpoint(run_id_for(workflow_key, task_name, STALE_PUB_DATE)),
+                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE)),
+                make_checkpoint(run_id_for(workflow_key, task_name, STALE_RELEASE_DATE)),
             ]
 
         with (
@@ -155,10 +155,10 @@ class TestDatasetTasksCleanup:
         for item in result:
             assert item["bucket_name"] == BUCKET
 
-    def test_stale_run_ids_use_publication_dates_not_run_date(self):
-        """Dataset tasks must use publication_date for checkpoint lookup, not run_date."""
-        keep = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
-        stale = make_works_run("2025-01-13", "run-1", **default_pub_dates(STALE_PUB_DATE))
+    def test_stale_run_ids_use_release_dates_not_run_date(self):
+        """Dataset tasks must use release_date for checkpoint lookup, not run_date."""
+        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
+        stale = make_works_run("2025-01-13", "run-1", **default_release_dates(STALE_RELEASE_DATE))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
@@ -170,8 +170,8 @@ class TestDatasetTasksCleanup:
                     make_checkpoint(run_id_for(workflow_key, task_name, "2025-01-13")),
                 ]
             return [
-                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_PUB_DATE)),
-                make_checkpoint(run_id_for(workflow_key, task_name, STALE_PUB_DATE)),
+                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE)),
+                make_checkpoint(run_id_for(workflow_key, task_name, STALE_RELEASE_DATE)),
             ]
 
         with (
@@ -183,15 +183,15 @@ class TestDatasetTasksCleanup:
             result = build_cleanup_plan(bucket_name=BUCKET)
 
         run_ids = {item["run_id"] for item in result}
-        # Dataset tasks should be looked up at STALE_PUB_DATE, not run_date "2025-01-13"
+        # Dataset tasks should be looked up at STALE_RELEASE_DATE, not release_date "2025-01-13"
         for wk, tn, _, _ in DATASET_TASKS:
-            assert run_id_for(wk, tn, STALE_PUB_DATE) in run_ids
-        # SQLMesh should use run_date "2025-01-13"
+            assert run_id_for(wk, tn, STALE_RELEASE_DATE) in run_ids
+        # SQLMesh should use release_date "2025-01-13"
         assert run_id_for("process-works", "sqlmesh", "2025-01-13") in run_ids
 
     def test_keep_run_ids_never_deleted(self):
-        keep = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
-        stale = make_works_run("2025-01-13", "run-1", **default_pub_dates(STALE_PUB_DATE))
+        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
+        stale = make_works_run("2025-01-13", "run-1", **default_release_dates(STALE_RELEASE_DATE))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
@@ -203,8 +203,8 @@ class TestDatasetTasksCleanup:
                     make_checkpoint(run_id_for(workflow_key, task_name, "2025-01-13")),
                 ]
             return [
-                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_PUB_DATE)),
-                make_checkpoint(run_id_for(workflow_key, task_name, STALE_PUB_DATE)),
+                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE)),
+                make_checkpoint(run_id_for(workflow_key, task_name, STALE_RELEASE_DATE)),
             ]
 
         with (
@@ -217,13 +217,13 @@ class TestDatasetTasksCleanup:
 
         run_ids = {item["run_id"] for item in result}
         for wk, tn, _, _ in DATASET_TASKS:
-            assert run_id_for(wk, tn, KEEP_PUB_DATE) not in run_ids
+            assert run_id_for(wk, tn, KEEP_RELEASE_DATE) not in run_ids
         assert run_id_for("process-works", "sqlmesh", "2025-02-10") not in run_ids
 
     def test_missing_checkpoint_skipped(self):
         """A task with no checkpoint for the keep date is silently skipped."""
-        keep = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
-        stale = make_works_run("2025-01-13", "run-1", **default_pub_dates(STALE_PUB_DATE))
+        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
+        stale = make_works_run("2025-01-13", "run-1", **default_release_dates(STALE_RELEASE_DATE))
 
         with (
             patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep, stale]),
@@ -239,8 +239,8 @@ class TestDatasetTasksCleanup:
 class TestStartedAndFailedRecordsProtected:
     @pytest.mark.parametrize("status", ["STARTED", "FAILED"])
     def test_non_completed_records_not_in_delete_list(self, status):
-        active_record = make_works_run("2025-02-10", "run-2", status=status, **default_pub_dates(KEEP_PUB_DATE))
-        completed_record = make_works_run("2025-01-13", "run-1", **default_pub_dates(STALE_PUB_DATE))
+        active_record = make_works_run("2025-02-10", "run-2", status=status, **default_release_dates(KEEP_RELEASE_DATE))
+        completed_record = make_works_run("2025-01-13", "run-1", **default_release_dates(STALE_RELEASE_DATE))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
@@ -258,8 +258,8 @@ class TestStartedAndFailedRecordsProtected:
 
     def test_started_record_run_ids_protected(self):
         """Data used by a STARTED record must not be deleted, even if not the keep record."""
-        keep = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
-        started = make_works_run("2025-03-10", "run-3", status="STARTED", **default_pub_dates("2025-03-01"))
+        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
+        started = make_works_run("2025-03-10", "run-3", status="STARTED", **default_release_dates("2025-03-01"))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
@@ -268,13 +268,13 @@ class TestStartedAndFailedRecordsProtected:
 
         def fake_scan_checkpoints(*, workflow_key, task_name):
             if workflow_key == SQLMESH_TASK[0] and task_name == SQLMESH_TASK[1]:
-                # SQLMesh uses run_date, not publication_date
+                # SQLMesh uses release_date, not per-dataset release dates
                 return [
                     make_checkpoint(run_id_for(workflow_key, task_name, "2025-02-10")),
                     make_checkpoint(run_id_for(workflow_key, task_name, "2025-03-10")),
                 ]
             return [
-                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_PUB_DATE)),
+                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE)),
                 make_checkpoint(run_id_for(workflow_key, task_name, started_pub_date)),
             ]
 
@@ -292,7 +292,7 @@ class TestStartedAndFailedRecordsProtected:
 
 class TestDmpWorksSearchCleanup:
     def test_dmp_works_search_before_keep_date_included(self):
-        keep_works = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
+        keep_works = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
         stale_dmps = make_dmps_run("2025-02-08", "dmps-run-old")
 
         def fake_checkpoint(*, workflow_key, task_name, date):
@@ -313,7 +313,7 @@ class TestDmpWorksSearchCleanup:
         assert dmp_items[0]["run_id"] == "dmp-search-2025-02-08"
 
     def test_dmp_works_search_on_or_after_keep_date_not_deleted(self):
-        keep_works = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
+        keep_works = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
         recent_dmps = make_dmps_run("2025-02-10", "dmps-run-new")
         future_dmps = make_dmps_run("2025-02-15", "dmps-run-newer")
 
@@ -334,7 +334,7 @@ class TestDmpWorksSearchCleanup:
         assert dmp_items == []
 
     def test_dmp_works_search_no_checkpoint_skipped(self):
-        keep_works = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
+        keep_works = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
         stale_dmps = make_dmps_run("2025-01-05", "dmps-run-old")
 
         def fake_checkpoint(*, workflow_key, task_name, date):
@@ -354,7 +354,7 @@ class TestDmpWorksSearchCleanup:
         assert dmp_items == []
 
     def test_started_failed_dmps_not_deleted(self):
-        keep_works = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
+        keep_works = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
         started_dmps = make_dmps_run("2025-02-01", "dmps-run", status="STARTED")
         failed_dmps = make_dmps_run("2025-01-15", "dmps-run-2", status="FAILED")
 
@@ -373,28 +373,28 @@ class TestDmpWorksSearchCleanup:
         assert dmp_items == []
 
 
-class TestPublicationDateMismatch:
-    """Verify cleanup works when publication dates differ from run dates."""
+class TestReleaseDateMismatch:
+    """Verify cleanup works when release dates differ from run dates."""
 
-    def test_different_publication_dates_per_dataset(self):
-        """Each dataset can have a different publication date."""
+    def test_different_release_dates_per_dataset(self):
+        """Each dataset can have a different release date."""
         keep = make_works_run(
             "2025-03-10",
             "run-2",
-            publication_date_openalex_works="2025-03-01",
-            publication_date_datacite="2025-02-28",
-            publication_date_crossref_metadata="2025-03-01",
-            publication_date_ror="2025-02-15",
-            publication_date_data_citation_corpus="2025-02-20",
+            release_date_openalex_works="2025-03-01",
+            release_date_datacite="2025-02-28",
+            release_date_crossref_metadata="2025-03-01",
+            release_date_ror="2025-02-15",
+            release_date_data_citation_corpus="2025-02-20",
         )
         stale = make_works_run(
             "2025-02-10",
             "run-1",
-            publication_date_openalex_works="2025-02-01",
-            publication_date_datacite="2025-01-15",
-            publication_date_crossref_metadata="2025-02-01",
-            publication_date_ror="2025-01-10",
-            publication_date_data_citation_corpus="2025-01-05",
+            release_date_openalex_works="2025-02-01",
+            release_date_datacite="2025-01-15",
+            release_date_crossref_metadata="2025-02-01",
+            release_date_ror="2025-01-10",
+            release_date_data_citation_corpus="2025-01-05",
         )
 
         def fake_checkpoint(*, workflow_key, task_name, date):
@@ -445,10 +445,10 @@ class TestPublicationDateMismatch:
         assert run_id_for("datacite", "download", "2025-02-28") not in run_ids
 
     def test_same_dataset_reused_across_runs_not_deleted(self):
-        """If both keep and stale reference the same publication_date, run_id is protected."""
+        """If both keep and stale reference the same release_date, run_id is protected."""
         same_pub_date = "2025-01-15"
-        keep = make_works_run("2025-02-10", "run-2", **default_pub_dates(same_pub_date))
-        stale = make_works_run("2025-01-13", "run-1", **default_pub_dates(same_pub_date))
+        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(same_pub_date))
+        stale = make_works_run("2025-01-13", "run-1", **default_release_dates(same_pub_date))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
@@ -478,7 +478,7 @@ class TestPublicationDateMismatch:
 
     def test_orphaned_release_cleaned_up(self):
         """A checkpoint at a date not referenced by any ProcessWorksRunRecord is still cleaned up."""
-        keep = make_works_run("2025-02-10", "run-1", **default_pub_dates(KEEP_PUB_DATE))
+        keep = make_works_run("2025-02-10", "run-1", **default_release_dates(KEEP_RELEASE_DATE))
         orphan_date = "2025-01-15"
 
         def fake_checkpoint(*, workflow_key, task_name, date):
@@ -487,7 +487,7 @@ class TestPublicationDateMismatch:
         def fake_scan_checkpoints(*, workflow_key, task_name):
             # Return both the keep checkpoint and the orphaned one
             return [
-                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_PUB_DATE)),
+                make_checkpoint(run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE)),
                 make_checkpoint(run_id_for(workflow_key, task_name, orphan_date)),
             ]
 
@@ -505,12 +505,12 @@ class TestPublicationDateMismatch:
             assert run_id_for(wk, tn, orphan_date) in run_ids
         # Keep checkpoints should NOT be deleted
         for wk, tn, _, _ in DATASET_TASKS:
-            assert run_id_for(wk, tn, KEEP_PUB_DATE) not in run_ids
+            assert run_id_for(wk, tn, KEEP_RELEASE_DATE) not in run_ids
 
-    def test_old_records_without_publication_dates_graceful(self):
-        """Records created before this fix (with None publication_date_*) are handled gracefully."""
-        keep = make_works_run("2025-02-10", "run-2", **default_pub_dates(KEEP_PUB_DATE))
-        # Old record without publication_date_* — all set to None by default
+    def test_old_records_without_release_dates_graceful(self):
+        """Records created before this fix (with None release_date_*) are handled gracefully."""
+        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(KEEP_RELEASE_DATE))
+        # Old record without release_date_* — all set to None by default
         old_record = make_works_run("2025-01-13", "run-1")
 
         def fake_checkpoint(*, workflow_key, task_name, date):
@@ -522,7 +522,7 @@ class TestPublicationDateMismatch:
                     make_checkpoint(run_id_for(workflow_key, task_name, "2025-02-10")),
                     make_checkpoint(run_id_for(workflow_key, task_name, "2025-01-13")),
                 ]
-            return [make_checkpoint(run_id_for(workflow_key, task_name, KEEP_PUB_DATE))]
+            return [make_checkpoint(run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE))]
 
         with (
             patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep, old_record]),
@@ -552,7 +552,7 @@ class TestTaskRunRecordCleanup:
         Returns:
             List of stale prefix dicts from build_cleanup_plan.
         """
-        keep = make_works_run("2025-02-10", "run-keep", **default_pub_dates(KEEP_PUB_DATE))
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
@@ -597,7 +597,7 @@ class TestTaskRunRecordCleanup:
         """FAILED runs with protected run_ids are not cleaned."""
         # The protected run_id comes from the keep record's checkpoint lookup.
         # Use a run_id that matches what fake_checkpoint would return for the keep record.
-        protected_id = run_id_for("openalex-works", "download", KEEP_PUB_DATE)
+        protected_id = run_id_for("openalex-works", "download", KEEP_RELEASE_DATE)
         task_runs = {"openalex-works-download": [make_task_run(protected_id, "FAILED")]}
         result = self._run_with_task_runs(task_runs)
         run_ids = [item["run_id"] for item in result]

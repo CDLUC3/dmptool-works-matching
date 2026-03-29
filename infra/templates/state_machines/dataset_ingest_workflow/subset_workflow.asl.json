@@ -12,7 +12,7 @@
           "task_type": "subset",
           "predecessor_task_name": "download",
           "workflow_key.$": "$.workflow_key",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "execution_arn.$": "$$.Execution.Id",
@@ -66,7 +66,7 @@
         "Payload": {
           "task_type": "subset",
           "workflow_key.$": "$.workflow_key",
-          "publication_date.$": "$.publication_date",
+          "release_date.$": "$.release_date",
           "current.$": "$.current"
         }
       },

@@ -25,7 +25,7 @@ def make_event(*, state_machine_arn: str, execution_arn: str, execution_input: d
     return {"source": "aws.states", "detail-type": "Step Functions Execution Status Change", "detail": detail}
 
 
-BASE_INPUT = {"workflow_key": "openalex-works", "publication_date": "2025-01-01", "aws_env": "dev"}
+BASE_INPUT = {"workflow_key": "openalex-works", "release_date": "2025-01-01", "aws_env": "dev"}
 
 
 class TestParentSmFailure:
@@ -41,7 +41,7 @@ class TestParentSmFailure:
         ):
             handle_execution_failure_handler(event, None)
 
-        mock_release.assert_called_once_with(dataset="openalex-works", publication_date="2025-01-01", status="FAILED")
+        mock_release.assert_called_once_with(dataset="openalex-works", release_date="2025-01-01", status="FAILED")
         mock_task.assert_not_called()
 
 
@@ -110,7 +110,7 @@ class TestChildSmFailureWithoutTaskRun:
         mock_task.assert_not_called()
 
 
-PROCESS_DMPS_INPUT = {"workflow_key": "process-dmps", "publication_date": "2025-01-15", "aws_env": "dev"}
+PROCESS_DMPS_INPUT = {"workflow_key": "process-dmps", "release_date": "2025-01-15", "aws_env": "dev"}
 
 
 class TestProcessDmpsFailure:
@@ -136,7 +136,7 @@ class TestProcessDmpsFailure:
             handle_execution_failure_handler(event, None)
 
         mock_dmps.assert_called_once_with(
-            run_date="2025-01-15",
+            release_date="2025-01-15",
             run_id="20250115T170000-abcd1234",
             status="FAILED",
             error="Lambda function timed out",

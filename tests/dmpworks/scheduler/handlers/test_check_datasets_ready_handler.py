@@ -49,7 +49,7 @@ CHECKPOINT_RUN_IDS = {
 class TestAllReady:
     """All datasets have completed checkpoints and none are in-flight."""
 
-    def test_returns_all_ready_with_run_ids_and_publication_dates(self):
+    def test_returns_all_ready_with_run_ids_and_release_dates(self):
         sqlmesh_checkpoint = make_checkpoint("sqlmesh-prev-run", task_key="sqlmesh#2025-01-13")
 
         def mock_get_checkpoint(*, workflow_key, task_name, **kwargs):
@@ -72,11 +72,11 @@ class TestAllReady:
         assert result["run_id_ror"] == "ror-run"
         assert result["run_id_data_citation_corpus"] == "dcc-run"
         assert result["run_id_sqlmesh_prev"] == "sqlmesh-prev-run"
-        assert result["publication_date_openalex_works"] == "2025-01-15"
-        assert result["publication_date_datacite"] == "2025-01-10"
-        assert result["publication_date_crossref_metadata"] == "2025-01-08"
-        assert result["publication_date_ror"] == "2025-01-05"
-        assert result["publication_date_data_citation_corpus"] == "2025-01-03"
+        assert result["release_date_openalex_works"] == "2025-01-15"
+        assert result["release_date_datacite"] == "2025-01-10"
+        assert result["release_date_crossref_metadata"] == "2025-01-08"
+        assert result["release_date_ror"] == "2025-01-05"
+        assert result["release_date_data_citation_corpus"] == "2025-01-03"
 
     def test_returns_all_ready_when_latest_release_is_none(self):
         """No release record at all is fine — dataset was never started."""
