@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from dmpworks.scheduler.handler.create_process_works_run_handler import create_process_works_run_handler
+from dmpworks.scheduler.handler.works.create_process_works_run_handler import create_process_works_run_handler
 
-PATCH_BASE = "dmpworks.scheduler.handler.create_process_works_run_handler"
+PATCH_BASE = "dmpworks.scheduler.handler.works.create_process_works_run_handler"
 
 BASE_EVENT = {
     "release_date": "2025-01-13",

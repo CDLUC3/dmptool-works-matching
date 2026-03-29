@@ -13,10 +13,8 @@ from dmpworks.scheduler.config import (
     OpenalexWorksConfig,
     OpenSearchClientConfig,
 )
-from dmpworks.scheduler.handler import (
-    get_batch_job_params_handler,
-    set_task_run_complete_handler,
-)
+from dmpworks.scheduler.handler.task.get_batch_job_params_handler import get_batch_job_params_handler
+from dmpworks.scheduler.handler.task.set_task_run_complete_handler import set_task_run_complete_handler
 from dmpworks.scheduler.dynamodb_store import (
     DatasetReleaseRecord,
     TaskCheckpointRecord,
@@ -48,7 +46,7 @@ class TestGetBatchJobParamsHandler:
     def mock_settings(self, monkeypatch):
         import importlib
 
-        mod = importlib.import_module("dmpworks.scheduler.handler.get_batch_job_params_handler")
+        mod = importlib.import_module("dmpworks.scheduler.handler.task.get_batch_job_params_handler")
         monkeypatch.setattr(mod, "LambdaEnvSettings", MagicMock())
         config = LambdaConfig(
             crossref_metadata_config=CrossrefMetadataConfig(bucket_name="crossref-bucket"),

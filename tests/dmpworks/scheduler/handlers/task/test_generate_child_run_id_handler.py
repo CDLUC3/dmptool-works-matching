@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from dmpworks.scheduler.handler.generate_child_run_id_handler import generate_child_run_id_handler
+from dmpworks.scheduler.handler.task.generate_child_run_id_handler import generate_child_run_id_handler
 
 
 class TestGenerateChildRunIdHandler:
-    @patch("dmpworks.scheduler.handler.generate_child_run_id_handler.LambdaEnvSettings")
+    @patch("dmpworks.scheduler.handler.task.generate_child_run_id_handler.LambdaEnvSettings")
     @patch(
-        "dmpworks.scheduler.handler.generate_child_run_id_handler.generate_run_id",
+        "dmpworks.scheduler.handler.task.generate_child_run_id_handler.generate_run_id",
         return_value="20260328T120000-a1b2c3d4",
     )
     def test_returns_run_id_and_execution_name(self, mock_run_id, mock_env):

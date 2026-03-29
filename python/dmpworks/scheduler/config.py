@@ -79,24 +79,12 @@ class VersionCheckerEnvSettings(LambdaEnvSettings):
     datacite_credentials_secret_arn: str
 
 
-class StartProcessWorksEnvSettings(LambdaEnvSettings):
-    """Extended settings for the start-process-works Lambda.
+class StartProcessEnvSettings(LambdaEnvSettings):
+    """Extended settings for start-process-works and start-process-dmps Lambdas.
 
     Attributes:
         bucket_name: Main dmpworks S3 bucket name.
-        state_machine_arn: ARN of the ProcessWorksStateMachine to start.
-    """
-
-    bucket_name: str
-    state_machine_arn: str
-
-
-class StartProcessDMPsEnvSettings(LambdaEnvSettings):
-    """Extended settings for the start-process-dmps Lambda.
-
-    Attributes:
-        bucket_name: Main dmpworks S3 bucket name.
-        state_machine_arn: ARN of the ProcessDmpsStateMachine to start.
+        state_machine_arn: ARN of the state machine to start.
     """
 
     bucket_name: str

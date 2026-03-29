@@ -19,6 +19,10 @@ from dmpworks.utils import fetch_datacite_aws_credentials, retry_session
 
 log = logging.getLogger(__name__)
 
+# Zenodo concept record IDs — stable identifiers shared across all versions of each dataset.
+ROR_ZENODO_CONCEPT_ID = 6347574
+DCC_ZENODO_CONCEPT_ID = 11196858
+
 
 def list_zenodo_records(
     *,
@@ -300,7 +304,7 @@ def detect_ror_version(*, start_dt: pendulum.DateTime | None = None) -> DatasetR
         or None if no dataset or no new version was detected.
     """
     end_date = pendulum.now("UTC")
-    records = list_zenodo_records(conceptrecid=6347574, start_date=start_dt, end_date=end_date)
+    records = list_zenodo_records(conceptrecid=ROR_ZENODO_CONCEPT_ID, start_date=start_dt, end_date=end_date)
     log.info(f"ROR Zenodo records found: {len(records)}")
     if not records:
         return None
@@ -331,7 +335,7 @@ def detect_dcc_version(*, start_dt: pendulum.DateTime | None = None) -> DatasetR
         or None if no dataset or no new version was detected.
     """
     end_date = pendulum.now("UTC")
-    records = list_zenodo_records(conceptrecid=11196858, start_date=start_dt, end_date=end_date)
+    records = list_zenodo_records(conceptrecid=DCC_ZENODO_CONCEPT_ID, start_date=start_dt, end_date=end_date)
     log.info(f"DCC Zenodo records found: {len(records)}")
     if not records:
         return None

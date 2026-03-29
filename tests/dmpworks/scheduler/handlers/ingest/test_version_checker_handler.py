@@ -16,7 +16,7 @@ from dmpworks.scheduler.config import (
     OpenSearchClientConfig,
 )
 from dmpworks.scheduler.dynamodb_store import DatasetReleaseRecord
-from dmpworks.scheduler.handler.version_checker_handler import version_checker_handler
+from dmpworks.scheduler.handler.ingest.version_checker_handler import version_checker_handler
 
 
 def make_release_record(dataset: str, release_date: str, **kwargs) -> DatasetReleaseRecord:
@@ -59,13 +59,18 @@ class TestVersionCheckerHandlerNewRelease:
 
         with (
             patch.dict("os.environ", BASE_ENV),
-            patch("dmpworks.scheduler.handler.version_checker_handler.load_lambda_config", return_value=make_config()),
-            patch("dmpworks.scheduler.handler.version_checker_handler.get_latest_known_release", return_value=None),
             patch(
-                "dmpworks.scheduler.handler.version_checker_handler.discover_latest_release",
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.load_lambda_config",
+                return_value=make_config(),
+            ),
+            patch(
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.get_latest_known_release", return_value=None
+            ),
+            patch(
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.discover_latest_release",
                 return_value=release_record,
             ),
-            patch("dmpworks.scheduler.handler.version_checker_handler.boto3.client") as mock_boto3,
+            patch("dmpworks.scheduler.handler.ingest.version_checker_handler.boto3.client") as mock_boto3,
         ):
             mock_sfn = MagicMock()
             mock_boto3.return_value = mock_sfn
@@ -96,10 +101,17 @@ class TestVersionCheckerHandlerNoRelease:
         """When discover returns None, SFN is not invoked."""
         with (
             patch.dict("os.environ", BASE_ENV),
-            patch("dmpworks.scheduler.handler.version_checker_handler.load_lambda_config", return_value=make_config()),
-            patch("dmpworks.scheduler.handler.version_checker_handler.get_latest_known_release", return_value=None),
-            patch("dmpworks.scheduler.handler.version_checker_handler.discover_latest_release", return_value=None),
-            patch("dmpworks.scheduler.handler.version_checker_handler.boto3.client") as mock_boto3,
+            patch(
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.load_lambda_config",
+                return_value=make_config(),
+            ),
+            patch(
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.get_latest_known_release", return_value=None
+            ),
+            patch(
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.discover_latest_release", return_value=None
+            ),
+            patch("dmpworks.scheduler.handler.ingest.version_checker_handler.boto3.client") as mock_boto3,
         ):
             mock_sfn = MagicMock()
             mock_boto3.return_value = mock_sfn
@@ -119,11 +131,11 @@ class TestVersionCheckerHandlerUnknownDataset:
         with (
             patch.dict("os.environ", BASE_ENV),
             patch(
-                "dmpworks.scheduler.handler.version_checker_handler.load_lambda_config",
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.load_lambda_config",
                 return_value=make_config(enabled_datasets=["unknown-dataset"]),
             ),
-            patch("dmpworks.scheduler.handler.version_checker_handler.discover_latest_release") as mock_discover,
-            patch("dmpworks.scheduler.handler.version_checker_handler.boto3.client") as mock_boto3,
+            patch("dmpworks.scheduler.handler.ingest.version_checker_handler.discover_latest_release") as mock_discover,
+            patch("dmpworks.scheduler.handler.ingest.version_checker_handler.boto3.client") as mock_boto3,
         ):
             mock_sfn = MagicMock()
             mock_boto3.return_value = mock_sfn
@@ -146,14 +158,19 @@ class TestVersionCheckerHandlerStartDt:
 
         with (
             patch.dict("os.environ", BASE_ENV),
-            patch("dmpworks.scheduler.handler.version_checker_handler.load_lambda_config", return_value=make_config()),
             patch(
-                "dmpworks.scheduler.handler.version_checker_handler.get_latest_known_release", return_value=prior_record
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.load_lambda_config",
+                return_value=make_config(),
             ),
             patch(
-                "dmpworks.scheduler.handler.version_checker_handler.discover_latest_release", return_value=new_record
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.get_latest_known_release",
+                return_value=prior_record,
+            ),
+            patch(
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.discover_latest_release",
+                return_value=new_record,
             ) as mock_discover,
-            patch("dmpworks.scheduler.handler.version_checker_handler.boto3.client") as mock_boto3,
+            patch("dmpworks.scheduler.handler.ingest.version_checker_handler.boto3.client") as mock_boto3,
         ):
             mock_boto3.return_value = MagicMock()
             version_checker_handler({}, None)
@@ -170,11 +187,11 @@ class TestVersionCheckerHandlerEmptyDatasets:
         with (
             patch.dict("os.environ", BASE_ENV),
             patch(
-                "dmpworks.scheduler.handler.version_checker_handler.load_lambda_config",
+                "dmpworks.scheduler.handler.ingest.version_checker_handler.load_lambda_config",
                 return_value=make_config(enabled_datasets=[]),
             ),
-            patch("dmpworks.scheduler.handler.version_checker_handler.discover_latest_release") as mock_discover,
-            patch("dmpworks.scheduler.handler.version_checker_handler.boto3.client") as mock_boto3,
+            patch("dmpworks.scheduler.handler.ingest.version_checker_handler.discover_latest_release") as mock_discover,
+            patch("dmpworks.scheduler.handler.ingest.version_checker_handler.boto3.client") as mock_boto3,
         ):
             mock_sfn = MagicMock()
             mock_boto3.return_value = mock_sfn

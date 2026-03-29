@@ -180,7 +180,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.version_checker_handler"]
+        Command: ["dmpworks.scheduler.handler.ingest.version_checker_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -221,7 +221,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.set_release_status_handler"]
+        Command: ["dmpworks.scheduler.handler.ingest.set_release_status_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -237,7 +237,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.get_batch_job_params_handler"]
+        Command: ["dmpworks.scheduler.handler.task.get_batch_job_params_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -254,7 +254,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.set_task_run_complete_handler"]
+        Command: ["dmpworks.scheduler.handler.task.set_task_run_complete_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -270,7 +270,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.generate_child_run_id_handler"]
+        Command: ["dmpworks.scheduler.handler.task.generate_child_run_id_handler"]
       Timeout: 30
       MemorySize: 256
       Environment:
@@ -286,7 +286,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.store_approval_token_handler"]
+        Command: ["dmpworks.scheduler.handler.task.store_approval_token_handler"]
       Timeout: 30
       MemorySize: 256
       Environment:
@@ -429,7 +429,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.check_datasets_ready_handler"]
+        Command: ["dmpworks.scheduler.handler.works.check_datasets_ready_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -445,7 +445,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.create_process_works_run_handler"]
+        Command: ["dmpworks.scheduler.handler.works.create_process_works_run_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -461,7 +461,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.set_process_works_run_status_handler"]
+        Command: ["dmpworks.scheduler.handler.works.set_process_works_run_status_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -477,7 +477,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.create_process_dmps_run_handler"]
+        Command: ["dmpworks.scheduler.handler.dmps.create_process_dmps_run_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -493,7 +493,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.set_process_dmps_run_status_handler"]
+        Command: ["dmpworks.scheduler.handler.dmps.set_process_dmps_run_status_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -629,7 +629,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.start_process_works_handler"]
+        Command: ["dmpworks.scheduler.handler.works.start_process_works_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:
@@ -670,7 +670,7 @@ Resources:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaExecutionRole.Arn
       ImageConfig:
-        Command: ["dmpworks.scheduler.handler.start_process_dmps_handler"]
+        Command: ["dmpworks.scheduler.handler.dmps.start_process_dmps_handler"]
       Timeout: 300
       MemorySize: 256
       Environment:

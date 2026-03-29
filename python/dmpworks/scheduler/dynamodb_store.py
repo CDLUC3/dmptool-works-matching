@@ -138,6 +138,64 @@ class TaskCheckpointRecord(Model):
     completed_at = UnicodeAttribute()
 
 
+def get_latest(model_cls: type[Model], hash_key: str) -> Model | None:
+    """Return the most recent record for a hash key (reverse range-key scan, limit 1).
+
+    Args:
+        model_cls: PynamoDB model class to query.
+        hash_key: Hash key value.
+
+    Returns:
+        The most recent record, or None if no records exist.
+    """
+    return next(model_cls.query(hash_key, scan_index_forward=False, limit=1), None)
+
+
+def scan_by_date_range(
+    model_cls: type[Model], *, start_date: str | None = None, end_date: str | None = None
+) -> list[Model]:
+    """Scan a table with an optional release_date range filter.
+
+    Args:
+        model_cls: PynamoDB model class to scan (must have a release_date attribute).
+        start_date: Optional ISO date lower bound (inclusive).
+        end_date: Optional ISO date upper bound (inclusive).
+
+    Returns:
+        List of model instances.
+    """
+    if start_date and end_date:
+        condition = model_cls.release_date.between(start_date, end_date)
+    elif start_date:
+        condition = model_cls.release_date >= start_date
+    elif end_date:
+        condition = model_cls.release_date <= end_date
+    else:
+        return list(model_cls.scan())
+    return list(model_cls.scan(filter_condition=condition))
+
+
+def update_record(model_cls: type[Model], *keys, status: str | None = None, **kwargs) -> None:
+    """Fetch a record by keys and apply update actions.
+
+    Always sets updated_at. Optionally sets status and any additional
+    attributes passed as kwargs.
+
+    Args:
+        model_cls: PynamoDB model class.
+        *keys: Positional hash/range key values passed to model_cls.get().
+        status: If not None, set the record's status attribute.
+        **kwargs: Additional attribute name/value pairs to set.
+    """
+    record = model_cls.get(*keys)
+    actions = [model_cls.updated_at.set(datetime.now(UTC).isoformat())]
+    if status is not None:
+        actions.append(model_cls.status.set(status))
+    for key, value in kwargs.items():
+        actions.append(getattr(model_cls, key).set(value))
+    record.update(actions=actions)
+
+
 def get_latest_known_release(*, dataset: str) -> DatasetReleaseRecord | None:
     """Return the most recently published release record for a dataset.
 
@@ -147,14 +205,7 @@ def get_latest_known_release(*, dataset: str) -> DatasetReleaseRecord | None:
     Returns:
         The most recent DatasetReleaseRecord, or None if no records exist.
     """
-    return next(
-        DatasetReleaseRecord.query(
-            dataset,
-            scan_index_forward=False,
-            limit=1,
-        ),
-        None,
-    )
+    return get_latest(DatasetReleaseRecord, dataset)
 
 
 def persist_discovered_release(*, dataset: str, release: DatasetRelease) -> DatasetReleaseRecord | None:
@@ -444,15 +495,7 @@ def update_release_status(
         **kwargs: Additional DatasetReleaseRecord attribute names and values to set,
             e.g. step_function_execution_arn="arn:...".
     """
-    record = DatasetReleaseRecord.get(dataset, release_date)
-    actions = [
-        DatasetReleaseRecord.status.set(status),
-        DatasetReleaseRecord.updated_at.set(datetime.now(UTC).isoformat()),
-    ]
-    for key, value in kwargs.items():
-        actions.append(getattr(DatasetReleaseRecord, key).set(value))
-
-    record.update(actions=actions)
+    update_record(DatasetReleaseRecord, dataset, release_date, status=status, **kwargs)
     log.info(f"Marked release {status}: dataset={dataset} release_date={release_date}")
 
 
@@ -528,14 +571,7 @@ def get_latest_process_works_run(*, release_date: str) -> ProcessWorksRunRecord 
     Returns:
         The most recent ProcessWorksRunRecord, or None if no records exist.
     """
-    return next(
-        ProcessWorksRunRecord.query(
-            release_date,
-            scan_index_forward=False,
-            limit=1,
-        ),
-        None,
-    )
+    return get_latest(ProcessWorksRunRecord, release_date)
 
 
 def set_process_works_run_status(
@@ -554,15 +590,7 @@ def set_process_works_run_status(
         **kwargs: Additional ProcessWorksRunRecord attribute names and values to set,
             e.g. step_function_execution_arn="arn:...", run_id_sqlmesh="20250101T...", or error="...".
     """
-    record = ProcessWorksRunRecord.get(release_date, run_id)
-    actions = [
-        ProcessWorksRunRecord.status.set(status),
-        ProcessWorksRunRecord.updated_at.set(datetime.now(UTC).isoformat()),
-    ]
-    for key, value in kwargs.items():
-        actions.append(getattr(ProcessWorksRunRecord, key).set(value))
-
-    record.update(actions=actions)
+    update_record(ProcessWorksRunRecord, release_date, run_id, status=status, **kwargs)
     log.info(f"Set process works run status: release_date={release_date} run_id={run_id} status={status}")
 
 
@@ -645,9 +673,6 @@ def scan_all_process_works_runs(
 ) -> list[ProcessWorksRunRecord]:
     """Return ProcessWorksRunRecord entries, optionally filtered by release_date range.
 
-    Uses a DynamoDB scan with server-side filter expression when dates are provided.
-    release_date is the hash key so range queries are not possible.
-
     Args:
         start_date: Optional ISO date lower bound (inclusive).
         end_date: Optional ISO date upper bound (inclusive).
@@ -655,19 +680,13 @@ def scan_all_process_works_runs(
     Returns:
         List of ProcessWorksRunRecord instances.
     """
-    if start_date and end_date:
-        condition = ProcessWorksRunRecord.release_date.between(start_date, end_date)
-        return list(ProcessWorksRunRecord.scan(filter_condition=condition))
-    return list(ProcessWorksRunRecord.scan())
+    return scan_by_date_range(ProcessWorksRunRecord, start_date=start_date, end_date=end_date)
 
 
 def scan_all_process_dmps_runs(
     *, start_date: str | None = None, end_date: str | None = None
 ) -> list[ProcessDMPsRunRecord]:
     """Return ProcessDMPsRunRecord entries, optionally filtered by release_date range.
-
-    Uses a DynamoDB scan with server-side filter expression when dates are provided.
-    release_date is the hash key so range queries are not possible.
 
     Args:
         start_date: Optional ISO date lower bound (inclusive).
@@ -676,10 +695,7 @@ def scan_all_process_dmps_runs(
     Returns:
         List of ProcessDMPsRunRecord instances.
     """
-    if start_date and end_date:
-        condition = ProcessDMPsRunRecord.release_date.between(start_date, end_date)
-        return list(ProcessDMPsRunRecord.scan(filter_condition=condition))
-    return list(ProcessDMPsRunRecord.scan())
+    return scan_by_date_range(ProcessDMPsRunRecord, start_date=start_date, end_date=end_date)
 
 
 def get_latest_process_dmps_run(*, release_date: str) -> ProcessDMPsRunRecord | None:
@@ -691,14 +707,7 @@ def get_latest_process_dmps_run(*, release_date: str) -> ProcessDMPsRunRecord | 
     Returns:
         The most recent ProcessDMPsRunRecord, or None if no records exist.
     """
-    return next(
-        ProcessDMPsRunRecord.query(
-            release_date,
-            scan_index_forward=False,
-            limit=1,
-        ),
-        None,
-    )
+    return get_latest(ProcessDMPsRunRecord, release_date)
 
 
 def set_process_dmps_run_status(
@@ -706,13 +715,7 @@ def set_process_dmps_run_status(
     release_date: str,
     run_id: str,
     status: Literal["STARTED", "COMPLETED", "FAILED", "WAITING_FOR_APPROVAL"] | None = None,
-    error: str | None = None,
-    run_id_sync_dmps: str | None = None,
-    run_id_enrich_dmps: str | None = None,
-    run_id_dmp_works_search: str | None = None,
-    run_id_merge_related_works: str | None = None,
-    approval_token: str | None = None,
-    approval_task_name: str | None = None,
+    **kwargs,
 ) -> None:
     """Update fields on a ProcessDMPsRunRecord.
 
@@ -722,34 +725,11 @@ def set_process_dmps_run_status(
     Args:
         release_date: Hash key identifying the daily run date.
         run_id: Range key identifying the specific run.
-        status: Target lifecycle status — STARTED | COMPLETED | FAILED | WAITING_FOR_APPROVAL. If None, not updated.
-        error: Error message for FAILED status. If None, not updated.
-        run_id_sync_dmps: Run ID of the sync-dmps task. If None, not updated.
-        run_id_enrich_dmps: Run ID of the enrich-dmps task. If None, not updated.
-        run_id_dmp_works_search: Run ID of the dmp-works-search task. If None, not updated.
-        run_id_merge_related_works: Run ID of the merge-related-works task. If None, not updated.
-        approval_token: Task token for the parent SM's approval wait state. If None, not updated.
-        approval_task_name: Name of the child task awaiting retry approval. If None, not updated.
+        status: Target lifecycle status. If None, status is not updated.
+        **kwargs: Additional ProcessDMPsRunRecord attribute names and values to set,
+            e.g. run_id_sync_dmps="20250101T...", error="...", approval_token="...".
     """
-    record = ProcessDMPsRunRecord.get(release_date, run_id)
-    actions = [ProcessDMPsRunRecord.updated_at.set(datetime.now(UTC).isoformat())]
-    if status is not None:
-        actions.append(ProcessDMPsRunRecord.status.set(status))
-    if error is not None:
-        actions.append(ProcessDMPsRunRecord.error.set(error))
-    if run_id_sync_dmps is not None:
-        actions.append(ProcessDMPsRunRecord.run_id_sync_dmps.set(run_id_sync_dmps))
-    if run_id_enrich_dmps is not None:
-        actions.append(ProcessDMPsRunRecord.run_id_enrich_dmps.set(run_id_enrich_dmps))
-    if run_id_dmp_works_search is not None:
-        actions.append(ProcessDMPsRunRecord.run_id_dmp_works_search.set(run_id_dmp_works_search))
-    if run_id_merge_related_works is not None:
-        actions.append(ProcessDMPsRunRecord.run_id_merge_related_works.set(run_id_merge_related_works))
-    if approval_token is not None:
-        actions.append(ProcessDMPsRunRecord.approval_token.set(approval_token))
-    if approval_task_name is not None:
-        actions.append(ProcessDMPsRunRecord.approval_task_name.set(approval_task_name))
-    record.update(actions=actions)
+    update_record(ProcessDMPsRunRecord, release_date, run_id, status=status, **kwargs)
     log.info(f"Set process DMPs run status: release_date={release_date} run_id={run_id} status={status}")
 
 

@@ -6,17 +6,17 @@ from unittest.mock import patch
 
 import pytest
 
-from dmpworks.scheduler.handler.store_approval_token_handler import store_approval_token_handler
+from dmpworks.scheduler.handler.task.store_approval_token_handler import store_approval_token_handler
 
 
 @pytest.fixture(autouse=True)
 def _mock_env():
-    with patch("dmpworks.scheduler.handler.store_approval_token_handler.LambdaEnvSettings"):
+    with patch("dmpworks.scheduler.handler.task.store_approval_token_handler.LambdaEnvSettings"):
         yield
 
 
 class TestStoreApprovalTokenHandler:
-    @patch("dmpworks.scheduler.handler.store_approval_token_handler.set_process_dmps_run_status")
+    @patch("dmpworks.scheduler.handler.task.store_approval_token_handler.set_process_dmps_run_status")
     def test_routes_to_process_dmps(self, mock_set_status):
         event = {
             "workflow_key": "process-dmps",
@@ -35,7 +35,7 @@ class TestStoreApprovalTokenHandler:
             approval_task_name="sync-dmps",
         )
 
-    @patch("dmpworks.scheduler.handler.store_approval_token_handler.set_process_works_run_status")
+    @patch("dmpworks.scheduler.handler.task.store_approval_token_handler.set_process_works_run_status")
     def test_routes_to_process_works(self, mock_set_status):
         event = {
             "workflow_key": "process-works",
@@ -54,7 +54,7 @@ class TestStoreApprovalTokenHandler:
             approval_task_name="sqlmesh",
         )
 
-    @patch("dmpworks.scheduler.handler.store_approval_token_handler.update_release_status")
+    @patch("dmpworks.scheduler.handler.task.store_approval_token_handler.update_release_status")
     def test_routes_to_dataset_release(self, mock_update):
         event = {
             "workflow_key": "openalex-works",

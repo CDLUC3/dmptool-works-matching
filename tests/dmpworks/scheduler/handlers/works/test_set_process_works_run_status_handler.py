@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from dmpworks.scheduler.handler.set_process_works_run_status_handler import set_process_works_run_status_handler
+from dmpworks.scheduler.handler.works.set_process_works_run_status_handler import set_process_works_run_status_handler
 
-PATCH_BASE = "dmpworks.scheduler.handler.set_process_works_run_status_handler"
+PATCH_BASE = "dmpworks.scheduler.handler.works.set_process_works_run_status_handler"
 
 
 class TestMarkStarted:

@@ -5,12 +5,12 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from dmpworks.scheduler.dynamodb_store import SQLMESH_INITIAL_RUN_ID
-from dmpworks.scheduler.handler.check_datasets_ready_handler import (
+from dmpworks.scheduler.handler.works.check_datasets_ready_handler import (
     REQUIRED_CHECKPOINTS,
     check_datasets_ready_handler,
 )
 
-PATCH_BASE = "dmpworks.scheduler.handler.check_datasets_ready_handler"
+PATCH_BASE = "dmpworks.scheduler.handler.works.check_datasets_ready_handler"
 
 # Maps each checkpoint pool_key to the task_key format used in the checkpoint record.
 CHECKPOINT_TASK_KEYS = {

@@ -157,9 +157,7 @@ def version_checker_handler(event: dict, context: LambdaContext) -> dict:  # noq
         )
 
         if dry_run:
-            log.info(
-                f"Dry run — discovered but not starting SFN: dataset={dataset} release_date={record.release_date}"
-            )
+            log.info(f"Dry run — discovered but not starting SFN: dataset={dataset} release_date={record.release_date}")
             continue
 
         run_id = generate_run_id()

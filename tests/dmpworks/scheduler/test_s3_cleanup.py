@@ -79,19 +79,19 @@ def make_task_run(run_id: str, status: str, *, created_at: str | None = None) ->
     return r
 
 
-def run_id_for(workflow_key: str, task_name: str, run_date: str) -> str:
+def run_id_for(workflow_key: str, task_name: str, date: str) -> str:
     """Return a deterministic run_id for a given task + date combination."""
-    return f"{workflow_key}-{task_name}-{run_date}"
+    return f"{workflow_key}-{task_name}-{date}"
 
 
-def default_release_dates(pub_date: str) -> dict:
+def default_release_dates(release_date: str) -> dict:
     """Return kwargs to set all release_date_* fields to the same date."""
     return {
-        "release_date_openalex_works": pub_date,
-        "release_date_datacite": pub_date,
-        "release_date_crossref_metadata": pub_date,
-        "release_date_ror": pub_date,
-        "release_date_data_citation_corpus": pub_date,
+        "release_date_openalex_works": release_date,
+        "release_date_datacite": release_date,
+        "release_date_crossref_metadata": release_date,
+        "release_date_ror": release_date,
+        "release_date_data_citation_corpus": release_date,
     }
 
 
@@ -264,7 +264,7 @@ class TestStartedAndFailedRecordsProtected:
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
 
-        started_pub_date = "2025-03-01"
+        started_release_date = "2025-03-01"
 
         def fake_scan_checkpoints(*, workflow_key, task_name):
             if workflow_key == SQLMESH_TASK[0] and task_name == SQLMESH_TASK[1]:
@@ -275,7 +275,7 @@ class TestStartedAndFailedRecordsProtected:
                 ]
             return [
                 make_checkpoint(run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE)),
-                make_checkpoint(run_id_for(workflow_key, task_name, started_pub_date)),
+                make_checkpoint(run_id_for(workflow_key, task_name, started_release_date)),
             ]
 
         with (
@@ -446,9 +446,9 @@ class TestReleaseDateMismatch:
 
     def test_same_dataset_reused_across_runs_not_deleted(self):
         """If both keep and stale reference the same release_date, run_id is protected."""
-        same_pub_date = "2025-01-15"
-        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(same_pub_date))
-        stale = make_works_run("2025-01-13", "run-1", **default_release_dates(same_pub_date))
+        same_release_date = "2025-01-15"
+        keep = make_works_run("2025-02-10", "run-2", **default_release_dates(same_release_date))
+        stale = make_works_run("2025-01-13", "run-1", **default_release_dates(same_release_date))
 
         def fake_checkpoint(*, workflow_key, task_name, date):
             return make_checkpoint(run_id_for(workflow_key, task_name, date))
@@ -460,7 +460,7 @@ class TestReleaseDateMismatch:
                     make_checkpoint(run_id_for(workflow_key, task_name, "2025-01-13")),
                 ]
             # Only one checkpoint per dataset — same date used by both runs
-            return [make_checkpoint(run_id_for(workflow_key, task_name, same_pub_date))]
+            return [make_checkpoint(run_id_for(workflow_key, task_name, same_release_date))]
 
         with (
             patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep, stale]),
