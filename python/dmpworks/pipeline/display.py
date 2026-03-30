@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import re
 from typing import TYPE_CHECKING
 
 from cron_descriptor import get_description
@@ -258,6 +259,20 @@ def parse_eventbridge_cron(*, expression: str) -> str | None:
     eventbridge_cron_field_count = 6
     if len(fields) == eventbridge_cron_field_count:
         fields = fields[:5]
+    # EventBridge DOW uses 1=SUN..7=SAT; standard cron uses 0=SUN..6=SAT.
+    # Decrement the day-of-week number(s) so libraries like cron_descriptor
+    # and croniter interpret them correctly.  The occurrence number after '#'
+    # (e.g. the '2' in '2#2' meaning "second") must NOT be decremented.
+    # Named days (MON, TUE, etc.) and special characters (?, *) need no
+    # translation.
+    dow = fields[4]
+    if dow not in ("?", "*") and re.search(r"\d", dow):
+        if "#" in dow:
+            day_part, occurrence = dow.split("#", 1)
+            day_part = re.sub(r"\d+", lambda m: str(int(m.group()) - 1), day_part)
+            fields[4] = f"{day_part}#{occurrence}"
+        else:
+            fields[4] = re.sub(r"\d+", lambda m: str(int(m.group()) - 1), dow)
     return " ".join(fields)
 
 

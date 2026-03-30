@@ -5,7 +5,7 @@ template:
 parameters:
   Env: "{{ var.env }}"
   EcrImageUri: !ssm {{ stack_group_config.sceptre_user_data.ssm_path }}/LambdaEcrImageUri
-  BucketName: !stack_output stg.yaml/s3::S3BucketID
+  BucketName: !stack_output stg/s3.yaml::S3BucketID
   DataCiteCredentialsAPIUserSecretArn: !ssm {{ stack_group_config.sceptre_user_data.ssm_path }}/DataCiteCredentialsAPIUserSecretArn
 
 dependencies:

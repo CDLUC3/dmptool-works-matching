@@ -30,9 +30,9 @@ AWSEnv = Literal["dev", "stg", "prd"]
 SMALL_QUEUE_VCPUS = 2
 SMALL_QUEUE_MEMORY = 3686
 
-# download queue:   c5ad.8xlarge  (32 vCPUs, ~57 GiB)
-DOWNLOAD_QUEUE_VCPUS = 32
-DOWNLOAD_QUEUE_MEMORY = 58_368
+# download queue:   c6id.4xlarge  (16 vCPUs, ~32 GiB)
+DOWNLOAD_QUEUE_VCPUS = 16
+DOWNLOAD_QUEUE_MEMORY = 29_491
 
 # transform queue:  c5ad.8xlarge  (32 vCPUs, ~57 GiB)
 TRANSFORM_QUEUE_VCPUS = 32
@@ -42,9 +42,13 @@ TRANSFORM_QUEUE_MEMORY = 58_368
 SQLMESH_QUEUE_VCPUS = 32
 SQLMESH_QUEUE_MEMORY = 250_880
 
-# opensearch queue: m5dn.2xlarge  (8 vCPUs,  ~28 GiB)
-OPENSEARCH_QUEUE_VCPUS = 8
-OPENSEARCH_QUEUE_MEMORY = 28_762
+# opensearch queue: m5ad.large (2 vCPUs, ~7 GiB)
+OPENSEARCH_QUEUE_VCPUS = 2
+OPENSEARCH_QUEUE_MEMORY = 7_373
+
+# opensearch queue: c6id.xlarge (4 vCPUs, ~7 GiB) — used by sync-works for NVMe disk
+OPENSEARCH_SYNC_WORKS_QUEUE_VCPUS = 4
+OPENSEARCH_SYNC_WORKS_QUEUE_MEMORY = 7_373
 
 TQDM_POSITION = "-1"
 TQDM_MININTERVAL = "120"
@@ -136,7 +140,7 @@ standard_job_queue = small_job_queue
 def download_job_queue(env: AWSEnv) -> str:
     """Get the download job queue name for the given environment.
 
-    Used for large download jobs (OpenAlex, Crossref, DataCite) on c5ad.8xlarge.
+    Used for large download jobs (OpenAlex, Crossref, DataCite) on c6id.4xlarge.
 
     Args:
         env: The environment name.
@@ -178,7 +182,7 @@ def sqlmesh_job_queue(env: AWSEnv) -> str:
 def opensearch_job_queue(env: AWSEnv) -> str:
     """Get the OpenSearch job queue name for the given environment.
 
-    Used for OpenSearch sync and search jobs on m5dn.2xlarge.
+    Used for OpenSearch sync and search jobs on m5ad.large / c6id.xlarge.
 
     Args:
         env: The environment name.
@@ -783,8 +787,8 @@ def process_works_sync_works_factory(
         env=env,
         queue=opensearch_job_queue,
         job_definition=standard_job_definition,
-        vcpus=OPENSEARCH_QUEUE_VCPUS,
-        memory=OPENSEARCH_QUEUE_MEMORY,
+        vcpus=OPENSEARCH_SYNC_WORKS_QUEUE_VCPUS,
+        memory=OPENSEARCH_SYNC_WORKS_QUEUE_MEMORY,
         command="dmpworks aws-batch opensearch sync-works $BUCKET_NAME $INDEX_NAME",
         env_vars={
             "RELEASE_DATE_PROCESS_WORKS": release_date,

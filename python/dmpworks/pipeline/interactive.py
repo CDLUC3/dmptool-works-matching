@@ -5,8 +5,15 @@ from __future__ import annotations
 from datetime import UTC, datetime
 import json
 import logging
+from typing import TYPE_CHECKING, NamedTuple
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from dmpworks.scheduler.dynamodb_store import TaskCheckpointRecord
 
 import boto3
+import pendulum
 import questionary
 from rich.console import Console
 from rich.table import Table
@@ -18,7 +25,7 @@ from dmpworks.pipeline.aws import (
     get_eventbridge_rule_name,
     get_state_machine_arn,
 )
-from dmpworks.pipeline.cli import DATASET_WORKFLOW_KEYS
+from dmpworks.pipeline.cli import DATASET_WORKFLOW_KEYS, PROCESS_DMPS_TASK_NAMES
 from dmpworks.pipeline.display import build_execution_tree
 from dmpworks.scheduler.batch_params import generate_run_id
 from dmpworks.scheduler.config import load_lambda_config
@@ -36,16 +43,32 @@ log = logging.getLogger(__name__)
 console = Console()
 
 
-def check_running_executions(*, sm_arn: str) -> bool:
-    """Check for running executions and warn the user. Returns True if user wants to continue."""
+def check_running_executions(*, sm_arn: str, execution_prefix: str | None = None) -> bool:
+    """Check for running executions and warn the user. Returns True if user wants to continue.
+
+    Args:
+        sm_arn: State machine ARN to check.
+        execution_prefix: If provided, only warn about executions whose name starts with this prefix.
+    """
     sfn = boto3.client("stepfunctions")
     response = sfn.list_executions(stateMachineArn=sm_arn, statusFilter="RUNNING", maxResults=5)
     running = response.get("executions", [])
+    if execution_prefix:
+        running = [ex for ex in running if ex["name"].startswith(f"{execution_prefix}-")]
     if running:
         console.print(f"\n[yellow]Warning: {len(running)} execution(s) currently RUNNING:[/yellow]")
         for ex in running:
             console.print(f"  {ex['name']}  (started {ex['startDate']})")
-        return questionary.confirm("Continue anyway?", default=False).ask()
+        return questionary.confirm("Continue anyway?", default=False, auto_enter=False).ask()
+    return True
+
+
+def validate_date(value: str) -> bool | str:
+    """Validate that a string is a valid YYYY-MM-DD date."""
+    try:
+        pendulum.from_format(value, "YYYY-MM-DD")
+    except ValueError:
+        return "Invalid date — expected YYYY-MM-DD format."
     return True
 
 
@@ -66,7 +89,7 @@ def check_schedules_enabled(*, env: str) -> bool:
         for r in enabled_rules:
             console.print(f"  {r}")
         console.print("[dim]Consider running 'dmpworks pipeline schedules --pause' before manual runs.[/dim]")
-        return questionary.confirm("Continue with schedules enabled?", default=True).ask()
+        return questionary.confirm("Continue with schedules enabled?", default=True, auto_enter=False).ask()
     return True
 
 
@@ -91,13 +114,20 @@ def start_execution(*, sm_arn: str, execution_name: str, sfn_input: dict) -> str
     return response["executionArn"]
 
 
-def confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict) -> None:
+def confirm_and_start(
+    *,
+    sm_arn: str,
+    execution_name: str,
+    sfn_input: dict,
+    on_confirmed: Callable[[], None] | None = None,
+) -> None:
     """Display execution summary, confirm with user, and start the SFN execution.
 
     Args:
         sm_arn: State machine ARN.
         execution_name: Name for the SFN execution.
         sfn_input: Input dict for the SFN execution.
+        on_confirmed: Optional callback to run after the user confirms (e.g. delete checkpoints).
     """
     console.print(f"\n[bold]Start New Execution:[/bold] {execution_name}")
     console.print("\n[bold]Execution Summary:[/bold]")
@@ -108,9 +138,12 @@ def confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict) -> N
         table.add_row(k, str(v))
     console.print(table)
 
-    if not questionary.confirm("Start execution?").ask():
+    if not questionary.confirm("Start execution?", auto_enter=False).ask():
         console.print("Cancelled.")
         return
+
+    if on_confirmed:
+        on_confirmed()
 
     arn = start_execution(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
     console.print(f"\n[green]Started execution:[/green] {arn}")
@@ -145,6 +178,70 @@ def prompt_dmp_scope(*, env: str) -> bool | None:
     if dmp_scope is None:
         return None
     return dmp_scope == "All DMPs"
+
+
+class DmpsStepSelection(NamedTuple):
+    """Result of a process-dmps step selection prompt."""
+
+    rerun_choices: list[str]
+    checkpoints: dict[str, TaskCheckpointRecord]
+    skip_sync_dmps: bool
+    skip_enrich_dmps: bool
+    skip_dmp_works_search: bool
+    skip_merge_related_works: bool
+
+
+def prompt_dmps_step_selection(*, release_date: str) -> DmpsStepSelection | None:
+    """Show process-dmps checkpoint status and prompt for steps to re-run.
+
+    Args:
+        release_date: Release date string (YYYY-MM-DD).
+
+    Returns:
+        DmpsStepSelection with rerun choices, checkpoints, and skip flags, or None if cancelled.
+    """
+    task_names = list(PROCESS_DMPS_TASK_NAMES)
+    checkpoints = {}
+    for tn in task_names:
+        cp = get_task_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
+        if cp:
+            checkpoints[tn] = cp
+
+    console.print("\nProcess-dmps checkpoint status:")
+    for tn in task_names:
+        if tn in checkpoints:
+            cp = checkpoints[tn]
+            console.print(f"  [green]{tn}[/green]: run_id={cp.run_id} completed_at={cp.completed_at}")
+        else:
+            console.print(f"  [yellow]{tn}[/yellow]: no checkpoint")
+
+    if checkpoints:
+        default_rerun = [tn for tn in task_names if tn not in checkpoints]
+        rerun_choices = questionary.checkbox(
+            "Process-dmps steps to re-run:",
+            choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
+        ).ask()
+        if rerun_choices is None:
+            return None
+
+        for tn in task_names:
+            if tn not in rerun_choices and tn not in checkpoints:
+                console.print(
+                    f"[red]Error: Cannot skip {tn} — no checkpoint exists. The workflow needs its run_id.[/red]"
+                )
+                return None
+    else:
+        console.print("[dim]No process-dmps checkpoints — all steps will run.[/dim]")
+        rerun_choices = list(task_names)
+
+    return DmpsStepSelection(
+        rerun_choices=rerun_choices,
+        checkpoints=checkpoints,
+        skip_sync_dmps="sync-dmps" not in rerun_choices,
+        skip_enrich_dmps="enrich-dmps" not in rerun_choices,
+        skip_dmp_works_search="dmp-works-search" not in rerun_choices,
+        skip_merge_related_works="merge-related-works" not in rerun_choices,
+    )
 
 
 def run_start_wizard(*, env: str, bucket_name: str) -> None:
@@ -190,8 +287,18 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
     release_date = selected.split()[0]
     release = next(r for r in releases if r.release_date == release_date)
 
-    # 3. Show existing checkpoints.
-    task_names = ["download", "subset", "transform"]
+    # 3. Build task list based on dataset capabilities.
+    if dataset in ("ror", "data-citation-corpus"):
+        task_names = ["download"]
+        use_subset = False
+    else:
+        try:
+            config = load_lambda_config(env)
+            use_subset = config.dataset_subset.enable
+        except Exception:
+            log.debug("Could not load subset config", exc_info=True)
+            use_subset = False
+        task_names = ["download", "subset", "transform"] if use_subset else ["download", "transform"]
     checkpoints = {}
     for tn in task_names:
         cp = get_task_checkpoint(workflow_key=dataset, task_name=tn, date=release_date)
@@ -235,27 +342,15 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
                 f"[yellow]Warning: Re-downloading {dataset} for {release_date} — source URLs may be stale (latest is {latest[0].release_date}).[/yellow]"
             )
 
-    # 6. Delete checkpoints for steps being re-run.
-    for tn in rerun_choices:
-        if tn in checkpoints:
-            delete_checkpoint(workflow_key=dataset, task_name=tn, date=release_date)
-
-    # 7. Pre-flight checks.
+    # 6. Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="dataset-ingest")
-    if not check_running_executions(sm_arn=sm_arn):
+    if not check_running_executions(sm_arn=sm_arn, execution_prefix=dataset):
         return
     if not check_schedules_enabled(env=env):
         return
 
-    # 8. Build SFN input.
+    # 7. Build SFN input.
     run_id = generate_run_id()
-    # Determine use_subset from SSM config if possible.
-    try:
-        config = load_lambda_config(env)
-        use_subset = config.dataset_subset.enable
-    except Exception:
-        use_subset = False
-
     sfn_input = {
         "workflow_key": dataset,
         "release_date": release_date,
@@ -271,9 +366,16 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
         "skip_transform": skip_transform,
     }
 
-    # 9. Confirm and start.
+    # 8. Confirm and start — checkpoints are deleted only after user confirms.
+    def delete_checkpoints() -> None:
+        for tn in rerun_choices:
+            if tn in checkpoints:
+                delete_checkpoint(workflow_key=dataset, task_name=tn, date=release_date)
+
     execution_name = f"{dataset}-{release_date}-{run_id}"
-    confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+    confirm_and_start(
+        sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, on_confirmed=delete_checkpoints
+    )
 
 
 def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
@@ -284,7 +386,7 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         bucket_name: S3 bucket name for the execution input.
     """
     today = datetime.now(UTC).strftime("%Y-%m-%d")
-    release_date = questionary.text("Release date (YYYY-MM-DD):", default=today).ask()
+    release_date = questionary.text("Release date (YYYY-MM-DD):", default=today, validate=validate_date).ask()
     if release_date is None:
         return
 
@@ -349,11 +451,6 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         console.print(f"[yellow]Warning: Missing dataset checkpoints: {', '.join(missing_datasets)}[/yellow]")
         console.print("[dim]The workflow will poll until all datasets are ready (up to 1 week).[/dim]")
 
-    # Delete checkpoints for re-run steps.
-    for tn in rerun_choices:
-        if tn in checkpoints:
-            delete_checkpoint(workflow_key="process-works", task_name=tn, date=release_date)
-
     # Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="process-works")
     if not check_running_executions(sm_arn=sm_arn):
@@ -362,15 +459,21 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         return
 
     # Ask whether to chain into process-dmps after completion.
-    start_process_dmps = questionary.confirm("Start process-dmps after completion?", default=True).ask()
+    start_process_dmps = questionary.confirm(
+        "Start process-dmps after completion?", default=True, auto_enter=False
+    ).ask()
     if start_process_dmps is None:
         return
     if start_process_dmps:
         run_all_dmps = prompt_dmp_scope(env=env)
         if run_all_dmps is None:
             return
+        dmps_selection = prompt_dmps_step_selection(release_date=release_date)
+        if dmps_selection is None:
+            return
     else:
         run_all_dmps = True
+        dmps_selection = None
 
     # Build SFN input.
     run_id = generate_run_id()
@@ -384,10 +487,25 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         "skip_sync_works": skip_sync_works,
         "start_process_dmps": start_process_dmps,
         "run_all_dmps": run_all_dmps,
+        "skip_sync_dmps": dmps_selection.skip_sync_dmps if dmps_selection else True,
+        "skip_enrich_dmps": dmps_selection.skip_enrich_dmps if dmps_selection else True,
+        "skip_dmp_works_search": dmps_selection.skip_dmp_works_search if dmps_selection else True,
+        "skip_merge_related_works": dmps_selection.skip_merge_related_works if dmps_selection else True,
     }
-    execution_name = f"process-works-{release_date}-{run_id}"
 
-    confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+    def delete_checkpoints() -> None:
+        for tn in rerun_choices:
+            if tn in checkpoints:
+                delete_checkpoint(workflow_key="process-works", task_name=tn, date=release_date)
+        if dmps_selection:
+            for tn in dmps_selection.rerun_choices:
+                if tn in dmps_selection.checkpoints:
+                    delete_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
+
+    execution_name = f"process-works-{release_date}-{run_id}"
+    confirm_and_start(
+        sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, on_confirmed=delete_checkpoints
+    )
 
 
 def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
@@ -398,51 +516,13 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
         bucket_name: S3 bucket name for the execution input.
     """
     today = datetime.now(UTC).strftime("%Y-%m-%d")
-    release_date = questionary.text("Release date (YYYY-MM-DD):", default=today).ask()
+    release_date = questionary.text("Release date (YYYY-MM-DD):", default=today, validate=validate_date).ask()
     if release_date is None:
         return
 
-    # Show checkpoint status.
-    task_names = ["sync-dmps", "enrich-dmps", "dmp-works-search", "merge-related-works"]
-    checkpoints = {}
-    for tn in task_names:
-        cp = get_task_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
-        if cp:
-            checkpoints[tn] = cp
-
-    console.print("\nCheckpoint status:")
-    for tn in task_names:
-        if tn in checkpoints:
-            cp = checkpoints[tn]
-            console.print(f"  [green]{tn}[/green]: run_id={cp.run_id} completed_at={cp.completed_at}")
-        else:
-            console.print(f"  [yellow]{tn}[/yellow]: no checkpoint")
-
-    # Select steps to re-run — skip prompt if no checkpoints exist (all must run).
-    if checkpoints:
-        default_rerun = [tn for tn in task_names if tn not in checkpoints]
-        rerun_choices = questionary.checkbox(
-            "Steps to re-run:",
-            choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
-        ).ask()
-        if rerun_choices is None:
-            return
-
-        # Validate: skipped steps must have checkpoints (ExtractRunId needs them).
-        for tn in task_names:
-            if tn not in rerun_choices and tn not in checkpoints:
-                console.print(
-                    f"[red]Error: Cannot skip {tn} — no checkpoint exists. The workflow needs its run_id.[/red]"
-                )
-                return
-    else:
-        console.print("[dim]No checkpoints found — all steps will run.[/dim]")
-        rerun_choices = list(task_names)
-
-    skip_sync_dmps = "sync-dmps" not in rerun_choices
-    skip_enrich_dmps = "enrich-dmps" not in rerun_choices
-    skip_dmp_works_search = "dmp-works-search" not in rerun_choices
-    skip_merge_related_works = "merge-related-works" not in rerun_choices
+    selection = prompt_dmps_step_selection(release_date=release_date)
+    if selection is None:
+        return
 
     # Show latest completed process-works run so the user knows what data the works index contains.
     works_runs = scan_all_process_works_runs()
@@ -473,18 +553,13 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
         console.print(
             "[yellow]Warning: No completed process-works runs found. The works index may not be up to date.[/yellow]"
         )
-        if not questionary.confirm("Continue anyway?", default=False).ask():
+        if not questionary.confirm("Continue anyway?", default=False, auto_enter=False).ask():
             return
 
     # Which DMPs to process.
     run_all_dmps = prompt_dmp_scope(env=env)
     if run_all_dmps is None:
         return
-
-    # Delete checkpoints for re-run steps.
-    for tn in rerun_choices:
-        if tn in checkpoints:
-            delete_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
 
     # Pre-flight checks.
     sm_arn = get_state_machine_arn(env=env, workflow="process-dmps")
@@ -502,14 +577,21 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
         "aws_env": env,
         "bucket_name": bucket_name,
         "run_all_dmps": run_all_dmps,
-        "skip_sync_dmps": skip_sync_dmps,
-        "skip_enrich_dmps": skip_enrich_dmps,
-        "skip_dmp_works_search": skip_dmp_works_search,
-        "skip_merge_related_works": skip_merge_related_works,
+        "skip_sync_dmps": selection.skip_sync_dmps,
+        "skip_enrich_dmps": selection.skip_enrich_dmps,
+        "skip_dmp_works_search": selection.skip_dmp_works_search,
+        "skip_merge_related_works": selection.skip_merge_related_works,
     }
-    execution_name = f"process-dmps-{release_date}-{run_id}"
 
-    confirm_and_start(sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input)
+    def delete_checkpoints() -> None:
+        for tn in selection.rerun_choices:
+            if tn in selection.checkpoints:
+                delete_checkpoint(workflow_key="process-dmps", task_name=tn, date=release_date)
+
+    execution_name = f"process-dmps-{release_date}-{run_id}"
+    confirm_and_start(
+        sm_arn=sm_arn, execution_name=execution_name, sfn_input=sfn_input, on_confirmed=delete_checkpoints
+    )
 
 
 def extract_run_id_from_execution_name(*, execution_name: str, workflow_key: str, release_date: str) -> str | None:
@@ -663,7 +745,7 @@ def run_approve_retry_wizard() -> None:
         child_name, selected = all_retryable[0]
         task_name = selected["approval_task_name"]
         prompt = f"Retry {task_name} ({child_name})?" if child_name else f"Retry {task_name}?"
-        if not questionary.confirm(prompt, default=True).ask():
+        if not questionary.confirm(prompt, default=True, auto_enter=False).ask():
             return
     else:
         choices = [
@@ -677,7 +759,9 @@ def run_approve_retry_wizard() -> None:
         if result is None:
             return
         child_name, selected = result
-        if not questionary.confirm(f"Send approval to retry {selected['approval_task_name']}?", default=True).ask():
+        if not questionary.confirm(
+            f"Send approval to retry {selected['approval_task_name']}?", default=True, auto_enter=False
+        ).ask():
             return
 
     sfn.send_task_success(taskToken=selected["approval_token"], output="{}")

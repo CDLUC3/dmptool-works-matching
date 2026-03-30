@@ -1,15 +1,15 @@
 # Copy to vars-stg.yaml and fill in your values.
 # vars-stg.yaml is gitignored.
 
+# Sceptre stack env
 env: stg
 
-# AWS region for deployment.
-region: us-east-1
+# AWS Region
+region: us-west-2
 
 # Root SSM path prefix for this deployment.
 # All SSM parameters this project reads live under this prefix, e.g.:
 #   {ssm_prefix}/{env}/CloudFormationBucket
-#   {ssm_prefix}/{env}/LambdaConfig
 ssm_prefix: /your-org/your-app/dmpworks
 
 # CloudFormation stack tags
@@ -27,3 +27,6 @@ subnet_stack_output: "<stack-name>::<output-key> <aws-profile>"
 security_group_stack_output: "<stack-name>::<output-key> <aws-profile>"
 opensearch_stack_output: "<stack-name>::<output-key> <aws-profile>"
 rds_secret_stack_output: "<stack-name>::<output-key> <aws-profile>"
+
+# The Cloud Formation Service Role SSM Parameter (optional)
+cloudformation_service_role_ssm: /path/to/Role

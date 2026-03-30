@@ -264,7 +264,7 @@ Resources:
   GenerateRunIdFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub dmpworks-${Env}-generate-child-run-id
+      FunctionName: !Sub dmpworks-${Env}-generate-run-id
       PackageType: Image
       Code:
         ImageUri: !Ref EcrImageUri

@@ -398,7 +398,9 @@ def admin_cleanup_s3_cmd(
 
     display_cleanup_plan(plan=plan)
 
-    if not questionary.confirm("Apply cleanup? This will schedule these prefixes for S3 expiry.").ask():
+    if not questionary.confirm(
+        "Apply cleanup? This will schedule these prefixes for S3 expiry.", auto_enter=False
+    ).ask():
         print("Cancelled.")
         return
 
@@ -451,7 +453,7 @@ def admin_delete_checkpoints_cmd(
         print("No checkpoints selected.")
         return
 
-    if not questionary.confirm(f"Delete {len(selected)} checkpoint(s)?").ask():
+    if not questionary.confirm(f"Delete {len(selected)} checkpoint(s)?", auto_enter=False).ask():
         print("Cancelled.")
         return
 

@@ -80,6 +80,10 @@
         "skip_sync_works.$": "$.skip_sync_works",
         "start_process_dmps.$": "$.start_process_dmps",
         "run_all_dmps.$": "$.run_all_dmps",
+        "skip_sync_dmps.$": "$.skip_sync_dmps",
+        "skip_enrich_dmps.$": "$.skip_enrich_dmps",
+        "skip_dmp_works_search.$": "$.skip_dmp_works_search",
+        "skip_merge_related_works.$": "$.skip_merge_related_works",
         "run_id_openalex_works.$": "$.check.datasets.run_id_openalex_works",
         "run_id_datacite.$": "$.check.datasets.run_id_datacite",
         "run_id_crossref_metadata.$": "$.check.datasets.run_id_crossref_metadata",
@@ -137,6 +141,10 @@
         "skip_sync_works.$": "$.skip_sync_works",
         "start_process_dmps.$": "$.start_process_dmps",
         "run_all_dmps.$": "$.run_all_dmps",
+        "skip_sync_dmps.$": "$.skip_sync_dmps",
+        "skip_enrich_dmps.$": "$.skip_enrich_dmps",
+        "skip_dmp_works_search.$": "$.skip_dmp_works_search",
+        "skip_merge_related_works.$": "$.skip_merge_related_works",
         "run_id.$": "$.created.run_id",
         "run_id_openalex_works.$": "$.run_id_openalex_works",
         "run_id_datacite.$": "$.run_id_datacite",
@@ -427,9 +435,8 @@
       "Parameters": {
         "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
-          "task_name": "process-dmps",
           "date.$": "$.release_date",
-          "workflow_prefix": "process-works"
+          "workflow_prefix": "process-dmps"
         }
       },
       "ResultSelector": {
@@ -453,10 +460,10 @@
           "bucket_name.$": "$.bucket_name",
           "run_id.$": "$.process_dmps_child.run_id",
           "run_all_dmps.$": "$.run_all_dmps",
-          "skip_sync_dmps": false,
-          "skip_enrich_dmps": false,
-          "skip_dmp_works_search": false,
-          "skip_merge_related_works": false
+          "skip_sync_dmps.$": "$.skip_sync_dmps",
+          "skip_enrich_dmps.$": "$.skip_enrich_dmps",
+          "skip_dmp_works_search.$": "$.skip_dmp_works_search",
+          "skip_merge_related_works.$": "$.skip_merge_related_works"
         }
       },
       "ResultPath": null,

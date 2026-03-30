@@ -61,6 +61,22 @@ S3_RUN_NAMES: list[str] = [run_name for _, _, run_name, _ in DATASET_TASKS] + [
 ZOMBIE_THRESHOLD_DAYS = 14
 
 
+def checkpoint_date(cp) -> str | None:
+    """Extract the date portion from a checkpoint's task_key ("{task_name}#{date}").
+
+    Args:
+        cp: TaskCheckpointRecord instance.
+
+    Returns:
+        The date string, or None if the task_key has no '#' separator.
+    """
+    task_key = cp.task_key
+    if not isinstance(task_key, str):
+        return None
+    parts = task_key.split("#", 1)
+    return parts[1] if len(parts) > 1 else None
+
+
 def collect_protected_run_ids(*, records):
     """Build the set of run_ids that must not be deleted.
 
@@ -127,18 +143,51 @@ def build_cleanup_plan(*, bucket_name: str) -> list[dict[str, str]]:
     protected_run_ids = collect_protected_run_ids(records=[keep_record, *started_works])
     log.info(f"Process-works keep date: {keep_record.release_date} ({len(protected_run_ids)} run IDs to protect)")
 
-    for wk, tn, prefix_type, _ in DATASET_TASKS:
-        stale_prefixes.extend(
-            {"prefix_type": prefix_type, "run_id": cp.run_id, "bucket_name": bucket_name}
-            for cp in scan_task_checkpoints(workflow_key=wk, task_name=tn)
-            if cp.run_id not in protected_run_ids
-        )
+    # Build per-dataset cutoff dates from the keep record — checkpoints at or after
+    # the cutoff date represent data ingested for a future process-works cycle and must
+    # not be deleted.
+    dataset_cutoffs: dict[tuple[str, str], str] = {}
+    for wk, tn, _, release_date_attr in DATASET_TASKS:
+        cutoff = getattr(keep_record, release_date_attr, None)
+        if cutoff is not None:
+            dataset_cutoffs[(wk, tn)] = cutoff
+    sqlmesh_cutoff = keep_record.release_date
 
-    stale_prefixes.extend(
-        {"prefix_type": SQLMESH_TASK[2], "run_id": cp.run_id, "bucket_name": bucket_name}
-        for cp in scan_task_checkpoints(workflow_key=SQLMESH_TASK[0], task_name=SQLMESH_TASK[1])
-        if cp.run_id not in protected_run_ids
-    )
+    for wk, tn, prefix_type, _ in DATASET_TASKS:
+        cutoff = dataset_cutoffs.get((wk, tn))
+        for cp in scan_task_checkpoints(workflow_key=wk, task_name=tn):
+            if cp.run_id in protected_run_ids:
+                continue
+            cp_date = checkpoint_date(cp)
+            if cutoff and cp_date and cp_date >= cutoff:
+                continue
+            if getattr(cp, "cleanup_scheduled", None):
+                continue
+            stale_prefixes.append(
+                {
+                    "prefix_type": prefix_type,
+                    "run_id": cp.run_id,
+                    "bucket_name": bucket_name,
+                    "source": {"table": "checkpoint", "workflow_key": cp.workflow_key, "task_key": cp.task_key},
+                }
+            )
+
+    for cp in scan_task_checkpoints(workflow_key=SQLMESH_TASK[0], task_name=SQLMESH_TASK[1]):
+        if cp.run_id in protected_run_ids:
+            continue
+        cp_date = checkpoint_date(cp)
+        if cp_date and cp_date >= sqlmesh_cutoff:
+            continue
+        if getattr(cp, "cleanup_scheduled", None):
+            continue
+        stale_prefixes.append(
+            {
+                "prefix_type": SQLMESH_TASK[2],
+                "run_id": cp.run_id,
+                "bucket_name": bucket_name,
+                "source": {"table": "checkpoint", "workflow_key": cp.workflow_key, "task_key": cp.task_key},
+            }
+        )
 
     # --- dmp-works-search: keep all results from the current process-works cycle ---
     keep_date = keep_record.release_date
@@ -146,9 +195,14 @@ def build_cleanup_plan(*, bucket_name: str) -> list[dict[str, str]]:
     stale_dmps = [r for r in all_dmps if r.status == "COMPLETED" and r.release_date < keep_date]
     for record in stale_dmps:
         cp = get_task_checkpoint(workflow_key="process-dmps", task_name="dmp-works-search", date=record.release_date)
-        if cp:
+        if cp and not getattr(cp, "cleanup_scheduled", None):
             stale_prefixes.append(
-                {"prefix_type": PROCESS_DMPS_DMP_WORKS_SEARCH, "run_id": cp.run_id, "bucket_name": bucket_name}
+                {
+                    "prefix_type": PROCESS_DMPS_DMP_WORKS_SEARCH,
+                    "run_id": cp.run_id,
+                    "bucket_name": bucket_name,
+                    "source": {"table": "checkpoint", "workflow_key": cp.workflow_key, "task_key": cp.task_key},
+                }
             )
     log.info(f"dmp-works-search stale entries (before {keep_date}): {len(stale_dmps)}")
 
@@ -166,7 +220,16 @@ def build_cleanup_plan(*, bucket_name: str) -> list[dict[str, str]]:
             is_failed = record.status == "FAILED"
             is_zombie = record.status == "STARTED" and record.created_at < zombie_cutoff
             if is_failed or is_zombie:
-                stale_prefixes.append({"prefix_type": run_name, "run_id": record.run_id, "bucket_name": bucket_name})
+                if getattr(record, "cleanup_scheduled", None):
+                    continue
+                stale_prefixes.append(
+                    {
+                        "prefix_type": run_name,
+                        "run_id": record.run_id,
+                        "bucket_name": bucket_name,
+                        "source": {"table": "task_run", "run_name": run_name, "run_id": record.run_id},
+                    }
+                )
                 task_run_count += 1
 
     log.info(f"TaskRunRecord scan: {task_run_count} additional stale prefixes (FAILED + zombie STARTED)")

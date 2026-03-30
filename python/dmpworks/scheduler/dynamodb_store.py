@@ -7,7 +7,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, Literal
 
-from pynamodb.attributes import MapAttribute, UnicodeAttribute
+from pynamodb.attributes import BooleanAttribute, MapAttribute, UnicodeAttribute
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.indexes import GlobalSecondaryIndex, KeysOnlyProjection
 from pynamodb.models import Model
@@ -105,6 +105,7 @@ class TaskRunRecord(Model):
     step_function_execution_arn_index = StepFunctionExecutionArnIndex()
     error = UnicodeAttribute(null=True)
     metadata = MapAttribute(default=dict)
+    cleanup_scheduled = BooleanAttribute(null=True)
     created_at = UnicodeAttribute()
     updated_at = UnicodeAttribute()
 
@@ -133,6 +134,7 @@ class TaskCheckpointRecord(Model):
     workflow_key = UnicodeAttribute(hash_key=True)
     task_key = UnicodeAttribute(range_key=True)
     run_id = UnicodeAttribute()
+    cleanup_scheduled = BooleanAttribute(null=True)
     completed_at = UnicodeAttribute()
 
 
@@ -825,3 +827,31 @@ def scan_task_runs_by_run_name(*, run_name: str) -> list[TaskRunRecord]:
         List of TaskRunRecord instances.
     """
     return list(TaskRunRecord.query(run_name))
+
+
+def mark_cleanup_scheduled(*, items: list[dict]) -> None:
+    """Set cleanup_scheduled=True on the DynamoDB records that sourced each cleanup plan item.
+
+    Each item must have a ``source`` dict identifying the record to update. Items without
+    a ``source`` key are silently skipped.
+
+    Args:
+        items: List of cleanup plan dicts, each with an optional ``source`` key.
+    """
+    for item in items:
+        source = item.get("source")
+        if not source:
+            continue
+        table = source.get("table")
+        if table == "checkpoint":
+            try:
+                record = TaskCheckpointRecord.get(source["workflow_key"], source["task_key"])
+                record.update(actions=[TaskCheckpointRecord.cleanup_scheduled.set(True)])
+            except DoesNotExist:
+                log.warning(f"Checkpoint not found for marking: {source}")
+        elif table == "task_run":
+            try:
+                record = TaskRunRecord.get(source["run_name"], source["run_id"])
+                record.update(actions=[TaskRunRecord.cleanup_scheduled.set(True)])
+            except DoesNotExist:
+                log.warning(f"TaskRun not found for marking: {source}")

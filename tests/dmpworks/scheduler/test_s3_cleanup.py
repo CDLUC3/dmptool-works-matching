@@ -13,6 +13,7 @@ from dmpworks.scheduler.s3_cleanup import (
     SQLMESH_TASK,
     ZOMBIE_THRESHOLD_DAYS,
     build_cleanup_plan,
+    checkpoint_date,
 )
 
 PATCH_BASE = "dmpworks.scheduler.s3_cleanup"
@@ -63,10 +64,12 @@ def make_dmps_run(release_date: str, run_id: str, status: str = "COMPLETED") -> 
     return r
 
 
-def make_checkpoint(run_id: str) -> MagicMock:
+def make_checkpoint(run_id: str, *, task_key: str | None = None) -> MagicMock:
     """Build a minimal mock TaskCheckpointRecord."""
     cp = MagicMock()
     cp.run_id = run_id
+    cp.task_key = task_key
+    cp.cleanup_scheduled = None
     return cp
 
 
@@ -75,6 +78,7 @@ def make_task_run(run_id: str, status: str, *, created_at: str | None = None) ->
     r = MagicMock()
     r.run_id = run_id
     r.status = status
+    r.cleanup_scheduled = None
     r.created_at = created_at or datetime.now(tz=UTC).isoformat()
     return r
 
@@ -572,13 +576,17 @@ class TestTaskRunRecordCleanup:
     def test_failed_run_included(self):
         task_runs = {"openalex-works-download": [make_task_run("failed-run", "FAILED")]}
         result = self.run_with_task_runs(task_runs)
-        assert {"prefix_type": "openalex-works-download", "run_id": "failed-run", "bucket_name": BUCKET} in result
+        match = next(item for item in result if item["run_id"] == "failed-run")
+        assert match["prefix_type"] == "openalex-works-download"
+        assert match["bucket_name"] == BUCKET
 
     def test_zombie_started_run_included(self):
         old_timestamp = (datetime.now(tz=UTC) - timedelta(days=ZOMBIE_THRESHOLD_DAYS + 1)).isoformat()
         task_runs = {"datacite-download": [make_task_run("zombie-run", "STARTED", created_at=old_timestamp)]}
         result = self.run_with_task_runs(task_runs)
-        assert {"prefix_type": "datacite-download", "run_id": "zombie-run", "bucket_name": BUCKET} in result
+        match = next(item for item in result if item["run_id"] == "zombie-run")
+        assert match["prefix_type"] == "datacite-download"
+        assert match["bucket_name"] == BUCKET
 
     def test_recent_started_run_not_included(self):
         recent_timestamp = (datetime.now(tz=UTC) - timedelta(days=1)).isoformat()
@@ -602,3 +610,285 @@ class TestTaskRunRecordCleanup:
         result = self.run_with_task_runs(task_runs)
         run_ids = [item["run_id"] for item in result]
         assert protected_id not in run_ids
+
+
+class TestCheckpointDate:
+    def test_extracts_date_from_task_key(self):
+        cp = make_checkpoint("run-1", task_key="download#2025-03-01")
+        assert checkpoint_date(cp) == "2025-03-01"
+
+    def test_returns_none_when_no_separator(self):
+        cp = make_checkpoint("run-1", task_key="download")
+        assert checkpoint_date(cp) is None
+
+    def test_returns_none_when_task_key_is_none(self):
+        cp = make_checkpoint("run-1", task_key=None)
+        assert checkpoint_date(cp) is None
+
+
+class TestSafetyGuardNewerCheckpoints:
+    """Checkpoints at or after the keep record's cutoff date must not be cleaned."""
+
+    def test_checkpoint_newer_than_keep_not_cleaned(self):
+        """A dataset checkpoint ingested after the keep record's release_date is protected."""
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
+        newer_date = "2025-03-01"
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+
+        def fake_scan_checkpoints(*, workflow_key, task_name):
+            return [
+                make_checkpoint(
+                    run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE),
+                    task_key=f"{task_name}#{KEEP_RELEASE_DATE}",
+                ),
+                make_checkpoint(
+                    run_id_for(workflow_key, task_name, newer_date),
+                    task_key=f"{task_name}#{newer_date}",
+                ),
+            ]
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", side_effect=fake_scan_checkpoints),
+        ):
+            result = build_cleanup_plan(bucket_name=BUCKET)
+
+        run_ids = {item["run_id"] for item in result}
+        # Newer checkpoints must NOT be cleaned
+        for wk, tn, _, _ in DATASET_TASKS:
+            assert run_id_for(wk, tn, newer_date) not in run_ids
+
+    def test_checkpoint_at_keep_date_not_cleaned(self):
+        """A checkpoint at the exact cutoff date (>=) is protected."""
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
+        stale_date = "2025-01-01"
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+
+        def fake_scan_checkpoints(*, workflow_key, task_name):
+            return [
+                make_checkpoint(
+                    run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE),
+                    task_key=f"{task_name}#{KEEP_RELEASE_DATE}",
+                ),
+                make_checkpoint(
+                    run_id_for(workflow_key, task_name, stale_date),
+                    task_key=f"{task_name}#{stale_date}",
+                ),
+            ]
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", side_effect=fake_scan_checkpoints),
+        ):
+            result = build_cleanup_plan(bucket_name=BUCKET)
+
+        run_ids = {item["run_id"] for item in result}
+        # At cutoff date — protected
+        for wk, tn, _, _ in DATASET_TASKS:
+            assert run_id_for(wk, tn, KEEP_RELEASE_DATE) not in run_ids
+        # Older — cleaned
+        for wk, tn, _, _ in DATASET_TASKS:
+            assert run_id_for(wk, tn, stale_date) in run_ids
+
+    def test_sqlmesh_checkpoint_newer_than_keep_not_cleaned(self):
+        """SQLMesh checkpoints at or after keep_record.release_date are protected."""
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
+        newer_date = "2025-03-10"
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+
+        def fake_scan_checkpoints(*, workflow_key, task_name):
+            if workflow_key == SQLMESH_TASK[0] and task_name == SQLMESH_TASK[1]:
+                return [
+                    make_checkpoint(
+                        run_id_for(workflow_key, task_name, "2025-02-10"),
+                        task_key=f"{task_name}#2025-02-10",
+                    ),
+                    make_checkpoint(
+                        run_id_for(workflow_key, task_name, newer_date),
+                        task_key=f"{task_name}#{newer_date}",
+                    ),
+                ]
+            return []
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", side_effect=fake_scan_checkpoints),
+        ):
+            result = build_cleanup_plan(bucket_name=BUCKET)
+
+        run_ids = {item["run_id"] for item in result}
+        # Both are at or after keep_record.release_date "2025-02-10" — both protected
+        assert run_id_for("process-works", "sqlmesh", "2025-02-10") not in run_ids
+        assert run_id_for("process-works", "sqlmesh", newer_date) not in run_ids
+
+    def test_older_checkpoint_still_cleaned(self):
+        """Checkpoints older than the cutoff are still cleaned (existing behavior preserved)."""
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
+        stale_date = "2025-01-01"
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+
+        def fake_scan_checkpoints(*, workflow_key, task_name):
+            if workflow_key == SQLMESH_TASK[0] and task_name == SQLMESH_TASK[1]:
+                return [
+                    make_checkpoint(
+                        run_id_for(workflow_key, task_name, "2025-02-10"),
+                        task_key=f"{task_name}#2025-02-10",
+                    ),
+                    make_checkpoint(
+                        run_id_for(workflow_key, task_name, "2025-01-10"),
+                        task_key=f"{task_name}#2025-01-10",
+                    ),
+                ]
+            return [
+                make_checkpoint(
+                    run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE),
+                    task_key=f"{task_name}#{KEEP_RELEASE_DATE}",
+                ),
+                make_checkpoint(
+                    run_id_for(workflow_key, task_name, stale_date),
+                    task_key=f"{task_name}#{stale_date}",
+                ),
+            ]
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", side_effect=fake_scan_checkpoints),
+        ):
+            result = build_cleanup_plan(bucket_name=BUCKET)
+
+        run_ids = {item["run_id"] for item in result}
+        for wk, tn, _, _ in DATASET_TASKS:
+            assert run_id_for(wk, tn, stale_date) in run_ids
+        assert run_id_for("process-works", "sqlmesh", "2025-01-10") in run_ids
+
+
+class TestCleanupScheduledFiltering:
+    """Verify that already-scheduled items are excluded and source metadata is included."""
+
+    def test_checkpoint_item_includes_source(self):
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
+        stale_date = "2025-01-01"
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+
+        def fake_scan_checkpoints(*, workflow_key, task_name):
+            return [
+                make_checkpoint(
+                    run_id_for(workflow_key, task_name, KEEP_RELEASE_DATE),
+                    task_key=f"{task_name}#{KEEP_RELEASE_DATE}",
+                ),
+                make_checkpoint(
+                    run_id_for(workflow_key, task_name, stale_date),
+                    task_key=f"{task_name}#{stale_date}",
+                ),
+            ]
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", side_effect=fake_scan_checkpoints),
+        ):
+            result = build_cleanup_plan(bucket_name=BUCKET)
+
+        for item in result:
+            assert "cleanup_scheduled" not in item
+            assert item["source"]["table"] == "checkpoint"
+            assert "workflow_key" in item["source"]
+            assert "task_key" in item["source"]
+
+    def test_task_run_item_includes_source(self):
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+
+        def fake_scan_runs(*, run_name):
+            if run_name == "openalex-works-download":
+                return [make_task_run("failed-run", "FAILED")]
+            return []
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", return_value=[]),
+            patch(f"{PATCH_BASE}.scan_task_runs_by_run_name", side_effect=fake_scan_runs),
+        ):
+            result = build_cleanup_plan(bucket_name=BUCKET)
+
+        assert len(result) == 1
+        item = result[0]
+        assert "cleanup_scheduled" not in item
+        assert item["source"] == {"table": "task_run", "run_name": "openalex-works-download", "run_id": "failed-run"}
+
+    def test_already_scheduled_checkpoints_excluded(self):
+        """Checkpoints with cleanup_scheduled=True are excluded from the plan."""
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
+        stale_date = "2025-01-01"
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+
+        def make_flagged_checkpoint(workflow_key, task_name, date):
+            cp = make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+            cp.cleanup_scheduled = True
+            return cp
+
+        def fake_scan_checkpoints(*, workflow_key, task_name):
+            return [make_flagged_checkpoint(workflow_key, task_name, stale_date)]
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", side_effect=fake_scan_checkpoints),
+        ):
+            result = build_cleanup_plan(bucket_name=BUCKET)
+
+        assert result == []
+
+    def test_already_scheduled_task_runs_excluded(self):
+        """TaskRunRecords with cleanup_scheduled=True are excluded from the plan."""
+        keep = make_works_run("2025-02-10", "run-keep", **default_release_dates(KEEP_RELEASE_DATE))
+
+        def fake_checkpoint(*, workflow_key, task_name, date):
+            return make_checkpoint(run_id_for(workflow_key, task_name, date), task_key=f"{task_name}#{date}")
+
+        def make_flagged_task_run():
+            tr = make_task_run("flagged-run", "FAILED")
+            tr.cleanup_scheduled = True
+            return tr
+
+        def fake_scan_runs(*, run_name):
+            if run_name == "openalex-works-download":
+                return [make_flagged_task_run()]
+            return []
+
+        with (
+            patch(f"{PATCH_BASE}.scan_all_process_works_runs", return_value=[keep]),
+            patch(f"{PATCH_BASE}.scan_all_process_dmps_runs", return_value=[]),
+            patch(f"{PATCH_BASE}.get_task_checkpoint", side_effect=fake_checkpoint),
+            patch(f"{PATCH_BASE}.scan_task_checkpoints", return_value=[]),
+            patch(f"{PATCH_BASE}.scan_task_runs_by_run_name", side_effect=fake_scan_runs),
+        ):
+            result = build_cleanup_plan(bucket_name=BUCKET)
+
+        assert result == []

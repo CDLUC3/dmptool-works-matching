@@ -1,3 +1,9 @@
+{% if var.cloudformation_service_role_ssm is defined %}
+cloudformation_service_role: !ssm
+  name: {{ var.cloudformation_service_role_ssm }}
+  region: {{ var.region }}
+{% endif %}
+
 template_bucket_name: !ssm {{ var.ssm_prefix }}/stg/CloudFormationBucket
 
 vars:

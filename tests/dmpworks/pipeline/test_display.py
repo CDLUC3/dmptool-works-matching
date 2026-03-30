@@ -26,11 +26,11 @@ class TestParseEventbridgeCron:
             ("cron(0 15 ? * MON-FRI *)", "0 15 ? * MON-FRI"),
             ("cron(0 3 ? * TUE-SAT *)", "0 3 ? * TUE-SAT"),
             ("cron(0 0 L * ? *)", "0 0 L * ?"),
-            ("cron(0 16 ? * 2#2 *)", "0 16 ? * 2#2"),
+            ("cron(0 16 ? * 2#2 *)", "0 16 ? * 1#2"),
         ],
         ids=["weekday-3pm", "weekday-3am", "last-day-of-month", "second-monday"],
     )
-    def test_strips_wrapper_and_year_field(self, expression, expected):
+    def test_strips_wrapper_and_translates_dow(self, expression, expected):
         print(f"expression={expression}")
         assert parse_eventbridge_cron(expression=expression) == expected
 
@@ -48,6 +48,10 @@ class TestCronToEnglish:
         result = cron_to_english(expression="cron(0 15 ? * MON-FRI *)")
         assert "UTC" in result
         assert result != "cron(0 15 ? * MON-FRI *)"
+
+    def test_second_monday_from_eventbridge_numeric_dow(self):
+        result = cron_to_english(expression="cron(0 16 ? * 2#2 *)")
+        assert "Monday" in result
 
     def test_non_cron_returns_raw(self):
         assert cron_to_english(expression="rate(1 day)") == "rate(1 day)"

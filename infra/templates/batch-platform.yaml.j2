@@ -1,12 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'AWS Batch compute environments and job queues for DMP works matching'
 
+# Instance pricing (vCPUs / RAM / NVMe disk):
+# - small:      c5ad.large    (2 vCPUs,   4 GiB,    75 GB)  https://instances.vantage.sh/aws/ec2/c5ad.large?currency=USD&region=us-west-2
+# - download:   c6id.4xlarge  (16 vCPUs, 32 GiB,   950 GB)  https://instances.vantage.sh/aws/ec2/c6id.4xlarge?currency=USD&region=us-west-2
+# - transform:  c5ad.8xlarge  (32 vCPUs, 64 GiB,  1,200 GB)  https://instances.vantage.sh/aws/ec2/c5ad.8xlarge?currency=USD&region=us-west-2
+# - sqlmesh:    r6id.8xlarge  (32 vCPUs, 256 GiB, 1,900 GB) https://instances.vantage.sh/aws/ec2/r6id.8xlarge?currency=USD&region=us-west-2
+# - opensearch: m5ad.large    (2 vCPUs,   8 GiB,    75 GB)  https://instances.vantage.sh/aws/ec2/m5ad.large?currency=USD&region=us-west-2
+#               c6id.xlarge   (4 vCPUs,   8 GiB,   237 GB)  https://instances.vantage.sh/aws/ec2/c6id.xlarge?currency=USD&region=us-west-2
+
 {% set queues = [
   {"name": "small",      "prefix": "BatchSmall",      "instance_types": ["c5ad.large"],   "max_vcpus": 16},
-  {"name": "download",   "prefix": "BatchDownload",   "instance_types": ["c5ad.8xlarge"], "max_vcpus": 128},
+  {"name": "download",   "prefix": "BatchDownload",   "instance_types": ["c6id.4xlarge"], "max_vcpus": 48},
   {"name": "transform",  "prefix": "BatchTransform",  "instance_types": ["c5ad.8xlarge"], "max_vcpus": 128},
-  {"name": "sqlmesh",    "prefix": "BatchSqlMesh",    "instance_types": ["r6id.8xlarge"], "max_vcpus": 64},
-  {"name": "opensearch", "prefix": "BatchOpenSearch", "instance_types": ["m5dn.2xlarge"], "max_vcpus": 32},
+  {"name": "sqlmesh",    "prefix": "BatchSqlMesh",    "instance_types": ["r6id.8xlarge"], "max_vcpus": 32},
+  {"name": "opensearch", "prefix": "BatchOpenSearch", "instance_types": ["m5ad.large", "c6id.xlarge"], "max_vcpus": 16, "allocation_strategy": "BEST_FIT"},
 ] %}
 
 Parameters:
@@ -190,7 +198,7 @@ Resources:
         Type: 'EC2'
         Ec2Configuration:
           - ImageType: 'ECS_AL2023'
-        AllocationStrategy: 'BEST_FIT_PROGRESSIVE'
+        AllocationStrategy: '{{ q.allocation_strategy | default("BEST_FIT_PROGRESSIVE") }}'
         MinvCpus: 0
         MaxvCpus: {{ q.max_vcpus }}
         DesiredvCpus: 0

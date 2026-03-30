@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 INPUT_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["task_name", "date", "workflow_prefix"],
+    "required": ["date", "workflow_prefix"],
     "properties": {
         "task_name": {"type": "string"},
         "date": {"type": "string"},
@@ -42,10 +42,11 @@ OUTPUT_SCHEMA = {
 def generate_run_id_handler(event: dict, context: LambdaContext) -> dict:  # noqa: ARG001
     """Generate a unique run ID and execution name for a state machine task.
 
-    The execution name follows the convention: {workflow_prefix}-{task_name}-{date}-{child_run_id}.
+    The execution name follows the convention: {workflow_prefix}-{task_name}-{date}-{run_id}
+    when task_name is provided, or {workflow_prefix}-{date}-{run_id} when omitted.
 
     Args:
-        event: Dict with task_name, date, and workflow_prefix.
+        event: Dict with date and workflow_prefix (required), task_name (optional).
         context: Lambda context.
 
     Returns:
@@ -53,6 +54,10 @@ def generate_run_id_handler(event: dict, context: LambdaContext) -> dict:  # noq
     """
     LambdaEnvSettings()
     run_id = generate_run_id()
-    execution_name = f"{event['workflow_prefix']}-{event['task_name']}-{event['date']}-{run_id}"
+    parts = [event["workflow_prefix"]]
+    if task_name := event.get("task_name"):
+        parts.append(task_name)
+    parts.extend([event["date"], run_id])
+    execution_name = "-".join(parts)
     log.info(f"Generated run ID: {run_id}, execution name: {execution_name}")
     return {"run_id": run_id, "execution_name": execution_name}

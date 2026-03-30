@@ -11,10 +11,57 @@ if TYPE_CHECKING:
 import boto3
 
 from dmpworks.scheduler.config import S3CleanupEnvSettings
+from dmpworks.scheduler.dynamodb_store import mark_cleanup_scheduled
 from dmpworks.scheduler.s3_cleanup import build_cleanup_plan
 
 logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger(__name__)
+
+
+def remove_stale_lifecycle_rules(*, bucket_name: str, s3_client) -> int:
+    """Remove cleanup-* lifecycle rules whose S3 prefixes no longer contain objects.
+
+    Checks each cleanup-* rule by listing objects under its prefix. If the prefix is
+    empty (objects have already been expired by S3), the rule is removed. Non-cleanup
+    rules (including the CloudFormation-managed ICMU rule) are always preserved.
+
+    Args:
+        bucket_name: The S3 bucket to check.
+        s3_client: A boto3 S3 client.
+
+    Returns:
+        The number of stale rules removed.
+    """
+    try:
+        existing = s3_client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        rules = existing["Rules"]
+    except s3_client.exceptions.from_code("NoSuchLifecycleConfiguration"):
+        return 0
+
+    keep_rules = []
+    removed_count = 0
+
+    for rule in rules:
+        if not rule["ID"].startswith("cleanup-"):
+            keep_rules.append(rule)
+            continue
+
+        prefix = rule.get("Filter", {}).get("Prefix", "")
+        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=1)
+        if response.get("KeyCount", 0) > 0:
+            keep_rules.append(rule)
+        else:
+            removed_count += 1
+            log.info(f"Removing stale lifecycle rule: {rule['ID']} (prefix {prefix!r} is empty)")
+
+    if removed_count > 0:
+        s3_client.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name,
+            LifecycleConfiguration={"Rules": keep_rules},
+        )
+        log.info(f"Removed {removed_count} stale lifecycle rules")
+
+    return removed_count
 
 
 def s3_cleanup_handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:  # noqa: ARG001
@@ -72,4 +119,7 @@ def s3_cleanup_handler(event: dict[str, Any], context: LambdaContext) -> dict[st
         LifecycleConfiguration={"Rules": rules},
     )
     log.info(f"Scheduled {len(stale_prefixes)} prefixes for S3 expiry via lifecycle rules")
-    return {"scheduled_count": len(stale_prefixes)}
+
+    mark_cleanup_scheduled(items=stale_prefixes)
+    stale_removed = remove_stale_lifecycle_rules(bucket_name=settings.bucket_name, s3_client=s3)
+    return {"scheduled_count": len(stale_prefixes), "stale_rules_removed": stale_removed}

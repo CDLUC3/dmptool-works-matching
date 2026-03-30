@@ -1,15 +1,15 @@
 # Copy to vars-dev.yaml and fill in your values.
 # vars-dev.yaml is gitignored.
 
+# Sceptre stack env
 env: dev
 
-# AWS region for deployment.
-region: us-east-1
+# AWS Region
+region: us-west-2
 
 # Root SSM path prefix for this deployment.
 # All SSM parameters this project reads live under this prefix, e.g.:
 #   {ssm_prefix}/{env}/CloudFormationBucket
-#   {ssm_prefix}/{env}/LambdaConfig
 ssm_prefix: /your-org/your-app/dmpworks
 
 # CloudFormation stack tags

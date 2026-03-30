@@ -161,7 +161,7 @@ LEFT JOIN institutions inst ON inst.plan_id = pl.id
 LEFT JOIN authors au ON au.plan_id = pl.id
 LEFT JOIN funding fn ON fn.plan_id = pl.id
 LEFT JOIN published_outputs po ON po.plan_id = pl.id
-WHERE pr.isTestProject = 0
+WHERE pr.isTestProject = 0 AND pl.status = 'COMPLETE'
 """
 
 DMPS_MAPPING_FILE = "dmps-mapping.json"
@@ -264,7 +264,7 @@ def count_dmps(conn):
         SELECT COUNT(DISTINCT pl.dmpId) AS total
         FROM plans pl
         LEFT JOIN projects pr ON pr.id = pl.projectId
-        WHERE pl.dmpId IS NOT NULL AND pr.isTestProject = 0
+        WHERE pl.dmpId IS NOT NULL AND pr.isTestProject = 0 AND pl.status = 'COMPLETE'
     """
     with conn.cursor() as count_cursor:
         count_cursor.execute(query)
