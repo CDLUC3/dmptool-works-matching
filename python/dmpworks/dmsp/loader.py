@@ -75,7 +75,9 @@ def to_sql_related_work_row(row: dict) -> list:
 
     return [
         row.get("planId"),
-        row["dmpDoi"],
+        (
+            f"https://doi.org/{row['dmpDoi'].upper()}" if row.get("dmpDoi") else None
+        ),  # To match formatting in DMP Tool Database
         row["workDoi"],
         row_hash,
         row["sourceType"],
@@ -265,15 +267,22 @@ class RelatedWorksLoader:
             for table in ("stagingWorkVersions", "stagingRelatedWorks"):
                 cursor.execute(f"SELECT COUNT(*) AS cnt FROM {table}")  # noqa: S608
                 row = cursor.fetchone()
-                log.info("  %s: %d rows staged", table, row["cnt"])
+                log.debug(f"  {table}: {row['cnt']} rows staged")
 
-        log.info("Calling batch_update_related_works stored procedure...")
+        log.debug("Calling batch_update_related_works stored procedure...")
         with self.conn.cursor() as cursor:
             cursor.callproc("batch_update_related_works", [system_matched])
             self.print_table(cursor, "works", format_func=lambda r: f"id={r.get('id')}, doi={r.get('doi')}")
             self.print_table(cursor, "workVersions", format_func=lambda r: f"id={r.get('id')}, title={r.get('title')}")
             self.print_table(cursor, "relatedWorks", format_func=lambda r: f"id={r.get('id')}")
-        log.info("Stored procedure completed.")
+        log.debug("Stored procedure completed.")
+
+    def run_cleanup_procedure(self):
+        """Run the stored procedure to clean up orphaned workVersions and works."""
+        log.info("Calling cleanup_orphan_works stored procedure...")
+        with self.conn.cursor() as cursor:
+            cursor.callproc("cleanup_orphan_works")
+        log.info("Cleanup procedure completed.")
 
     def print_table(self, cursor, table_name: str, format_func: Callable, limit: int = 10):
         """Print rows from a table for debugging.
@@ -290,9 +299,9 @@ class RelatedWorksLoader:
         if table_name not in ALLOWED_TABLES:
             raise ValueError(f"Invalid table name: {table_name!r}. Must be one of: {sorted(ALLOWED_TABLES)}")
 
-        log.info("Table: %s", table_name)
+        log.debug(f"Table: {table_name}")
         # table_name is checked against ALLOWED_TABLES before adding to query
         cursor.execute(f"SELECT * FROM {table_name} LIMIT %s", (limit,))  # noqa: S608
         results = cursor.fetchall()
         for row in results:
-            log.info(format_func(row))
+            log.debug(format_func(row))
