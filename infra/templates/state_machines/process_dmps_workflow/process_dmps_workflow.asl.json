@@ -102,7 +102,7 @@
       "Comment": "Generate a unique run ID and execution name for the sync-dmps child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "sync-dmps",
           "date.$": "$.release_date",
@@ -110,7 +110,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -130,7 +130,7 @@
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -230,7 +230,7 @@
       "Comment": "Generate a unique run ID and execution name for the enrich-dmps child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "enrich-dmps",
           "date.$": "$.release_date",
@@ -238,7 +238,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -258,7 +258,7 @@
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -358,7 +358,7 @@
       "Comment": "Generate a unique run ID and execution name for the dmp-works-search child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "dmp-works-search",
           "date.$": "$.release_date",
@@ -366,7 +366,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -387,7 +387,7 @@
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
           "run_all_dmps.$": "$.run_all_dmps",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -487,7 +487,7 @@
       "Comment": "Generate a unique run ID and execution name for the merge-related-works child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "merge-related-works",
           "date.$": "$.release_date",
@@ -495,7 +495,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -516,7 +516,7 @@
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
           "search_run_id.$": "$.dws_check.task_run_id",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },

@@ -49,5 +49,5 @@ def start_process_works_handler(event: dict[str, Any], context: LambdaContext) -
     return start_execution(
         workflow_key="process-works",
         release_date=release_date,
-        payload={"skip_sqlmesh": False, "skip_sync_works": False},
+        payload={"skip_sqlmesh": False, "skip_sync_works": False, "start_process_dmps": True, "run_all_dmps": True},
     )

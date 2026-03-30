@@ -40,7 +40,12 @@ MINIMAL_FACTORY_ARGS: dict[tuple[str, str], dict] = {
         "file_hash": "h",
         "env": "dev",
     },
-    ("openalex-works", "download"): {"run_id": "r", "bucket_name": "b", "openalex_bucket_name": "oa", "env": "dev",},
+    ("openalex-works", "download"): {
+        "run_id": "r",
+        "bucket_name": "b",
+        "openalex_bucket_name": "oa",
+        "env": "dev",
+    },
     ("crossref-metadata", "download"): {
         "run_id": "r",
         "bucket_name": "b",
@@ -48,10 +53,30 @@ MINIMAL_FACTORY_ARGS: dict[tuple[str, str], dict] = {
         "crossref_metadata_bucket_name": "cb",
         "env": "dev",
     },
-    ("datacite", "download"): {"run_id": "r", "bucket_name": "b", "datacite_bucket_name": "db", "env": "dev",},
-    ("openalex-works", "subset"): {"run_id": "r", "bucket_name": "b", "env": "dev", "dataset": "openalex-works",},
-    ("crossref-metadata", "subset"): {"run_id": "r", "bucket_name": "b", "env": "dev", "dataset": "crossref-metadata",},
-    ("datacite", "subset"): {"run_id": "r", "bucket_name": "b", "env": "dev", "dataset": "datacite",},
+    ("datacite", "download"): {
+        "run_id": "r",
+        "bucket_name": "b",
+        "datacite_bucket_name": "db",
+        "env": "dev",
+    },
+    ("openalex-works", "subset"): {
+        "run_id": "r",
+        "bucket_name": "b",
+        "env": "dev",
+        "dataset": "openalex-works",
+    },
+    ("crossref-metadata", "subset"): {
+        "run_id": "r",
+        "bucket_name": "b",
+        "env": "dev",
+        "dataset": "crossref-metadata",
+    },
+    ("datacite", "subset"): {
+        "run_id": "r",
+        "bucket_name": "b",
+        "env": "dev",
+        "dataset": "datacite",
+    },
     ("openalex-works", "transform"): {
         "run_id": "r",
         "bucket_name": "b",
@@ -99,9 +124,21 @@ MINIMAL_FACTORY_ARGS: dict[tuple[str, str], dict] = {
         "release_date": "2026-03-29",
         "sqlmesh_run_id": "sm",
     },
-    ("process-dmps", "sync-dmps"): {"run_id": "r", "env": "dev", "bucket_name": "b",},
-    ("process-dmps", "enrich-dmps"): {"run_id": "r", "env": "dev", "bucket_name": "b",},
-    ("process-dmps", "dmp-works-search"): {"run_id": "r", "env": "dev", "bucket_name": "b",},
+    ("process-dmps", "sync-dmps"): {
+        "run_id": "r",
+        "env": "dev",
+        "bucket_name": "b",
+    },
+    ("process-dmps", "enrich-dmps"): {
+        "run_id": "r",
+        "env": "dev",
+        "bucket_name": "b",
+    },
+    ("process-dmps", "dmp-works-search"): {
+        "run_id": "r",
+        "env": "dev",
+        "bucket_name": "b",
+    },
     ("process-dmps", "merge-related-works"): {
         "run_id": "r",
         "env": "dev",

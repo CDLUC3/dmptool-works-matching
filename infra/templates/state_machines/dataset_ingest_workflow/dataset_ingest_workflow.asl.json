@@ -56,7 +56,7 @@
       "Comment": "Generate a unique run ID and execution name for the download child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "download",
           "date.$": "$.release_date",
@@ -64,7 +64,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -88,7 +88,7 @@
           "file_hash.$": "$.file_hash",
           "file_name.$": "$.file_name",
           "use_subset.$": "$.use_subset",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -190,7 +190,7 @@
       "Comment": "Generate a unique run ID and execution name for the subset child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "subset",
           "date.$": "$.release_date",
@@ -198,7 +198,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -222,7 +222,7 @@
           "file_hash.$": "$.file_hash",
           "file_name.$": "$.file_name",
           "use_subset.$": "$.use_subset",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -292,7 +292,7 @@
       "Comment": "Generate a unique run ID and execution name for the transform child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "transform",
           "date.$": "$.release_date",
@@ -300,7 +300,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -324,7 +324,7 @@
           "file_hash.$": "$.file_hash",
           "file_name.$": "$.file_name",
           "use_subset.$": "$.use_subset",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },

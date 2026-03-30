@@ -169,7 +169,9 @@ def format_time_local(*, dt: datetime) -> str:
     return dt.astimezone().strftime("%b %d %H:%M")
 
 
-def build_execution_tree(*, title: str, executions: list[dict], retryable_children: frozenset[str] = frozenset()) -> Tree:
+def build_execution_tree(
+    *, title: str, executions: list[dict], retryable_children: frozenset[str] = frozenset()
+) -> Tree:
     """Build a Rich tree of Step Functions executions with optional retry markers on children.
 
     Args:
@@ -206,7 +208,9 @@ def build_execution_tree(*, title: str, executions: list[dict], retryable_childr
                 child_stop = format_time_local(dt=child["stop_date"]) if child.get("stop_date") else "..."
                 child_duration = format_duration(start=child["start_date"], stop=child.get("stop_date"))
                 child_duration_str = f"  ({child_duration})" if child_duration else ""
-                retry_marker = "  [bold green]\u27f3 retry available[/bold green]" if child["name"] in retryable_children else ""
+                retry_marker = (
+                    "  [bold green]\u27f3 retry available[/bold green]" if child["name"] in retryable_children else ""
+                )
                 exec_branch.add(
                     f"{child['name']}  [{child_style}]{child['status']}[/{child_style}]  {child_start} \u2192 {child_stop}{child_duration_str}{retry_marker}"
                 )

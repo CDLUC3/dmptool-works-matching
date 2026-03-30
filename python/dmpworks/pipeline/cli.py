@@ -9,13 +9,11 @@ from cyclopts import App, Parameter
 app = App(name="pipeline", help="Interactive pipeline management commands.")
 show_app = App(name="show", help="Read-only inspection commands.")
 runs_app = App(name="runs", help="Workflow run history and run actions.")
-start_app = App(name="start", help="Start a Step Function execution interactively.")
 schedules_app = App(name="schedules", help="Show, pause, or resume EventBridge schedule rules.")
 admin_app = App(name="admin", help="Operational and maintenance commands.")
 
 app.command(show_app)
 app.command(runs_app)
-runs_app.command(start_app)
 app.command(schedules_app)
 app.command(admin_app)
 
@@ -262,8 +260,8 @@ def runs_list_cmd(
     display_executions(executions=all_executions, start_dt=start_dt, end_dt=end_dt)
 
 
-@start_app.command(name="ingest")
-def start_ingest_cmd(
+@runs_app.command(name="start")
+def start_cmd(
     env: Annotated[
         EnvTypes,
         Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
@@ -273,59 +271,15 @@ def start_ingest_cmd(
         Parameter(env_var="BUCKET_NAME", help="S3 bucket name. Defaults to dmpworks-{env}-s3."),
     ] = None,
 ) -> None:
-    """Interactively start a dataset ingest SFN execution."""
+    """Interactively start a Step Function execution."""
     from dmpworks.pipeline.aws import resolve_bucket_name, set_env
 
     set_env(env=env)
     bucket_name = resolve_bucket_name(env=env, bucket_name=bucket_name)
 
-    from dmpworks.pipeline.interactive import run_ingest_wizard
+    from dmpworks.pipeline.interactive import run_start_wizard
 
-    run_ingest_wizard(env=env, bucket_name=bucket_name)
-
-
-@start_app.command(name="process-works")
-def start_process_works_cmd(
-    env: Annotated[
-        EnvTypes,
-        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
-    ],
-    bucket_name: Annotated[
-        str | None,
-        Parameter(env_var="BUCKET_NAME", help="S3 bucket name. Defaults to dmpworks-{env}-s3."),
-    ] = None,
-) -> None:
-    """Interactively start a process-works SFN execution."""
-    from dmpworks.pipeline.aws import resolve_bucket_name, set_env
-
-    set_env(env=env)
-    bucket_name = resolve_bucket_name(env=env, bucket_name=bucket_name)
-
-    from dmpworks.pipeline.interactive import run_process_works_wizard
-
-    run_process_works_wizard(env=env, bucket_name=bucket_name)
-
-
-@start_app.command(name="process-dmps")
-def start_process_dmps_cmd(
-    env: Annotated[
-        EnvTypes,
-        Parameter(env_var="AWS_ENV", help="Environment (e.g., dev, stg, prd)."),
-    ],
-    bucket_name: Annotated[
-        str | None,
-        Parameter(env_var="BUCKET_NAME", help="S3 bucket name. Defaults to dmpworks-{env}-s3."),
-    ] = None,
-) -> None:
-    """Interactively start a process-dmps SFN execution."""
-    from dmpworks.pipeline.aws import resolve_bucket_name, set_env
-
-    set_env(env=env)
-    bucket_name = resolve_bucket_name(env=env, bucket_name=bucket_name)
-
-    from dmpworks.pipeline.interactive import run_process_dmps_wizard
-
-    run_process_dmps_wizard(env=env, bucket_name=bucket_name)
+    run_start_wizard(env=env, bucket_name=bucket_name)
 
 
 @runs_app.command(name="approve-retry")

@@ -511,7 +511,16 @@ class TestDatasetSubsetCLI:
     def test_datacite_subset(self, mock_datacite_subset):
         from dmpworks.cli_utils import DatasetSubsetAWS
 
-        cli(["aws-batch", "datacite", "subset", "my-bucket", "20250101T060000-a1b2c3d4", "--dataset-subset.enable=false"])
+        cli(
+            [
+                "aws-batch",
+                "datacite",
+                "subset",
+                "my-bucket",
+                "20250101T060000-a1b2c3d4",
+                "--dataset-subset.enable=false",
+            ]
+        )
 
         mock_datacite_subset.assert_called_once_with(
             bucket_name="my-bucket",

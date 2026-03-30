@@ -1,4 +1,4 @@
-"""Lambda entry point for generating a child state machine run ID and execution name."""
+"""Lambda entry point for generating a run ID and execution name."""
 
 from __future__ import annotations
 
@@ -30,17 +30,17 @@ INPUT_SCHEMA = {
 OUTPUT_SCHEMA = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["child_run_id", "execution_name"],
+    "required": ["run_id", "execution_name"],
     "properties": {
-        "child_run_id": {"type": "string"},
+        "run_id": {"type": "string"},
         "execution_name": {"type": "string"},
     },
 }
 
 
 @validator(inbound_schema=INPUT_SCHEMA, outbound_schema=OUTPUT_SCHEMA)
-def generate_child_run_id_handler(event: dict, context: LambdaContext) -> dict:  # noqa: ARG001
-    """Generate a unique run ID and execution name for a child state machine.
+def generate_run_id_handler(event: dict, context: LambdaContext) -> dict:  # noqa: ARG001
+    """Generate a unique run ID and execution name for a state machine task.
 
     The execution name follows the convention: {workflow_prefix}-{task_name}-{date}-{child_run_id}.
 
@@ -49,10 +49,10 @@ def generate_child_run_id_handler(event: dict, context: LambdaContext) -> dict: 
         context: Lambda context.
 
     Returns:
-        Dict with child_run_id and execution_name.
+        Dict with run_id and execution_name.
     """
     LambdaEnvSettings()
-    child_run_id = generate_run_id()
-    execution_name = f"{event['workflow_prefix']}-{event['task_name']}-{event['date']}-{child_run_id}"
-    log.info(f"Generated child run ID: {child_run_id}, execution name: {execution_name}")
-    return {"child_run_id": child_run_id, "execution_name": execution_name}
+    run_id = generate_run_id()
+    execution_name = f"{event['workflow_prefix']}-{event['task_name']}-{event['date']}-{run_id}"
+    log.info(f"Generated run ID: {run_id}, execution name: {execution_name}")
+    return {"run_id": run_id, "execution_name": execution_name}

@@ -41,7 +41,10 @@ class TestStartExecution:
             patch(f"{PATCH_BASE}.pendulum") as mock_pendulum,
             patch(
                 f"{PATCH_BASE}.start_execution",
-                return_value={"execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:exec-1", "release_date": "2025-01-13"},
+                return_value={
+                    "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:exec-1",
+                    "release_date": "2025-01-13",
+                },
             ) as mock_start,
         ):
             mock_pendulum.now.return_value = pendulum.parse("2025-01-15T16:00:00", tz="UTC")
@@ -50,7 +53,10 @@ class TestStartExecution:
         mock_start.assert_called_once_with(
             workflow_key="process-works",
             release_date="2025-01-13",
-            payload={"skip_sqlmesh": False, "skip_sync_works": False},
+            payload={"skip_sqlmesh": False, "skip_sync_works": False, "start_process_dmps": True, "run_all_dmps": True},
         )
-        assert result["execution_arn"] == "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:exec-1"
+        assert (
+            result["execution_arn"]
+            == "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-works:exec-1"
+        )
         assert result["release_date"] == "2025-01-13"

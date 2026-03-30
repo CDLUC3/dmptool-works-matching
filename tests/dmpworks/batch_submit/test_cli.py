@@ -176,13 +176,16 @@ class TestCliExpansion:
 
 class TestRorCmd:
     def test_task_order_and_definitions(self):
-        kwargs = invoke_cli(ror_cmd, {
-            "env": "dev",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "download_url": "https://zenodo.org/ror.zip",
-            "hash": "abc123",
-        })
+        kwargs = invoke_cli(
+            ror_cmd,
+            {
+                "env": "dev",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "download_url": "https://zenodo.org/ror.zip",
+                "hash": "abc123",
+            },
+        )
 
         assert kwargs["task_order"] == list(ROR_JOBS)
         assert kwargs["start_task_name"] == "download"
@@ -190,168 +193,210 @@ class TestRorCmd:
         assert kwargs["task_definitions"]["download"].func is submit_factory_job
 
     def test_custom_start_job(self):
-        kwargs = invoke_cli(ror_cmd, {
-            "env": "dev",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "download_url": "https://zenodo.org/ror.zip",
-            "hash": "abc123",
-            "start_job": "download",
-        })
+        kwargs = invoke_cli(
+            ror_cmd,
+            {
+                "env": "dev",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "download_url": "https://zenodo.org/ror.zip",
+                "hash": "abc123",
+                "start_job": "download",
+            },
+        )
         assert kwargs["start_task_name"] == "download"
 
 
 class TestCrossrefMetadataCmd:
     def test_no_subset_excludes_dataset_subset_task(self):
-        kwargs = invoke_cli(crossref_metadata_cmd, {
-            "env": "dev",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "file_name": "crossref.tar.gz",
-            "crossref_metadata_bucket_name": "crossref-bucket",
-        })
+        kwargs = invoke_cli(
+            crossref_metadata_cmd,
+            {
+                "env": "dev",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "file_name": "crossref.tar.gz",
+                "crossref_metadata_bucket_name": "crossref-bucket",
+            },
+        )
 
         assert kwargs["task_order"] == ["download", "transform"]
         assert "subset" not in kwargs["task_order"]
 
     def test_with_subset_includes_dataset_subset_task(self):
-        kwargs = invoke_cli(crossref_metadata_cmd, {
-            "env": "dev",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "file_name": "crossref.tar.gz",
-            "crossref_metadata_bucket_name": "crossref-bucket",
-            "dataset_subset": DatasetSubsetAWS(enable=True, institutions_s3_path="path/institutions.csv"),
-        })
+        kwargs = invoke_cli(
+            crossref_metadata_cmd,
+            {
+                "env": "dev",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "file_name": "crossref.tar.gz",
+                "crossref_metadata_bucket_name": "crossref-bucket",
+                "dataset_subset": DatasetSubsetAWS(enable=True, institutions_s3_path="path/institutions.csv"),
+            },
+        )
 
         assert kwargs["task_order"] == list(CROSSREF_METADATA_JOBS)
         assert set(kwargs["task_definitions"].keys()) == {"download", "subset", "transform"}
 
     def test_disabled_dataset_subset_treated_as_no_subset(self):
-        kwargs = invoke_cli(crossref_metadata_cmd, {
-            "env": "dev",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "file_name": "crossref.tar.gz",
-            "crossref_metadata_bucket_name": "crossref-bucket",
-            "dataset_subset": DatasetSubsetAWS(enable=False),
-        })
+        kwargs = invoke_cli(
+            crossref_metadata_cmd,
+            {
+                "env": "dev",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "file_name": "crossref.tar.gz",
+                "crossref_metadata_bucket_name": "crossref-bucket",
+                "dataset_subset": DatasetSubsetAWS(enable=False),
+            },
+        )
 
         assert "subset" not in kwargs["task_order"]
 
     def test_start_job_passed_through(self):
-        kwargs = invoke_cli(crossref_metadata_cmd, {
-            "env": "dev",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "file_name": "crossref.tar.gz",
-            "crossref_metadata_bucket_name": "crossref-bucket",
-            "start_job": "transform",
-        })
+        kwargs = invoke_cli(
+            crossref_metadata_cmd,
+            {
+                "env": "dev",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "file_name": "crossref.tar.gz",
+                "crossref_metadata_bucket_name": "crossref-bucket",
+                "start_job": "transform",
+            },
+        )
         assert kwargs["start_task_name"] == "transform"
 
 
 class TestDataCiteCmd:
     def test_no_subset_excludes_dataset_subset_task(self):
-        kwargs = invoke_cli(datacite_cmd, {
-            "env": "prod",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "datacite_bucket_name": "datacite-bucket",
-        })
+        kwargs = invoke_cli(
+            datacite_cmd,
+            {
+                "env": "prod",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "datacite_bucket_name": "datacite-bucket",
+            },
+        )
 
         assert kwargs["task_order"] == ["download", "transform"]
         assert set(kwargs["task_definitions"].keys()) == {"download", "transform"}
 
     def test_with_subset_includes_dataset_subset_task(self):
-        kwargs = invoke_cli(datacite_cmd, {
-            "env": "prod",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "datacite_bucket_name": "datacite-bucket",
-            "dataset_subset": DatasetSubsetAWS(enable=True),
-        })
+        kwargs = invoke_cli(
+            datacite_cmd,
+            {
+                "env": "prod",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "datacite_bucket_name": "datacite-bucket",
+                "dataset_subset": DatasetSubsetAWS(enable=True),
+            },
+        )
 
         assert kwargs["task_order"] == list(DATACITE_JOBS)
         assert "subset" in kwargs["task_definitions"]
 
     def test_start_job_passed_through(self):
-        kwargs = invoke_cli(datacite_cmd, {
-            "env": "prod",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "datacite_bucket_name": "datacite-bucket",
-            "start_job": "transform",
-        })
+        kwargs = invoke_cli(
+            datacite_cmd,
+            {
+                "env": "prod",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "datacite_bucket_name": "datacite-bucket",
+                "start_job": "transform",
+            },
+        )
         assert kwargs["start_task_name"] == "transform"
 
 
 class TestOpenAlexWorksCmd:
     def test_no_subset_excludes_dataset_subset_task(self):
-        kwargs = invoke_cli(openalex_works_cmd, {
-            "env": "stage",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "openalex_bucket_name": "openalex-bucket",
-        })
+        kwargs = invoke_cli(
+            openalex_works_cmd,
+            {
+                "env": "stage",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "openalex_bucket_name": "openalex-bucket",
+            },
+        )
 
         assert kwargs["task_order"] == ["download", "transform"]
         assert set(kwargs["task_definitions"].keys()) == {"download", "transform"}
 
     def test_with_subset_includes_dataset_subset_task(self):
-        kwargs = invoke_cli(openalex_works_cmd, {
-            "env": "stage",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "openalex_bucket_name": "openalex-bucket",
-            "dataset_subset": DatasetSubsetAWS(enable=True, dois_s3_path="path/dois.csv"),
-        })
+        kwargs = invoke_cli(
+            openalex_works_cmd,
+            {
+                "env": "stage",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "openalex_bucket_name": "openalex-bucket",
+                "dataset_subset": DatasetSubsetAWS(enable=True, dois_s3_path="path/dois.csv"),
+            },
+        )
 
         assert kwargs["task_order"] == list(OPENALEX_WORKS_JOBS)
         assert "subset" in kwargs["task_definitions"]
 
     def test_start_job_passed_through(self):
-        kwargs = invoke_cli(openalex_works_cmd, {
-            "env": "stage",
-            "run_id": "test-run",
-            "bucket_name": "my-bucket",
-            "openalex_bucket_name": "openalex-bucket",
-            "start_job": "transform",
-        })
+        kwargs = invoke_cli(
+            openalex_works_cmd,
+            {
+                "env": "stage",
+                "run_id": "test-run",
+                "bucket_name": "my-bucket",
+                "openalex_bucket_name": "openalex-bucket",
+                "start_job": "transform",
+            },
+        )
         assert kwargs["start_task_name"] == "transform"
 
 
 class TestProcessWorksCmd:
     def test_task_order_and_definitions(self):
-        kwargs = invoke_cli(process_works_cmd, {
-            "env": "dev",
-            "bucket_name": "my-bucket",
-            "run_identifiers": RunIdentifiers(run_id_sqlmesh="works-run-1"),
-            "sqlmesh_config": SQLMeshConfig(),
-        })
+        kwargs = invoke_cli(
+            process_works_cmd,
+            {
+                "env": "dev",
+                "bucket_name": "my-bucket",
+                "run_identifiers": RunIdentifiers(run_id_sqlmesh="works-run-1"),
+                "sqlmesh_config": SQLMeshConfig(),
+            },
+        )
 
         assert kwargs["task_order"] == list(PROCESS_WORKS_JOBS)
         assert kwargs["start_task_name"] == PROCESS_WORKS_JOBS[0]
         assert set(kwargs["task_definitions"].keys()) == {"sqlmesh-transform", "sync-works"}
 
     def test_start_job_passed_through(self):
-        kwargs = invoke_cli(process_works_cmd, {
-            "env": "dev",
-            "bucket_name": "my-bucket",
-            "run_identifiers": RunIdentifiers(run_id_sqlmesh="works-run-1"),
-            "sqlmesh_config": SQLMeshConfig(),
-            "start_job": "sync-works",
-        })
+        kwargs = invoke_cli(
+            process_works_cmd,
+            {
+                "env": "dev",
+                "bucket_name": "my-bucket",
+                "run_identifiers": RunIdentifiers(run_id_sqlmesh="works-run-1"),
+                "sqlmesh_config": SQLMeshConfig(),
+                "start_job": "sync-works",
+            },
+        )
         assert kwargs["start_task_name"] == "sync-works"
 
 
 class TestProcessDmpsCmd:
     def test_task_order_and_definitions(self):
-        kwargs = invoke_cli(process_dmps_cmd, {
-            "env": "dev",
-            "bucket_name": "my-bucket",
-            "run_id_dmps": "dmps-run-1",
-        })
+        kwargs = invoke_cli(
+            process_dmps_cmd,
+            {
+                "env": "dev",
+                "bucket_name": "my-bucket",
+                "run_id_dmps": "dmps-run-1",
+            },
+        )
 
         assert kwargs["task_order"] == list(PROCESS_DMPS_JOBS)
         assert kwargs["start_task_name"] == PROCESS_DMPS_JOBS[0]
@@ -363,10 +408,13 @@ class TestProcessDmpsCmd:
         }
 
     def test_start_job_passed_through(self):
-        kwargs = invoke_cli(process_dmps_cmd, {
-            "env": "dev",
-            "bucket_name": "my-bucket",
-            "run_id_dmps": "dmps-run-1",
-            "start_job": "enrich-dmps",
-        })
+        kwargs = invoke_cli(
+            process_dmps_cmd,
+            {
+                "env": "dev",
+                "bucket_name": "my-bucket",
+                "run_id_dmps": "dmps-run-1",
+                "start_job": "enrich-dmps",
+            },
+        )
         assert kwargs["start_task_name"] == "enrich-dmps"

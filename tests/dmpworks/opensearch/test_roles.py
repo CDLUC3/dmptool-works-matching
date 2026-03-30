@@ -9,7 +9,6 @@ from dmpworks.opensearch.roles import (
     upsert_role_mapping,
 )
 
-
 BATCH_ARN = "arn:aws:iam::123456789012:role/dmpworks-dev-batch-job-role"
 APOLLO_ARN = "arn:aws:iam::123456789012:role/dmpworks-dev-ecs-apollo-EcsTaskRole-abc123"
 SSO_ARN = "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/us-west-2/AWSReservedSSO_profile_abc123"
@@ -78,10 +77,13 @@ class TestSetupAwsBatchRole:
         assert mapping_call.args[1] == "/_plugins/_security/api/rolesmapping/aws_batch"
         assert mapping_call.kwargs["body"] == {"backend_roles": [BATCH_ARN]}
 
-    @pytest.mark.parametrize("dmps_index,works_index", [
-        ("custom-dmps", "custom-works"),
-        ("dmps-staging", "works-staging"),
-    ])
+    @pytest.mark.parametrize(
+        "dmps_index,works_index",
+        [
+            ("custom-dmps", "custom-works"),
+            ("dmps-staging", "works-staging"),
+        ],
+    )
     def test_uses_provided_index_names(self, mock_client, dmps_index, works_index):
         setup_aws_batch_role(
             client=mock_client,

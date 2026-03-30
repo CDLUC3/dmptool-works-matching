@@ -78,6 +78,8 @@
         "bucket_name.$": "$.bucket_name",
         "skip_sqlmesh.$": "$.skip_sqlmesh",
         "skip_sync_works.$": "$.skip_sync_works",
+        "start_process_dmps.$": "$.start_process_dmps",
+        "run_all_dmps.$": "$.run_all_dmps",
         "run_id_openalex_works.$": "$.check.datasets.run_id_openalex_works",
         "run_id_datacite.$": "$.check.datasets.run_id_datacite",
         "run_id_crossref_metadata.$": "$.check.datasets.run_id_crossref_metadata",
@@ -133,6 +135,8 @@
         "bucket_name.$": "$.bucket_name",
         "skip_sqlmesh.$": "$.skip_sqlmesh",
         "skip_sync_works.$": "$.skip_sync_works",
+        "start_process_dmps.$": "$.start_process_dmps",
+        "run_all_dmps.$": "$.run_all_dmps",
         "run_id.$": "$.created.run_id",
         "run_id_openalex_works.$": "$.run_id_openalex_works",
         "run_id_datacite.$": "$.run_id_datacite",
@@ -212,7 +216,7 @@
       "Comment": "Generate a unique run ID and execution name for the sqlmesh child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "sqlmesh",
           "date.$": "$.release_date",
@@ -220,7 +224,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -246,7 +250,7 @@
           "run_id_crossref_metadata.$": "$.run_id_crossref_metadata",
           "run_id_ror.$": "$.run_id_ror",
           "run_id_data_citation_corpus.$": "$.run_id_data_citation_corpus",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -321,7 +325,7 @@
       "Comment": "Generate a unique run ID and execution name for the sync-works child state machine",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "${GenerateChildRunIdFunction}",
+        "FunctionName": "${GenerateRunIdFunction}",
         "Payload": {
           "task_name": "sync-works",
           "date.$": "$.release_date",
@@ -329,7 +333,7 @@
         }
       },
       "ResultSelector": {
-        "child_run_id.$": "$.Payload.child_run_id",
+        "run_id.$": "$.Payload.run_id",
         "execution_name.$": "$.Payload.execution_name"
       },
       "ResultPath": "$.child_meta",
@@ -350,7 +354,7 @@
           "bucket_name.$": "$.bucket_name",
           "parent_execution_arn.$": "$$.Execution.Id",
           "sqlmesh_run_id.$": "$.sqlmesh_check.task_run_id",
-          "run_id.$": "$.child_meta.child_run_id",
+          "run_id.$": "$.child_meta.run_id",
           "TaskToken.$": "$$.Task.Token"
         }
       },
@@ -396,6 +400,43 @@
         }
       },
       "ResultPath": null,
+      "Next": "ShouldStartProcessDmps"
+    },
+    "ShouldStartProcessDmps": {
+      "Type": "Choice",
+      "Comment": "Skip process-dmps chaining if start_process_dmps is explicitly false",
+      "Choices": [
+        {
+          "And": [
+            { "Variable": "$.start_process_dmps", "IsPresent": true },
+            { "Variable": "$.start_process_dmps", "BooleanEquals": false }
+          ],
+          "Next": "SkipProcessDmps"
+        }
+      ],
+      "Default": "GenerateProcessDmpsRunId"
+    },
+    "SkipProcessDmps": {
+      "Type": "Succeed",
+      "Comment": "Process-dmps chaining skipped by user"
+    },
+    "GenerateProcessDmpsRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the process-dmps state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateRunIdFunction}",
+        "Payload": {
+          "task_name": "process-dmps",
+          "date.$": "$.release_date",
+          "workflow_prefix": "process-works"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.process_dmps_child",
       "Next": "StartProcessDmps"
     },
     "StartProcessDmps": {
@@ -404,12 +445,14 @@
       "Resource": "arn:aws:states:::states:startExecution",
       "Parameters": {
         "StateMachineArn": "${ProcessDmpsStateMachine}",
+        "Name.$": "$.process_dmps_child.execution_name",
         "Input": {
           "workflow_key": "process-dmps",
           "release_date.$": "$.release_date",
           "aws_env.$": "$.aws_env",
           "bucket_name.$": "$.bucket_name",
-          "run_all_dmps": true,
+          "run_id.$": "$.process_dmps_child.run_id",
+          "run_all_dmps.$": "$.run_all_dmps",
           "skip_sync_dmps": false,
           "skip_enrich_dmps": false,
           "skip_dmp_works_search": false,

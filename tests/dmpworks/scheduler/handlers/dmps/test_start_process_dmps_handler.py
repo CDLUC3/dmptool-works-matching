@@ -18,7 +18,10 @@ class TestStartExecution:
             patch(f"{PATCH_BASE}.pendulum") as mock_pendulum,
             patch(
                 f"{PATCH_BASE}.start_execution",
-                return_value={"execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-dmps:exec-1", "release_date": "2025-01-15"},
+                return_value={
+                    "execution_arn": "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-dmps:exec-1",
+                    "release_date": "2025-01-15",
+                },
             ) as mock_start,
         ):
             mock_pendulum.now.return_value = pendulum.parse("2025-01-15T10:00:00", tz="UTC")
@@ -35,5 +38,8 @@ class TestStartExecution:
                 "skip_merge_related_works": False,
             },
         )
-        assert result["execution_arn"] == "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-dmps:exec-1"
+        assert (
+            result["execution_arn"]
+            == "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-process-dmps:exec-1"
+        )
         assert result["release_date"] == "2025-01-15"

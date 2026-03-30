@@ -54,7 +54,7 @@ MOCK_SUBSTITUTIONS = {
     "DownloadWorkflowStateMachine": f"arn:aws:states:{MOCK_REGION}:{MOCK_ACCOUNT}:stateMachine:{DOWNLOAD_SM_NAME}",
     "SubsetWorkflowStateMachine": f"arn:aws:states:{MOCK_REGION}:{MOCK_ACCOUNT}:stateMachine:{SUBSET_SM_NAME}",
     "TransformWorkflowStateMachine": f"arn:aws:states:{MOCK_REGION}:{MOCK_ACCOUNT}:stateMachine:{TRANSFORM_SM_NAME}",
-    "GenerateChildRunIdFunction": f"arn:aws:lambda:{MOCK_REGION}:{MOCK_ACCOUNT}:function:GenerateChildRunId",
+    "GenerateRunIdFunction": f"arn:aws:lambda:{MOCK_REGION}:{MOCK_ACCOUNT}:function:GenerateRunId",
     "StoreApprovalTokenFunction": f"arn:aws:lambda:{MOCK_REGION}:{MOCK_ACCOUNT}:function:StoreApprovalToken",
 }
 
@@ -135,7 +135,7 @@ class MockLambdaHandler(BaseHTTPRequestHandler):
         # Path: /2015-03-31/functions/{name}/invocations
         function_name = self.path.split("/")[3]
 
-        if "GenerateChildRunId" in function_name:
+        if "GenerateRunId" in function_name:
             import secrets
 
             task_name = body.get("task_name", "unknown")
@@ -143,7 +143,7 @@ class MockLambdaHandler(BaseHTTPRequestHandler):
             date = body.get("date", "2025-01-01")
             run_id = f"20250101T060000-{secrets.token_hex(4)}"
             response = {
-                "child_run_id": run_id,
+                "run_id": run_id,
                 "execution_name": f"{prefix}-{task_name}-{date}-{run_id}",
             }
         elif "GetBatchJobParams" in function_name:

@@ -116,6 +116,55 @@ def confirm_and_start(*, sm_arn: str, execution_name: str, sfn_input: dict) -> N
     console.print(f"\n[green]Started execution:[/green] {arn}")
 
 
+WORKFLOW_CHOICES = ["ingest", "process-works", "process-dmps"]
+
+
+def prompt_dmp_scope(*, env: str) -> bool | None:
+    """Prompt the user to select which DMPs to process.
+
+    Args:
+        env: AWS environment, used to load the modification window config from SSM.
+
+    Returns:
+        True for all DMPs, False for recently modified only, None if cancelled.
+    """
+    modification_window_days = None
+    try:
+        config = load_lambda_config(env)
+        modification_window_days = config.dmp_works_search_config.dmp_modification_window_days
+    except Exception:
+        log.debug("Could not load modification window config", exc_info=True)
+    if modification_window_days is not None:
+        daily_label = f"Only DMPs modified in the last {modification_window_days} days (daily update)"
+    else:
+        daily_label = "Only recently modified DMPs (daily update)"
+    dmp_scope = questionary.select(
+        "Which DMPs to process:",
+        choices=["All DMPs", daily_label],
+    ).ask()
+    if dmp_scope is None:
+        return None
+    return dmp_scope == "All DMPs"
+
+
+def run_start_wizard(*, env: str, bucket_name: str) -> None:
+    """Interactive wizard for selecting and starting a Step Function execution.
+
+    Args:
+        env: AWS environment (dev, stg, prd).
+        bucket_name: S3 bucket name for the execution input.
+    """
+    workflow = questionary.select("Select workflow:", choices=WORKFLOW_CHOICES).ask()
+    if workflow is None:
+        return
+    if workflow == "ingest":
+        run_ingest_wizard(env=env, bucket_name=bucket_name)
+    elif workflow == "process-works":
+        run_process_works_wizard(env=env, bucket_name=bucket_name)
+    else:
+        run_process_dmps_wizard(env=env, bucket_name=bucket_name)
+
+
 def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
     """Interactive wizard for starting a dataset ingest SFN execution.
 
@@ -312,6 +361,17 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
     if not check_schedules_enabled(env=env):
         return
 
+    # Ask whether to chain into process-dmps after completion.
+    start_process_dmps = questionary.confirm("Start process-dmps after completion?", default=True).ask()
+    if start_process_dmps is None:
+        return
+    if start_process_dmps:
+        run_all_dmps = prompt_dmp_scope(env=env)
+        if run_all_dmps is None:
+            return
+    else:
+        run_all_dmps = True
+
     # Build SFN input.
     run_id = generate_run_id()
     sfn_input = {
@@ -322,6 +382,8 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         "bucket_name": bucket_name,
         "skip_sqlmesh": skip_sqlmesh,
         "skip_sync_works": skip_sync_works,
+        "start_process_dmps": start_process_dmps,
+        "run_all_dmps": run_all_dmps,
     }
     execution_name = f"process-works-{release_date}-{run_id}"
 
@@ -382,18 +444,40 @@ def run_process_dmps_wizard(*, env: str, bucket_name: str) -> None:
     skip_dmp_works_search = "dmp-works-search" not in rerun_choices
     skip_merge_related_works = "merge-related-works" not in rerun_choices
 
-    # Validate: check that a completed process-works run exists.
+    # Show latest completed process-works run so the user knows what data the works index contains.
     works_runs = scan_all_process_works_runs()
-    completed_works = [r for r in works_runs if r.status == "COMPLETED"]
-    if not completed_works:
+    completed_works = sorted(
+        [r for r in works_runs if r.status == "COMPLETED"],
+        key=lambda r: (r.release_date, r.run_id),
+        reverse=True,
+    )
+    if completed_works:
+        latest = completed_works[0]
+        pw_table = Table(title="Latest process-works run", show_header=True)
+        pw_table.add_column("Field", style="cyan")
+        pw_table.add_column("Value")
+        pw_table.add_row("release_date", latest.release_date)
+        pw_table.add_row("run_id", latest.run_id)
+        pw_table.add_row("updated_at", latest.updated_at)
+        dataset_release_dates = [
+            ("openalex-works", latest.release_date_openalex_works),
+            ("datacite", latest.release_date_datacite),
+            ("crossref-metadata", latest.release_date_crossref_metadata),
+            ("ror", latest.release_date_ror),
+            ("data-citation-corpus", latest.release_date_data_citation_corpus),
+        ]
+        for dataset, release_date_val in dataset_release_dates:
+            pw_table.add_row(dataset, release_date_val or "[dim]—[/dim]")
+        console.print(pw_table)
+    else:
         console.print(
             "[yellow]Warning: No completed process-works runs found. The works index may not be up to date.[/yellow]"
         )
         if not questionary.confirm("Continue anyway?", default=False).ask():
             return
 
-    # run_all_dmps.
-    run_all_dmps = questionary.confirm("Run all DMPs? (default: yes for manual runs)", default=True).ask()
+    # Which DMPs to process.
+    run_all_dmps = prompt_dmp_scope(env=env)
     if run_all_dmps is None:
         return
 
@@ -534,9 +618,7 @@ def run_approve_retry_wizard() -> None:
 
     # Fetch children in parallel.
     arns = list(parents_to_fetch.keys())
-    children_lists = thread_map(
-        lambda arn: fetch_child_executions(sfn_client=sfn, parent_arn=arn), arns
-    )
+    children_lists = thread_map(lambda arn: fetch_child_executions(sfn_client=sfn, parent_arn=arn), arns)
 
     for arn, children in zip(arns, children_lists, strict=True):
         run, parent_resp = parents_to_fetch[arn]

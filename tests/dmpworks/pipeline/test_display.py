@@ -137,7 +137,8 @@ def make_execution(*, workflow: str = "process-works", name: str = "parent-exec"
         "status": "RUNNING",
         "start_date": start,
         "stop_date": None,
-        "children": children or [
+        "children": children
+        or [
             {
                 "name": "process-works-sqlmesh-child",
                 "status": "FAILED",

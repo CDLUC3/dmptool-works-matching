@@ -15,7 +15,12 @@ EXECUTION_ARN = "arn:aws:states:us-east-1:123456789012:execution:dmpworks-dev-do
 
 
 def make_event(
-    *, state_machine_arn: str, execution_arn: str, execution_input: dict, cause: str | None = None, status: str = "FAILED"
+    *,
+    state_machine_arn: str,
+    execution_arn: str,
+    execution_input: dict,
+    cause: str | None = None,
+    status: str = "FAILED",
 ) -> dict:
     """Build a minimal EventBridge Step Functions Execution Status Change event."""
     detail = {
@@ -287,8 +292,9 @@ class TestAbortedEvents:
             execution_input=execution_input,
             status="ABORTED",
         )
-        with patch(mock_target) as mock_fn, patch(
-            "dmpworks.scheduler.handler.handle_execution_failure_handler.clear_approval_token"
+        with (
+            patch(mock_target) as mock_fn,
+            patch("dmpworks.scheduler.handler.handle_execution_failure_handler.clear_approval_token"),
         ):
             handle_execution_failure_handler(event, None)
         mock_fn.assert_called_once_with(**expected_kwargs)

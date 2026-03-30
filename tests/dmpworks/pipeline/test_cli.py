@@ -19,50 +19,18 @@ def isolate_env(monkeypatch):
     monkeypatch.setenv("AWS_REGION", "us-west-2")
 
 
-class TestStartIngest:
-    def test_dispatches_to_wizard(self, mocker):
-        mock_wizard = mocker.patch("dmpworks.pipeline.interactive.run_ingest_wizard")
+class TestStart:
+    def test_dispatches_to_start_wizard(self, mocker):
+        mock_wizard = mocker.patch("dmpworks.pipeline.interactive.run_start_wizard")
 
-        cli(["pipeline", "runs", "start", "ingest", "--env", "dev", "--bucket-name", "my-bucket"])
-
-        mock_wizard.assert_called_once_with(env="dev", bucket_name="my-bucket")
-
-    def test_defaults_bucket_name(self, mocker):
-        mock_wizard = mocker.patch("dmpworks.pipeline.interactive.run_ingest_wizard")
-
-        cli(["pipeline", "runs", "start", "ingest", "--env", "dev"])
-
-        mock_wizard.assert_called_once_with(env="dev", bucket_name="dmpworks-dev-s3")
-
-
-class TestStartProcessWorks:
-    def test_dispatches_to_wizard(self, mocker):
-        mock_wizard = mocker.patch("dmpworks.pipeline.interactive.run_process_works_wizard")
-
-        cli(["pipeline", "runs", "start", "process-works", "--env", "dev", "--bucket-name", "my-bucket"])
+        cli(["pipeline", "runs", "start", "--env", "dev", "--bucket-name", "my-bucket"])
 
         mock_wizard.assert_called_once_with(env="dev", bucket_name="my-bucket")
 
     def test_defaults_bucket_name(self, mocker):
-        mock_wizard = mocker.patch("dmpworks.pipeline.interactive.run_process_works_wizard")
+        mock_wizard = mocker.patch("dmpworks.pipeline.interactive.run_start_wizard")
 
-        cli(["pipeline", "runs", "start", "process-works", "--env", "dev"])
-
-        mock_wizard.assert_called_once_with(env="dev", bucket_name="dmpworks-dev-s3")
-
-
-class TestStartProcessDmps:
-    def test_dispatches_to_wizard(self, mocker):
-        mock_wizard = mocker.patch("dmpworks.pipeline.interactive.run_process_dmps_wizard")
-
-        cli(["pipeline", "runs", "start", "process-dmps", "--env", "dev", "--bucket-name", "my-bucket"])
-
-        mock_wizard.assert_called_once_with(env="dev", bucket_name="my-bucket")
-
-    def test_defaults_bucket_name(self, mocker):
-        mock_wizard = mocker.patch("dmpworks.pipeline.interactive.run_process_dmps_wizard")
-
-        cli(["pipeline", "runs", "start", "process-dmps", "--env", "dev"])
+        cli(["pipeline", "runs", "start", "--env", "dev"])
 
         mock_wizard.assert_called_once_with(env="dev", bucket_name="dmpworks-dev-s3")
 
