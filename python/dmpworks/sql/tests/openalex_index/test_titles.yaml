@@ -26,19 +26,14 @@ test_openalex_index_titles:
     crossref_index.works_metadata:
       rows:
         - doi: "10.9999/test.0001"
+          title: "Title One"
           title_length: 9
         - doi: "10.9999/test.0002"
-          title_length: 7
-        - doi: "10.9999/test.0003"
-          title_length: 7
-    crossref.crossref_metadata:
-      rows:
-        - doi: "10.9999/test.0001"
-          title: "Title One"
-        - doi: "10.9999/test.0002"
           title: "Title 2"
+          title_length: 7
         - doi: "10.9999/test.0003"
           title: "Title 3"
+          title_length: 7
   outputs:
     query:
       rows:
@@ -48,4 +43,3 @@ test_openalex_index_titles:
           title: "Title 2"
         - doi: "10.9999/test.0003"
           title: "Title Three"
-
