@@ -81,12 +81,22 @@ push-lambda-stg: check-ecr-registry check-ssm-prefix build-lambda
 
 fmt:
 > cargo fmt --all
-> .venv/bin/black ./python/dmpworks
+> .venv/bin/black ./python/dmpworks ./tests
+
+fmt-ci:
+> cargo fmt --all -- --check
+> .venv/bin/black --check ./python/dmpworks ./tests
 
 lint:
 > cargo clippy --all-features
 > cargo deny check
 > .venv/bin/ruff check ./python/dmpworks --fix
+> .venv/bin/black ./tests
+
+lint-ci:
+> cargo clippy --all-features
+> cargo deny check
+> .venv/bin/ruff check ./python/dmpworks
 
 test-python:
 > .venv/bin/pytest
@@ -129,7 +139,6 @@ deploy-dev: check-deploy-vars push-batch-dev push-lambda-dev
 
 deploy-stg: check-deploy-vars push-batch-stg push-lambda-stg
 > cd infra && sceptre --var-file=vars-stg.yaml launch stg
-
 
 clean:
 > rm -rf .venv target

@@ -1,8 +1,8 @@
 import logging
-import os
 import pathlib
 
 from dmpworks.cli import cli
+from dmpworks.constants import CROSSREF_METADATA_TRANSFORM_MAX_WORKERS, OPENALEX_WORKS_TRANSFORM_MAX_WORKERS
 import pytest
 
 
@@ -26,7 +26,7 @@ class TestTransformCLI:
             batch_size=500,
             row_group_size=500_000,
             row_groups_per_file=4,
-            max_workers=os.cpu_count(),
+            max_workers=CROSSREF_METADATA_TRANSFORM_MAX_WORKERS,
         )
 
     @pytest.fixture
@@ -69,7 +69,7 @@ class TestTransformCLI:
             batch_size=16,
             row_group_size=200_000,
             row_groups_per_file=4,
-            max_workers=os.cpu_count(),
+            max_workers=OPENALEX_WORKS_TRANSFORM_MAX_WORKERS,
             include_xpac=False,
             log_level=logging.INFO,
         )

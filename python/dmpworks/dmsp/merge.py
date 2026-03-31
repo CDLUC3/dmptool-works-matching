@@ -27,6 +27,7 @@ def time_step(durations: dict[str, list[float]], name: str):
     Yields:
         None
     """
+
     @contextlib.contextmanager
     def _timer():
         t0 = time.perf_counter()
