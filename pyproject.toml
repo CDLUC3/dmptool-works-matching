@@ -20,7 +20,7 @@ dependencies = [
     "fold_to_ascii>=1,<=2",
     "rapidfuzz>=3,<4",
     "pydantic>=2,<3",
-    "duckdb>=1.4.0,<1.5.0",
+    "duckdb>=1.5.0,<1.6.0",
     "pymysql[rsa]>=1.1.2,<2",
     "ranx>=0.3.21,<0.4",
     "numpy>=1.22,<2.5.0",
