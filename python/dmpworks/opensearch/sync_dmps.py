@@ -140,13 +140,24 @@ published_outputs AS (
     WHERE rw.status = 'ACCEPTED'
   ) AS temp
   GROUP BY temp.plan_id
+),
+
+-- Includes REJECTED so the DMP is re-searched when a curator acts on any related work
+published_outputs_modified AS (
+  SELECT
+    p.id AS plan_id,
+    MAX(rw.modified) AS published_outputs_modified
+  FROM unique_plans p
+  INNER JOIN relatedWorks rw ON rw.planId = p.id
+  WHERE rw.status IN ('ACCEPTED', 'REJECTED')
+  GROUP BY p.id
 )
 
 SELECT
   pl.dmpId AS doi,
   pl.created,
   pl.registered,
-  pl.modified,
+  GREATEST(pl.modified, COALESCE(pom.published_outputs_modified, pl.modified)) AS modified,
   pl.title,
   pr.abstractText AS abstract_text,
   pr.startDate AS project_start,
@@ -161,6 +172,7 @@ LEFT JOIN institutions inst ON inst.plan_id = pl.id
 LEFT JOIN authors au ON au.plan_id = pl.id
 LEFT JOIN funding fn ON fn.plan_id = pl.id
 LEFT JOIN published_outputs po ON po.plan_id = pl.id
+LEFT JOIN published_outputs_modified pom ON pom.plan_id = pl.id
 WHERE pr.isTestProject = 0 AND pl.status = 'COMPLETE'
 """
 
