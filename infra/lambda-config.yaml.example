@@ -90,8 +90,8 @@ sqlmesh_config:
   duckdb_threads: 32
   duckdb_memory_limit: 225GB
   audit_crossref_metadata_works_threshold: 167008747
-  audit_datacite_works_threshold: 72019576
+  audit_datacite_works_threshold: 100000000
   audit_nested_object_limit: 20000
-  audit_openalex_works_threshold: 264675126
+  audit_openalex_works_threshold: 190000000
   max_doi_states: 3
   max_relation_degrees: 100

@@ -1,5 +1,11 @@
 # Submitting AWS Batch Jobs
 
+> **Note:** The `batch-submit` CLI submits AWS Batch jobs directly with explicit
+> parameters. For day-to-day pipeline operations, use
+> [`dmpworks pipeline`](pipeline.md) instead — it manages Step Functions workflows,
+> DynamoDB state, and EventBridge schedules. `batch-submit` remains available for
+> one-off Batch jobs outside the Step Functions pipeline.
+
 This guide describes how to build the DMP works matching Docker image and submit
 AWS Batch jobs to download, normalise, and process DMP and works data.
 
@@ -117,17 +123,18 @@ subset processing.
 
 #### 1.4.2. Datasets
 
-**Data Citation Corpus**
+#### Data Citation Corpus
 
-Extract the Data Citation Corpus JSON files from the ZIP archive, gzip them, and 
-upload them to the `data_citation_corpus/2025-08-15/download/` directory in your S3 bucket:
+Extract the Data Citation Corpus JSON files from the ZIP archive, gzip them, and
+upload them to the `data_citation_corpus/<DATE>/download/` directory in your S3 bucket
+(replace `<DATE>` with the release date, e.g. `2025-08-15`):
 
 ```bash
 for f in *.json; do gzip -k "$f"; done
-s5cmd cp '*.json.gz' s3://<BUCKET_NAME>/data_citation_corpus/2025-08-15/download/
+s5cmd cp '*.json.gz' s3://<BUCKET_NAME>/data_citation_corpus/<DATE>/download/
 ```
 
-**DOI State**
+#### DOI State
 
 Generate an empty DOI state file and upload it to S3. This file is used by SQLMesh as the initial DOI state:
 

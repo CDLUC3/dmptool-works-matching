@@ -2,17 +2,17 @@
 
 This guide covers deploying all dmpworks CloudFormation stacks and operating
 them after deployment. It assumes AWS credentials are already configured
-(see [Submitting AWS Batch Jobs](aws-batch.md) for credential setup).
+(see [Submitting AWS Batch Jobs](batch.md) for credential setup).
 
 ## Required Variables
 
 Set these before running any commands in this guide:
 
-| Variable | Description | Example |
-|---|---|---|
-| `ENV` | Target environment | `dev` or `stg` |
-| `ECR_REGISTRY` | ECR registry hostname | `123456789012.dkr.ecr.us-west-2.amazonaws.com` |
-| `SSM_PREFIX` | SSM path prefix for all parameters | `/your-org/your-app/dmpworks` |
+| Variable       | Description                        | Example                                        |
+|----------------|------------------------------------|------------------------------------------------|
+| `ENV`          | Target environment                 | `dev` or `stg`                                 |
+| `ECR_REGISTRY` | ECR registry hostname              | `123456789012.dkr.ecr.us-west-2.amazonaws.com` |
+| `SSM_PREFIX`   | SSM path prefix for all parameters | `/your-org/your-app/dmpworks`                  |
 
 ```bash
 export ENV=dev
@@ -188,3 +188,7 @@ dmpworks opensearch roles apollo-server --client-config.port 8080 \
 
 Each command replaces the role definition and mapping in full, so re-running
 after an ARN change or permission update is safe.
+
+### default_role
+
+Delete the `default_role` if it exists.
