@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 DMPS_QUERY_TEMPLATE = """
 WITH unique_plans AS (
-  SELECT id, dmpId, projectId, created, registered, modified, title
+  SELECT id, dmpId, projectId, created, registered, modified, title, status
   FROM (
     SELECT
       *,

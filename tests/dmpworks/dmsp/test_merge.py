@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import MagicMock
 
 import pytest
@@ -89,3 +90,37 @@ class TestMergeRelatedWorks:
         assert len(mock_loader.captured_work_versions) == 2
         for batch in mock_loader.captured_work_versions:
             assert len(batch) == 2, f"Expected 2 work versions per DMP batch, got {len(batch)}"
+
+    def test_commits_after_each_dmp(self, tmp_path, mock_loader):
+        """Each DMP cycle ends with a commit()."""
+        matches_dir = write_match_data(
+            tmp_path,
+            [
+                make_match_data_row(dmp_doi="10.0000/dmp1", work_doi="10.0000/work1"),
+                make_match_data_row(dmp_doi="10.0000/dmp2", work_doi="10.0000/work2"),
+            ],
+        )
+
+        merge_related_works(matches_dir=matches_dir, conn=MagicMock())
+
+        assert mock_loader.commit.call_count == 2
+
+
+class TestMergeMetrics:
+    def test_logs_timing_stats_after_completion(self, tmp_path, mock_loader, caplog):
+        """Final INFO log contains mean/stdev for each step."""
+        matches_dir = write_match_data(
+            tmp_path,
+            [
+                make_match_data_row(dmp_doi="10.0000/dmp1", work_doi="10.0000/work1"),
+                make_match_data_row(dmp_doi="10.0000/dmp2", work_doi="10.0000/work2"),
+            ],
+        )
+
+        with caplog.at_level(logging.INFO, logger="dmpworks.dmsp.merge"):
+            merge_related_works(matches_dir=matches_dir, conn=MagicMock())
+
+        for step_name in ("stage-tables", "work-versions", "related-works", "update-proc", "cleanup"):
+            assert any(
+                step_name in record.message and "mean=" in record.message for record in caplog.records
+            ), f"Expected timing log for step '{step_name}'"

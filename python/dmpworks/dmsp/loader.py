@@ -203,9 +203,16 @@ class RelatedWorksLoader:
                 log.info("Transaction committed successfully.")
             self.conn.close()
 
+    def commit(self):
+        """Commit the current transaction.
+
+        A new transaction begins implicitly after this call (pymysql autocommit=False).
+        """
+        self.conn.commit()
+
     def prepare_staging_tables(self):
         """Prepare staging tables in the database."""
-        log.info("Preparing staging tables...")
+        log.debug("Preparing staging tables...")
         with self.conn.cursor() as cursor:
             cursor.callproc("create_related_works_staging_tables")
 
@@ -216,12 +223,13 @@ class RelatedWorksLoader:
             rows_iterator: Iterator yielding rows to insert.
             batch_size: Number of rows to insert per batch.
         """
-        log.info("Loading work versions into staging table...")
+        log.debug("Loading work versions into staging table...")
         sql = "INSERT INTO stagingWorkVersions (doi,hash,workType,publicationDate,title,abstractText,authors,institutions,funders,awards,publicationVenue,sourceName,sourceUrl) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         self.batch_insert(sql, rows_iterator, batch_size)
 
-        with self.conn.cursor() as cursor:
-            self.print_table(cursor, "stagingWorkVersions", lambda r: f"doi={r.get('doi')}")
+        if log.isEnabledFor(logging.DEBUG):
+            with self.conn.cursor() as cursor:
+                self.print_table(cursor, "stagingWorkVersions", lambda r: f"doi={r.get('doi')}")
 
     def insert_related_works(self, rows_iterator: Iterable[list[Any]], batch_size: int = 1000):
         """Insert related works into the staging table.
@@ -230,14 +238,15 @@ class RelatedWorksLoader:
             rows_iterator: Iterator yielding rows to insert.
             batch_size: Number of rows to insert per batch.
         """
-        log.info("Loading related works into staging table...")
+        log.debug("Loading related works into staging table...")
         sql = "INSERT INTO stagingRelatedWorks (planId,dmpDoi,workDoi,hash,sourceType,score,scoreMax,status,doiMatch,contentMatch,authorMatches,institutionMatches,funderMatches,awardMatches) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         self.batch_insert(sql, rows_iterator, batch_size)
 
-        with self.conn.cursor() as cursor:
-            self.print_table(
-                cursor, "stagingRelatedWorks", lambda r: f"dmpDoi={r.get('dmpDoi')}, status={r.get('status')}"
-            )
+        if log.isEnabledFor(logging.DEBUG):
+            with self.conn.cursor() as cursor:
+                self.print_table(
+                    cursor, "stagingRelatedWorks", lambda r: f"dmpDoi={r.get('dmpDoi')}, status={r.get('status')}"
+                )
 
     def batch_insert(self, sql: str, rows: Iterable[list[Any]], batch_size: int):
         """Execute batch insert.
@@ -263,18 +272,23 @@ class RelatedWorksLoader:
         Args:
             system_matched: Boolean indicating if the matches are system generated.
         """
-        with self.conn.cursor() as cursor:
-            for table in ("stagingWorkVersions", "stagingRelatedWorks"):
-                cursor.execute(f"SELECT COUNT(*) AS cnt FROM {table}")  # noqa: S608
-                row = cursor.fetchone()
-                log.debug(f"  {table}: {row['cnt']} rows staged")
+        if log.isEnabledFor(logging.DEBUG):
+            with self.conn.cursor() as cursor:
+                for table in ("stagingWorkVersions", "stagingRelatedWorks"):
+                    cursor.execute(f"SELECT COUNT(*) AS cnt FROM {table}")  # noqa: S608
+                    row = cursor.fetchone()
+                    log.debug(f"  {table}: {row['cnt']} rows staged")
 
         log.debug("Calling batch_update_related_works stored procedure...")
         with self.conn.cursor() as cursor:
             cursor.callproc("batch_update_related_works", [system_matched])
-            self.print_table(cursor, "works", format_func=lambda r: f"id={r.get('id')}, doi={r.get('doi')}")
-            self.print_table(cursor, "workVersions", format_func=lambda r: f"id={r.get('id')}, title={r.get('title')}")
-            self.print_table(cursor, "relatedWorks", format_func=lambda r: f"id={r.get('id')}")
+
+            if log.isEnabledFor(logging.DEBUG):
+                self.print_table(cursor, "works", format_func=lambda r: f"id={r.get('id')}, doi={r.get('doi')}")
+                self.print_table(
+                    cursor, "workVersions", format_func=lambda r: f"id={r.get('id')}, title={r.get('title')}"
+                )
+                self.print_table(cursor, "relatedWorks", format_func=lambda r: f"id={r.get('id')}")
         log.debug("Stored procedure completed.")
 
     def run_cleanup_procedure(self):
