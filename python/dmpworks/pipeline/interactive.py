@@ -25,7 +25,7 @@ from dmpworks.pipeline.aws import (
     get_eventbridge_rule_name,
     get_state_machine_arn,
 )
-from dmpworks.pipeline.cli import DATASET_WORKFLOW_KEYS, PROCESS_DMPS_TASK_NAMES
+from dmpworks.pipeline.cli import DATASET_WORKFLOW_KEYS, PROCESS_DMPS_TASK_NAMES, PROCESS_WORKS_TASK_NAMES
 from dmpworks.pipeline.display import build_execution_tree
 from dmpworks.scheduler.batch_params import generate_run_id
 from dmpworks.scheduler.config import load_lambda_config
@@ -180,6 +180,37 @@ def prompt_dmp_scope(*, env: str) -> bool | None:
     return dmp_scope == "All DMPs"
 
 
+def validate_step_ordering(
+    *, task_names: list[str], rerun_choices: list[str], checkpoints: dict[str, TaskCheckpointRecord]
+) -> bool:
+    """Validate that selected steps form a valid ordering.
+
+    Steps must be contiguous from the start: once a step is skipped without a checkpoint,
+    all subsequent steps must also be skipped. This prevents running step N+1 when step N
+    was skipped and has no checkpoint to provide its run_id.
+
+    Args:
+        task_names: Ordered list of all step names.
+        rerun_choices: Steps the user selected to run.
+        checkpoints: Existing checkpoint records keyed by task name.
+
+    Returns:
+        True if the ordering is valid, False otherwise (with error printed).
+    """
+    skipped_without_checkpoint: str | None = None
+    for tn in task_names:
+        if tn not in rerun_choices and tn not in checkpoints:
+            if skipped_without_checkpoint is None:
+                skipped_without_checkpoint = tn
+        elif tn in rerun_choices and skipped_without_checkpoint is not None:
+            console.print(
+                f"[red]Error: Cannot run {tn} — preceding step {skipped_without_checkpoint} "
+                f"has no checkpoint and was not selected.[/red]"
+            )
+            return False
+    return True
+
+
 class DmpsStepSelection(NamedTuple):
     """Result of a process-dmps step selection prompt."""
 
@@ -215,24 +246,16 @@ def prompt_dmps_step_selection(*, release_date: str) -> DmpsStepSelection | None
         else:
             console.print(f"  [yellow]{tn}[/yellow]: no checkpoint")
 
-    if checkpoints:
-        default_rerun = [tn for tn in task_names if tn not in checkpoints]
-        rerun_choices = questionary.checkbox(
-            "Process-dmps steps to re-run:",
-            choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
-        ).ask()
-        if rerun_choices is None:
-            return None
+    default_rerun = [tn for tn in task_names if tn not in checkpoints]
+    rerun_choices = questionary.checkbox(
+        "Process-dmps steps to re-run (selected steps will run, others will be skipped):",
+        choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
+    ).ask()
+    if rerun_choices is None:
+        return None
 
-        for tn in task_names:
-            if tn not in rerun_choices and tn not in checkpoints:
-                console.print(
-                    f"[red]Error: Cannot skip {tn} — no checkpoint exists. The workflow needs its run_id.[/red]"
-                )
-                return None
-    else:
-        console.print("[dim]No process-dmps checkpoints — all steps will run.[/dim]")
-        rerun_choices = list(task_names)
+    if not validate_step_ordering(task_names=task_names, rerun_choices=rerun_choices, checkpoints=checkpoints):
+        return None
 
     return DmpsStepSelection(
         rerun_choices=rerun_choices,
@@ -327,13 +350,8 @@ def run_ingest_wizard(*, env: str, bucket_name: str) -> None:
     skip_transform = "transform" not in rerun_choices
 
     # 5. Validations.
-    if not skip_transform and skip_download:
-        cp = get_task_checkpoint(workflow_key=dataset, task_name="download", date=release_date)
-        if not cp:
-            console.print(
-                "[red]Error: Cannot run transform without a download checkpoint (transform needs predecessor run_id).[/red]"
-            )
-            return
+    if not validate_step_ordering(task_names=task_names, rerun_choices=rerun_choices, checkpoints=checkpoints):
+        return
 
     if not skip_download:
         latest = list(DatasetReleaseRecord.query(dataset, scan_index_forward=False, limit=1))
@@ -391,7 +409,7 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         return
 
     # Show checkpoint status.
-    task_names = ["sqlmesh", "sync-works"]
+    task_names = list(PROCESS_WORKS_TASK_NAMES)
     checkpoints = {}
     for tn in task_names:
         cp = get_task_checkpoint(workflow_key="process-works", task_name=tn, date=release_date)
@@ -406,25 +424,16 @@ def run_process_works_wizard(*, env: str, bucket_name: str) -> None:
         else:
             console.print(f"  [yellow]{tn}[/yellow]: no checkpoint")
 
-    # Select steps to re-run — skip prompt if no checkpoints exist (all must run).
-    if checkpoints:
-        default_rerun = [tn for tn in task_names if tn not in checkpoints]
-        rerun_choices = questionary.checkbox(
-            "Steps to re-run:",
-            choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
-        ).ask()
-        if rerun_choices is None:
-            return
+    default_rerun = [tn for tn in task_names if tn not in checkpoints]
+    rerun_choices = questionary.checkbox(
+        "Steps to re-run (selected steps will run, others will be skipped):",
+        choices=[questionary.Choice(tn, checked=(tn in default_rerun)) for tn in task_names],
+    ).ask()
+    if rerun_choices is None:
+        return
 
-        # Validate: skipped steps must have checkpoints (ExtractRunId needs them).
-        if "sqlmesh" not in rerun_choices and "sqlmesh" not in checkpoints:
-            console.print(
-                "[red]Error: Cannot skip sqlmesh — no checkpoint exists. The workflow needs a sqlmesh run_id.[/red]"
-            )
-            return
-    else:
-        console.print("[dim]No checkpoints found — all steps will run.[/dim]")
-        rerun_choices = list(task_names)
+    if not validate_step_ordering(task_names=task_names, rerun_choices=rerun_choices, checkpoints=checkpoints):
+        return
 
     skip_sqlmesh = "sqlmesh" not in rerun_choices
     skip_sync_works = "sync-works" not in rerun_choices
