@@ -58,8 +58,7 @@ dmp_works_search_config:
   max_concurrent_searches: 125
   max_concurrent_shard_requests: 12
   inner_hits_size: 50
-  row_group_size: 50000
-  row_groups_per_file: 4
+  records_per_file: 1000
   dmp_modification_window_days: 3
   apply_modification_window: true
 

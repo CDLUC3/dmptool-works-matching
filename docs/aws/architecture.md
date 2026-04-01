@@ -1,4 +1,9 @@
 # AWS Architecture
+Infrastructure is deployed via [Sceptre](https://docs.sceptre-project.org/)
+from `infra/`. This project's stacks depend on shared infrastructure managed in
+a separate Sceptre project (`dmptool-infrastructure`) via `!stack_output_external`
+references. The dependency is one-way — dmptool-infrastructure has no references
+back to this project.
 
 - [Cross-project stack dependencies](#cross-project-stack-dependencies)
 - [Runtime resource flow](#runtime-resource-flow)
@@ -8,12 +13,6 @@
   - [Dataset Ingest](#dataset-ingest)
   - [Process Works](#process-works)
   - [Process DMPs](#process-dmps)
-
-Infrastructure is deployed via [Sceptre](https://docs.sceptre-project.org/)
-from `infra/`. This project's stacks depend on shared infrastructure managed in
-a separate Sceptre project (`dmptool-infrastructure`) via `!stack_output_external`
-references. The dependency is one-way — dmptool-infrastructure has no references
-back to this project.
 
 ## Cross-project stack dependencies
 

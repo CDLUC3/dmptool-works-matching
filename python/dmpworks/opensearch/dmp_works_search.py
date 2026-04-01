@@ -1,12 +1,11 @@
+from collections import defaultdict
 from collections.abc import Callable
-import json
 import logging
 import math
 import pathlib
 
 from opensearchpy import OpenSearch
 import pendulum
-import pyarrow as pa
 from tqdm import tqdm
 
 from dmpworks.cli_utils import QueryBuilder
@@ -17,56 +16,9 @@ from dmpworks.model.work_model import WorkModel
 from dmpworks.opensearch.dmp_search import fetch_dmps
 from dmpworks.opensearch.query_builder import build_dmp_works_search_rerank_query, get_query_builder
 from dmpworks.opensearch.utils import OpenSearchClientConfig, make_opensearch_client
-from dmpworks.utils import ParquetBatchWriter, timed
+from dmpworks.utils import JsonlGzBatchWriter, timed
 
 log = logging.getLogger(__name__)
-
-MATCH_DATA_SCHEMA = pa.schema(
-    [
-        pa.field("dmpDoi", pa.string()),
-        pa.field("work", pa.string()),
-        pa.field("score", pa.float64()),
-        pa.field("scoreMax", pa.float64()),
-        pa.field("doiMatch", pa.string()),
-        pa.field("contentMatch", pa.string()),
-        pa.field("authorMatches", pa.string()),
-        pa.field("institutionMatches", pa.string()),
-        pa.field("funderMatches", pa.string()),
-        pa.field("awardMatches", pa.string()),
-        pa.field("intraWorkDoiMatches", pa.string()),
-        pa.field("possibleSharedProjectDoiMatches", pa.string()),
-        pa.field("datasetCitationDoiMatches", pa.string()),
-    ]
-)
-
-
-def to_match_data_row(d: dict) -> dict:
-    """Serialize a RelatedWork model_dump dict to a flat Parquet row.
-
-    Nested dicts and lists are serialized to JSON strings.
-
-    Args:
-        d: Dictionary from RelatedWork.model_dump(by_alias=True, mode="json").
-
-    Returns:
-        A flat dictionary suitable for writing to Parquet with MATCH_DATA_SCHEMA.
-    """
-    dumps = lambda v: json.dumps(v, sort_keys=True, separators=(",", ":"))  # noqa: E731
-    return {
-        "dmpDoi": d["dmpDoi"],
-        "work": dumps(d["work"]),
-        "score": d["score"],
-        "scoreMax": d["scoreMax"],
-        "doiMatch": dumps(d["doiMatch"]),
-        "contentMatch": dumps(d["contentMatch"]),
-        "authorMatches": dumps(d["authorMatches"]),
-        "institutionMatches": dumps(d["institutionMatches"]),
-        "funderMatches": dumps(d["funderMatches"]),
-        "awardMatches": dumps(d["awardMatches"]),
-        "intraWorkDoiMatches": dumps(d["intraWorkDoiMatches"]),
-        "possibleSharedProjectDoiMatches": dumps(d["possibleSharedProjectDoiMatches"]),
-        "datasetCitationDoiMatches": dumps(d["datasetCitationDoiMatches"]),
-    }
 
 
 @timed
@@ -91,15 +43,14 @@ def dmp_works_search(
     dmps_end_date: pendulum.Date | None = None,
     dmp_modification_window_days: int | None = None,
     inner_hits_size: int = 50,
-    row_group_size: int = 50_000,
-    row_groups_per_file: int = 4,
+    records_per_file: int = 1000,
 ):
     """Search for related works for DMPs.
 
     Args:
         dmps_index_name: The name of the DMPs index.
         works_index_name: The name of the works index.
-        out_dir: The directory to write output Parquet files into.
+        out_dir: The directory to write output .jsonl.gz files into.
         client_config: The OpenSearch client configuration.
         query_builder_name: The name of the query builder to use.
         rerank_model_name: The name of the rerank model to use.
@@ -117,8 +68,7 @@ def dmp_works_search(
         dmps_end_date: Return DMPs with project start dates on before this date.
         dmp_modification_window_days: Only search DMPs modified within this many days. If None, all DMPs are searched.
         inner_hits_size: The size of inner hits to return for nested fields.
-        row_group_size: Number of rows per Parquet row group.
-        row_groups_per_file: Number of row groups per output file before rotating.
+        records_per_file: Number of DMP records per output .jsonl.gz file.
     """
     client = make_opensearch_client(client_config)
 
@@ -146,17 +96,19 @@ def dmp_works_search(
             modified_since=modified_since,
             inner_hits_size=inner_hits_size,
         ) as results,
-        ParquetBatchWriter(
+        JsonlGzBatchWriter(
             output_dir=out_dir,
-            schema=MATCH_DATA_SCHEMA,
-            row_group_size=row_group_size,
-            row_groups_per_file=row_groups_per_file,
+            records_per_file=records_per_file,
         ) as writer,
     ):
         pbar.total = results.total_dmps
 
         def write_works(works: list[RelatedWork], count: int):
-            writer.write_rows([to_match_data_row(work.model_dump(by_alias=True, mode="json")) for work in works])
+            by_dmp: dict[str, list[dict]] = defaultdict(list)
+            for work in works:
+                by_dmp[work.dmp_doi].append(work.model_dump(by_alias=True, mode="json"))
+            for dmp_doi, pubs in by_dmp.items():
+                writer.write_record({"dmpDoi": dmp_doi, "works": pubs})
             pbar.update(count)
 
         batch = []

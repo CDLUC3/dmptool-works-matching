@@ -104,10 +104,10 @@ def merge_related_works_cmd(
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
 ):
-    """Merge related works from a Parquet directory into the database.
+    """Merge related works from .jsonl.gz match files into the database.
 
     Args:
-        matches_path: Path to the directory containing match Parquet files.
+        matches_path: Path to the directory containing .jsonl.gz match files.
         mysql_config: MySQL connection configuration.
         batch_size: Number of records to process in a batch.
         log_level: Logging level.
