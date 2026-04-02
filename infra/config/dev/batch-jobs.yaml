@@ -1,5 +1,5 @@
 template:
-  path: batch-jobs.yaml
+  path: batch-jobs.yaml.j2
   type: file
 
 parameters:

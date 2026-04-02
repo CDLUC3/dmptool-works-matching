@@ -1,5 +1,5 @@
 template:
-  path: dynamodb.yaml
+  path: dynamodb.yaml.j2
   type: file
 
 parameters:
