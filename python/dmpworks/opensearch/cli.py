@@ -238,7 +238,7 @@ def dmp_works_search_cmd(
     Args:
         dmps_index_name: Name of the DMP index in OpenSearch.
         works_index_name: Name of the works index in OpenSearch.
-        out_dir: The output directory where search result Parquet files will be written.
+        out_dir: The output directory where search result .jsonl.gz files will be written.
         client_config: OpenSearch client settings.
         dmp_subset: Settings for including a subset of DMPs.
         search_config: DMP works search settings.
@@ -281,8 +281,7 @@ def dmp_works_search_cmd(
             search_config.dmp_modification_window_days if search_config.apply_modification_window else None
         ),
         inner_hits_size=search_config.inner_hits_size,
-        row_group_size=search_config.row_group_size,
-        row_groups_per_file=search_config.row_groups_per_file,
+        records_per_file=search_config.records_per_file,
     )
 
 

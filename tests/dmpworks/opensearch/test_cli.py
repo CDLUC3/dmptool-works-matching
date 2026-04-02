@@ -138,8 +138,7 @@ class TestOpenSearchCLI:
             dmps_end_date=None,
             dmp_modification_window_days=None,
             inner_hits_size=50,
-            row_group_size=50_000,
-            row_groups_per_file=4,
+            records_per_file=1000,
         )
 
     @pytest.fixture

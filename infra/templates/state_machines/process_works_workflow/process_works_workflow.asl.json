@@ -204,7 +204,7 @@
             { "Variable": "$.skip_sqlmesh", "IsPresent": true },
             { "Variable": "$.skip_sqlmesh", "BooleanEquals": true }
           ],
-          "Next": "ExtractSqlmeshRunId"
+          "Next": "GetSyncWorksTaskRunStatus"
         }
       ],
       "Default": "GenerateSqlmeshRunId"

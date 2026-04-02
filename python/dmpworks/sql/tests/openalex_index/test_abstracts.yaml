@@ -26,19 +26,14 @@ test_openalex_index_abstracts:
     crossref_index.works_metadata:
       rows:
         - doi: "10.9999/test.0001"
+          abstract: "Abstract One"
           abstract_length: 12
         - doi: "10.9999/test.0002"
-          abstract_length: 10
-        - doi: "10.9999/test.0003"
-          abstract_length: 10
-    crossref.crossref_metadata:
-      rows:
-        - doi: "10.9999/test.0001"
-          abstract: "Abstract One"
-        - doi: "10.9999/test.0002"
           abstract: "Abstract 2"
+          abstract_length: 10
         - doi: "10.9999/test.0003"
           abstract: "Abstract 3"
+          abstract_length: 10
   outputs:
     query:
       rows:
@@ -48,4 +43,3 @@ test_openalex_index_abstracts:
           abstract: "Abstract 2"
         - doi: "10.9999/test.0003"
           abstract: "Abstract Three"
-

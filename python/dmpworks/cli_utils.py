@@ -31,8 +31,7 @@ from dmpworks.constants import (
     DMP_WORKS_SEARCH_MAX_RESULTS,
     DMP_WORKS_SEARCH_PROJECT_END_BUFFER_YEARS,
     DMP_WORKS_SEARCH_QUERY_BUILDER,
-    DMP_WORKS_SEARCH_ROW_GROUP_SIZE,
-    DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE,
+    DMP_WORKS_SEARCH_RECORDS_PER_FILE,
     DMP_WORKS_SEARCH_SCROLL_TIME,
     DUCKDB_MEMORY_LIMIT,
     DUCKDB_RELATIONS_DATACITE_THREADS,
@@ -763,8 +762,7 @@ class DMPWorksSearchConfig:
         max_concurrent_searches: Maximum number of concurrent searches.
         max_concurrent_shard_requests: Maximum number of shards searched per node per request.
         inner_hits_size: Maximum number of inner hits returned per matched work.
-        row_group_size: Parquet row group size for output files.
-        row_groups_per_file: Number of row groups per output Parquet file.
+        records_per_file: Number of DMP records per output .jsonl.gz file.
         dmps_start_date: Return DMPs with project start dates on or after this date.
         dmps_end_date: Return DMPs with project start dates on or before this date.
         dmp_modification_window_days: Only search DMPs modified within this many days. If unset, all DMPs are searched.
@@ -847,20 +845,13 @@ class DMPWorksSearchConfig:
             help="Maximum number of inner hits returned per matched work.",
         ),
     ] = DMP_WORKS_SEARCH_INNER_HITS_SIZE
-    row_group_size: Annotated[
+    records_per_file: Annotated[
         int,
         Parameter(
-            env_var="DMP_WORKS_SEARCH_ROW_GROUP_SIZE",
-            help="Parquet row group size for output files.",
+            env_var="DMP_WORKS_SEARCH_RECORDS_PER_FILE",
+            help="Number of DMP records per output .jsonl.gz file.",
         ),
-    ] = DMP_WORKS_SEARCH_ROW_GROUP_SIZE
-    row_groups_per_file: Annotated[
-        int,
-        Parameter(
-            env_var="DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE",
-            help="Number of row groups per output Parquet file.",
-        ),
-    ] = DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE
+    ] = DMP_WORKS_SEARCH_RECORDS_PER_FILE
     dmps_start_date: Annotated[
         pendulum.Date | None,
         Parameter(

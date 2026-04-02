@@ -1,4 +1,7 @@
+import gzip
 from importlib.resources import as_file, files
+import json
+import pathlib
 import time
 import urllib.error
 import urllib.request
@@ -38,6 +41,15 @@ def wait_for_http(url: str, *, timeout: float = 30.0) -> None:
         else:
             return
     raise TimeoutError(f"Service at {url} did not become ready within {timeout}s")
+
+
+def read_jsonl_gz(path: pathlib.Path) -> list[dict]:
+    """Read all records from a .jsonl.gz file."""
+    records = []
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        for line in f:
+            records.append(json.loads(line))
+    return records
 
 
 class InstanceOf:

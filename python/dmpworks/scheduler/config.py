@@ -30,8 +30,7 @@ from dmpworks.constants import (
     DMP_WORKS_SEARCH_MAX_RESULTS,
     DMP_WORKS_SEARCH_PROJECT_END_BUFFER_YEARS,
     DMP_WORKS_SEARCH_QUERY_BUILDER,
-    DMP_WORKS_SEARCH_ROW_GROUP_SIZE,
-    DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE,
+    DMP_WORKS_SEARCH_RECORDS_PER_FILE,
     DMP_WORKS_SEARCH_SCROLL_TIME,
     DUCKDB_MEMORY_LIMIT,
     DUCKDB_RELATIONS_DATACITE_THREADS,
@@ -250,8 +249,7 @@ class DmpWorksSearchConfig(BaseModel):
     max_concurrent_searches: int = DMP_WORKS_SEARCH_MAX_CONCURRENT_SEARCHES
     max_concurrent_shard_requests: int = DMP_WORKS_SEARCH_MAX_CONCURRENT_SHARD_REQUESTS
     inner_hits_size: int = DMP_WORKS_SEARCH_INNER_HITS_SIZE
-    row_group_size: int = DMP_WORKS_SEARCH_ROW_GROUP_SIZE
-    row_groups_per_file: int = DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE
+    records_per_file: int = DMP_WORKS_SEARCH_RECORDS_PER_FILE
     dmps_start_date: str | None = None
     dmps_end_date: str | None = None
     dmp_modification_window_days: int | None = None
@@ -527,8 +525,7 @@ class LambdaConfig(BaseModel):
             "DMP_WORKS_SEARCH_MAX_CONCURRENT_SEARCHES": s(dws.max_concurrent_searches),
             "DMP_WORKS_SEARCH_MAX_CONCURRENT_SHARD_REQUESTS": s(dws.max_concurrent_shard_requests),
             "DMP_WORKS_SEARCH_INNER_HITS_SIZE": s(dws.inner_hits_size),
-            "DMP_WORKS_SEARCH_ROW_GROUP_SIZE": s(dws.row_group_size),
-            "DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE": s(dws.row_groups_per_file),
+            "DMP_WORKS_SEARCH_RECORDS_PER_FILE": s(dws.records_per_file),
             "DMP_WORKS_SEARCH_DMPS_START_DATE": dws.dmps_start_date,
             "DMP_WORKS_SEARCH_DMPS_END_DATE": dws.dmps_end_date,
             "DMP_WORKS_SEARCH_DMP_MODIFICATION_WINDOW_DAYS": (

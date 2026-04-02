@@ -111,6 +111,8 @@ def build_dmps_query(
     else:
         query["query"]["match_all"] = {}
 
+    query["sort"] = [{"_id": "asc"}]
+
     return query
 
 

@@ -23,5 +23,6 @@
   "bumpVersion": "minor",
   "schedule": [
     "* 0-2 * * 0,3"
-  ]
+  ],
+  "rebaseWhen": "behind-base-branch"
 }
