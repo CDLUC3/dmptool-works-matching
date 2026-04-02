@@ -247,9 +247,9 @@ LTR_METRICS_FILE=${DATA_DIR}/ltr/metrics-ca-YYYY-MM-DD.csv
 
 The following steps must be completed before working with LTR.
 
-In the OpenSearch console, initialise the LTR plugin:
+In the OpenSearch Dashboards Dev Tools console, initialise the LTR plugin:
 
-```bash
+```http
 PUT _ltr
 ```
 

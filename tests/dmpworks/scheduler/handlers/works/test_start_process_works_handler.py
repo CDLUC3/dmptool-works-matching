@@ -53,7 +53,16 @@ class TestStartExecution:
         mock_start.assert_called_once_with(
             workflow_key="process-works",
             release_date="2025-01-13",
-            payload={"skip_sqlmesh": False, "skip_sync_works": False, "start_process_dmps": True, "run_all_dmps": True},
+            payload={
+                "skip_sqlmesh": False,
+                "skip_sync_works": False,
+                "start_process_dmps": True,
+                "run_all_dmps": True,
+                "skip_sync_dmps": False,
+                "skip_enrich_dmps": False,
+                "skip_dmp_works_search": False,
+                "skip_merge_related_works": False,
+            },
         )
         assert (
             result["execution_arn"]

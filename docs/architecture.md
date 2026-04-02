@@ -15,7 +15,7 @@ locally via the CLI; in production they are orchestrated as AWS Batch jobs.
 ```mermaid
 flowchart LR
   %% Sources
-  S3SRC[("Source S3\n(OpenAlex, DataCite,\nCrossref, ROR,\nMake Data Count)")]
+  S3SRC[("Source S3\n(OpenAlex, DataCite,\nCrossref, ROR,\nData Citation Corpus)")]
 
   %% Stages
   DL(Download\nBatch Job)
@@ -110,7 +110,7 @@ subset of each record is needed),
 then applies Python and Rust functions to clean and normalise the data before
 writing Parquet files to S3 under `{dataset}/{run_id}/transform/`.
 
-### Processing pipeline
+### Processing Pipeline
 
 The pipeline (`transform/pipeline.py`) runs with a `ProcessPoolExecutor`.
 Input files are shuffled before processing because bibliometric datasets such as
@@ -180,7 +180,7 @@ performance-critical helpers used across all transforms:
   - **Funders**: funder DOI extracted by regex, lowercased; award number
   - **Relations**: related identifiers cleaned the same way as DataCite
 
-**ROR and Make Data Count** are not transformed at this stage. They are loaded
+**ROR and Data Citation Corpus** are not transformed at this stage. They are loaded
 directly from JSON in SQLMesh (see section 3).
 
 ## 3. Works Index

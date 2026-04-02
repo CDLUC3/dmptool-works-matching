@@ -28,8 +28,10 @@ SELECT
   owm.doi,
   MAX(owm.abstract_length) AS abstract_length
 FROM openalex_index.works_metadata owm
-LEFT JOIN crossref_index.works_metadata cwm ON owm.doi = cwm.doi
-WHERE owm.is_duplicate = TRUE AND (owm.abstract_length > 0 OR cwm.abstract_length > 0)
+WHERE owm.is_duplicate = TRUE AND (
+  owm.abstract_length > 0
+  OR EXISTS (SELECT 1 FROM crossref_index.works_metadata cwm WHERE cwm.doi = owm.doi AND cwm.abstract_length > 0)
+)
 GROUP BY owm.doi
 
 UNION ALL
@@ -40,5 +42,7 @@ SELECT
   owm.doi,
   owm.abstract_length
 FROM openalex_index.works_metadata owm
-LEFT JOIN crossref_index.works_metadata cwm ON owm.doi = cwm.doi
-WHERE owm.is_duplicate = FALSE AND (owm.abstract_length > 0 OR cwm.abstract_length > 0)
+WHERE owm.is_duplicate = FALSE AND (
+  owm.abstract_length > 0
+  OR EXISTS (SELECT 1 FROM crossref_index.works_metadata cwm WHERE cwm.doi = owm.doi AND cwm.abstract_length > 0)
+)
