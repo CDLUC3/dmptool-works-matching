@@ -1,0 +1,145 @@
+{
+  "Comment": "Transform task run — builds Batch params, submits job, marks task run COMPLETED",
+  "StartAt": "SetPredecessorTaskName",
+  "States": {
+    "SetPredecessorTaskName": {
+      "Type": "Choice",
+      "Comment": "Select the predecessor task name based on whether a subset run was performed",
+      "Choices": [
+        {
+          "Variable": "$.use_subset",
+          "BooleanEquals": true,
+          "Next": "SetPredecessorToSubset"
+        }
+      ],
+      "Default": "SetPredecessorToDownload"
+    },
+    "SetPredecessorToSubset": {
+      "Type": "Pass",
+      "Comment": "Subset was run — transform reads from the subset output",
+      "Result": "subset",
+      "ResultPath": "$.predecessor_task_name",
+      "Next": "BuildTransformParams"
+    },
+    "SetPredecessorToDownload": {
+      "Type": "Pass",
+      "Comment": "No subset — transform reads directly from the download output",
+      "Result": "download",
+      "ResultPath": "$.predecessor_task_name",
+      "Next": "BuildTransformParams"
+    },
+    "BuildTransformParams": {
+      "Type": "Task",
+      "Comment": "Compute AWS Batch parameters and create a STARTED TaskRunRecord for the transform task run",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GetBatchJobParamsFunction}",
+        "Payload": {
+          "task_type": "transform",
+          "predecessor_task_name.$": "$.predecessor_task_name",
+          "workflow_key.$": "$.workflow_key",
+          "release_date.$": "$.release_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "execution_arn.$": "$$.Execution.Id",
+          "download_url.$": "$.download_url",
+          "file_hash.$": "$.file_hash",
+          "file_name.$": "$.file_name",
+          "use_subset.$": "$.use_subset"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "run_name.$": "$.Payload.run_name",
+        "batch_params.$": "$.Payload.batch_params"
+      },
+      "ResultPath": "$.current",
+      "Next": "SubmitTransform",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
+    },
+    "SubmitTransform": {
+      "Type": "Task",
+      "Comment": "Submit the synchronous AWS Batch job to perform the data transform",
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName.$": "$.current.batch_params.JobName",
+        "JobQueue.$": "$.current.batch_params.JobQueue",
+        "JobDefinition.$": "$.current.batch_params.JobDefinition",
+        "ContainerOverrides.$": "$.current.batch_params.ContainerOverrides"
+      },
+      "ResultPath": null,
+      "Next": "SetTransformTaskRunComplete",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
+    },
+    "SetTransformTaskRunComplete": {
+      "Type": "Task",
+      "Comment": "Mark the transform task run as COMPLETED in the database and record its run_id",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetTaskRunCompleteFunction}",
+        "Payload": {
+          "task_type": "transform",
+          "workflow_key.$": "$.workflow_key",
+          "release_date.$": "$.release_date",
+          "current.$": "$.current"
+        }
+      },
+      "ResultPath": null,
+      "Next": "SendTaskSuccess",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
+    },
+    "SendTaskSuccess": {
+      "Type": "Task",
+      "Comment": "Send the task success token back to the parent state machine",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+      "Parameters": {
+        "TaskToken.$": "$.TaskToken",
+        "Output": "{}"
+      },
+      "ResultPath": null,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ],
+      "End": true
+    },
+    "SendTaskFailure": {
+      "Type": "Task",
+      "Comment": "Notify the parent that this child failed via task token callback",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskFailure",
+      "Parameters": {
+        "TaskToken.$": "$.TaskToken",
+        "Error": "ChildExecutionFailed",
+        "Cause.$": "States.JsonToString($.error_info)"
+      },
+      "ResultPath": null,
+      "Next": "ChildFailed"
+    },
+    "ChildFailed": {
+      "Type": "Fail",
+      "Error": "ChildExecutionFailed",
+      "Cause": "Child failed after notifying parent"
+    }
+  }
+}

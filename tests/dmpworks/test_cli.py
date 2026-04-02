@@ -1,6 +1,5 @@
-import pytest
-
 from dmpworks.cli import cli
+import pytest
 
 
 @pytest.fixture

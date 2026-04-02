@@ -1,0 +1,242 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Batch compute environments and job queues for DMP works matching'
+
+# Instance pricing (vCPUs / RAM / NVMe disk):
+# - small:      c5ad.large    (2 vCPUs,   4 GiB,    75 GB)  https://instances.vantage.sh/aws/ec2/c5ad.large?currency=USD&region=us-west-2
+# - download:   c6id.4xlarge  (16 vCPUs, 32 GiB,   950 GB)  https://instances.vantage.sh/aws/ec2/c6id.4xlarge?currency=USD&region=us-west-2
+# - transform:  c5ad.8xlarge  (32 vCPUs, 64 GiB,  1,200 GB)  https://instances.vantage.sh/aws/ec2/c5ad.8xlarge?currency=USD&region=us-west-2
+# - sqlmesh:    r6id.8xlarge  (32 vCPUs, 256 GiB, 1,900 GB) https://instances.vantage.sh/aws/ec2/r6id.8xlarge?currency=USD&region=us-west-2
+# - opensearch: m5ad.large    (2 vCPUs,   8 GiB,    75 GB)  https://instances.vantage.sh/aws/ec2/m5ad.large?currency=USD&region=us-west-2
+#               c6id.xlarge   (4 vCPUs,   8 GiB,   237 GB)  https://instances.vantage.sh/aws/ec2/c6id.xlarge?currency=USD&region=us-west-2
+
+{% set queues = [
+  {"name": "small",      "prefix": "BatchSmall",      "instance_types": ["c5ad.large"],   "max_vcpus": 16},
+  {"name": "download",   "prefix": "BatchDownload",   "instance_types": ["c6id.4xlarge"], "max_vcpus": 48},
+  {"name": "transform",  "prefix": "BatchTransform",  "instance_types": ["c5ad.8xlarge"], "max_vcpus": 128},
+  {"name": "sqlmesh",    "prefix": "BatchSqlMesh",    "instance_types": ["r6id.8xlarge"], "max_vcpus": 32},
+  {"name": "opensearch", "prefix": "BatchOpenSearch", "instance_types": ["m5ad.large", "c6id.xlarge"], "max_vcpus": 16, "allocation_strategy": "BEST_FIT"},
+] %}
+
+Parameters:
+  Env:
+    Type: String
+
+  VpcId:
+    Type: 'AWS::EC2::VPC::Id'
+
+  SubnetId:
+    Type: 'AWS::EC2::Subnet::Id'
+
+  SecurityGroupId:
+    Type: String
+
+Resources:
+  BatchLaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateName: !Sub 'dmpworks-${Env}-batch-launch-template'
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: '/dev/xvda' # Amazon Linux root volume
+            Ebs:
+              VolumeType: 'gp3'
+              DeleteOnTermination: true
+              VolumeSize: 30 # GB
+        UserData:
+          Fn::Base64: !Sub |
+            MIME-Version: 1.0
+            Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+
+            --==BOUNDARY==
+            Content-Type: text/x-shellscript; charset="us-ascii"
+
+            #!/bin/bash
+            set -uxo pipefail
+
+            # Save Cloud Watch Agent config
+            cat > /tmp/amazon-cloudwatch-agent.json << 'CWA_SCRIPT'
+            {
+              "agent": {
+                "run_as_user": "root"
+              },
+              "metrics": {
+                "metrics_collected": {
+                  "mem": {
+                    "measurement": [
+                      "mem_used_percent",
+                      "mem_total",
+                      "mem_used"
+                    ],
+                    "metrics_collection_interval": 60
+                  },
+                  "disk": {
+                    "resources": [
+                      "/",
+                      "/data"
+                    ],
+                    "measurement": [
+                      "used_percent",
+                      "total"
+                    ],
+                    "drop_device_metrics": true,
+                    "metrics_collection_interval": 60
+                  }
+                },
+                "append_dimensions": {
+                  "InstanceId": "${!aws:InstanceId}"
+                }
+              }
+            }
+            CWA_SCRIPT
+
+            cat > /tmp/setup-instance.sh << 'SCRIPT'
+            #!/bin/bash
+            set -uxo pipefail
+
+            # Refresh local list of available packages
+            dnf update -y
+
+            # Install any required system dependencies
+            dnf install amazon-cloudwatch-agent mdadm -y
+
+            # Mount disks to /data dir
+            if lsblk | grep -q nvme1n1 && lsblk | grep -q nvme2n1; then
+              # Mount two disks to /data dir
+
+              # Create RAID 0 (if not already exists)
+              if [ ! -e /dev/md0 ]; then
+                mdadm --create --verbose /dev/md0 --level=0 --raid-devices=2 /dev/nvme1n1 /dev/nvme2n1 --assume-clean --run
+              fi
+
+              # Persist RAID config
+              mkdir -p /etc/mdadm
+              mdadm --detail --scan >> /etc/mdadm/mdadm.conf
+
+              # Format if not already formatted
+              if ! blkid /dev/md0; then
+                mkfs.ext4 -F /dev/md0
+              fi
+
+              # Mount to /data
+              mkdir -p /data
+              echo "/dev/md0 /data ext4 defaults,nofail 0 2" >> /etc/fstab
+              mount /data
+            elif lsblk | grep -q nvme1n1; then
+              # Mount single disk to /data dir
+              mkfs.ext4 /dev/nvme1n1
+              mkdir -p /data
+              echo "/dev/nvme1n1 /data ext4 defaults,nofail 0 2" >> /etc/fstab
+              mount /data
+            fi
+
+            # Make temp dir
+            mkdir /data/tmp
+
+            # Start Cloud Watch Agent with config
+            cp /tmp/amazon-cloudwatch-agent.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+            amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+
+            SCRIPT
+
+            # Run the script only once on the instance
+            cloud-init-per instance setup-instance /bin/bash /tmp/setup-instance.sh
+
+            --==BOUNDARY==--
+
+  BatchServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'dmpworks-${Env}-batch-service-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'batch.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole'
+
+  BatchInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    DependsOn:
+      - BatchInstanceRole
+    Properties:
+      InstanceProfileName: !Sub 'dmpworks-${Env}-batch-instance-profile'
+      Roles:
+        - !Ref BatchInstanceRole
+
+  BatchInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'dmpworks-${Env}-batch-instance-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'ec2.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role'
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+
+{% for q in queues %}
+  {{ q.prefix }}ComputeEnvironment:
+    Type: 'AWS::Batch::ComputeEnvironment'
+    DependsOn:
+      - BatchServiceRole
+      - BatchLaunchTemplate
+      - BatchInstanceProfile
+    Properties:
+      # ComputeEnvironmentName: don't give it a name, because if it needs to be
+      # updated, it deletes and recreates the compute environment, however, it
+      # can't do this with a static name.
+      Type: 'MANAGED'
+      ServiceRole: !Ref BatchServiceRole
+      ComputeResources:
+        Type: 'EC2'
+        Ec2Configuration:
+          - ImageType: 'ECS_AL2023'
+        AllocationStrategy: '{{ q.allocation_strategy | default("BEST_FIT_PROGRESSIVE") }}'
+        MinvCpus: 0
+        MaxvCpus: {{ q.max_vcpus }}
+        DesiredvCpus: 0
+        InstanceTypes:
+{% for itype in q.instance_types %}
+          - '{{ itype }}'
+{% endfor %}
+        LaunchTemplate:
+          LaunchTemplateId: !Ref BatchLaunchTemplate
+          Version: !GetAtt BatchLaunchTemplate.LatestVersionNumber
+        Subnets:
+          - !Ref SubnetId
+        SecurityGroupIds:
+          - !Ref SecurityGroupId
+        InstanceRole: !Ref BatchInstanceProfile
+
+  {{ q.prefix }}JobQueue:
+    Type: 'AWS::Batch::JobQueue'
+    DependsOn:
+      - {{ q.prefix }}ComputeEnvironment
+    Properties:
+      JobQueueName: !Sub 'dmpworks-${Env}-batch-{{ q.name }}-job-queue'
+      ComputeEnvironmentOrder:
+        - Order: 1
+          ComputeEnvironment: !Ref {{ q.prefix }}ComputeEnvironment
+      State: 'ENABLED'
+      Priority: 1
+
+{% endfor %}
+
+Outputs:
+  SmallJobQueueArn:
+    Value: !GetAtt BatchSmallJobQueue.JobQueueArn
+  DownloadJobQueueArn:
+    Value: !GetAtt BatchDownloadJobQueue.JobQueueArn
+  TransformJobQueueArn:
+    Value: !GetAtt BatchTransformJobQueue.JobQueueArn
+  SqlMeshJobQueueArn:
+    Value: !GetAtt BatchSqlMeshJobQueue.JobQueueArn
+  OpenSearchJobQueueArn:
+    Value: !GetAtt BatchOpenSearchJobQueue.JobQueueArn

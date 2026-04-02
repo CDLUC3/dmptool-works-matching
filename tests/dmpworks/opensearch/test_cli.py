@@ -3,9 +3,10 @@ import pathlib
 
 from dmpworks.cli import cli
 from dmpworks.cli_utils import MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
-from dmpworks.utils import InstanceOf
 from opensearchpy import OpenSearch
 import pytest
+
+from tests.utils import InstanceOf
 
 
 class TestOpenSearchCLI:
@@ -46,13 +47,13 @@ class TestOpenSearchCLI:
         works_export.mkdir()
         doi_export.mkdir()
 
-        cli(["opensearch", "sync-works", "works-index", str(works_export), str(doi_export), "run-123"])
+        cli(["opensearch", "sync-works", "works-index", str(works_export), str(doi_export), "20250101T060000-a1b2c3d4"])
 
         mock_sync_works.assert_called_once_with(
             index_name="works-index",
             works_index_export=works_export,
             doi_state_export=doi_export,
-            run_id="run-123",
+            run_id="20250101T060000-a1b2c3d4",
             client_config=OpenSearchClientConfig(),
             sync_config=OpenSearchSyncConfig(),
             log_level=logging.INFO,
@@ -135,6 +136,7 @@ class TestOpenSearchCLI:
             dois=None,
             dmps_start_date=None,
             dmps_end_date=None,
+            dmp_modification_window_days=None,
             inner_hits_size=50,
             row_group_size=50_000,
             row_groups_per_file=4,

@@ -1,0 +1,240 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Batch job definitions and roles for DMP works matching'
+
+Parameters:
+  Env:
+    Type: String
+
+  EcrRepositoryName:
+    Type: String
+
+  EcrImageTag:
+    Type: String
+
+  S3BucketID:
+    Type: String
+
+  OpenSearchDomainArn:
+    Type: String
+
+  AWSBatchRDSUserSecretArn:
+    Type: String
+
+  DataCiteCredentialsAPIUserSecretArn:
+    Type: String
+
+Resources:
+  BatchJobRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'dmpworks-${Env}-batch-job-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'ecs-tasks.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'DmpWorksDomainPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'es:ESHttpGet'
+                  - 'es:ESHttpPost'
+                  - 'es:ESHttpPut'
+                  - 'es:ESHttpDelete'
+                  - 'es:ESHttpHead'
+                Resource:
+                  - !Sub '${OpenSearchDomainArn}/*'
+        - PolicyName: 'DmpWorksS3Policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: 'Allow'
+              Action:
+                - 's3:PutObject'
+                - 's3:GetObject'
+                - 's3:DeleteObject'
+                - 's3:ListBucket'
+              Resource:
+                - !Sub 'arn:aws:s3:::${S3BucketID}'
+                - !Sub 'arn:aws:s3:::${S3BucketID}/*'
+        - PolicyName: 'CrossrefMetadataS3Policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: 'Allow'
+              Action:
+                - 's3:GetObject'
+                - 's3:ListBucket'
+              Resource:
+                - 'arn:aws:s3:::api-snapshots-reqpays-crossref'
+                - 'arn:aws:s3:::api-snapshots-reqpays-crossref/*'
+      ManagedPolicyArns:
+        # Allow EC2 instance to access ECR
+        - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly'
+
+  # Standard re-usable AWS Batch Job Definition
+  DMPWorksJob:
+    Type: 'AWS::Batch::JobDefinition'
+    DependsOn:
+      - BatchJobRole
+    Properties:
+      Type: 'Container'
+      JobDefinitionName: !Sub 'dmpworks-${Env}-job'
+      PlatformCapabilities:
+        - 'EC2'
+      ContainerProperties:
+        Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryName}:${EcrImageTag}'
+        Vcpus: 1
+        Memory: 1024
+        Volumes:
+          - Host:
+              SourcePath: '/data'
+            Name: 'data-volume'
+        MountPoints:
+          - SourceVolume: 'data-volume'
+            ContainerPath: '/data'
+            ReadOnly: false
+        JobRoleArn: !Ref BatchJobRole
+        Command:
+          - '/bin/bash'
+          - '-c'
+          - 'dmpworks --version'
+
+  # Job Definition that provides access to the MySQL database
+  DMPWorksDatabaseJob:
+    Type: 'AWS::Batch::JobDefinition'
+    DependsOn:
+      - BatchJobRole
+    Properties:
+      Type: 'Container'
+      JobDefinitionName: !Sub 'dmpworks-${Env}-database-job'
+      PlatformCapabilities:
+        - 'EC2'
+      ContainerProperties:
+        Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryName}:${EcrImageTag}'
+        Vcpus: 1
+        Memory: 1024
+        Volumes:
+          - Host:
+              SourcePath: '/data'
+            Name: 'data-volume'
+        MountPoints:
+          - SourceVolume: 'data-volume'
+            ContainerPath: '/data'
+            ReadOnly: false
+        JobRoleArn: !Ref BatchJobRole
+        Command:
+          - '/bin/bash'
+          - '-c'
+          - 'dmpworks --version'
+        Secrets:
+          # These get set as environment variables in the container when the job runs
+          - Name: MYSQL_HOST
+            ValueFrom: !Sub "${AWSBatchRDSUserSecretArn}:host::"
+          - Name: MYSQL_TCP_PORT
+            ValueFrom: !Sub "${AWSBatchRDSUserSecretArn}:port::"
+          - Name: MYSQL_USER
+            ValueFrom: !Sub "${AWSBatchRDSUserSecretArn}:username::"
+          - Name: MYSQL_DATABASE
+            ValueFrom: !Sub "${AWSBatchRDSUserSecretArn}:dbname::"
+          - Name: MYSQL_PWD
+            ValueFrom: !Sub "${AWSBatchRDSUserSecretArn}:password::"
+        ExecutionRoleArn: !GetAtt DMPWorksDatabaseJobExecutionRole.Arn
+
+  DMPWorksDatabaseJobExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub dmpworks-${Env}-database-job-execution-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretAccessPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetSecretValue'
+                  - 'kms:Decrypt'
+                Resource: !Ref AWSBatchRDSUserSecretArn
+
+  # DataCite download job
+  DMPWorksDataCiteDownloadJob:
+    Type: 'AWS::Batch::JobDefinition'
+    DependsOn:
+      - BatchJobRole
+    Properties:
+      Type: 'Container'
+      JobDefinitionName: !Sub 'dmpworks-${Env}-datacite-download-job'
+      PlatformCapabilities:
+        - 'EC2'
+      ContainerProperties:
+        Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryName}:${EcrImageTag}'
+        Vcpus: 1
+        Memory: 1024
+        Volumes:
+          - Host:
+              SourcePath: '/data'
+            Name: 'data-volume'
+        MountPoints:
+          - SourceVolume: 'data-volume'
+            ContainerPath: '/data'
+            ReadOnly: false
+        JobRoleArn: !Ref BatchJobRole
+        Command:
+          - '/bin/bash'
+          - '-c'
+          - 'dmpworks --version'
+        Secrets:
+          # These get set as environment variables in the container when the job runs
+          - Name: DATACITE_ACCOUNT_ID
+            ValueFrom: !Sub "${DataCiteCredentialsAPIUserSecretArn}:account_id::"
+          - Name: DATACITE_PASSWORD
+            ValueFrom: !Sub "${DataCiteCredentialsAPIUserSecretArn}:password::"
+        ExecutionRoleArn: !GetAtt DMPWorksDataCiteJobExecutionRole.Arn
+
+  DMPWorksDataCiteJobExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub dmpworks-${Env}-datacite-job-execution-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretAccessPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'secretsmanager:GetSecretValue'
+                  - 'kms:Decrypt'
+                Resource: !Ref DataCiteCredentialsAPIUserSecretArn
+
+Outputs:
+  BatchJobRoleArn:
+    Value: !GetAtt BatchJobRole.Arn
+  BatchJobDefinitionArn:
+    Value: !Ref DMPWorksJob
+  BatchDatabaseJobDefinitionArn:
+    Value: !Ref DMPWorksDatabaseJob
+  DataCiteDownloadJobDefinitionArn:
+    Value: !Ref DMPWorksDataCiteDownloadJob

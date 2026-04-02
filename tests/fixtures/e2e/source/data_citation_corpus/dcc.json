@@ -1,0 +1,217 @@
+[
+  {
+    "id": "ef55b339-562d-4f32-9a08-cc937306fa53",
+    "created": "2025-01-31T03:33:41.256+00:00",
+    "updated": "2025-01-31T03:33:41.256+00:00",
+    "repository": {
+      "title": "Cambridge Crystallographic Data Centre",
+      "external_id": null
+    },
+    "publisher": {
+      "title": "Wiley",
+      "external_id": null
+    },
+    "journal": {
+      "title": "Small",
+      "external_id": null
+    },
+    "title": "CCDC 2161600: Experimental Crystal Structure Determination",
+    "dataset": "https://doi.org/10.5517/ccdc.csd.cc2bkb19",
+    "publication": "https://doi.org/10.1002/smll.202402255",
+    "publishedDate": "2024-06-05T00:00:00+00:00",
+    "source": "datacite",
+    "affiliations": [],
+    "funders": [],
+    "subjects": []
+  },
+  {
+    "id": "ef56ab92-95f9-4024-b84f-669822fb5e3a",
+    "created": "2023-09-27T16:40:08.683+00:00",
+    "updated": "2023-11-06T15:34:26.574+00:00",
+    "repository": {},
+    "publisher": {
+      "title": "Mary Ann Liebert Inc",
+      "external_id": null
+    },
+    "journal": {
+      "title": "Vector-Borne and Zoonotic Diseases",
+      "external_id": null
+    },
+    "title": null,
+    "dataset": "https:// www.liebertpub.com/doi/10.1089/vbz.2018.2431",
+    "publication": "https://doi.org/10.1089/vbz.2018.2431",
+    "publishedDate": "2019-03-01T00:00:00+00:00",
+    "source": "czi",
+    "affiliations": [],
+    "funders": [],
+    "subjects": []
+  },
+  {
+    "id": "ef56b560-fab7-4405-a6c8-a06dfcb8d25d",
+    "created": "2025-07-24T19:05:09.589+00:00",
+    "updated": "2025-07-24T19:05:09.589+00:00",
+    "repository": {
+      "title": "Mendeley Data",
+      "external_id": null
+    },
+    "publisher": {
+      "title": "Elsevier BV",
+      "external_id": null
+    },
+    "journal": {
+      "title": "Molecular Cell",
+      "external_id": null
+    },
+    "title": "DNA nicks in both leading and lagging strand templates can trigger break-induced replication. Xu et al",
+    "dataset": "https://doi.org/10.17632/phgpwmjvys.1",
+    "publication": "https://doi.org/10.1016/j.molcel.2024.10.026",
+    "publishedDate": "2025-01-01T00:00:00+00:00",
+    "source": "eupmc",
+    "affiliations": [],
+    "funders": [],
+    "subjects": []
+  },
+  {
+    "id": "ef57b22d-64dd-49ac-968b-047170fff03f",
+    "created": "2025-07-24T15:13:19.859+00:00",
+    "updated": "2025-07-24T15:13:19.859+00:00",
+    "repository": {
+      "title": "DaRUS",
+      "external_id": null
+    },
+    "publisher": {
+      "title": "Royal Society of Chemistry (RSC)",
+      "external_id": null
+    },
+    "journal": {
+      "title": "Chemical Science",
+      "external_id": null
+    },
+    "title": "Replication data for: \"Cationic molybdenum oxo alkylidenes stabilized by N-heterocyclic carbenes: from molecular systems to efficient supported metathesis catalysts\"",
+    "dataset": "https://doi.org/10.18419/darus-3013",
+    "publication": "https://doi.org/10.1039/d2sc03321f",
+    "publishedDate": "2022-01-01T00:00:00+00:00",
+    "source": "eupmc",
+    "affiliations": [
+      {
+        "title": "Universit\u00e4t Stuttgart",
+        "external_id": null,
+        "ror_name": "University of Stuttgart",
+        "ror_id": "https://ror.org/04vnq7t77"
+      },
+      {
+        "title": "ETH Z\u00fcrich",
+        "external_id": null,
+        "ror_name": "ETH Zurich",
+        "ror_id": "https://ror.org/05a28rw58"
+      }
+    ],
+    "funders": [
+      {
+        "title": "DFG",
+        "external_id": null,
+        "ror_name": null,
+        "ror_id": null
+      },
+      {
+        "title": "DFG",
+        "external_id": null,
+        "ror_name": null,
+        "ror_id": null
+      }
+    ],
+    "subjects": []
+  },
+  {
+    "id": "d4ab96e3-3703-455f-96c4-9a87a14a60ec",
+    "created": "2025-01-31T01:36:01.323+00:00",
+    "updated": "2025-01-31T01:36:01.323+00:00",
+    "repository": {
+      "title": "DaRUS",
+      "external_id": null
+    },
+    "publisher": {
+      "title": "Royal Society of Chemistry (RSC)",
+      "external_id": null
+    },
+    "journal": {
+      "title": "Chemical Science",
+      "external_id": null
+    },
+    "title": "Replication data for: \"Cationic molybdenum oxo alkylidenes stabilized by N-heterocyclic carbenes: from molecular systems to efficient supported metathesis catalysts\"",
+    "dataset": "https://doi.org/10.18419/darus-3013",
+    "publication": "https://doi.org/10.1039/d2sc03321f",
+    "publishedDate": "2022-01-01T00:00:00+00:00",
+    "source": "datacite",
+    "affiliations": [
+      {
+        "title": "ETH Z\u00fcrich",
+        "external_id": null,
+        "ror_name": "ETH Zurich",
+        "ror_id": "https://ror.org/05a28rw58"
+      },
+      {
+        "title": "Universit\u00e4t Stuttgart",
+        "external_id": null,
+        "ror_name": "University of Stuttgart",
+        "ror_id": "https://ror.org/04vnq7t77"
+      }
+    ],
+    "funders": [
+      {
+        "title": "DFG",
+        "external_id": null,
+        "ror_name": null,
+        "ror_id": null
+      },
+      {
+        "title": "DFG",
+        "external_id": null,
+        "ror_name": null,
+        "ror_id": null
+      }
+    ],
+    "subjects": []
+  },
+  {
+    "id": "18edc799-2553-4714-b2a1-eb5e266ddb95",
+    "created": "2025-01-31T03:33:41.256+00:00",
+    "updated": "2025-01-31T03:33:41.256+00:00",
+    "repository": {
+      "title": "Cambridge Crystallographic Data Centre",
+      "external_id": null
+    },
+    "publisher": {
+      "title": "Wiley",
+      "external_id": null
+    },
+    "journal": {
+      "title": "Small",
+      "external_id": null
+    },
+    "title": "CCDC 2161601: Experimental Crystal Structure Determination",
+    "dataset": "https://doi.org/10.5517/ccdc.csd.cc2bkb2b",
+    "publication": "https://doi.org/10.1002/smll.202402255",
+    "publishedDate": "2024-06-05T00:00:00+00:00",
+    "source": "datacite",
+    "affiliations": [],
+    "funders": [],
+    "subjects": []
+  },
+  {
+    "id": "3ac9e2b3-bad2-4279-a23f-d740dfca2102",
+    "created": "2023-09-27T16:57:53.23+00:00",
+    "updated": "2023-11-06T17:24:43.796+00:00",
+    "repository": {},
+    "publisher": {},
+    "journal": {},
+    "title": null,
+    "dataset": "https://doi.org/10.18419/darus-3013",
+    "publication": "https://doi.org/10.18419/darus-3013",
+    "publishedDate": null,
+    "source": "czi",
+    "affiliations": [],
+    "funders": [],
+    "subjects": []
+  }
+]

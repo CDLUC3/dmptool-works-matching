@@ -152,7 +152,7 @@ def parse_pendulum_datetime(v: Any) -> pendulum.DateTime | None:
         return pendulum.datetime(v.year, v.month, v.day)
     if isinstance(v, str):
 
-        def _parse_datetime_str(s: str) -> pendulum.DateTime:
+        def parse_datetime_str(s: str) -> pendulum.DateTime:
             parsed = pendulum.parse(s)
             if isinstance(parsed, pendulum.DateTime):
                 return parsed
@@ -162,7 +162,7 @@ def parse_pendulum_datetime(v: Any) -> pendulum.DateTime | None:
             raise ValueError(f"Parsed value is not a datetime: {s}")
 
         try:
-            return _parse_datetime_str(v)
+            return parse_datetime_str(v)
         except Exception as e:
             raise ValueError(f"Failed to parse datetime string '{v}'") from e
 
@@ -192,7 +192,7 @@ def parse_pendulum_date(v: Any) -> pendulum.Date | None:
         return pendulum.date(v.year, v.month, v.day)
     if isinstance(v, str):
 
-        def _parse_date_str(s: str) -> pendulum.Date:
+        def parse_date_str(s: str) -> pendulum.Date:
             parsed = pendulum.parse(s)
             if isinstance(parsed, pendulum.DateTime):
                 return parsed.date()
@@ -201,7 +201,7 @@ def parse_pendulum_date(v: Any) -> pendulum.Date | None:
             raise ValueError(f"Parsed value is not a date: {s}")
 
         try:
-            return _parse_date_str(v)
+            return parse_date_str(v)
         except Exception as e:
             raise ValueError(f"Failed to parse date string '{v}'") from e
 

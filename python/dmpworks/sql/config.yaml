@@ -38,7 +38,8 @@ variables:
 
   # Other settings
   max_doi_states: {{ env_var('MAX_DOI_STATES') }}
-  run_id_process_works: "{{ env_var('RUN_ID_PROCESS_WORKS') }}"
+  run_id_sqlmesh: "{{ env_var('RUN_ID_SQLMESH') }}"
+  release_date_process_works: "{{ env_var('RELEASE_DATE_PROCESS_WORKS') }}"
   max_relation_degrees: {{ env_var('MAX_RELATION_DEGREES') }}
 
   # Threads

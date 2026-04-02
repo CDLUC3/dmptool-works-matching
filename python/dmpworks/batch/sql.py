@@ -3,12 +3,11 @@ import os
 import pathlib
 
 from dmpworks.batch.utils import download_files_from_s3, local_path, s3_uri, upload_files_to_s3
+from dmpworks.batch_submit.job_factories import PROCESS_WORKS_SQLMESH
 from dmpworks.cli_utils import RunIdentifiers, SQLMeshConfig
 from dmpworks.sql.commands import run_plan
 
 log = logging.getLogger(__name__)
-
-DATASET = "sqlmesh"
 
 
 def plan(
@@ -21,37 +20,36 @@ def plan(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-
         run_identifiers: the release dates of each dataset.
         sqlmesh_config: the SQLMesh config.
     """
     # Download Parquet files for each dataset from S3 and set env vars for datasets.
     datasets = [
-        ("crossref_metadata", run_identifiers.crossref_metadata, "transform/*", "CROSSREF_METADATA_PATH"),
-        ("data_citation_corpus", run_identifiers.data_citation_corpus, "download/*", "DATA_CITATION_CORPUS_PATH"),
-        ("datacite", run_identifiers.datacite, "transform/*", "DATACITE_PATH"),
-        ("openalex_works", run_identifiers.openalex_works, "transform/*", "OPENALEX_WORKS_PATH"),
-        ("ror", run_identifiers.ror, "download/*", "ROR_PATH"),
+        ("crossref-metadata", run_identifiers.crossref_metadata, "transform", "CROSSREF_METADATA_PATH"),
+        ("data-citation-corpus", run_identifiers.data_citation_corpus, "download", "DATA_CITATION_CORPUS_PATH"),
+        ("datacite", run_identifiers.datacite, "transform", "DATACITE_PATH"),
+        ("openalex-works", run_identifiers.openalex_works, "transform", "OPENALEX_WORKS_PATH"),
+        ("ror", run_identifiers.ror, "download", "ROR_PATH"),
     ]
-    for dataset, run_id, folder, env_var_name in datasets:
+    for dataset, run_id, phase, env_var_name in datasets:
         # Download
-        source_uri = s3_uri(bucket_name, dataset, run_id, folder)
-        transform_dir = local_path(dataset, run_id, "transform")
-        download_files_from_s3(source_uri, transform_dir)
+        source_uri = s3_uri(bucket_name, f"{dataset}-{phase}", run_id, "*")
+        download_dir = local_path(f"{dataset}-{phase}", run_id)
+        download_files_from_s3(source_uri, download_dir)
 
         # Set env var
-        os.environ[env_var_name] = str(transform_dir)
+        os.environ[env_var_name] = str(download_dir)
 
     # Download previous DOI state
     doi_state_export_prev_dir = (
-        pathlib.Path("/data") / "sqlmesh" / run_identifiers.run_id_process_works_prev / "doi_state_export"
+        pathlib.Path("/data") / "sqlmesh" / run_identifiers.run_id_sqlmesh_prev / "doi_state_export"
     )
-    target_uri = s3_uri(bucket_name, "sqlmesh", run_identifiers.run_id_process_works_prev, "doi_state_export/*")
+    target_uri = s3_uri(bucket_name, PROCESS_WORKS_SQLMESH, run_identifiers.run_id_sqlmesh_prev, "doi_state_export/*")
     download_files_from_s3(target_uri, doi_state_export_prev_dir)
     os.environ["DOI_STATE_EXPORT_PREV_PATH"] = str(doi_state_export_prev_dir)
 
     # Create other paths and directories
-    sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / run_identifiers.run_id_process_works
+    sqlmesh_data_dir = pathlib.Path("/data") / "sqlmesh" / run_identifiers.run_id_sqlmesh
     duckdb_dir = sqlmesh_data_dir / "duckdb" / "db.db"
     works_index_export_dir = sqlmesh_data_dir / "works_index_export"
     doi_state_export_dir = sqlmesh_data_dir / "doi_state_export"
@@ -62,7 +60,8 @@ def plan(
     os.environ["DOI_STATE_EXPORT_PATH"] = str(doi_state_export_dir)
 
     # Remaining SQLMesh settings
-    os.environ["RUN_ID_PROCESS_WORKS"] = str(run_identifiers.run_id_process_works)
+    os.environ["RUN_ID_SQLMESH"] = str(run_identifiers.run_id_sqlmesh)
+    os.environ["RELEASE_DATE_PROCESS_WORKS"] = str(run_identifiers.release_date_process_works)
     os.environ["DUCKDB_DATABASE"] = str(duckdb_dir)
     os.environ["DUCKDB_THREADS"] = str(sqlmesh_config.duckdb_threads)
     os.environ["DUCKDB_MEMORY_LIMIT"] = str(sqlmesh_config.duckdb_memory_limit)
@@ -118,5 +117,5 @@ def plan(
     run_plan()
 
     # Upload exported Parquet files
-    sql_mesh_s3_uri = f"s3://{bucket_name}/sqlmesh/{run_identifiers.run_id_process_works}/"
+    sql_mesh_s3_uri = f"s3://{bucket_name}/{PROCESS_WORKS_SQLMESH}/{run_identifiers.run_id_sqlmesh}/"
     upload_files_to_s3(sqlmesh_data_dir, sql_mesh_s3_uri, "*")

@@ -60,6 +60,9 @@ Thumbs.db
 *.key
 *.pem
 
+# Sceptre
+infra/
+
 # Large data
 data/
 dataset/

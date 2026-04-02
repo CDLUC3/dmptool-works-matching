@@ -1,0 +1,97 @@
+# Copy this to infra/lambda-config.yaml and fill in your values.
+# lambda-config.yaml is gitignored.
+
+enabled_datasets:
+  - ror
+  - data-citation-corpus
+  - openalex-works
+  - crossref-metadata
+  - datacite
+
+dataset_subset:
+  enable: false
+  institutions_s3_path: meta/institutions.json
+  dois_s3_path: meta/work_dois.json
+
+dmp_subset:
+  enable: false
+  institutions_s3_path: meta/dmp_institutions.json
+  dois_s3_path: meta/dmp_dois.json
+
+crossref_metadata_config:
+  bucket_name: api-snapshots-reqpays-crossref
+
+crossref_metadata_transform_config:
+  batch_size: 500
+  row_group_size: 500000
+  row_groups_per_file: 4
+  max_workers: 32
+
+datacite_config:
+  bucket_name: monthly-datafile.datacite.org
+  bucket_region: eu-west-1
+
+datacite_transform_config:
+  batch_size: 150
+  row_group_size: 250000
+  row_groups_per_file: 8
+  max_workers: 8
+
+openalex_works_config:
+  bucket_name: openalex
+
+openalex_works_transform_config:
+  batch_size: 16
+  row_group_size: 200000
+  row_groups_per_file: 4
+  max_workers: 32
+  include_xpac: false
+
+dmp_works_search_config:
+  query_builder: build_dmp_works_search_baseline_query
+  scroll_time: 360m
+  batch_size: 250
+  max_results: 100
+  project_end_buffer_years: 3
+  parallel_search: false
+  include_named_queries_score: true
+  max_concurrent_searches: 125
+  max_concurrent_shard_requests: 12
+  inner_hits_size: 50
+  row_group_size: 50000
+  row_groups_per_file: 4
+  dmp_modification_window_days: 3
+  apply_modification_window: true
+
+opensearch_client_config:
+  host: <YOUR_OPENSEARCH_DOMAIN_ENDPOINT>
+  port: 443
+  use_ssl: true
+  verify_certs: true
+  auth_type: aws
+  region: us-west-2
+  service: es
+  pool_maxsize: 20
+  timeout: 300
+
+opensearch_sync_config:
+  max_processes: 8
+  chunk_size: 1000
+  max_chunk_bytes: 104857600
+  max_retries: 10
+  initial_backoff: 2
+  max_backoff: 600
+  dry_run: false
+  measure_chunk_size: false
+  max_error_samples: 50
+  staggered_start: false
+
+sqlmesh_config:
+  duckdb_threads: 32
+  duckdb_memory_limit: 225GB
+  audit_crossref_metadata_works_threshold: 167008747
+  audit_datacite_works_threshold: 72019576
+  audit_nested_object_limit: 20000
+  audit_openalex_works_threshold: 264675126
+  max_doi_states: 3
+  max_relation_degrees: 100

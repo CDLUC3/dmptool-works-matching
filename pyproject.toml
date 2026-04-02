@@ -26,6 +26,14 @@ dependencies = [
     "numpy>=1.22,<2.5.0",
     "scipy>=1.16.3,<2",
     "pysimdjson>=7.0.2,<8",
+    "pynamodb>=5,<6",
+    "pydantic-settings>=2,<3",
+    "aws-lambda-powertools[validation]>=3,<4",
+    "pyyaml>=6,<7",
+    "rich>=13,<15",
+    "questionary>=2,<3",
+    "cron-descriptor>=1.2,<2",
+    "croniter>=6,<7",
 ]
 
 [project.optional-dependencies]
@@ -34,7 +42,15 @@ dev = [
     "pytest-mock>=3,<4", # testing
     "black>=25,<27", # code formatting
     "vcrpy>=7,<9", # testing
+    "testcontainers>=4,<5", # for testing aws services
+    "freezegun>=1,<2", # for freezing time in tests
     "ruff>=0.11.13,<1", # linting
+]
+infra = [
+    "sceptre>=4,<5", # CloudFormation deployment
+    "sceptre-ssm-resolver>=1,<2", # SSM parameter resolver for Sceptre
+]
+notebooks = [
     "jupyterlab>=4,<5", # for Jupyter Notebooks
     "jupysql>=0.11.1,<1", # Enables magic SQL commands in Jupyter Notebooks
     "duckdb_engine>=0.17.0,<1", # Enables jupysql to connect to DuckDB
@@ -42,6 +58,17 @@ dev = [
 
 [project.scripts]
 dmpworks = "dmpworks.cli:main"
+
+[tool.uv]
+conflicts = [
+    [
+        { extra = "infra" },
+        { extra = "notebooks" },
+    ],
+]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
 
 [tool.maturin]
 module-name = "dmpworks.rust._internal"
@@ -105,6 +132,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/cli.py" = ["PLC0415"]
+"**/cli_roles.py" = ["PLC0415"]
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]

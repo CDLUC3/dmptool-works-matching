@@ -9,7 +9,7 @@ from dmpworks.utils import run_process
 
 log = logging.getLogger(__name__)
 
-DATASET = "openalex_works"
+DATASET = "openalex-works"
 
 
 def download(*, bucket_name: str, run_id: str, openalex_bucket_name: str):
@@ -37,6 +37,7 @@ def dataset_subset(
     bucket_name: str,
     run_id: str,
     ds_config: DatasetSubsetAWS = None,
+    prev_run_id: str | None = None,
 ):
     """Create a subset of OpenAlex Works.
 
@@ -44,11 +45,13 @@ def dataset_subset(
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
         ds_config: settings for creating the subset of works
+        prev_run_id: run ID of the prior download job to read source data from.
     """
     with dataset_subset_task(
         bucket_name=bucket_name,
         dataset=DATASET,
         run_id=run_id,
+        prev_run_id=prev_run_id,
         dataset_subset=ds_config,
     ) as ctx:
         create_dataset_subset(
@@ -66,6 +69,7 @@ def transform(
     run_id: str,
     config: OpenAlexWorksTransformConfig,
     use_subset: bool = False,
+    source_run_id: str | None = None,
     log_level: int = logging.INFO,
 ):
     """Download OpenAlex Works from DMP Tool S3 bucket, transform to Parquet, and upload the result.
@@ -75,9 +79,12 @@ def transform(
         run_id: a unique ID to represent this run of the job.
         config: configuration parameters.
         use_subset: whether to use a subset of the dataset or the full dataset.
+        source_run_id: run ID of the prior job to read source data from.
         log_level: Python log level.
     """
-    with transform_parquets_task(bucket_name, DATASET, run_id, use_subset=use_subset) as ctx:
+    with transform_parquets_task(
+        bucket_name, DATASET, run_id, use_subset=use_subset, source_run_id=source_run_id
+    ) as ctx:
         transform_openalex_works(
             in_dir=ctx.download_dir,
             out_dir=ctx.transform_dir,

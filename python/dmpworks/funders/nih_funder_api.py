@@ -169,11 +169,11 @@ def pubmed_ids_to_dois(
     """
     outputs = []
     for batch in to_batches(ids, 200):
-        outputs.extend(_pubmed_ids_to_dois(batch, idtype, versions, tool, email))
+        outputs.extend(pubmed_ids_to_dois_batch(batch, idtype, versions, tool, email))
     return outputs
 
 
-def _pubmed_ids_to_dois(
+def pubmed_ids_to_dois_batch(
     ids: list[int],
     idtype: str,
     versions: str | None = "no",

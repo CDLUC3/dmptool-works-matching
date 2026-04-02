@@ -57,6 +57,11 @@ Thumbs.db
 !.env.*.example
 *.key
 *.pem
+infra/vars-dev.yaml
+infra/vars-stg.yaml
+infra/lambda-config.yaml
+infra/lambda-config-dev.yaml
+infra/lambda-config-stg.yaml
 
 # Large data
 data/

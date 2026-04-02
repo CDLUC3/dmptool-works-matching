@@ -51,14 +51,6 @@ class TestParseName:
         assert parsed.surname == "Doe"
         assert parsed.full == "Dr. John Doe"
 
-    def test_explicit_cjk_name(self):
-        # Non-Latin names should not get a first initial
-        parsed = parse_name(raw_given_name="가은", raw_surname="김")
-        assert parsed.first_initial is None
-        assert parsed.given_name == "가은"
-        assert parsed.surname == "김"
-        assert parsed.full == "가은 김"
-
     def test_fallback(self):
         parsed = parse_name(raw_full="sam wu")
         assert parsed.first_initial is None

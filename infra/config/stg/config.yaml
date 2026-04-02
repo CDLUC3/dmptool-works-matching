@@ -1,0 +1,22 @@
+{% if var.cloudformation_service_role_ssm is defined %}
+cloudformation_service_role: !ssm
+  name: {{ var.cloudformation_service_role_ssm }}
+  region: {{ var.region }}
+{% endif %}
+
+template_bucket_name: !ssm {{ var.ssm_prefix }}/stg/CloudFormationBucket
+
+vars:
+  env: stg
+
+stack_tags:
+  Environment: 'stg'
+
+sceptre_user_data:
+  ssm_path: "{{ var.ssm_prefix }}/stg"
+  ecr_batch:
+    name: dmpworks-stg-batch
+    tag: latest
+  ecr_lambda:
+    name: dmpworks-stg-lambda
+    tag: latest

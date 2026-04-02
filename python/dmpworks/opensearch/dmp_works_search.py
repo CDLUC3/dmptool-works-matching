@@ -89,6 +89,7 @@ def dmp_works_search(
     dois: list[str] | None = None,
     dmps_start_date: pendulum.Date | None = None,
     dmps_end_date: pendulum.Date | None = None,
+    dmp_modification_window_days: int | None = None,
     inner_hits_size: int = 50,
     row_group_size: int = 50_000,
     row_groups_per_file: int = 4,
@@ -114,6 +115,7 @@ def dmp_works_search(
         dois: A list of DOIs to filter DMPs by.
         dmps_start_date: Return DMPs with project start dates on or after this date.
         dmps_end_date: Return DMPs with project start dates on before this date.
+        dmp_modification_window_days: Only search DMPs modified within this many days. If None, all DMPs are searched.
         inner_hits_size: The size of inner hits to return for nested fields.
         row_group_size: Number of rows per Parquet row group.
         row_groups_per_file: Number of row groups per output file before rotating.
@@ -124,6 +126,11 @@ def dmp_works_search(
         log.warning("Unable to use include_named_queries_score with msearch, query scores will not be returned.")
 
     query_builder = get_query_builder(query_builder_name)
+    modified_since = (
+        pendulum.now().subtract(days=dmp_modification_window_days).date()
+        if dmp_modification_window_days is not None
+        else None
+    )
 
     with (
         tqdm(total=0, desc="Find DMP work matches with OpenSearch", unit="doc") as pbar,
@@ -136,6 +143,7 @@ def dmp_works_search(
             institutions=institutions,
             start_date=dmps_start_date,
             end_date=dmps_end_date,
+            modified_since=modified_since,
             inner_hits_size=inner_hits_size,
         ) as results,
         ParquetBatchWriter(

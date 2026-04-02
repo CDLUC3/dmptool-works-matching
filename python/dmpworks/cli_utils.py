@@ -11,9 +11,47 @@ import pendulum.parsing
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-DEFAULT_DUCKDB_MEMORY_LIMIT = "225GB"
-DEFAULT_DUCKDB_RELATIONS_DATACITE_THREADS = 16
-DEFAULT_DUCKDB_THREADS = 32
+from dmpworks.constants import (
+    AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD,
+    AUDIT_DATACITE_WORKS_THRESHOLD,
+    AUDIT_NESTED_OBJECT_LIMIT,
+    AUDIT_OPENALEX_WORKS_THRESHOLD,
+    CROSSREF_METADATA_TRANSFORM_BATCH_SIZE,
+    CROSSREF_METADATA_TRANSFORM_MAX_WORKERS,
+    CROSSREF_METADATA_TRANSFORM_ROW_GROUP_SIZE,
+    CROSSREF_METADATA_TRANSFORM_ROW_GROUPS_PER_FILE,
+    DATACITE_TRANSFORM_BATCH_SIZE,
+    DATACITE_TRANSFORM_MAX_WORKERS,
+    DATACITE_TRANSFORM_ROW_GROUP_SIZE,
+    DATACITE_TRANSFORM_ROW_GROUPS_PER_FILE,
+    DMP_WORKS_SEARCH_BATCH_SIZE,
+    DMP_WORKS_SEARCH_INNER_HITS_SIZE,
+    DMP_WORKS_SEARCH_MAX_CONCURRENT_SEARCHES,
+    DMP_WORKS_SEARCH_MAX_CONCURRENT_SHARD_REQUESTS,
+    DMP_WORKS_SEARCH_MAX_RESULTS,
+    DMP_WORKS_SEARCH_PROJECT_END_BUFFER_YEARS,
+    DMP_WORKS_SEARCH_QUERY_BUILDER,
+    DMP_WORKS_SEARCH_ROW_GROUP_SIZE,
+    DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE,
+    DMP_WORKS_SEARCH_SCROLL_TIME,
+    DUCKDB_MEMORY_LIMIT,
+    DUCKDB_RELATIONS_DATACITE_THREADS,
+    DUCKDB_THREADS,
+    MAX_DOI_STATES,
+    MAX_RELATION_DEGREES,
+    OPENALEX_WORKS_TRANSFORM_BATCH_SIZE,
+    OPENALEX_WORKS_TRANSFORM_INCLUDE_XPAC,
+    OPENALEX_WORKS_TRANSFORM_MAX_WORKERS,
+    OPENALEX_WORKS_TRANSFORM_ROW_GROUP_SIZE,
+    OPENALEX_WORKS_TRANSFORM_ROW_GROUPS_PER_FILE,
+    OPENSEARCH_SYNC_CHUNK_SIZE,
+    OPENSEARCH_SYNC_INITIAL_BACKOFF,
+    OPENSEARCH_SYNC_MAX_BACKOFF,
+    OPENSEARCH_SYNC_MAX_CHUNK_BYTES,
+    OPENSEARCH_SYNC_MAX_ERROR_SAMPLES,
+    OPENSEARCH_SYNC_MAX_PROCESSES,
+    OPENSEARCH_SYNC_MAX_RETRIES,
+)
 
 
 def get_env_var_dict(instance: Any) -> dict[str, str | None]:
@@ -51,6 +89,25 @@ def get_env_var_dict(instance: Any) -> dict[str, str | None]:
                             env_dict[ev] = str(current_value)
                     break
     return env_dict
+
+
+def config_to_kwargs(*configs: Any) -> dict[str, Any]:
+    """Merge config objects into lowercased keyword arguments for factory functions.
+
+    Converts one or more dataclass config instances into a flat dict suitable for
+    passing as ``**kwargs`` to a job factory. Environment variable names are lowercased
+    and ``None`` values are filtered out.
+
+    Args:
+        *configs: Dataclass instances to convert via get_env_var_dict.
+
+    Returns:
+        Merged dict with lowercase keys. None values are filtered out.
+    """
+    kwargs: dict[str, Any] = {}
+    for config in configs:
+        kwargs.update({k.lower(): v for k, v in get_env_var_dict(config).items() if v is not None})
+    return kwargs
 
 
 def validate_date_str(type_, value):  # noqa: ARG001
@@ -308,7 +365,7 @@ class CrossrefMetadataTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of input files to process per batch (must be >= 1).",
         ),
-    ] = 500
+    ] = CROSSREF_METADATA_TRANSFORM_BATCH_SIZE
     row_group_size: Annotated[
         int,
         Parameter(
@@ -316,7 +373,7 @@ class CrossrefMetadataTransformConfig:
             validator=validators.Number(gte=1),
             help="Parquet row group size (must be >= 1). For efficient downstream querying, target row group sizes of 128-512MB. Row groups are buffered fully in memory before being flushed to disk.",
         ),
-    ] = 500_000
+    ] = CROSSREF_METADATA_TRANSFORM_ROW_GROUP_SIZE
     row_groups_per_file: Annotated[
         int,
         Parameter(
@@ -324,7 +381,7 @@ class CrossrefMetadataTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of row groups per Parquet file (must be >= 1). Target file sizes of 512MB-1GB.",
         ),
-    ] = 4
+    ] = CROSSREF_METADATA_TRANSFORM_ROW_GROUPS_PER_FILE
     max_workers: Annotated[
         int,
         Parameter(
@@ -332,7 +389,7 @@ class CrossrefMetadataTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of workers to run in parallel (must be >= 1).",
         ),
-    ] = 32
+    ] = CROSSREF_METADATA_TRANSFORM_MAX_WORKERS
 
 
 @dataclass
@@ -353,7 +410,7 @@ class OpenAlexWorksTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of input files to process per batch (must be >= 1).",
         ),
-    ] = 16
+    ] = OPENALEX_WORKS_TRANSFORM_BATCH_SIZE
     row_group_size: Annotated[
         int,
         Parameter(
@@ -361,7 +418,7 @@ class OpenAlexWorksTransformConfig:
             validator=validators.Number(gte=1),
             help="Parquet row group size (must be >= 1). For efficient downstream querying, target row group sizes of 128-512MB. Row groups are buffered fully in memory before being flushed to disk.",
         ),
-    ] = 200_000
+    ] = OPENALEX_WORKS_TRANSFORM_ROW_GROUP_SIZE
     row_groups_per_file: Annotated[
         int,
         Parameter(
@@ -369,7 +426,7 @@ class OpenAlexWorksTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of row groups per Parquet file (must be >= 1). Target file sizes of 512MB-1GB.",
         ),
-    ] = 4
+    ] = OPENALEX_WORKS_TRANSFORM_ROW_GROUPS_PER_FILE
     max_workers: Annotated[
         int,
         Parameter(
@@ -377,14 +434,14 @@ class OpenAlexWorksTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of workers to run in parallel (must be >= 1).",
         ),
-    ] = 32
+    ] = OPENALEX_WORKS_TRANSFORM_MAX_WORKERS
     include_xpac: Annotated[
         bool,
         Parameter(
             env_var="OPENALEX_WORKS_TRANSFORM_INCLUDE_XPAC",
             help="Include works flagged as xpac (is_xpac=true). Defaults to false.",
         ),
-    ] = False
+    ] = OPENALEX_WORKS_TRANSFORM_INCLUDE_XPAC
 
 
 @dataclass
@@ -405,7 +462,7 @@ class DataCiteTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of input files to process per batch (must be >= 1).",
         ),
-    ] = 150
+    ] = DATACITE_TRANSFORM_BATCH_SIZE
     row_group_size: Annotated[
         int,
         Parameter(
@@ -413,7 +470,7 @@ class DataCiteTransformConfig:
             validator=validators.Number(gte=1),
             help="Parquet row group size (must be >= 1). For efficient downstream querying, target row group sizes of 128-512MB. Row groups are buffered fully in memory before being flushed to disk.",
         ),
-    ] = 250_000
+    ] = DATACITE_TRANSFORM_ROW_GROUP_SIZE
     row_groups_per_file: Annotated[
         int,
         Parameter(
@@ -421,7 +478,7 @@ class DataCiteTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of row groups per Parquet file (must be >= 1). Target file sizes of 512MB-1GB.",
         ),
-    ] = 8
+    ] = DATACITE_TRANSFORM_ROW_GROUPS_PER_FILE
     max_workers: Annotated[
         int,
         Parameter(
@@ -429,7 +486,7 @@ class DataCiteTransformConfig:
             validator=validators.Number(gte=1),
             help="Number of workers to run in parallel (must be >= 1).",
         ),
-    ] = 8
+    ] = DATACITE_TRANSFORM_MAX_WORKERS
 
 
 @dataclass
@@ -531,78 +588,72 @@ class OpenSearchClientConfig:
 
 @dataclass
 class RunIdentifiers:
-    """Run identifiers for various datasets.
+    """Run identifiers for various datasets and pipeline jobs.
 
     Attributes:
-        openalex_works: Run identifier for OpenAlex works, e.g. the release date in YYYY-MM-DD format.
-        datacite: Run identifier for DataCite, e.g. the release date in YYYY-MM-DD format.
-        crossref_metadata: Run identifier for Crossref metadata, e.g. the release date in YYYY-MM-DD format.
-        ror: Run identifier for ROR, e.g. the release date in YYYY-MM-DD format.
-        data_citation_corpus: Run identifier for Data Citation Corpus, e.g. the release date in YYYY-MM-DD format.
-        run_id_process_works_prev: a unique ID to represent this previous process works run of the job.
-        run_id_process_works: a unique ID to represent the process works run of the job.
-        run_id_dmps: a unique ID to represent this DMPs run of the job.
+        openalex_works: Run identifier for OpenAlex works (timestamp).
+        datacite: Run identifier for DataCite (timestamp).
+        crossref_metadata: Run identifier for Crossref metadata (timestamp).
+        ror: Run identifier for ROR (timestamp).
+        data_citation_corpus: Run identifier for Data Citation Corpus (timestamp).
+        run_id_sqlmesh_prev: Run ID of the previous SQLMesh job.
+        run_id_sqlmesh: Run ID of the current SQLMesh job.
     """
 
     openalex_works: Annotated[
         str | None,
         Parameter(
             env_var="RUN_ID_OPENALEX_WORKS",
-            validator=validate_date_str,
-            help="Run identifier for OpenAlex works, e.g. the release date in YYYY-MM-DD format.",
+            help="Run identifier for OpenAlex works.",
         ),
     ] = None
     datacite: Annotated[
         str | None,
         Parameter(
             env_var="RUN_ID_DATACITE",
-            validator=validate_date_str,
-            help="Run identifier for DataCite, e.g. the release date in YYYY-MM-DD format.",
+            help="Run identifier for DataCite.",
         ),
     ] = None
     crossref_metadata: Annotated[
         str | None,
         Parameter(
             env_var="RUN_ID_CROSSREF_METADATA",
-            validator=validate_date_str,
-            help="Run identifier for Crossref metadata, e.g. the release date in YYYY-MM-DD format.",
+            help="Run identifier for Crossref metadata.",
         ),
     ] = None
     ror: Annotated[
         str | None,
         Parameter(
             env_var="RUN_ID_ROR",
-            validator=validate_date_str,
-            help="Run identifier for ROR, e.g. the release date in YYYY-MM-DD format.",
+            help="Run identifier for ROR.",
         ),
     ] = None
     data_citation_corpus: Annotated[
         str | None,
         Parameter(
             env_var="RUN_ID_DATA_CITATION_CORPUS",
-            validator=validate_date_str,
-            help="Run identifier for Data Citation Corpus, e.g. the release date in YYYY-MM-DD format.",
+            help="Run identifier for Data Citation Corpus.",
         ),
     ] = None
-    run_id_process_works_prev: Annotated[
+    run_id_sqlmesh_prev: Annotated[
         str | None,
         Parameter(
-            env_var="RUN_ID_PROCESS_WORKS_PREV",
-            help="Previous Process Works Run ID",
+            env_var="RUN_ID_SQLMESH_PREV",
+            help="Previous SQLMesh Run ID",
         ),
     ] = None
-    run_id_process_works: Annotated[
+    run_id_sqlmesh: Annotated[
         str | None,
         Parameter(
-            env_var="RUN_ID_PROCESS_WORKS",
-            help="Process Works Run ID",
+            env_var="RUN_ID_SQLMESH",
+            help="SQLMesh Run ID",
         ),
     ] = None
-    run_id_dmps: Annotated[
+    release_date_process_works: Annotated[
         str | None,
         Parameter(
-            env_var="RUN_ID_DMPS",
-            help="DMPs Run ID",
+            env_var="RELEASE_DATE_PROCESS_WORKS",
+            help="Release date (YYYY-MM-DD) for the process-works pipeline run.",
         ),
     ] = None
 
@@ -630,44 +681,42 @@ class OpenSearchSyncConfig:
             env_var="OPENSEARCH_SYNC_MAX_PROCESSES",
             help="Maximum number of worker processes to run in parallel.",
         ),
-    ] = 2
+    ] = OPENSEARCH_SYNC_MAX_PROCESSES
     chunk_size: Annotated[
         int,
         Parameter(
             env_var="OPENSEARCH_SYNC_CHUNK_SIZE",
             help="Number of records to process per batch.",
         ),
-    ] = 1000
+    ] = OPENSEARCH_SYNC_CHUNK_SIZE
     max_chunk_bytes: Annotated[
         int,
         Parameter(
             env_var="OPENSEARCH_SYNC_MAX_CHUNK_BYTES",
             help="Maximum serialized batch size in bytes.",
         ),
-    ] = (
-        100 * 1024 * 1024
-    )
+    ] = OPENSEARCH_SYNC_MAX_CHUNK_BYTES
     max_retries: Annotated[
         int,
         Parameter(
             env_var="OPENSEARCH_SYNC_MAX_RETRIES",
             help="Maximum number of retry attempts per batch.",
         ),
-    ] = 10
+    ] = OPENSEARCH_SYNC_MAX_RETRIES
     initial_backoff: Annotated[
         int,
         Parameter(
             env_var="OPENSEARCH_SYNC_INITIAL_BACKOFF",
             help="Initial retry backoff in seconds.",
         ),
-    ] = 2
+    ] = OPENSEARCH_SYNC_INITIAL_BACKOFF
     max_backoff: Annotated[
         int,
         Parameter(
             env_var="OPENSEARCH_SYNC_MAX_BACKOFF",
             help="Maximum retry backoff in seconds.",
         ),
-    ] = 600
+    ] = OPENSEARCH_SYNC_MAX_BACKOFF
     dry_run: Annotated[
         bool,
         Parameter(
@@ -688,7 +737,7 @@ class OpenSearchSyncConfig:
             env_var="OPENSEARCH_SYNC_MAX_ERROR_SAMPLES",
             help="Maximum number of error examples to retain for reporting.",
         ),
-    ] = 50
+    ] = OPENSEARCH_SYNC_MAX_ERROR_SAMPLES
     staggered_start: Annotated[
         bool,
         Parameter(
@@ -718,6 +767,7 @@ class DMPWorksSearchConfig:
         row_groups_per_file: Number of row groups per output Parquet file.
         dmps_start_date: Return DMPs with project start dates on or after this date.
         dmps_end_date: Return DMPs with project start dates on or before this date.
+        dmp_modification_window_days: Only search DMPs modified within this many days. If unset, all DMPs are searched.
     """
 
     query_builder_name: Annotated[
@@ -726,7 +776,7 @@ class DMPWorksSearchConfig:
             env_var="DMP_WORKS_SEARCH_QUERY_BUILDER",
             help="Name of the query builder to use.",
         ),
-    ] = "build_dmp_works_search_baseline_query"
+    ] = DMP_WORKS_SEARCH_QUERY_BUILDER
     rerank_model_name: Annotated[
         str | None,
         Parameter(
@@ -740,28 +790,28 @@ class DMPWorksSearchConfig:
             env_var="DMP_WORKS_SEARCH_SCROLL_TIME",
             help="Length of time the OpenSearch scroll context remains active.",
         ),
-    ] = "360m"
+    ] = DMP_WORKS_SEARCH_SCROLL_TIME
     batch_size: Annotated[
         int,
         Parameter(
             env_var="DMP_WORKS_SEARCH_BATCH_SIZE",
             help="Number of DMPs processed per batch.",
         ),
-    ] = 250
+    ] = DMP_WORKS_SEARCH_BATCH_SIZE
     max_results: Annotated[
         int,
         Parameter(
             env_var="DMP_WORKS_SEARCH_MAX_RESULTS",
             help="Maximum number of works to return per DMP.",
         ),
-    ] = 100
+    ] = DMP_WORKS_SEARCH_MAX_RESULTS
     project_end_buffer_years: Annotated[
         int,
         Parameter(
             env_var="DMP_WORKS_SEARCH_PROJECT_END_BUFFER_YEARS",
             help="Years added to project end date when searching for works.",
         ),
-    ] = 3
+    ] = DMP_WORKS_SEARCH_PROJECT_END_BUFFER_YEARS
     parallel_search: Annotated[
         bool,
         Parameter(
@@ -782,35 +832,35 @@ class DMPWorksSearchConfig:
             env_var="DMP_WORKS_SEARCH_MAX_CONCURRENT_SEARCHES",
             help="Maximum number of concurrent searches.",
         ),
-    ] = 125
+    ] = DMP_WORKS_SEARCH_MAX_CONCURRENT_SEARCHES
     max_concurrent_shard_requests: Annotated[
         int,
         Parameter(
             env_var="DMP_WORKS_SEARCH_MAX_CONCURRENT_SHARD_REQUESTS",
             help="Maximum number of shards searched per node per request.",
         ),
-    ] = 12
+    ] = DMP_WORKS_SEARCH_MAX_CONCURRENT_SHARD_REQUESTS
     inner_hits_size: Annotated[
         int,
         Parameter(
             env_var="DMP_WORKS_SEARCH_INNER_HITS_SIZE",
             help="Maximum number of inner hits returned per matched work.",
         ),
-    ] = 50
+    ] = DMP_WORKS_SEARCH_INNER_HITS_SIZE
     row_group_size: Annotated[
         int,
         Parameter(
             env_var="DMP_WORKS_SEARCH_ROW_GROUP_SIZE",
             help="Parquet row group size for output files.",
         ),
-    ] = 50_000
+    ] = DMP_WORKS_SEARCH_ROW_GROUP_SIZE
     row_groups_per_file: Annotated[
         int,
         Parameter(
             env_var="DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE",
             help="Number of row groups per output Parquet file.",
         ),
-    ] = 4
+    ] = DMP_WORKS_SEARCH_ROW_GROUPS_PER_FILE
     dmps_start_date: Annotated[
         pendulum.Date | None,
         Parameter(
@@ -827,6 +877,20 @@ class DMPWorksSearchConfig:
             help="Return DMPs with project start dates on or before this date (YYYY-MM-DD).",
         ),
     ] = None
+    dmp_modification_window_days: Annotated[
+        int | None,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_DMP_MODIFICATION_WINDOW_DAYS",
+            help="Only search DMPs modified within this many days. If unset, all DMPs are searched.",
+        ),
+    ] = None
+    apply_modification_window: Annotated[
+        bool,
+        Parameter(
+            env_var="DMP_WORKS_SEARCH_APPLY_MODIFICATION_WINDOW",
+            help="Whether to apply the dmp_modification_window_days filter. Set to false to process all DMPs.",
+        ),
+    ] = True
 
 
 @dataclass
@@ -907,14 +971,14 @@ class SQLMeshConfig:
             env_var="DUCKDB_THREADS",
             help="Number of threads for DuckDB",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     duckdb_memory_limit: Annotated[
         str,
         Parameter(
             env_var="DUCKDB_MEMORY_LIMIT",
             help="Memory limit for DuckDB",
         ),
-    ] = DEFAULT_DUCKDB_MEMORY_LIMIT
+    ] = DUCKDB_MEMORY_LIMIT
 
     # Audits
     audit_crossref_metadata_works_threshold: Annotated[
@@ -923,28 +987,28 @@ class SQLMeshConfig:
             env_var="AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD",
             help="Threshold for Crossref Metadata Works audit",
         ),
-    ] = 167008747
+    ] = AUDIT_CROSSREF_METADATA_WORKS_THRESHOLD
     audit_datacite_works_threshold: Annotated[
         int,
         Parameter(
             env_var="AUDIT_DATACITE_WORKS_THRESHOLD",
             help="Threshold for DataCite Works audit",
         ),
-    ] = 72019576
+    ] = AUDIT_DATACITE_WORKS_THRESHOLD
     audit_nested_object_limit: Annotated[
         int,
         Parameter(
             env_var="AUDIT_NESTED_OBJECT_LIMIT",
             help="Limit for nested object audit",
         ),
-    ] = 20000
+    ] = AUDIT_NESTED_OBJECT_LIMIT
     audit_openalex_works_threshold: Annotated[
         int,
         Parameter(
             env_var="AUDIT_OPENALEX_WORKS_THRESHOLD",
             help="Threshold for OpenAlex Works audit",
         ),
-    ] = 264675126
+    ] = AUDIT_OPENALEX_WORKS_THRESHOLD
 
     # Other settings
     max_doi_states: Annotated[
@@ -953,14 +1017,14 @@ class SQLMeshConfig:
             env_var="MAX_DOI_STATES",
             help="Maximum number of DOI states",
         ),
-    ] = 3
+    ] = MAX_DOI_STATES
     max_relation_degrees: Annotated[
         int,
         Parameter(
             env_var="MAX_RELATION_DEGREES",
             help="Maximum number of relation degrees",
         ),
-    ] = 100
+    ] = MAX_RELATION_DEGREES
 
     # Threads
     crossref_crossref_metadata: Annotated[
@@ -969,256 +1033,256 @@ class SQLMeshConfig:
             env_var="CROSSREF_CROSSREF_METADATA_THREADS",
             help="Number of threads for the crossref.crossref_metadata SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     crossref_index_works_metadata: Annotated[
         int,
         Parameter(
             env_var="CROSSREF_INDEX_WORKS_METADATA_THREADS",
             help="Number of threads for the crossref_index.works_metadata SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_datacite: Annotated[
         int,
         Parameter(
             env_var="DATACITE_DATACITE_THREADS",
             help="Number of threads for the datacite.datacite SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_index_awards: Annotated[
         int,
         Parameter(
             env_var="DATACITE_INDEX_AWARDS_THREADS",
             help="Number of threads for the datacite_index.awards SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_index_datacite_index: Annotated[
         int,
         Parameter(
             env_var="DATACITE_INDEX_DATACITE_INDEX_THREADS",
             help="Number of threads for the datacite_index.datacite_index SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_index_funders: Annotated[
         int,
         Parameter(
             env_var="DATACITE_INDEX_FUNDERS_THREADS",
             help="Number of threads for the datacite_index.funders SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_index_institutions: Annotated[
         int,
         Parameter(
             env_var="DATACITE_INDEX_INSTITUTIONS_THREADS",
             help="Number of threads for the datacite_index.institutions SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_index_updated_dates: Annotated[
         int,
         Parameter(
             env_var="DATACITE_INDEX_UPDATED_DATES_THREADS",
             help="Number of threads for the datacite_index.updated_dates SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_index_work_types: Annotated[
         int,
         Parameter(
             env_var="DATACITE_INDEX_WORK_TYPES_THREADS",
             help="Number of threads for the datacite_index.work_types SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_index_works: Annotated[
         int,
         Parameter(
             env_var="DATACITE_INDEX_WORKS_THREADS",
             help="Number of threads for the datacite_index.works SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     datacite_index_datacite_index_hashes: Annotated[
         int,
         Parameter(
             env_var="DATACITE_INDEX_DATACITE_INDEX_HASHES_THREADS",
             help="Number of threads for the datacite_index.datacite_index_hashes SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_openalex_works: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_OPENALEX_WORKS_THREADS",
             help="Number of threads for the openalex.openalex_works SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_abstract_stats: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_ABSTRACT_STATS_THREADS",
             help="Number of threads for the openalex_index.abstract_stats SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_abstracts: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_ABSTRACTS_THREADS",
             help="Number of threads for the openalex_index.abstracts SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_author_names: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_AUTHOR_NAMES_THREADS",
             help="Number of threads for the openalex_index.author_names SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_awards: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_AWARDS_THREADS",
             help="Number of threads for the openalex_index.awards SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_funders: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_FUNDERS_THREADS",
             help="Number of threads for the openalex_index.funders SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_openalex_index: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_OPENALEX_INDEX_THREADS",
             help="Number of threads for the openalex_index.openalex_index SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_publication_dates: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_PUBLICATION_DATES_THREADS",
             help="Number of threads for the openalex_index.publication_dates SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_title_stats: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_TITLE_STATS_THREADS",
             help="Number of threads for the openalex_index.title_stats SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_titles: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_TITLES_THREADS",
             help="Number of threads for the openalex_index.titles SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_updated_dates: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_UPDATED_DATES_THREADS",
             help="Number of threads for the openalex_index.updated_dates SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_works_metadata: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_WORKS_METADATA_THREADS",
             help="Number of threads for the openalex_index.works_metadata SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     openalex_index_openalex_index_hashes: Annotated[
         int,
         Parameter(
             env_var="OPENALEX_INDEX_OPENALEX_INDEX_HASHES_THREADS",
             help="Number of threads for the openalex_index.openalex_index_hashes SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     opensearch_current_doi_state: Annotated[
         int,
         Parameter(
             env_var="OPENSEARCH_CURRENT_DOI_STATE_THREADS",
             help="Number of threads for the opensearch.current_doi_state SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     opensearch_export: Annotated[
         int,
         Parameter(
             env_var="OPENSEARCH_EXPORT_THREADS",
             help="Number of threads for the opensearch.export SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     opensearch_next_doi_state: Annotated[
         int,
         Parameter(
             env_var="OPENSEARCH_NEXT_DOI_STATE_THREADS",
             help="Number of threads for the opensearch.next_doi_state SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     data_citation_corpus_relations: Annotated[
         int,
         Parameter(
             env_var="DATA_CITATION_CORPUS_THREADS",
             help="Number of threads for the data_citation_corpus.relations SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     relations_crossref_metadata_degrees: Annotated[
         int,
         Parameter(
             env_var="RELATIONS_CROSSREF_METADATA_DEGREES_THREADS",
             help="Number of threads for the relations.crossref_metadata_degrees SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     relations_crossref_metadata: Annotated[
         int,
         Parameter(
             env_var="RELATIONS_CROSSREF_METADATA_THREADS",
             help="Number of threads for the relations.crossref_metadata SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     relations_data_citation_corpus: Annotated[
         int,
         Parameter(
             env_var="RELATIONS_DATA_CITATION_CORPUS_THREADS",
             help="Number of threads for the relations.data_citation_corpus SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     relations_datacite_degrees: Annotated[
         int,
         Parameter(
             env_var="RELATIONS_DATACITE_DEGREES_THREADS",
             help="Number of threads for the relations.datacite_degrees SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_RELATIONS_DATACITE_THREADS
+    ] = DUCKDB_RELATIONS_DATACITE_THREADS
     relations_datacite: Annotated[
         int,
         Parameter(
             env_var="RELATIONS_DATACITE_THREADS",
             help="Number of threads for the relations.datacite SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_RELATIONS_DATACITE_THREADS
+    ] = DUCKDB_RELATIONS_DATACITE_THREADS
     relations_relations_index: Annotated[
         int,
         Parameter(
             env_var="RELATIONS_RELATIONS_INDEX_THREADS",
             help="Number of threads for the relations.relations_index SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     ror_index: Annotated[
         int,
         Parameter(
             env_var="ROR_INDEX_THREADS",
             help="Number of threads for the ror.index SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     ror_ror: Annotated[
         int,
         Parameter(
             env_var="ROR_ROR_THREADS",
             help="Number of threads for the ror.ror SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS
     works_index_export: Annotated[
         int,
         Parameter(
             env_var="WORKS_INDEX_EXPORT_THREADS",
             help="Number of threads for the works_index.export SQLMesh model",
         ),
-    ] = DEFAULT_DUCKDB_THREADS
+    ] = DUCKDB_THREADS

@@ -1,0 +1,6 @@
+template:
+  path: dynamodb.yaml.j2
+  type: file
+
+parameters:
+  Env: "{{ var.env }}"

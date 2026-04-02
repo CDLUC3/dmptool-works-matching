@@ -1,0 +1,13 @@
+template:
+  path: batch-platform.yaml.j2
+  type: file
+
+parameters:
+  Env: "{{ var.env }}"
+  VpcId: !stack_output_external {{ var.vpc_stack_output }}
+  SubnetId: !stack_output_external {{ var.subnet_stack_output }}
+  SecurityGroupId: !stack_output_external {{ var.security_group_stack_output }}
+
+capabilities:
+  - CAPABILITY_IAM
+  - CAPABILITY_NAMED_IAM

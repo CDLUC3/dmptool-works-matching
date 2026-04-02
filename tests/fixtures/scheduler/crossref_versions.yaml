@@ -1,0 +1,32 @@
+interactions:
+- request:
+    body: null
+    headers: {}
+    method: GET
+    uri: https://api-snapshots-reqpays-crossref.s3.amazonaws.com/?list-type=2&encoding-type=url
+  response:
+    body:
+      string: '<?xml version="1.0" encoding="UTF-8"?>
+
+        <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>api-snapshots-reqpays-crossref</Name><Prefix></Prefix><KeyCount>4</KeyCount><MaxKeys>1000</MaxKeys><EncodingType>url</EncodingType><IsTruncated>false</IsTruncated><Contents><Key>April_2023_Public_Data_File_from_Crossref.tar</Key><LastModified>2023-05-09T13:14:12.000Z</LastModified><ETag>&quot;36b1ee712bb8c2934539d92137aecc9d-5541&quot;</ETag><Size>185897154560</Size><StorageClass>STANDARD</StorageClass></Contents><Contents><Key>April_2024_Public_Data_File_from_Crossref.tar</Key><LastModified>2024-05-09T17:56:17.000Z</LastModified><ETag>&quot;ea195d215b1806d3437b0eb0f46ed083-6323&quot;</ETag><Size>212156057600</Size><StorageClass>STANDARD</StorageClass></Contents><Contents><Key>April_2025_Public_Data_File_from_Crossref.tar</Key><LastModified>2025-03-12T11:33:03.000Z</LastModified><ETag>&quot;33b290befccf8e25ac74151068a48350-5871&quot;</ETag><ChecksumAlgorithm>CRC64NVME</ChecksumAlgorithm><ChecksumType>FULL_OBJECT</ChecksumType><Size>196964802560</Size><StorageClass>STANDARD</StorageClass></Contents><Contents><Key>testfile</Key><LastModified>2024-05-09T13:57:52.000Z</LastModified><ETag>&quot;d8e8fca2dc0f896fd7cb4cb0031ba249&quot;</ETag><Size>5</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>'
+    headers:
+      Content-Type:
+      - application/xml
+      Date:
+      - Tue, 17 Mar 2026 02:41:04 GMT
+      Server:
+      - AmazonS3
+      Transfer-Encoding:
+      - chunked
+      x-amz-bucket-region:
+      - us-east-1
+      x-amz-id-2:
+      - DUMMY_X_AMZ_ID_2
+      x-amz-request-charged:
+      - requester
+      x-amz-request-id:
+      - DUMMY_X_AMZ_REQUEST_ID
+    status:
+      code: 200
+      message: OK
+version: 1

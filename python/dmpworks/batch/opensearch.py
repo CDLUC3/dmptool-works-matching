@@ -10,6 +10,7 @@ from dmpworks.batch.utils import (
     s3_uri,
     upload_files_to_s3,
 )
+from dmpworks.batch_submit.job_factories import PROCESS_DMPS_DMP_WORKS_SEARCH, PROCESS_WORKS_SQLMESH
 from dmpworks.cli_utils import (
     DMPSubsetAWS,
     DMPWorksSearchConfig,
@@ -22,9 +23,7 @@ from dmpworks.dataset_subset import load_dois, load_institutions
 
 log = logging.getLogger(__name__)
 
-SQLMESH_DIR = "sqlmesh"
 MATCHES_DIR = "matches"
-DMP_WORKS_SEARCH_DIR = "dmp-works-search"
 META_DIR = "meta"
 DATASET = "opensearch"
 
@@ -68,7 +67,8 @@ def load_dmp_subset_from_s3(
 def sync_works_cmd(
     *,
     bucket_name: str,
-    run_id: str,
+    release_date: str,
+    sqlmesh_run_id: str,
     index_name: str,
     client_config: OpenSearchClientConfig,
     sync_config: OpenSearchSyncConfig,
@@ -78,7 +78,8 @@ def sync_works_cmd(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        run_id: a unique ID to represent this run of the job.
+        release_date: Release date (YYYY-MM-DD) to filter records by updated_date.
+        sqlmesh_run_id: the run ID of the SQLMesh job whose output to read.
         index_name: the OpenSearch index name.
         client_config: the OpenSearch client config settings.
         sync_config: the OpenSearch sync config settings.
@@ -88,15 +89,15 @@ def sync_works_cmd(
 
     level = logging.getLevelName(log_level)
 
-    works_index_export = local_path(SQLMESH_DIR, run_id, "works_index_export")
-    doi_state_export = local_path(SQLMESH_DIR, run_id, "doi_state_export")
+    works_index_export = local_path(PROCESS_WORKS_SQLMESH, sqlmesh_run_id, "works_index_export")
+    doi_state_export = local_path(PROCESS_WORKS_SQLMESH, sqlmesh_run_id, "doi_state_export")
     try:
         # Download Works Index Parquet files from S3
-        works_index_source_uri = s3_uri(bucket_name, SQLMESH_DIR, run_id, "works_index_export/*")
+        works_index_source_uri = s3_uri(bucket_name, PROCESS_WORKS_SQLMESH, sqlmesh_run_id, "works_index_export/*")
         download_files_from_s3(works_index_source_uri, works_index_export)
 
         # Download DOI State Parquet files from S3
-        doi_state_source_uri = s3_uri(bucket_name, SQLMESH_DIR, run_id, "doi_state_export/*")
+        doi_state_source_uri = s3_uri(bucket_name, PROCESS_WORKS_SQLMESH, sqlmesh_run_id, "doi_state_export/*")
         download_files_from_s3(doi_state_source_uri, doi_state_export)
 
         # Run process
@@ -104,7 +105,7 @@ def sync_works_cmd(
             index_name=index_name,
             works_index_export=works_index_export,
             doi_state_export=doi_state_export,
-            run_id=run_id,
+            release_date=release_date,
             client_config=client_config,
             sync_config=sync_config,
             log_level=level,
@@ -215,10 +216,10 @@ def dmp_works_search_cmd(
     if dmp_works_search_config is None:
         dmp_works_search_config = DMPWorksSearchConfig()
 
-    out_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
+    out_dir = local_path(PROCESS_DMPS_DMP_WORKS_SEARCH, run_id, MATCHES_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    meta_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, META_DIR)
+    meta_dir = local_path(PROCESS_DMPS_DMP_WORKS_SEARCH, run_id, META_DIR)
     meta_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -243,13 +244,18 @@ def dmp_works_search_cmd(
             dois=dois,
             dmps_start_date=dmp_works_search_config.dmps_start_date,
             dmps_end_date=dmp_works_search_config.dmps_end_date,
+            dmp_modification_window_days=(
+                dmp_works_search_config.dmp_modification_window_days
+                if dmp_works_search_config.apply_modification_window
+                else None
+            ),
             inner_hits_size=dmp_works_search_config.inner_hits_size,
             row_group_size=dmp_works_search_config.row_group_size,
             row_groups_per_file=dmp_works_search_config.row_groups_per_file,
         )
 
         # Upload all Parquet files to S3
-        target_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_DIR, run_id, f"{MATCHES_DIR}/")
+        target_uri = s3_uri(bucket_name, PROCESS_DMPS_DMP_WORKS_SEARCH, run_id, f"{MATCHES_DIR}/")
         upload_files_to_s3(out_dir, target_uri, glob_pattern="*.parquet")
     finally:
         shutil.rmtree(out_dir, ignore_errors=True)
@@ -258,7 +264,8 @@ def dmp_works_search_cmd(
 def merge_related_works_cmd(
     *,
     bucket_name: str,
-    run_id: str,
+    run_id: str,  # noqa: ARG001
+    search_run_id: str,
     mysql_config: MySQLConfig,
     batch_size: int = 1000,
 ):
@@ -266,17 +273,18 @@ def merge_related_works_cmd(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        run_id: a unique ID to represent this run of the job.
+        run_id: a unique ID to represent this merge-related-works run.
+        search_run_id: the run ID of the dmp-works-search job whose output to read.
         mysql_config: MySQL connection configuration.
         batch_size: Number of records to process in a batch.
     """
     from dmpworks.dmsp.merge import merge_related_works  # noqa: PLC0415
 
-    matches_dir = local_path(DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR)
+    matches_dir = local_path(PROCESS_DMPS_DMP_WORKS_SEARCH, search_run_id, MATCHES_DIR)
     matches_dir.mkdir(parents=True, exist_ok=True)
     try:
         # Download all Parquet files from S3
-        source_uri = s3_uri(bucket_name, DMP_WORKS_SEARCH_DIR, run_id, MATCHES_DIR, "*.parquet")
+        source_uri = s3_uri(bucket_name, PROCESS_DMPS_DMP_WORKS_SEARCH, search_run_id, MATCHES_DIR, "*.parquet")
         download_files_from_s3(source_uri, matches_dir)
 
         # Upsert data

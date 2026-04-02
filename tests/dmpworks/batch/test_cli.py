@@ -3,8 +3,6 @@ import logging
 from dmpworks.cli import cli
 import pytest
 
-SETUP_LOGGING = "dmpworks.utils.setup_multiprocessing_logging"
-
 CROSSREF_TRANSFORM_VARS = [
     "CROSSREF_METADATA_TRANSFORM_BATCH_SIZE",
     "CROSSREF_METADATA_TRANSFORM_ROW_GROUP_SIZE",
@@ -54,8 +52,8 @@ RUN_ID_VARS = [
     "RUN_ID_CROSSREF_METADATA",
     "RUN_ID_ROR",
     "RUN_ID_DATA_CITATION_CORPUS",
-    "RUN_ID_PROCESS_WORKS_PREV",
-    "RUN_ID_PROCESS_WORKS",
+    "RUN_ID_SQLMESH_PREV",
+    "RUN_ID_SQLMESH",
     "RUN_ID_DMPS",
 ]
 MYSQL_VARS = [
@@ -75,10 +73,6 @@ def clear_env(monkeypatch, *var_groups):
 
 class TestCrossrefMetadataCLI:
     @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
-    @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(monkeypatch, CROSSREF_TRANSFORM_VARS)
 
@@ -97,7 +91,7 @@ class TestCrossrefMetadataCLI:
                 "crossref-metadata",
                 "download",
                 "my-bucket",
-                "2025-01-01",
+                "20250101T060000-a1b2c3d4",
                 "April_2025.tar",
                 "crossref-source-bucket",
             ]
@@ -105,7 +99,7 @@ class TestCrossrefMetadataCLI:
 
         mock_download.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             file_name="April_2025.tar",
             crossref_bucket_name="crossref-source-bucket",
         )
@@ -113,13 +107,14 @@ class TestCrossrefMetadataCLI:
     def test_transform_defaults(self, mock_transform):
         from dmpworks.cli_utils import CrossrefMetadataTransformConfig
 
-        cli(["aws-batch", "crossref-metadata", "transform", "my-bucket", "2025-01-01"])
+        cli(["aws-batch", "crossref-metadata", "transform", "my-bucket", "20250101T060000-a1b2c3d4"])
 
         mock_transform.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             config=CrossrefMetadataTransformConfig(),
             use_subset=False,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
@@ -128,13 +123,14 @@ class TestCrossrefMetadataCLI:
 
         monkeypatch.setenv("CROSSREF_METADATA_TRANSFORM_MAX_WORKERS", "4")
 
-        cli(["aws-batch", "crossref-metadata", "transform", "my-bucket", "2025-01-01"])
+        cli(["aws-batch", "crossref-metadata", "transform", "my-bucket", "20250101T060000-a1b2c3d4"])
 
         mock_transform.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             config=CrossrefMetadataTransformConfig(max_workers=4),
             use_subset=False,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
@@ -147,25 +143,22 @@ class TestCrossrefMetadataCLI:
                 "crossref-metadata",
                 "transform",
                 "my-bucket",
-                "2025-01-01",
+                "20250101T060000-a1b2c3d4",
                 "--use-subset=true",
             ]
         )
 
         mock_transform.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             config=CrossrefMetadataTransformConfig(),
             use_subset=True,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
 
 class TestDataCiteCLI:
-    @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(monkeypatch, DATACITE_TRANSFORM_VARS)
@@ -185,36 +178,33 @@ class TestDataCiteCLI:
                 "datacite",
                 "download",
                 "my-bucket",
-                "2025-01-01",
+                "20250101T060000-a1b2c3d4",
                 "datacite-source-bucket",
             ]
         )
 
         mock_download.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             datacite_bucket_name="datacite-source-bucket",
         )
 
     def test_transform_defaults(self, mock_transform):
         from dmpworks.cli_utils import DataCiteTransformConfig
 
-        cli(["aws-batch", "datacite", "transform", "my-bucket", "2025-01-01"])
+        cli(["aws-batch", "datacite", "transform", "my-bucket", "20250101T060000-a1b2c3d4"])
 
         mock_transform.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             config=DataCiteTransformConfig(),
             use_subset=False,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
 
 class TestOpenAlexWorksCLI:
-    @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(monkeypatch, OPENALEX_TRANSFORM_VARS)
@@ -234,36 +224,33 @@ class TestOpenAlexWorksCLI:
                 "openalex-works",
                 "download",
                 "my-bucket",
-                "2025-01-01",
+                "20250101T060000-a1b2c3d4",
                 "openalex-source-bucket",
             ]
         )
 
         mock_download.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             openalex_bucket_name="openalex-source-bucket",
         )
 
     def test_transform_defaults(self, mock_transform):
         from dmpworks.cli_utils import OpenAlexWorksTransformConfig
 
-        cli(["aws-batch", "openalex-works", "transform", "my-bucket", "2025-01-01"])
+        cli(["aws-batch", "openalex-works", "transform", "my-bucket", "20250101T060000-a1b2c3d4"])
 
         mock_transform.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             config=OpenAlexWorksTransformConfig(),
             use_subset=False,
+            source_run_id=None,
             log_level=logging.INFO,
         )
 
 
 class TestRorCLI:
-    @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
     @pytest.fixture
     def mock_download(self, mocker):
         return mocker.patch("dmpworks.batch.ror.download")
@@ -275,18 +262,18 @@ class TestRorCLI:
                 "ror",
                 "download",
                 "my-bucket",
-                "2025-01-01",
+                "20250101T060000-a1b2c3d4",
                 "https://zenodo.org/records/123/files/ror.zip",
-                "--hash",
+                "--file-hash",
                 "md5:abc123",
             ]
         )
 
         mock_download.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             download_url="https://zenodo.org/records/123/files/ror.zip",
-            hash="md5:abc123",
+            file_hash="md5:abc123",
         )
 
     def test_download_no_hash(self, mock_download):
@@ -296,24 +283,20 @@ class TestRorCLI:
                 "ror",
                 "download",
                 "my-bucket",
-                "2025-01-01",
+                "20250101T060000-a1b2c3d4",
                 "https://zenodo.org/records/123/files/ror.zip",
             ]
         )
 
         mock_download.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            run_id="20250101T060000-a1b2c3d4",
             download_url="https://zenodo.org/records/123/files/ror.zip",
-            hash=None,
+            file_hash=None,
         )
 
 
 class TestSQLMeshCLI:
-    @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(monkeypatch, RUN_ID_VARS)
@@ -328,14 +311,14 @@ class TestSQLMeshCLI:
     def test_plan(self, monkeypatch, mock_plan):
         from dmpworks.cli_utils import RunIdentifiers, SQLMeshConfig
 
-        monkeypatch.setenv("RUN_ID_PROCESS_WORKS", "2025-01-01")
-        monkeypatch.setenv("RUN_ID_PROCESS_WORKS_PREV", "2024-12-01")
+        monkeypatch.setenv("RUN_ID_SQLMESH", "20250101T060000-a1b2c3d4")
+        monkeypatch.setenv("RUN_ID_SQLMESH_PREV", "20241201T060000-b2c3d4e5")
 
         cli(["aws-batch", "sqlmesh", "plan", "my-bucket"])
 
         expected_run_identifiers = RunIdentifiers(
-            run_id_process_works="2025-01-01",
-            run_id_process_works_prev="2024-12-01",
+            run_id_sqlmesh="20250101T060000-a1b2c3d4",
+            run_id_sqlmesh_prev="20241201T060000-b2c3d4e5",
         )
         mock_plan.assert_called_once_with(
             bucket_name="my-bucket",
@@ -345,10 +328,6 @@ class TestSQLMeshCLI:
 
 
 class TestOpenSearchCLI:
-    @pytest.fixture(autouse=True)
-    def mock_setup_logging(self, mocker):
-        return mocker.patch(SETUP_LOGGING)
-
     @pytest.fixture(autouse=True)
     def isolate_env(self, monkeypatch):
         clear_env(
@@ -378,13 +357,15 @@ class TestOpenSearchCLI:
     def test_sync_works(self, monkeypatch, mock_sync_works):
         from dmpworks.cli_utils import OpenSearchClientConfig, OpenSearchSyncConfig
 
-        monkeypatch.setenv("RUN_ID_PROCESS_WORKS", "2025-01-01")
+        monkeypatch.setenv("RUN_ID_SQLMESH", "20250101T060000-a1b2c3d4")
+        monkeypatch.setenv("RELEASE_DATE_PROCESS_WORKS", "2025-01-01")
 
         cli(["aws-batch", "opensearch", "sync-works", "my-bucket", "works-index"])
 
         mock_sync_works.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="2025-01-01",
+            release_date="2025-01-01",
+            sqlmesh_run_id="20250101T060000-a1b2c3d4",
             index_name="works-index",
             client_config=OpenSearchClientConfig(),
             sync_config=OpenSearchSyncConfig(),
@@ -412,7 +393,7 @@ class TestOpenSearchCLI:
                 "opensearch",
                 "dmp-works-search",
                 "my-bucket",
-                "run-123",
+                "20250101T060000-a1b2c3d4",
                 "dmps-index",
                 "works-index",
             ]
@@ -420,7 +401,7 @@ class TestOpenSearchCLI:
 
         mock_dmp_works_search.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="run-123",
+            run_id="20250101T060000-a1b2c3d4",
             dmps_index_name="dmps-index",
             works_index_name="works-index",
             client_config=OpenSearchClientConfig(),
@@ -437,11 +418,21 @@ class TestOpenSearchCLI:
         monkeypatch.setenv("MYSQL_DATABASE", "dmpworks")
         monkeypatch.setenv("MYSQL_PWD", "secret")
 
-        cli(["aws-batch", "opensearch", "merge-related-works", "my-bucket", "run-123"])
+        cli(
+            [
+                "aws-batch",
+                "opensearch",
+                "merge-related-works",
+                "my-bucket",
+                "20250101T060000-a1b2c3d4",
+                "20250101T070000-c3d4e5f6",
+            ]
+        )
 
         mock_merge_related_works.assert_called_once_with(
             bucket_name="my-bucket",
-            run_id="run-123",
+            run_id="20250101T060000-a1b2c3d4",
+            search_run_id="20250101T070000-c3d4e5f6",
             mysql_config=MySQLConfig(
                 mysql_host="db.example.com",
                 mysql_tcp_port=3306,
@@ -450,4 +441,132 @@ class TestOpenSearchCLI:
                 mysql_pwd="secret",
             ),
             batch_size=1000,
+        )
+
+    def test_sync_dmps(self, monkeypatch, mocker):
+        from dmpworks.cli_utils import MySQLConfig, OpenSearchClientConfig
+
+        monkeypatch.setenv("MYSQL_HOST", "db.example.com")
+        monkeypatch.setenv("MYSQL_TCP_PORT", "3306")
+        monkeypatch.setenv("MYSQL_USER", "admin")
+        monkeypatch.setenv("MYSQL_DATABASE", "dmpworks")
+        monkeypatch.setenv("MYSQL_PWD", "secret")
+
+        mock = mocker.patch("dmpworks.batch.opensearch.sync_dmps_cmd")
+        cli(["aws-batch", "opensearch", "sync-dmps", "my-bucket", "dmps-index"])
+
+        mock.assert_called_once_with(
+            bucket_name="my-bucket",
+            index_name="dmps-index",
+            client_config=OpenSearchClientConfig(),
+            mysql_config=MySQLConfig(
+                mysql_host="db.example.com",
+                mysql_tcp_port=3306,
+                mysql_user="admin",
+                mysql_database="dmpworks",
+                mysql_pwd="secret",
+            ),
+            dmp_subset=None,
+        )
+
+
+class TestDataCitationCorpusCLI:
+    @pytest.fixture
+    def mock_download(self, mocker):
+        return mocker.patch("dmpworks.batch.data_citation_corpus.download")
+
+    def test_download(self, mock_download):
+        cli(
+            [
+                "aws-batch",
+                "data-citation-corpus",
+                "download",
+                "my-bucket",
+                "20250101T060000-a1b2c3d4",
+                "https://zenodo.org/records/123/files/dcc.json.zip",
+            ]
+        )
+
+        mock_download.assert_called_once_with(
+            bucket_name="my-bucket",
+            run_id="20250101T060000-a1b2c3d4",
+            download_url="https://zenodo.org/records/123/files/dcc.json.zip",
+            file_hash=None,
+        )
+
+
+class TestDatasetSubsetCLI:
+    @pytest.fixture
+    def mock_datacite_subset(self, mocker):
+        return mocker.patch("dmpworks.batch.datacite.dataset_subset")
+
+    @pytest.fixture
+    def mock_crossref_subset(self, mocker):
+        return mocker.patch("dmpworks.batch.crossref_metadata.dataset_subset")
+
+    @pytest.fixture
+    def mock_openalex_subset(self, mocker):
+        return mocker.patch("dmpworks.batch.openalex_works.dataset_subset")
+
+    def test_datacite_subset(self, mock_datacite_subset):
+        from dmpworks.cli_utils import DatasetSubsetAWS
+
+        cli(
+            [
+                "aws-batch",
+                "datacite",
+                "subset",
+                "my-bucket",
+                "20250101T060000-a1b2c3d4",
+                "--dataset-subset.enable=false",
+            ]
+        )
+
+        mock_datacite_subset.assert_called_once_with(
+            bucket_name="my-bucket",
+            run_id="20250101T060000-a1b2c3d4",
+            ds_config=DatasetSubsetAWS(),
+            prev_run_id=None,
+        )
+
+    def test_crossref_metadata_subset(self, mock_crossref_subset):
+        from dmpworks.cli_utils import DatasetSubsetAWS
+
+        cli(
+            [
+                "aws-batch",
+                "crossref-metadata",
+                "subset",
+                "my-bucket",
+                "20250101T060000-a1b2c3d4",
+                "--dataset-subset.enable=false",
+            ]
+        )
+
+        mock_crossref_subset.assert_called_once_with(
+            bucket_name="my-bucket",
+            run_id="20250101T060000-a1b2c3d4",
+            ds_config=DatasetSubsetAWS(),
+            prev_run_id=None,
+        )
+
+    def test_openalex_works_subset(self, mock_openalex_subset):
+        from dmpworks.cli_utils import DatasetSubsetAWS
+
+        cli(
+            [
+                "aws-batch",
+                "openalex-works",
+                "subset",
+                "my-bucket",
+                "20250101T060000-a1b2c3d4",
+                "--dataset-subset.enable=false",
+            ]
+        )
+
+        mock_openalex_subset.assert_called_once_with(
+            bucket_name="my-bucket",
+            run_id="20250101T060000-a1b2c3d4",
+            ds_config=DatasetSubsetAWS(),
+            prev_run_id=None,
         )

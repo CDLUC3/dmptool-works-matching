@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'DynamoDB tables for dmpworks scheduler'
+
+Parameters:
+  Env:
+    Type: String
+
+Resources:
+  DatasetReleasesTable:
+    Type: 'AWS::DynamoDB::Table'
+    DeletionPolicy: 'Retain'
+    Properties:
+      TableName: !Sub "dmpworks-${Env}-dataset-releases"
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: dataset
+          KeyType: HASH
+        - AttributeName: release_date
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: dataset
+          AttributeType: S
+        - AttributeName: release_date
+          AttributeType: S
+
+  TaskRunsTable:
+    Type: 'AWS::DynamoDB::Table'
+    DeletionPolicy: 'Retain'
+    Properties:
+      TableName: !Sub "dmpworks-${Env}-task-runs"
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: run_name
+          KeyType: HASH
+        - AttributeName: run_id
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: run_name
+          AttributeType: S
+        - AttributeName: run_id
+          AttributeType: S
+        - AttributeName: step_function_execution_arn
+          AttributeType: S
+      GlobalSecondaryIndexes:
+        - IndexName: step-function-execution-arn-index
+          KeySchema:
+            - AttributeName: step_function_execution_arn
+              KeyType: HASH
+          Projection:
+            ProjectionType: KEYS_ONLY
+
+  TaskCheckpointsTable:
+    Type: 'AWS::DynamoDB::Table'
+    DeletionPolicy: 'Retain'
+    Properties:
+      TableName: !Sub "dmpworks-${Env}-task-checkpoints"
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: workflow_key
+          KeyType: HASH
+        - AttributeName: task_key
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: workflow_key
+          AttributeType: S
+        - AttributeName: task_key
+          AttributeType: S
+
+  ProcessWorksRunsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub "dmpworks-${Env}-process-works-runs"
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: release_date
+          KeyType: HASH
+        - AttributeName: run_id
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: release_date
+          AttributeType: S
+        - AttributeName: run_id
+          AttributeType: S
+
+  ProcessDMPsRunsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub "dmpworks-${Env}-process-dmps-runs"
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: release_date
+          KeyType: HASH
+        - AttributeName: run_id
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: release_date
+          AttributeType: S
+        - AttributeName: run_id
+          AttributeType: S
+
+Outputs:
+  DatasetReleasesTableName:
+    Value: !Ref DatasetReleasesTable
+
+  TaskRunsTableName:
+    Value: !Ref TaskRunsTable
+
+  TaskCheckpointsTableName:
+    Value: !Ref TaskCheckpointsTable

@@ -1,0 +1,114 @@
+{
+  "Comment": "Sync-dmps task run — builds Batch params, submits job, marks task run COMPLETED",
+  "StartAt": "BuildSyncDmpsParams",
+  "States": {
+    "BuildSyncDmpsParams": {
+      "Type": "Task",
+      "Comment": "Compute AWS Batch parameters and create a STARTED TaskRunRecord for the sync-dmps task run",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GetBatchJobParamsFunction}",
+        "Payload": {
+          "task_type": "sync-dmps",
+          "workflow_key": "process-dmps",
+          "release_date.$": "$.release_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "execution_arn.$": "$$.Execution.Id"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "run_name.$": "$.Payload.run_name",
+        "batch_params.$": "$.Payload.batch_params"
+      },
+      "ResultPath": "$.current",
+      "Next": "SubmitSyncDmps",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
+    },
+    "SubmitSyncDmps": {
+      "Type": "Task",
+      "Comment": "Submit the synchronous AWS Batch job to sync DMPs to OpenSearch",
+      "Resource": "arn:aws:states:::batch:submitJob.sync",
+      "Parameters": {
+        "JobName.$": "$.current.batch_params.JobName",
+        "JobQueue.$": "$.current.batch_params.JobQueue",
+        "JobDefinition.$": "$.current.batch_params.JobDefinition",
+        "ContainerOverrides.$": "$.current.batch_params.ContainerOverrides"
+      },
+      "ResultPath": null,
+      "Next": "SetSyncDmpsTaskRunComplete",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
+    },
+    "SetSyncDmpsTaskRunComplete": {
+      "Type": "Task",
+      "Comment": "Mark the sync-dmps task run as COMPLETED in the database and record its run_id",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetTaskRunCompleteFunction}",
+        "Payload": {
+          "task_type": "sync-dmps",
+          "workflow_key": "process-dmps",
+          "release_date.$": "$.release_date",
+          "current.$": "$.current"
+        }
+      },
+      "ResultPath": null,
+      "Next": "SendTaskSuccess",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ]
+    },
+    "SendTaskSuccess": {
+      "Type": "Task",
+      "Comment": "Return the run_id to the parent state machine via task token callback",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+      "Parameters": {
+        "TaskToken.$": "$.TaskToken",
+        "Output.$": "States.Format('\\{\"task_run_id\": \"{}\", \"task_run_status\": \"COMPLETED\"\\}', $.current.run_id)"
+      },
+      "ResultPath": null,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "SendTaskFailure"
+        }
+      ],
+      "End": true
+    },
+    "SendTaskFailure": {
+      "Type": "Task",
+      "Comment": "Notify the parent that this child failed via task token callback",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskFailure",
+      "Parameters": {
+        "TaskToken.$": "$.TaskToken",
+        "Error": "ChildExecutionFailed",
+        "Cause.$": "States.JsonToString($.error_info)"
+      },
+      "ResultPath": null,
+      "Next": "ChildFailed"
+    },
+    "ChildFailed": {
+      "Type": "Fail",
+      "Error": "ChildExecutionFailed",
+      "Cause": "Child failed after notifying parent"
+    }
+  }
+}

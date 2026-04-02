@@ -1,0 +1,46 @@
+"""Lambda entry point for creating a ProcessDMPsRunRecord."""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from aws_lambda_powertools.utilities.typing import LambdaContext
+
+from dmpworks.scheduler.batch_params import generate_run_id
+from dmpworks.scheduler.config import LambdaEnvSettings
+from dmpworks.scheduler.dynamodb_store import create_process_dmps_run
+
+logging.getLogger().setLevel(logging.INFO)
+log = logging.getLogger(__name__)
+
+
+def create_process_dmps_run_handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:  # noqa: ARG001
+    """Create a ProcessDMPsRunRecord with STARTED status.
+
+    Uses the run_id from the event if present, otherwise generates a new one.
+    Creates the DynamoDB record and returns the event merged with the run_id.
+
+    Args:
+        event: Workflow event containing release_date, aws_env, and execution_arn.
+        context: Lambda context.
+
+    Returns:
+        The event dict merged with the generated run_id.
+    """
+    LambdaEnvSettings()
+
+    run_id = event.get("run_id") or generate_run_id()
+    release_date = event["release_date"]
+
+    log.info(f"Creating process DMPs run: release_date={release_date} run_id={run_id}")
+
+    create_process_dmps_run(
+        release_date=release_date,
+        run_id=run_id,
+        execution_arn=event["execution_arn"],
+    )
+
+    log.info(f"Created process DMPs run: release_date={release_date} run_id={run_id}")
+    return {**event, "run_id": run_id}

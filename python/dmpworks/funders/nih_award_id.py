@@ -261,13 +261,17 @@ def nih_awards_generate_variants(award_id: NIHAwardID) -> set[str]:
 
     # Activity code prefix variants
     if award_id.activity_code:
-        for variant in list(variants):  # Extend all base variants with activity_code
+        # Need to make copy of variants as can't iterate over a set and modify at same time
+        current_variants = list(variants)
+        for variant in current_variants:  # Extend all base variants with activity_code
             variants.add(f"{award_id.activity_code} {variant}")
             variants.add(f"{award_id.activity_code}{variant.replace(' ', '')}")
 
     # Application type prefix variants
     if award_id.application_type:
-        for variant in list(variants):  # Extend all current variants with application_type
+        # Need to make copy of variants as can't iterate over a set and modify at same time
+        current_variants = list(variants)
+        for variant in current_variants:  # Extend all current variants with application_type
             variants.add(f"{award_id.application_type} {variant}")
             variants.add(f"{award_id.application_type}{variant.replace(' ', '')}")
 

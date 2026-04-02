@@ -1,6 +1,7 @@
 import logging
+from typing import Annotated
 
-from cyclopts import App
+from cyclopts import App, Parameter
 
 from dmpworks.cli_utils import (
     CrossrefMetadataTransformConfig,
@@ -21,14 +22,42 @@ app = App(name="aws-batch", help="AWS Batch pipelines.")
 datacite_app = App(name="datacite", help="DataCite AWS Batch pipeline.")
 crossref_metadata_app = App(name="crossref-metadata", help="Crossref Metadata AWS Batch pipeline.")
 ror_app = App(name="ror", help="ROR AWS Batch pipeline.")
+data_citation_corpus_app = App(name="data-citation-corpus", help="Data Citation Corpus AWS Batch pipeline.")
 sqlmesh_app = App(name="sqlmesh", help="SQLMesh AWS Batch pipeline.")
 opensearch_app = App(name="opensearch", help="OpenSearch AWS Batch pipeline.")
 
 app.command(ror_app)
 app.command(crossref_metadata_app)
 app.command(datacite_app)
+app.command(data_citation_corpus_app)
 app.command(sqlmesh_app)
 app.command(opensearch_app)
+
+
+@data_citation_corpus_app.command(name="download")
+def data_citation_corpus_download_cmd(
+    bucket_name: str,
+    run_id: str,
+    download_url: str,
+    file_hash: str | None = None,
+    log_level: LogLevel = "INFO",
+):
+    """Download Data Citation Corpus from Zenodo and upload to the DMP Tool S3 bucket.
+
+    Args:
+        bucket_name: DMP Tool S3 bucket name.
+        run_id: a unique ID to represent this run of the job.
+        download_url: the Zenodo download URL for the Data Citation Corpus JSON zip file.
+        file_hash: the MD5 sum of the file.
+        log_level: Python log level.
+    """
+    from dmpworks.batch import data_citation_corpus
+    from dmpworks.utils import setup_multiprocessing_logging
+
+    setup_multiprocessing_logging(logging.getLevelName(log_level))
+    data_citation_corpus.download(
+        bucket_name=bucket_name, run_id=run_id, download_url=download_url, file_hash=file_hash
+    )
 
 
 @datacite_app.command(name="download")
@@ -57,11 +86,15 @@ def datacite_download_cmd(
     )
 
 
-@datacite_app.command(name="dataset-subset")
-def datacite_dataset_subset_cmd(
+@datacite_app.command(name="subset")
+def datacite_subset_cmd(
     bucket_name: str,
     run_id: str,
     dataset_subset: DatasetSubsetAWS,
+    prev_job_run_id: Annotated[
+        str | None,
+        Parameter(env_var="PREV_JOB_RUN_ID", help="Run ID of the prior download job."),
+    ] = None,
     log_level: LogLevel = "INFO",
 ):
     """Create a subset of DataCite.
@@ -70,6 +103,7 @@ def datacite_dataset_subset_cmd(
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
         dataset_subset: settings for creating the subset of works
+        prev_job_run_id: run ID of the prior download job to read source data from.
         log_level: Python log level.
     """
     from dmpworks.batch import datacite
@@ -80,6 +114,7 @@ def datacite_dataset_subset_cmd(
         bucket_name=bucket_name,
         run_id=run_id,
         ds_config=dataset_subset,
+        prev_run_id=prev_job_run_id,
     )
 
 
@@ -90,6 +125,10 @@ def datacite_transform_cmd(
     use_subset: bool = False,
     *,
     config: DataCiteTransformConfig | None = None,
+    prev_job_run_id: Annotated[
+        str | None,
+        Parameter(env_var="PREV_JOB_RUN_ID", help="Run ID of the prior download job."),
+    ] = None,
     log_level: LogLevel = "INFO",
 ):
     """Download DataCite from DMP Tool S3 bucket, transform to Parquet, and upload the result.
@@ -99,6 +138,7 @@ def datacite_transform_cmd(
         run_id: a unique ID to represent this run of the job.
         use_subset: whether to use a subset of the dataset or the full dataset.
         config: optional configuration parameters.
+        prev_job_run_id: run ID of the prior download job to read source data from.
         log_level: Python log level.
     """
     from dmpworks.batch import datacite
@@ -112,6 +152,7 @@ def datacite_transform_cmd(
         run_id=run_id,
         config=config,
         use_subset=use_subset,
+        source_run_id=prev_job_run_id,
         log_level=level,
     )
 
@@ -147,11 +188,15 @@ def openalex_works_download_cmd(
     )
 
 
-@openalex_works_app.command(name="dataset-subset")
-def openalex_works_dataset_subset_cmd(
+@openalex_works_app.command(name="subset")
+def openalex_works_subset_cmd(
     bucket_name: str,
     run_id: str,
     dataset_subset: DatasetSubsetAWS = None,
+    prev_job_run_id: Annotated[
+        str | None,
+        Parameter(env_var="PREV_JOB_RUN_ID", help="Run ID of the prior download job."),
+    ] = None,
     log_level: LogLevel = "INFO",
 ):
     """Create a subset of OpenAlex Works.
@@ -160,6 +205,7 @@ def openalex_works_dataset_subset_cmd(
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
         dataset_subset: settings for creating the subset of works
+        prev_job_run_id: run ID of the prior download job to read source data from.
         log_level: Python log level.
     """
     from dmpworks.batch import openalex_works
@@ -170,6 +216,7 @@ def openalex_works_dataset_subset_cmd(
         bucket_name=bucket_name,
         run_id=run_id,
         ds_config=dataset_subset,
+        prev_run_id=prev_job_run_id,
     )
 
 
@@ -180,6 +227,10 @@ def openalex_works_transform_cmd(
     use_subset: bool = False,
     *,
     config: OpenAlexWorksTransformConfig | None = None,
+    prev_job_run_id: Annotated[
+        str | None,
+        Parameter(env_var="PREV_JOB_RUN_ID", help="Run ID of the prior download job."),
+    ] = None,
     log_level: LogLevel = "INFO",
 ):
     """Download OpenAlex Works from DMP Tool S3 bucket, transform to Parquet, and upload the result.
@@ -189,6 +240,7 @@ def openalex_works_transform_cmd(
         run_id: a unique ID to represent this run of the job.
         use_subset: whether to use a subset of the dataset or the full dataset.
         config: optional configuration parameters.
+        prev_job_run_id: run ID of the prior download job to read source data from.
         log_level: Python log level.
     """
     from dmpworks.batch import openalex_works
@@ -202,6 +254,7 @@ def openalex_works_transform_cmd(
         run_id=run_id,
         config=config,
         use_subset=use_subset,
+        source_run_id=prev_job_run_id,
         log_level=level,
     )
 
@@ -235,11 +288,15 @@ def crossref_metadata_download_cmd(
     )
 
 
-@crossref_metadata_app.command(name="dataset-subset")
-def crossref_metadata_dataset_subset_cmd(
+@crossref_metadata_app.command(name="subset")
+def crossref_metadata_subset_cmd(
     bucket_name: str,
     run_id: str,
     dataset_subset: DatasetSubsetAWS = None,
+    prev_job_run_id: Annotated[
+        str | None,
+        Parameter(env_var="PREV_JOB_RUN_ID", help="Run ID of the prior download job."),
+    ] = None,
     log_level: LogLevel = "INFO",
 ):
     """Create a subset of Crossref Metadata.
@@ -248,6 +305,7 @@ def crossref_metadata_dataset_subset_cmd(
         bucket_name: the name of the S3 bucket for JOB I/O.
         run_id: a unique ID to represent this run of the job.
         dataset_subset: settings for creating the subset of works
+        prev_job_run_id: run ID of the prior download job to read source data from.
         log_level: Python log level.
     """
     from dmpworks.batch import crossref_metadata
@@ -258,6 +316,7 @@ def crossref_metadata_dataset_subset_cmd(
         bucket_name=bucket_name,
         run_id=run_id,
         ds_config=dataset_subset,
+        prev_run_id=prev_job_run_id,
     )
 
 
@@ -268,6 +327,10 @@ def crossref_metadata_transform_cmd(
     use_subset: bool = False,
     *,
     config: CrossrefMetadataTransformConfig | None = None,
+    prev_job_run_id: Annotated[
+        str | None,
+        Parameter(env_var="PREV_JOB_RUN_ID", help="Run ID of the prior download job."),
+    ] = None,
     log_level: LogLevel = "INFO",
 ):
     """Download Crossref Metadata from DMP Tool S3 bucket, transform to Parquet, and upload the result.
@@ -277,6 +340,7 @@ def crossref_metadata_transform_cmd(
         run_id: a unique ID to represent this run of the job.
         use_subset: whether to use a subset of the dataset or the full dataset.
         config: optional configuration parameters.
+        prev_job_run_id: run ID of the prior download job to read source data from.
         log_level: Python log level.
     """
     from dmpworks.batch import crossref_metadata
@@ -286,7 +350,12 @@ def crossref_metadata_transform_cmd(
     level = logging.getLevelName(log_level)
     setup_multiprocessing_logging(level)
     crossref_metadata.transform(
-        bucket_name=bucket_name, run_id=run_id, config=config, use_subset=use_subset, log_level=level
+        bucket_name=bucket_name,
+        run_id=run_id,
+        config=config,
+        use_subset=use_subset,
+        source_run_id=prev_job_run_id,
+        log_level=level,
     )
 
 
@@ -295,7 +364,7 @@ def ror_download_cmd(
     bucket_name: str,
     run_id: str,
     download_url: str,
-    hash: str | None = None,
+    file_hash: str | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Download ROR from the Zenodo and upload it to the DMP Tool S3 bucket.
@@ -304,14 +373,14 @@ def ror_download_cmd(
         bucket_name: DMP Tool S3 bucket name.
         run_id: a unique ID to represent this run of the job.
         download_url: the Zenodo download URL for a specific ROR ID, e.g. https://zenodo.org/records/15731450/files/v1.67-2025-06-24-ror-data.zip?download=1.
-        hash: the MD5 sum of the file.
+        file_hash: the MD5 sum of the file.
         log_level: Python log level.
     """
     from dmpworks.batch import ror
     from dmpworks.utils import setup_multiprocessing_logging
 
     setup_multiprocessing_logging(logging.getLevelName(log_level))
-    ror.download(bucket_name=bucket_name, run_id=run_id, download_url=download_url, hash=hash)
+    ror.download(bucket_name=bucket_name, run_id=run_id, download_url=download_url, file_hash=file_hash)
 
 
 @sqlmesh_app.command(name="plan")
@@ -354,7 +423,7 @@ def opensearch_sync_works_cmd(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        run_identifiers: a unique ID to represent this run of the job.
+        run_identifiers: run identifiers including sqlmesh run ID.
         index_name: the OpenSearch index name.
         client_config: the OpenSearch client config settings.
         sync_config: the OpenSearch sync config settings.
@@ -369,7 +438,8 @@ def opensearch_sync_works_cmd(
     setup_multiprocessing_logging(level)
     opensearch.sync_works_cmd(
         bucket_name=bucket_name,
-        run_id=run_identifiers.run_id_process_works,
+        release_date=run_identifiers.release_date_process_works,
+        sqlmesh_run_id=run_identifiers.run_id_sqlmesh,
         index_name=index_name,
         client_config=client_config,
         sync_config=sync_config,
@@ -483,6 +553,7 @@ def opensearch_dmp_works_search_cmd(
 def opensearch_merge_related_works_cmd(
     bucket_name: str,
     run_id: str,
+    search_run_id: str,
     mysql_config: MySQLConfig,
     batch_size: int = 1000,
     log_level: LogLevel = "INFO",
@@ -491,7 +562,8 @@ def opensearch_merge_related_works_cmd(
 
     Args:
         bucket_name: DMP Tool S3 bucket name.
-        run_id: a unique ID to represent this run of the job.
+        run_id: a unique ID to represent this merge run.
+        search_run_id: the run ID of the dmp-works-search job whose output to read.
         mysql_config: MySQL connection configuration.
         batch_size: Number of records to process in a batch.
         log_level: Python log level.
@@ -503,6 +575,7 @@ def opensearch_merge_related_works_cmd(
     opensearch.merge_related_works_cmd(
         bucket_name=bucket_name,
         run_id=run_id,
+        search_run_id=search_run_id,
         mysql_config=mysql_config,
         batch_size=batch_size,
     )

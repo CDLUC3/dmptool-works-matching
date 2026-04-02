@@ -1,0 +1,3 @@
+template:
+  path: s3.yaml.j2
+  type: file

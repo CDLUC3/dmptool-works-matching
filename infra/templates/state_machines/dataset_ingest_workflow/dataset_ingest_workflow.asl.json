@@ -1,0 +1,375 @@
+{
+  "Comment": "Dataset ingest workflow — orchestrates download, subset, and transform child state machines",
+  "StartAt": "MarkReleaseStarted",
+  "States": {
+    "MarkReleaseStarted": {
+      "Type": "Task",
+      "Comment": "Mark the initial release record status as STARTED in the database",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetReleaseStatusFunction}",
+        "Payload": {
+          "release_status": "STARTED",
+          "workflow_key.$": "$.workflow_key",
+          "release_date.$": "$.release_date",
+          "execution_arn.$": "$$.Execution.Id"
+        }
+      },
+      "ResultPath": null,
+      "Next": "GetDownloadTaskRunStatus"
+    },
+    "GetDownloadTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing download checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S.$": "$.workflow_key"},
+          "task_key": {"S.$": "States.Format('download#{}', $.release_date)"}
+        }
+      },
+      "ResultPath": "$.task_run_check",
+      "Next": "SkipDownloadCheck"
+    },
+    "SkipDownloadCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the download task run if a checkpoint already exists or skip_download flag is set",
+      "Choices": [
+        {
+          "Variable": "$.task_run_check.Item",
+          "IsPresent": true,
+          "Next": "CheckHasTransform"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_download", "IsPresent": true },
+            { "Variable": "$.skip_download", "BooleanEquals": true }
+          ],
+          "Next": "CheckHasTransform"
+        }
+      ],
+      "Default": "GenerateDownloadRunId"
+    },
+    "GenerateDownloadRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the download child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateRunIdFunction}",
+        "Payload": {
+          "task_name": "download",
+          "date.$": "$.release_date",
+          "workflow_prefix.$": "$.workflow_key"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeDownloadChildSM"
+    },
+    "InvokeDownloadChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the download child state machine and wait for its task token callback",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${DownloadWorkflowStateMachine}",
+        "Name.$": "$.child_meta.execution_name",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key.$": "$.workflow_key",
+          "release_date.$": "$.release_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "download_url.$": "$.download_url",
+          "file_hash.$": "$.file_hash",
+          "file_name.$": "$.file_name",
+          "use_subset.$": "$.use_subset",
+          "run_id.$": "$.child_meta.run_id",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "CheckHasTransform",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForDownloadApproval"
+        }
+      ]
+    },
+    "WaitForDownloadApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the download child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key.$": "$.workflow_key",
+          "task_name": "download",
+          "release_date.$": "$.release_date",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateDownloadRunId"
+    },
+    "CheckHasTransform": {
+      "Type": "Choice",
+      "Comment": "Skip the transform task run for natively formatted datasets like ror and data-citation-corpus",
+      "Choices": [
+        {
+          "Or": [
+            {
+              "Variable": "$.workflow_key",
+              "StringEquals": "ror"
+            },
+            {
+              "Variable": "$.workflow_key",
+              "StringEquals": "data-citation-corpus"
+            }
+          ],
+          "Next": "MarkReleaseCompleted"
+        }
+      ],
+      "Default": "CheckUseSubset"
+    },
+    "CheckUseSubset": {
+      "Type": "Choice",
+      "Comment": "Determine if we should run the subset task run based on configuration",
+      "Choices": [
+        {
+          "Variable": "$.use_subset",
+          "BooleanEquals": true,
+          "Next": "GetSubsetTaskRunStatus"
+        }
+      ],
+      "Default": "GetTransformTaskRunStatus"
+    },
+    "GetSubsetTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing subset checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S.$": "$.workflow_key"},
+          "task_key": {"S.$": "States.Format('subset#{}', $.release_date)"}
+        }
+      },
+      "ResultPath": "$.task_run_check",
+      "Next": "SkipSubsetCheck"
+    },
+    "SkipSubsetCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the subset task run if a checkpoint already exists or skip_subset flag is set",
+      "Choices": [
+        {
+          "Variable": "$.task_run_check.Item",
+          "IsPresent": true,
+          "Next": "GetTransformTaskRunStatus"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_subset", "IsPresent": true },
+            { "Variable": "$.skip_subset", "BooleanEquals": true }
+          ],
+          "Next": "GetTransformTaskRunStatus"
+        }
+      ],
+      "Default": "GenerateSubsetRunId"
+    },
+    "GenerateSubsetRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the subset child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateRunIdFunction}",
+        "Payload": {
+          "task_name": "subset",
+          "date.$": "$.release_date",
+          "workflow_prefix.$": "$.workflow_key"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeSubsetChildSM"
+    },
+    "InvokeSubsetChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the subset child state machine and wait for its task token callback",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${SubsetWorkflowStateMachine}",
+        "Name.$": "$.child_meta.execution_name",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key.$": "$.workflow_key",
+          "release_date.$": "$.release_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "download_url.$": "$.download_url",
+          "file_hash.$": "$.file_hash",
+          "file_name.$": "$.file_name",
+          "use_subset.$": "$.use_subset",
+          "run_id.$": "$.child_meta.run_id",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GetTransformTaskRunStatus",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForSubsetApproval"
+        }
+      ]
+    },
+    "WaitForSubsetApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the subset child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key.$": "$.workflow_key",
+          "task_name": "subset",
+          "release_date.$": "$.release_date",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateSubsetRunId"
+    },
+    "GetTransformTaskRunStatus": {
+      "Type": "Task",
+      "Comment": "Check the task-checkpoints table for an existing transform checkpoint via DynamoDB GetItem",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${TaskCheckpointsTableName}",
+        "Key": {
+          "workflow_key": {"S.$": "$.workflow_key"},
+          "task_key": {"S.$": "States.Format('transform#{}', $.release_date)"}
+        }
+      },
+      "ResultPath": "$.task_run_check",
+      "Next": "SkipTransformCheck"
+    },
+    "SkipTransformCheck": {
+      "Type": "Choice",
+      "Comment": "Skip the transform task run if a checkpoint already exists or skip_transform flag is set",
+      "Choices": [
+        {
+          "Variable": "$.task_run_check.Item",
+          "IsPresent": true,
+          "Next": "MarkReleaseCompleted"
+        },
+        {
+          "And": [
+            { "Variable": "$.skip_transform", "IsPresent": true },
+            { "Variable": "$.skip_transform", "BooleanEquals": true }
+          ],
+          "Next": "MarkReleaseCompleted"
+        }
+      ],
+      "Default": "GenerateTransformRunId"
+    },
+    "GenerateTransformRunId": {
+      "Type": "Task",
+      "Comment": "Generate a unique run ID and execution name for the transform child state machine",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${GenerateRunIdFunction}",
+        "Payload": {
+          "task_name": "transform",
+          "date.$": "$.release_date",
+          "workflow_prefix.$": "$.workflow_key"
+        }
+      },
+      "ResultSelector": {
+        "run_id.$": "$.Payload.run_id",
+        "execution_name.$": "$.Payload.execution_name"
+      },
+      "ResultPath": "$.child_meta",
+      "Next": "InvokeTransformChildSM"
+    },
+    "InvokeTransformChildSM": {
+      "Type": "Task",
+      "Comment": "Invoke the transform child state machine and wait for its task token callback",
+      "Resource": "arn:aws:states:::states:startExecution.waitForTaskToken",
+      "Parameters": {
+        "StateMachineArn": "${TransformWorkflowStateMachine}",
+        "Name.$": "$.child_meta.execution_name",
+        "Input": {
+          "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
+          "workflow_key.$": "$.workflow_key",
+          "release_date.$": "$.release_date",
+          "aws_env.$": "$.aws_env",
+          "bucket_name.$": "$.bucket_name",
+          "parent_execution_arn.$": "$$.Execution.Id",
+          "download_url.$": "$.download_url",
+          "file_hash.$": "$.file_hash",
+          "file_name.$": "$.file_name",
+          "use_subset.$": "$.use_subset",
+          "run_id.$": "$.child_meta.run_id",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "MarkReleaseCompleted",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error_info",
+          "Next": "WaitForTransformApproval"
+        }
+      ]
+    },
+    "WaitForTransformApproval": {
+      "Type": "Task",
+      "Comment": "Store the approval token and wait for manual approval to retry the transform child",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "${StoreApprovalTokenFunction}",
+        "Payload": {
+          "workflow_key.$": "$.workflow_key",
+          "task_name": "transform",
+          "release_date.$": "$.release_date",
+          "approval_token.$": "$$.Task.Token"
+        }
+      },
+      "ResultPath": null,
+      "TimeoutSeconds": 604800,
+      "Next": "GenerateTransformRunId"
+    },
+    "MarkReleaseCompleted": {
+      "Type": "Task",
+      "Comment": "Mark the overall release record status as COMPLETED in the database",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SetReleaseStatusFunction}",
+        "Payload": {
+          "release_status": "COMPLETED",
+          "workflow_key.$": "$.workflow_key",
+          "release_date.$": "$.release_date"
+        }
+      },
+      "ResultPath": null,
+      "End": true
+    }
+  }
+}

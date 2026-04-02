@@ -1,17 +1,27 @@
 import pathlib
 
-from dmpworks.utils import ParquetBatchWriter, read_parquet_files, run_process, write_rows_to_parquet
+from dmpworks.utils import ParquetBatchWriter, read_parquet_files, run_process, thread_map, write_rows_to_parquet
 import pyarrow as pa
 import pytest
 
 
-def test_run_process_success(caplog):
-    cmd = ["echo", "hello world"]
-    with caplog.at_level("INFO"):
-        run_process(cmd)
+class TestThreadMap:
+    def test_applies_fn_to_each_item_preserving_order(self):
+        result = thread_map(lambda x: x * 2, [1, 2, 3])
+        assert result == [2, 4, 6]
 
-    out = caplog.text
-    assert "run_process command: `echo 'hello world'`" in out
+    def test_returns_empty_list_for_empty_input(self):
+        assert thread_map(lambda x: x, []) == []
+
+
+class TestRunProcess:
+    def test_logs_command(self, caplog):
+        cmd = ["echo", "hello world"]
+        with caplog.at_level("INFO"):
+            run_process(cmd)
+
+        out = caplog.text
+        assert "run_process command: `echo 'hello world'`" in out
 
 
 SIMPLE_SCHEMA = pa.schema(
@@ -43,23 +53,19 @@ class TestWriteReadParquet:
         result = list(read_parquet_files([out]))
         assert result[0]["label"] is None
 
-    def test_multiple_files(self, tmp_path: pathlib.Path):
-        rows_a = [{"id": "a", "value": 1.0, "label": "a"}]
-        rows_b = [{"id": "b", "value": 2.0, "label": "b"}]
+    def test_reads_multiple_files_and_directories(self, tmp_path: pathlib.Path):
         file_a = tmp_path / "a.parquet"
         file_b = tmp_path / "b.parquet"
-        write_rows_to_parquet(rows_a, file_a, SIMPLE_SCHEMA)
-        write_rows_to_parquet(rows_b, file_b, SIMPLE_SCHEMA)
+        write_rows_to_parquet([{"id": "a", "value": 1.0, "label": "a"}], file_a, SIMPLE_SCHEMA)
+        write_rows_to_parquet([{"id": "b", "value": 2.0, "label": "b"}], file_b, SIMPLE_SCHEMA)
 
+        # Explicit file paths
         result = list(read_parquet_files([file_a, file_b]))
         assert len(result) == 2
         assert result[0]["id"] == "a"
         assert result[1]["id"] == "b"
 
-    def test_reads_directory(self, tmp_path: pathlib.Path):
-        write_rows_to_parquet([{"id": "a", "value": 1.0, "label": "a"}], tmp_path / "a.parquet", SIMPLE_SCHEMA)
-        write_rows_to_parquet([{"id": "b", "value": 2.0, "label": "b"}], tmp_path / "b.parquet", SIMPLE_SCHEMA)
-
+        # Directory path
         result = list(read_parquet_files([tmp_path]))
         assert len(result) == 2
 

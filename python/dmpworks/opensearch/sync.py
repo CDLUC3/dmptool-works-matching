@@ -25,16 +25,16 @@ import pyarrow.parquet as pq
 from tqdm import tqdm
 
 from dmpworks.cli_utils import OpenSearchClientConfig, OpenSearchSyncConfig
+from dmpworks.constants import (
+    OPENSEARCH_SYNC_CHUNK_SIZE,
+    OPENSEARCH_SYNC_INITIAL_BACKOFF,
+    OPENSEARCH_SYNC_MAX_BACKOFF,
+    OPENSEARCH_SYNC_MAX_CHUNK_BYTES,
+    OPENSEARCH_SYNC_MAX_ERROR_SAMPLES,
+    OPENSEARCH_SYNC_MAX_RETRIES,
+)
 from dmpworks.opensearch.utils import count_records, make_opensearch_client
 from dmpworks.utils import timed
-
-CHUNK_SIZE = 1000
-INITIAL_BACKOFF = 2
-MAX_BACKOFF = 600
-MAX_CHUNK_BYTES = 100 * 1024 * 1024
-MAX_ERROR_SAMPLES = 50
-MAX_RETRIES = 10
-
 
 log = logging.getLogger(__name__)
 
@@ -144,7 +144,7 @@ def measure_chunk_bytes(chunk):
 def collect_completed_futures(
     futures: list,
     error_map: ErrorMap,
-    max_error_samples: int = MAX_ERROR_SAMPLES,
+    max_error_samples: int = OPENSEARCH_SYNC_MAX_ERROR_SAMPLES,
 ):
     """Collect results from completed futures and update the error map.
 
@@ -328,7 +328,7 @@ def info_to_error_map(info: dict) -> ErrorMap:
 def merge_error_maps(
     merged_errors: ErrorMap,
     new_errors: ErrorMap,
-    max_error_samples: int = MAX_ERROR_SAMPLES,
+    max_error_samples: int = OPENSEARCH_SYNC_MAX_ERROR_SAMPLES,
 ):
     """Merge new errors into an existing error map.
 
@@ -426,11 +426,11 @@ def index_file(
     index_name: str,
     batch_to_actions_func: BatchToActions,
     columns: list[str] | None,
-    chunk_size: int = CHUNK_SIZE,
-    max_chunk_bytes: int = MAX_CHUNK_BYTES,
-    max_retries: int = MAX_RETRIES,
-    initial_backoff: int = INITIAL_BACKOFF,
-    max_backoff: int = MAX_BACKOFF,
+    chunk_size: int = OPENSEARCH_SYNC_CHUNK_SIZE,
+    max_chunk_bytes: int = OPENSEARCH_SYNC_MAX_CHUNK_BYTES,
+    max_retries: int = OPENSEARCH_SYNC_MAX_RETRIES,
+    initial_backoff: int = OPENSEARCH_SYNC_INITIAL_BACKOFF,
+    max_backoff: int = OPENSEARCH_SYNC_MAX_BACKOFF,
     dry_run: bool = False,
     measure_chunk_size: bool = False,
     staggered_start: bool = False,
@@ -505,20 +505,20 @@ def delete_docs(
     *,
     index_name: str,
     doi_state_dir: pathlib.Path,
-    run_id: str,
+    release_date: str,
     client_config: OpenSearchClientConfig,
-    chunk_size: int = CHUNK_SIZE,
-    max_chunk_bytes: int = MAX_CHUNK_BYTES,
-    max_retries: int = MAX_RETRIES,
-    initial_backoff: int = INITIAL_BACKOFF,
-    max_backoff: int = MAX_BACKOFF,
+    chunk_size: int = OPENSEARCH_SYNC_CHUNK_SIZE,
+    max_chunk_bytes: int = OPENSEARCH_SYNC_MAX_CHUNK_BYTES,
+    max_retries: int = OPENSEARCH_SYNC_MAX_RETRIES,
+    initial_backoff: int = OPENSEARCH_SYNC_INITIAL_BACKOFF,
+    max_backoff: int = OPENSEARCH_SYNC_MAX_BACKOFF,
 ):
     """Delete documents from OpenSearch based on DOI state.
 
     Args:
         index_name: Name of the OpenSearch index.
         doi_state_dir: Directory containing DOI state parquet files.
-        run_id: Run ID (date string) to filter records.
+        release_date: Release date (YYYY-MM-DD) to filter records by updated_date.
         client_config: OpenSearch client configuration.
         chunk_size: Number of actions per chunk.
         max_chunk_bytes: Maximum size of a chunk in bytes.
@@ -527,9 +527,9 @@ def delete_docs(
         max_backoff: Maximum backoff time in seconds.
     """
     try:
-        updated_date = pendulum.parse(run_id, strict=True)
+        updated_date = pendulum.parse(release_date, strict=True)
     except Exception as e:
-        raise ValueError(f"Invalid run_id '{run_id}'. Expected ISO date string (YYYY-MM-DD).") from e
+        raise ValueError(f"Invalid release_date '{release_date}'. Expected ISO date string (YYYY-MM-DD).") from e
 
     dataset = ds.dataset(doi_state_dir, format="parquet")
     filter_expr = (pc.field("state") == "DELETE") & (pc.field("updated_date") == updated_date)

@@ -1,0 +1,19 @@
+template:
+  path: batch-jobs.yaml.j2
+  type: file
+
+parameters:
+  Env: "{{ var.env }}"
+  EcrRepositoryName: !stack_attr sceptre_user_data.ecr_batch.name
+  EcrImageTag: !stack_attr sceptre_user_data.ecr_batch.tag
+  S3BucketID: !stack_output stg/s3.yaml::S3BucketID
+  OpenSearchDomainArn: !stack_output_external {{ var.opensearch_stack_output }}
+  AWSBatchRDSUserSecretArn: !stack_output_external {{ var.rds_secret_stack_output }}
+  DataCiteCredentialsAPIUserSecretArn: !ssm {{ stack_group_config.sceptre_user_data.ssm_path }}/DataCiteCredentialsAPIUserSecretArn
+
+dependencies:
+  - stg/s3.yaml
+
+capabilities:
+  - CAPABILITY_IAM
+  - CAPABILITY_NAMED_IAM

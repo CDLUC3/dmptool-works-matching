@@ -1,0 +1,55 @@
+# ----------------------------------
+# dmpworks AWS Image
+# ----------------------------------
+
+# Build arguments
+ARG PYTHON_VERSION="3.12"
+ARG S5CMD_VERSION="2.3.0"
+
+FROM dmpworks-builder:latest AS builder
+
+FROM amazonlinux:2023
+ARG PYTHON_VERSION
+ARG S5CMD_VERSION
+
+ENV PYTHON_VERSION=${PYTHON_VERSION}
+ENV S5CMD_VERSION=${S5CMD_VERSION}
+ENV TMPDIR=/data/tmp
+
+# Pull uv into image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Make temp folder
+RUN mkdir -p ${TMPDIR}
+
+# Install system dependencies
+RUN dnf -y install \
+    aws-cli \
+    tar \
+    zip \
+    wget \
+    gzip \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-pip \
+    nano
+RUN dnf group install -y "Development Tools"
+
+WORKDIR /app
+
+# Install s5cmd: https://github.com/peak/s5cmd
+RUN wget https://github.com/peak/s5cmd/releases/download/v${S5CMD_VERSION}/s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz && \
+  tar -xzf s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz s5cmd && \
+  chmod +x s5cmd && \
+  mv s5cmd /usr/local/bin/ && \
+  rm s5cmd_${S5CMD_VERSION}_Linux-64bit.tar.gz
+
+# Sync dependencies
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev --python ${PYTHON_VERSION}
+
+# Set PATH
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Copy and install dmpworks
+COPY --from=builder /app/dmptool-works-matching/target/wheels /app/wheels/dmpworks
+RUN uv pip install --no-deps /app/wheels/dmpworks/*.whl
