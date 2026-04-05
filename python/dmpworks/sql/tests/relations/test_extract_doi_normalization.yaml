@@ -1,0 +1,19 @@
+test_extract_doi_nfc_normalization:
+  model: relations.data_citation_corpus
+  vars:
+    max_relation_degrees: 3
+  inputs:
+    data_citation_corpus.relations:
+      rows:
+        # NFD decomposed ó (o + combining accent U+0301) in publication DOI
+        - publication: "https://doi.org/10.26767/colo\u0301quio.v17i4.1817"
+          dataset: "https://doi.org/10.1234/dataset.0001"
+          source: eupmc
+  outputs:
+    query:
+      rows:
+        # Both DOIs should be NFC normalized in output
+        - doi: "10.26767/colóquio.v17i4.1817"
+          dataset_citation_dois: ["10.1234/dataset.0001"]
+        - doi: "10.1234/dataset.0001"
+          dataset_citation_dois: ["10.26767/colóquio.v17i4.1817"]

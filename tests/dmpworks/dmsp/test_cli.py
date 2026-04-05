@@ -69,13 +69,12 @@ class TestLoadGroundTruth:
 class TestMerge:
     def test_calls_merge_related_works(self, monkeypatch, mocker, tmp_path):
         set_mysql_env(monkeypatch)
-        mock_connect = mocker.patch("pymysql.connect")
         mock_merge = mocker.patch("dmpworks.dmsp.merge.merge_related_works")
 
         cli(["dmsp", "related-works", "merge", str(tmp_path)])
 
-        mock_merge.assert_called_once_with(
-            tmp_path,
-            mock_connect.return_value,
-            batch_size=1000,
-        )
+        mock_merge.assert_called_once()
+        call_kwargs = mock_merge.call_args
+        assert call_kwargs[0][0] == tmp_path
+        assert call_kwargs[1]["insert_batch_size"] == 1000
+        assert call_kwargs[1]["mysql_config"].mysql_host == "db.example.com"

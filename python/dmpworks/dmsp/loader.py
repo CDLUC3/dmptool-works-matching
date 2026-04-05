@@ -1,18 +1,80 @@
-from collections.abc import Callable, Iterable
+from __future__ import annotations
+
 from dataclasses import dataclass
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from opensearchpy import OpenSearch, exceptions
+import pymysql
+import pymysql.cursors
 
 from dmpworks.dmsp.related_works import json_work_to_work_version
 from dmpworks.dmsp.utils import serialise_json
 from dmpworks.model.work_model import WorkModel
 from dmpworks.transform.simdjson_transforms import extract_doi
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+    from dmpworks.cli_utils import MySQLConfig
+
 log = logging.getLogger(__name__)
 
 ALLOWED_TABLES = {"works", "workVersions", "relatedWorks", "stagingWorkVersions", "stagingRelatedWorks"}
+
+PLAN_ID_MAPPING_SQL = """
+SELECT id, dmpId FROM (
+    SELECT id, dmpId,
+      ROW_NUMBER() OVER (PARTITION BY dmpId ORDER BY created DESC, id DESC) AS rn
+    FROM plans
+    WHERE dmpId IS NOT NULL
+) ranked
+WHERE rn = 1
+"""
+
+
+def fetch_plan_id_mapping(conn) -> dict[str, int]:
+    """Fetch a mapping of bare DOI to planId from the plans table.
+
+    Keys are normalized bare DOIs (e.g. '10.xxxxx/yyyy') using extract_doi,
+    matching the format used in match JSONL files and RelatedWorkReference.dmp_id.
+
+    When multiple plans share a dmpId, picks the most recently created one
+    (same dedup logic as sync_dmps).
+
+    Args:
+        conn: Database connection object.
+
+    Returns:
+        Dict mapping bare DOI to plan ID (int).
+    """
+    with conn.cursor() as cursor:
+        cursor.execute(PLAN_ID_MAPPING_SQL)
+        result = {}
+        for row in cursor.fetchall():
+            doi = extract_doi(row["dmpId"])
+            if doi is not None:
+                result[doi] = row["id"]
+        return result
+
+
+def make_connection(mysql_config: MySQLConfig):
+    """Create a new pymysql connection from a MySQLConfig.
+
+    Args:
+        mysql_config: MySQL connection configuration.
+
+    Returns:
+        A pymysql connection.
+    """
+    return pymysql.connect(
+        host=mysql_config.mysql_host,
+        port=mysql_config.mysql_tcp_port,
+        user=mysql_config.mysql_user,
+        password=mysql_config.mysql_pwd,
+        database=mysql_config.mysql_database,
+        cursorclass=pymysql.cursors.DictCursor,
+    )
 
 
 @dataclass
@@ -74,10 +136,7 @@ def to_sql_related_work_row(row: dict) -> list:
         row_hash = bytes.fromhex(row_hash)
 
     return [
-        row.get("planId"),
-        (
-            f"https://doi.org/{row['dmpDoi'].upper()}" if row.get("dmpDoi") else None
-        ),  # To match formatting in DMP Tool Database
+        row["planId"],
         row["workDoi"],
         row_hash,
         row["sourceType"],
@@ -123,16 +182,33 @@ def load_related_works(conn, os_client: OpenSearch, records: list[RelatedWorkRef
     """
     log.info(f"Processing {len(records)} records...")
 
+    # Prefetch plan ID mapping for records that only have dmp_id
+    plan_id_map = None
+    if any(r.plan_id is None for r in records):
+        plan_id_map = fetch_plan_id_mapping(conn)
+
     seen = set()
     work_versions = []
     related_works = []
 
     for record in records:
+        # Resolve plan_id
+        if record.plan_id is not None:
+            plan_id = int(record.plan_id)
+        elif plan_id_map is not None:
+            plan_id = plan_id_map.get(extract_doi(record.dmp_id))
+            if plan_id is None:
+                log.warning(f"No plan found for dmp_id={record.dmp_id}, work_doi={record.work_doi}, skipping")
+                continue
+        else:
+            log.warning(f"No plan_id and no mapping for dmp_id={record.dmp_id}, work_doi={record.work_doi}, skipping")
+            continue
+
         work_doi = extract_doi(record.work_doi)
         work = fetch_opensearch_work(os_client, work_doi)
         if not work:
             log.warning(
-                f"Skipping plan_id={record.plan_id}, dmp_id={record.dmp_id}, work_doi={work_doi} as work could not be found in OpenSearch"
+                f"Skipping plan_id={plan_id}, dmp_id={record.dmp_id}, work_doi={work_doi} as work could not be found in OpenSearch"
             )
             continue
 
@@ -143,8 +219,7 @@ def load_related_works(conn, os_client: OpenSearch, records: list[RelatedWorkRef
             seen.add(work_doi)
 
         related_work = {
-            "planId": record.plan_id,
-            "dmpDoi": record.dmp_id,
+            "planId": plan_id,
             "workDoi": work.doi,
             "hash": work.hash,
             "sourceType": "USER_ADDED",
@@ -156,11 +231,20 @@ def load_related_works(conn, os_client: OpenSearch, records: list[RelatedWorkRef
 
     log.info(f"Loading {len(work_versions)} work versions and {len(related_works)} related works...")
 
-    with RelatedWorksLoader(conn) as loader:
+    loader = RelatedWorksLoader(conn)
+    try:
         loader.prepare_staging_tables()
         loader.insert_work_versions(work_versions, batch_size=batch_size)
         loader.insert_related_works(related_works, batch_size=batch_size)
         loader.run_update_procedure(system_matched=False)
+        conn.commit()
+        log.info("Transaction committed successfully.")
+    except Exception:
+        conn.rollback()
+        log.exception("Transaction rolled back due to error.")
+        raise
+    finally:
+        conn.close()
 
 
 class RelatedWorksLoader:
@@ -177,31 +261,6 @@ class RelatedWorksLoader:
             conn: Database connection object.
         """
         self.conn = conn
-
-    def __enter__(self):
-        """Enter the context manager.
-
-        Returns:
-            self: The RelatedWorksLoader instance.
-        """
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit the context manager.
-
-        Args:
-            exc_type: Exception type.
-            exc_val: Exception value.
-            exc_tb: Exception traceback.
-        """
-        if self.conn:
-            if exc_type:
-                self.conn.rollback()
-                log.error("Transaction rolled back due to error.")
-            else:
-                self.conn.commit()
-                log.info("Transaction committed successfully.")
-            self.conn.close()
 
     def commit(self):
         """Commit the current transaction.
@@ -224,7 +283,7 @@ class RelatedWorksLoader:
             batch_size: Number of rows to insert per batch.
         """
         log.debug("Loading work versions into staging table...")
-        sql = "INSERT INTO stagingWorkVersions (doi,hash,workType,publicationDate,title,abstractText,authors,institutions,funders,awards,publicationVenue,sourceName,sourceUrl) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        sql = "INSERT IGNORE INTO stagingWorkVersions (doi,hash,workType,publicationDate,title,abstractText,authors,institutions,funders,awards,publicationVenue,sourceName,sourceUrl) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         self.batch_insert(sql, rows_iterator, batch_size)
 
         if log.isEnabledFor(logging.DEBUG):
@@ -239,7 +298,7 @@ class RelatedWorksLoader:
             batch_size: Number of rows to insert per batch.
         """
         log.debug("Loading related works into staging table...")
-        sql = "INSERT INTO stagingRelatedWorks (planId,dmpDoi,workDoi,hash,sourceType,score,scoreMax,status,doiMatch,contentMatch,authorMatches,institutionMatches,funderMatches,awardMatches) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        sql = "INSERT IGNORE INTO stagingRelatedWorks (planId,workDoi,hash,sourceType,score,scoreMax,status,doiMatch,contentMatch,authorMatches,institutionMatches,funderMatches,awardMatches) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         self.batch_insert(sql, rows_iterator, batch_size)
 
         if log.isEnabledFor(logging.DEBUG):

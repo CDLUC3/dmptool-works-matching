@@ -2,10 +2,18 @@ import logging
 import pathlib
 from unittest.mock import MagicMock
 
+import pymysql.err
 import pytest
 
 from dmpworks.dmsp.merge import merge_related_works
 from dmpworks.utils import JsonlGzBatchWriter
+
+PLAN_ID_MAP = {
+    "10.0000/dmp": 1,
+    "10.0000/dmp1": 10,
+    "10.0000/dmp2": 20,
+    "10.1234/abc": 99,
+}
 
 
 def make_jsonl_record(
@@ -60,7 +68,7 @@ def write_jsonl_match_data(tmp_path: pathlib.Path, records: list[dict]) -> pathl
 def mock_loader(mocker):
     """Mock RelatedWorksLoader, capturing rows passed to insert methods."""
     mock_cls = mocker.patch("dmpworks.dmsp.merge.RelatedWorksLoader")
-    instance = mock_cls.return_value.__enter__.return_value
+    instance = mock_cls.return_value
     instance.captured_work_versions = []
     instance.captured_related_works = []
 
@@ -72,6 +80,10 @@ def mock_loader(mocker):
 
     instance.insert_work_versions.side_effect = capture_work_versions
     instance.insert_related_works.side_effect = capture_related_works
+
+    mocker.patch("dmpworks.dmsp.merge.fetch_plan_id_mapping", return_value=PLAN_ID_MAP)
+    mocker.patch("dmpworks.dmsp.merge.make_connection", return_value=MagicMock())
+
     return instance
 
 
@@ -86,24 +98,24 @@ class TestMergeRelatedWorks:
             ],
         )
 
-        merge_related_works(matches_dir=matches_dir, conn=MagicMock())
+        merge_related_works(matches_dir, mysql_config=MagicMock())
 
         assert mock_loader.prepare_staging_tables.call_count == 2
         assert mock_loader.run_update_procedure.call_count == 2
 
-    def test_normalizes_dmp_doi_in_staging(self, tmp_path, mock_loader):
-        """Bare lowercase dmpDoi is normalized to https://doi.org/UPPERCASE."""
+    def test_resolves_plan_id_from_mapping(self, tmp_path, mock_loader):
+        """Plan ID is resolved from the prefetched mapping and set in the staging row."""
         matches_dir = write_jsonl_match_data(
             tmp_path,
             [make_jsonl_record(dmp_doi="10.1234/abc", work_dois=["10.0000/work1"])],
         )
 
-        merge_related_works(matches_dir=matches_dir, conn=MagicMock())
+        merge_related_works(matches_dir, mysql_config=MagicMock())
 
-        # Related work rows are lists; dmpDoi is at index 1
+        # Related work rows are lists; planId is at index 0
         related_work_rows = mock_loader.captured_related_works[0]
         assert len(related_work_rows) == 1
-        assert related_work_rows[0][1] == "https://doi.org/10.1234/ABC"
+        assert related_work_rows[0][0] == 99
 
     def test_calls_cleanup_once_after_all_dmps(self, tmp_path, mock_loader):
         """Orphan cleanup runs exactly once, after all DMP batches."""
@@ -115,7 +127,7 @@ class TestMergeRelatedWorks:
             ],
         )
 
-        merge_related_works(matches_dir=matches_dir, conn=MagicMock())
+        merge_related_works(matches_dir, mysql_config=MagicMock())
 
         assert mock_loader.run_cleanup_procedure.call_count == 1
 
@@ -129,7 +141,7 @@ class TestMergeRelatedWorks:
             ],
         )
 
-        merge_related_works(matches_dir=matches_dir, conn=MagicMock())
+        merge_related_works(matches_dir, mysql_config=MagicMock())
 
         # Each batch should have exactly 2 work versions (shared + unique)
         assert len(mock_loader.captured_work_versions) == 2
@@ -146,9 +158,54 @@ class TestMergeRelatedWorks:
             ],
         )
 
-        merge_related_works(matches_dir=matches_dir, conn=MagicMock())
+        merge_related_works(matches_dir, mysql_config=MagicMock())
 
         assert mock_loader.commit.call_count == 2
+
+
+class TestDeadlockRetry:
+    def test_retries_on_deadlock_and_succeeds(self, tmp_path, mock_loader, mocker):
+        """A deadlock on the first attempt is retried and succeeds."""
+        mocker.patch("dmpworks.dmsp.merge.time.sleep")
+        matches_dir = write_jsonl_match_data(
+            tmp_path,
+            [make_jsonl_record(dmp_doi="10.0000/dmp1", work_dois=["10.0000/work1"])],
+        )
+        mock_loader.run_update_procedure.side_effect = [
+            pymysql.err.OperationalError(1213, "Deadlock found"),
+            None,  # succeeds on retry
+        ]
+
+        merge_related_works(matches_dir, mysql_config=MagicMock())
+
+        assert mock_loader.run_update_procedure.call_count == 2
+        assert mock_loader.commit.call_count == 1
+
+    def test_counts_error_after_retry_exhaustion(self, tmp_path, mock_loader, mocker, caplog):
+        """After max retries, the DMP is counted as an error and processing continues."""
+        mocker.patch("dmpworks.dmsp.merge.time.sleep")
+        matches_dir = write_jsonl_match_data(
+            tmp_path,
+            [
+                make_jsonl_record(dmp_doi="10.0000/dmp1", work_dois=["10.0000/work1"]),
+                make_jsonl_record(dmp_doi="10.0000/dmp2", work_dois=["10.0000/work2"]),
+            ],
+        )
+        # First DMP: always deadlocks (4 attempts = 1 initial + 3 retries)
+        # Second DMP: succeeds
+        mock_loader.run_update_procedure.side_effect = [
+            pymysql.err.OperationalError(1213, "Deadlock found"),
+            pymysql.err.OperationalError(1213, "Deadlock found"),
+            pymysql.err.OperationalError(1213, "Deadlock found"),
+            pymysql.err.OperationalError(1213, "Deadlock found"),
+            None,  # second DMP succeeds
+        ]
+
+        with caplog.at_level(logging.INFO, logger="dmpworks.dmsp.merge"):
+            merge_related_works(matches_dir, mysql_config=MagicMock())
+
+        assert mock_loader.commit.call_count == 1  # only second DMP committed
+        assert any("Failed 1 DMPs due to errors" in r.message for r in caplog.records)
 
 
 class TestMergeMetrics:
@@ -163,9 +220,10 @@ class TestMergeMetrics:
         )
 
         with caplog.at_level(logging.INFO, logger="dmpworks.dmsp.merge"):
-            merge_related_works(matches_dir=matches_dir, conn=MagicMock())
+            merge_related_works(matches_dir, mysql_config=MagicMock())
 
         for step_name in (
+            "read",
             "stage-tables",
             "work-versions",
             "related-works",

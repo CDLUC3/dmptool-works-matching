@@ -1,8 +1,6 @@
 import logging
 import shutil
 
-import pymysql.cursors
-
 from dmpworks.batch.utils import (
     download_file_from_s3,
     download_files_from_s3,
@@ -266,7 +264,7 @@ def merge_related_works_cmd(
     run_id: str,  # noqa: ARG001
     search_run_id: str,
     mysql_config: MySQLConfig,
-    batch_size: int = 1000,
+    insert_batch_size: int = 1000,
 ):
     """Merge related works from S3 into the MySQL database.
 
@@ -275,7 +273,7 @@ def merge_related_works_cmd(
         run_id: a unique ID to represent this merge-related-works run.
         search_run_id: the run ID of the dmp-works-search job whose output to read.
         mysql_config: MySQL connection configuration.
-        batch_size: Number of records to process in a batch.
+        insert_batch_size: Number of rows per SQL INSERT batch.
     """
     from dmpworks.dmsp.merge import merge_related_works  # noqa: PLC0415
 
@@ -286,19 +284,10 @@ def merge_related_works_cmd(
         source_uri = s3_uri(bucket_name, PROCESS_DMPS_DMP_WORKS_SEARCH, search_run_id, MATCHES_DIR, "*.jsonl.gz")
         download_files_from_s3(source_uri, matches_dir)
 
-        # Upsert data
-        conn = pymysql.connect(
-            host=mysql_config.mysql_host,
-            port=mysql_config.mysql_tcp_port,
-            user=mysql_config.mysql_user,
-            password=mysql_config.mysql_pwd,
-            database=mysql_config.mysql_database,
-            cursorclass=pymysql.cursors.DictCursor,
-        )
         merge_related_works(
             matches_dir,
-            conn,
-            batch_size=batch_size,
+            mysql_config=mysql_config,
+            insert_batch_size=insert_batch_size,
         )
     finally:
         shutil.rmtree(matches_dir, ignore_errors=True)

@@ -10,6 +10,7 @@ from dmpworks.cli_utils import (
     DMPSubsetAWS,
     DMPWorksSearchConfig,
     LogLevel,
+    MergeRelatedWorksConfig,
     MySQLConfig,
     OpenAlexWorksTransformConfig,
     OpenSearchClientConfig,
@@ -555,7 +556,7 @@ def opensearch_merge_related_works_cmd(
     run_id: str,
     search_run_id: str,
     mysql_config: MySQLConfig,
-    batch_size: int = 1000,
+    merge_config: MergeRelatedWorksConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Merge related works from S3 into the MySQL database.
@@ -565,11 +566,12 @@ def opensearch_merge_related_works_cmd(
         run_id: a unique ID to represent this merge run.
         search_run_id: the run ID of the dmp-works-search job whose output to read.
         mysql_config: MySQL connection configuration.
-        batch_size: Number of records to process in a batch.
+        merge_config: Merge related works configuration.
         log_level: Python log level.
     """
     from dmpworks.batch import opensearch
 
+    merge_config = MergeRelatedWorksConfig() if merge_config is None else merge_config
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
     opensearch.merge_related_works_cmd(
@@ -577,7 +579,7 @@ def opensearch_merge_related_works_cmd(
         run_id=run_id,
         search_run_id=search_run_id,
         mysql_config=mysql_config,
-        batch_size=batch_size,
+        insert_batch_size=merge_config.insert_batch_size,
     )
 
 

@@ -12,4 +12,4 @@ def extract_doi(evaluator, column_name: SQL) -> str:  # noqa: ARG001
     Returns:
         str: The SQL expression to extract the DOI.
     """
-    return f"NULLIF(LOWER(TRIM(REGEXP_EXTRACT({column_name}, '10\\.[0-9.]+/[^\\s]+'))), '')"
+    return f"NFC_NORMALIZE(NULLIF(LOWER(TRIM(REGEXP_EXTRACT({column_name}, '10\\.[0-9.]+/[^\\s]+'))), ''))"

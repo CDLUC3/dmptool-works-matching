@@ -28,11 +28,10 @@ def make_work_version_row(doi="10.0000/work1", work_hash="aa" * 16):
     ]
 
 
-def make_related_work_row(dmp_doi="https://doi.org/10.0000/DMP1", work_doi="10.0000/work1", work_hash="aa" * 16):
+def make_related_work_row(plan_id=1, work_doi="10.0000/work1", work_hash="aa" * 16):
     """Build a minimal related work row list matching the staging INSERT columns."""
     return [
-        None,  # planId
-        dmp_doi,
+        plan_id,
         work_doi,
         bytes.fromhex(work_hash),
         "SYSTEM_MATCHED",

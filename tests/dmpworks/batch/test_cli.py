@@ -440,7 +440,7 @@ class TestOpenSearchCLI:
                 mysql_database="dmpworks",
                 mysql_pwd="secret",
             ),
-            batch_size=1000,
+            insert_batch_size=1000,
         )
 
     def test_sync_dmps(self, monkeypatch, mocker):

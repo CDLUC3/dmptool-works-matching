@@ -1,5 +1,6 @@
 import re
 from typing import Any
+import unicodedata
 
 import pendulum
 from pendulum.exceptions import ParserError
@@ -25,7 +26,7 @@ def extract_doi(text: str | None) -> str | None:
     pattern = r"10\.[\d.]+/[^\s]+"
     match = re.search(pattern, str(text), re.IGNORECASE)
     if match:
-        return clean_string(match.group(0), lower=True)
+        return unicodedata.normalize("NFC", clean_string(match.group(0), lower=True))
     return None
 
 
