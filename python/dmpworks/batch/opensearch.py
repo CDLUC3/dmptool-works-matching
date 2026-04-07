@@ -250,13 +250,12 @@ def dmp_works_search_cmd(
                 else None
             ),
             inner_hits_size=dmp_works_search_config.inner_hits_size,
-            row_group_size=dmp_works_search_config.row_group_size,
-            row_groups_per_file=dmp_works_search_config.row_groups_per_file,
+            records_per_file=dmp_works_search_config.records_per_file,
         )
 
-        # Upload all Parquet files to S3
+        # Upload all JSONL files to S3
         target_uri = s3_uri(bucket_name, PROCESS_DMPS_DMP_WORKS_SEARCH, run_id, f"{MATCHES_DIR}/")
-        upload_files_to_s3(out_dir, target_uri, glob_pattern="*.parquet")
+        upload_files_to_s3(out_dir, target_uri, glob_pattern="*.jsonl.gz")
     finally:
         shutil.rmtree(out_dir, ignore_errors=True)
 
@@ -283,8 +282,8 @@ def merge_related_works_cmd(
     matches_dir = local_path(PROCESS_DMPS_DMP_WORKS_SEARCH, search_run_id, MATCHES_DIR)
     matches_dir.mkdir(parents=True, exist_ok=True)
     try:
-        # Download all Parquet files from S3
-        source_uri = s3_uri(bucket_name, PROCESS_DMPS_DMP_WORKS_SEARCH, search_run_id, MATCHES_DIR, "*.parquet")
+        # Download all JSONL files from S3
+        source_uri = s3_uri(bucket_name, PROCESS_DMPS_DMP_WORKS_SEARCH, search_run_id, MATCHES_DIR, "*.jsonl.gz")
         download_files_from_s3(source_uri, matches_dir)
 
         # Upsert data

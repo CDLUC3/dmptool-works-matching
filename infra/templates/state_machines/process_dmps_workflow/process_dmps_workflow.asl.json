@@ -82,7 +82,7 @@
             { "Variable": "$.skip_sync_dmps", "IsPresent": true },
             { "Variable": "$.skip_sync_dmps", "BooleanEquals": true }
           ],
-          "Next": "ExtractSyncDmpsRunId"
+          "Next": "GetEnrichDmpsTaskRunStatus"
         }
       ],
       "Default": "GenerateSyncDmpsRunId"
@@ -210,7 +210,7 @@
             { "Variable": "$.skip_enrich_dmps", "IsPresent": true },
             { "Variable": "$.skip_enrich_dmps", "BooleanEquals": true }
           ],
-          "Next": "ExtractEnrichDmpsRunId"
+          "Next": "GetDmpWorksSearchTaskRunStatus"
         }
       ],
       "Default": "GenerateEnrichDmpsRunId"
@@ -338,7 +338,7 @@
             { "Variable": "$.skip_dmp_works_search", "IsPresent": true },
             { "Variable": "$.skip_dmp_works_search", "BooleanEquals": true }
           ],
-          "Next": "ExtractDmpWorksSearchRunId"
+          "Next": "GetMergeRelatedWorksTaskRunStatus"
         }
       ],
       "Default": "GenerateDmpWorksSearchRunId"
@@ -467,10 +467,20 @@
             { "Variable": "$.skip_merge_related_works", "IsPresent": true },
             { "Variable": "$.skip_merge_related_works", "BooleanEquals": true }
           ],
-          "Next": "ExtractMergeRelatedWorksRunId"
+          "Next": "BypassMergeRelatedWorks"
         }
       ],
       "Default": "GenerateMergeRelatedWorksRunId"
+    },
+    "BypassMergeRelatedWorks": {
+      "Type": "Pass",
+      "Comment": "Merge-related-works explicitly skipped without a checkpoint",
+      "Parameters": {
+        "task_run_status": "SKIPPED",
+        "task_run_id": "SKIPPED"
+      },
+      "ResultPath": "$.mrw_check",
+      "Next": "MarkProcessDMPsCompleted"
     },
     "ExtractMergeRelatedWorksRunId": {
       "Type": "Pass",

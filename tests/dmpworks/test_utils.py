@@ -1,6 +1,14 @@
 import pathlib
 
-from dmpworks.utils import ParquetBatchWriter, read_parquet_files, run_process, thread_map, write_rows_to_parquet
+from dmpworks.utils import (
+    JsonlGzBatchWriter,
+    ParquetBatchWriter,
+    read_parquet_files,
+    run_process,
+    thread_map,
+    write_rows_to_parquet,
+)
+from tests.utils import read_jsonl_gz
 import pyarrow as pa
 import pytest
 
@@ -186,3 +194,51 @@ class TestParquetBatchWriter:
         result = list(read_parquet_files([tmp_path]))
         assert len(result) == 3
         assert {r["id"] for r in result} == {"a", "b", "c"}
+
+
+class TestJsonlGzBatchWriter:
+    def test_roundtrip(self, tmp_path: pathlib.Path):
+        records = [{"id": "a", "value": 1}, {"id": "b", "value": 2}]
+        with JsonlGzBatchWriter(output_dir=tmp_path, records_per_file=100) as writer:
+            for r in records:
+                writer.write_record(r)
+
+        files = sorted(tmp_path.glob("*.jsonl.gz"))
+        assert len(files) == 1
+        assert read_jsonl_gz(files[0]) == records
+
+    def test_rotates_file_after_records_per_file(self, tmp_path: pathlib.Path):
+        with JsonlGzBatchWriter(output_dir=tmp_path, records_per_file=1) as writer:
+            for i in range(3):
+                writer.write_record({"i": i})
+
+        files = sorted(tmp_path.glob("*.jsonl.gz"))
+        assert len(files) == 3
+        all_records = []
+        for f in files:
+            all_records.extend(read_jsonl_gz(f))
+        assert len(all_records) == 3
+
+    def test_file_naming(self, tmp_path: pathlib.Path):
+        with JsonlGzBatchWriter(output_dir=tmp_path, records_per_file=1, file_prefix="out") as writer:
+            writer.write_record({"x": 1})
+            writer.write_record({"x": 2})
+
+        names = {f.name for f in tmp_path.glob("*.jsonl.gz")}
+        assert "out_0000.jsonl.gz" in names
+        assert "out_0001.jsonl.gz" in names
+
+    def test_no_file_written_for_empty_input(self, tmp_path: pathlib.Path):
+        with JsonlGzBatchWriter(output_dir=tmp_path, records_per_file=100):
+            pass
+
+        assert list(tmp_path.glob("*.jsonl.gz")) == []
+
+    def test_nested_data_preserved(self, tmp_path: pathlib.Path):
+        record = {"dmpDoi": "10.1234/abc", "works": [{"doi": "10.5678/w1", "score": 0.9}]}
+        with JsonlGzBatchWriter(output_dir=tmp_path, records_per_file=100) as writer:
+            writer.write_record(record)
+
+        files = sorted(tmp_path.glob("*.jsonl.gz"))
+        result = read_jsonl_gz(files[0])
+        assert result[0]["works"][0]["doi"] == "10.5678/w1"

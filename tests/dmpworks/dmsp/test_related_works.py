@@ -1,12 +1,31 @@
 import json
 import pathlib
 
+import pyarrow as pa
+
 from dmpworks.dmsp.related_works import (
     create_related_works,
     create_work_versions,
 )
-from dmpworks.opensearch.dmp_works_search import MATCH_DATA_SCHEMA
 from dmpworks.utils import ParquetBatchWriter, read_parquet_files
+
+MATCH_DATA_SCHEMA = pa.schema(
+    [
+        pa.field("dmpDoi", pa.string()),
+        pa.field("work", pa.string()),
+        pa.field("score", pa.float64()),
+        pa.field("scoreMax", pa.float64()),
+        pa.field("doiMatch", pa.string()),
+        pa.field("contentMatch", pa.string()),
+        pa.field("authorMatches", pa.string()),
+        pa.field("institutionMatches", pa.string()),
+        pa.field("funderMatches", pa.string()),
+        pa.field("awardMatches", pa.string()),
+        pa.field("intraWorkDoiMatches", pa.string()),
+        pa.field("possibleSharedProjectDoiMatches", pa.string()),
+        pa.field("datasetCitationDoiMatches", pa.string()),
+    ]
+)
 
 
 def write_match_data(tmp_path: pathlib.Path, rows: list[dict]) -> pathlib.Path:

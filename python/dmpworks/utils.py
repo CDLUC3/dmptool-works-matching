@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import gzip
 import importlib
+import json
 import logging
 from multiprocessing import log_to_stderr
 import os
@@ -395,6 +396,89 @@ class ParquetBatchWriter:
             # On exception, close the underlying writer without flushing remaining rows.
             self.writer.close()
             self.writer = None
+
+
+class JsonlGzBatchWriter:
+    """Write JSON records to gzip-compressed JSONL files with file rotation.
+
+    Each call to `write_record` writes a single JSON line to the current
+    `.jsonl.gz` file. After `records_per_file` records the current file is
+    closed and a new one is opened.
+
+    Args:
+        output_dir: Directory to write .jsonl.gz files into.
+        records_per_file: Number of records per file before rotating.
+        file_prefix: Prefix for output filenames.
+    """
+
+    def __init__(
+        self,
+        *,
+        output_dir: pathlib.Path,
+        records_per_file: int = 1000,
+        file_prefix: str = "matches",
+    ):
+        """Initialize the writer.
+
+        Args:
+            output_dir: Directory to write .jsonl.gz files into.
+            records_per_file: Number of records per file before rotating.
+            file_prefix: Prefix for output filenames.
+        """
+        self.output_dir = output_dir
+        self.records_per_file = records_per_file
+        self.file_prefix = file_prefix
+        output_dir.mkdir(parents=True, exist_ok=True)
+        self._file_index = 0
+        self._record_count = 0
+        self._file: gzip.GzipFile | None = None
+
+    def _open_new_file(self):
+        """Close the current file (if any) and open a new .jsonl.gz file."""
+        if self._file is not None:
+            self._file.close()
+        path = self.output_dir / f"{self.file_prefix}_{self._file_index:04d}.jsonl.gz"
+        self._file = gzip.open(path, mode="wb")  # noqa: SIM115
+        self._file_index += 1
+        self._record_count = 0
+
+    def write_record(self, record: dict):
+        """Write a single JSON record as one line.
+
+        Args:
+            record: Dictionary to serialize as JSON.
+        """
+        if self._file is None:
+            self._open_new_file()
+        self._file.write(json.dumps(record, separators=(",", ":")).encode("utf-8") + b"\n")
+        self._record_count += 1
+        if self._record_count >= self.records_per_file:
+            self._file.close()
+            self._file = None
+
+    def close(self):
+        """Close the current file."""
+        if self._file is not None:
+            self._file.close()
+            self._file = None
+
+    def __enter__(self):
+        """Enter the context manager.
+
+        Returns:
+            self
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager.
+
+        Args:
+            exc_type: Exception type, or None on clean exit.
+            exc_val: Exception value.
+            exc_tb: Exception traceback.
+        """
+        self.close()
 
 
 def write_rows_to_parquet(rows: list[dict], output_file: pathlib.Path, schema: pa.Schema) -> None:
