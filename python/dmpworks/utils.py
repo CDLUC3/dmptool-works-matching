@@ -461,6 +461,11 @@ class JsonlGzBatchWriter:
         if self._file is not None:
             self._file.close()
             self._file = None
+        elif self._file_index == 0:
+            # No records were written; create an empty .jsonl.gz so downstream uploads succeed
+            path = self.output_dir / f"{self.file_prefix}_{self._file_index:04d}.jsonl.gz"
+            with gzip.open(path, mode="wb"):
+                pass
 
     def __enter__(self):
         """Enter the context manager.

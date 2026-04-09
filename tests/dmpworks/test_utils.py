@@ -228,11 +228,14 @@ class TestJsonlGzBatchWriter:
         assert "out_0000.jsonl.gz" in names
         assert "out_0001.jsonl.gz" in names
 
-    def test_no_file_written_for_empty_input(self, tmp_path: pathlib.Path):
+    def test_empty_file_written_for_no_records(self, tmp_path: pathlib.Path):
         with JsonlGzBatchWriter(output_dir=tmp_path, records_per_file=100):
             pass
 
-        assert list(tmp_path.glob("*.jsonl.gz")) == []
+        files = sorted(tmp_path.glob("*.jsonl.gz"))
+        assert len(files) == 1
+        assert files[0].name == "matches_0000.jsonl.gz"
+        assert read_jsonl_gz(files[0]) == []
 
     def test_nested_data_preserved(self, tmp_path: pathlib.Path):
         record = {"dmpDoi": "10.1234/abc", "works": [{"doi": "10.5678/w1", "score": 0.9}]}
