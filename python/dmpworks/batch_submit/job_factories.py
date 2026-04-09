@@ -937,7 +937,7 @@ def process_dmps_merge_related_works_factory(
     env: AWSEnv,
     bucket_name: str,
     search_run_id: str,
-    **kwargs: Any,  # noqa: ARG001
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Build SFN-compatible Batch params for the process-dmps merge-related-works job.
 
@@ -949,11 +949,12 @@ def process_dmps_merge_related_works_factory(
         env: AWS environment (dev/stg/prd).
         bucket_name: S3 bucket containing dmp-works-search output to merge.
         search_run_id: Run ID of the dmp-works-search job whose output to read.
-        **kwargs: Absorbs unused keyword arguments.
+        **kwargs: Config vars (lowercased keys from to_env_dict), e.g. merge_related_works_insert_batch_size.
 
     Returns:
         dict: SFN-compatible Batch params including run_name.
     """
+    config_vars = {k.upper(): v for k, v in kwargs.items() if isinstance(v, str)}
     return build_batch_params(
         run_name=PROCESS_DMPS_MERGE_RELATED_WORKS,
         env=env,
@@ -968,6 +969,7 @@ def process_dmps_merge_related_works_factory(
             "SEARCH_RUN_ID": search_run_id,
             "TQDM_POSITION": TQDM_POSITION,
             "TQDM_MININTERVAL": TQDM_MININTERVAL,
+            **config_vars,
         },
     )
 

@@ -3,10 +3,8 @@ import pathlib
 from typing import Annotated
 
 from cyclopts import App, Parameter, validators
-import pymysql
-import pymysql.cursors
 
-from dmpworks.cli_utils import LogLevel, MySQLConfig
+from dmpworks.cli_utils import LogLevel, MergeRelatedWorksConfig, MySQLConfig
 from dmpworks.opensearch.utils import OpenSearchClientConfig
 
 app = App(name="dmsp", help="Utilities for the DMSP database.")
@@ -29,21 +27,14 @@ def load_migration_related_works(
         batch_size: Number of records to process in a batch.
         log_level: Logging level.
     """
-    from dmpworks.dmsp.loader import load_related_works
+    from dmpworks.dmsp.loader import load_related_works, make_connection
     from dmpworks.dmsp.migration import fetch_migration_related_works
     from dmpworks.opensearch.utils import make_opensearch_client
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
-    conn = pymysql.connect(
-        host=mysql_config.mysql_host,
-        port=mysql_config.mysql_tcp_port,
-        user=mysql_config.mysql_user,
-        password=mysql_config.mysql_pwd,
-        database=mysql_config.mysql_database,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
+    conn = make_connection(mysql_config)
     os_client = make_opensearch_client(opensearch_config)
     records = fetch_migration_related_works(conn)
     load_related_works(conn, os_client, records, batch_size)
@@ -69,20 +60,13 @@ def load_ground_truth_related_works(
         log_level: Logging level.
     """
     from dmpworks.dmsp.ground_truth import read_related_works_csv
-    from dmpworks.dmsp.loader import load_related_works
+    from dmpworks.dmsp.loader import load_related_works, make_connection
     from dmpworks.opensearch.utils import make_opensearch_client
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
-    conn = pymysql.connect(
-        host=mysql_config.mysql_host,
-        port=mysql_config.mysql_tcp_port,
-        user=mysql_config.mysql_user,
-        password=mysql_config.mysql_pwd,
-        database=mysql_config.mysql_database,
-        cursorclass=pymysql.cursors.DictCursor,
-    )
+    conn = make_connection(mysql_config)
     os_client = make_opensearch_client(opensearch_config)
     records = read_related_works_csv(matches_path)
     load_related_works(conn, os_client, records, batch_size)
@@ -101,7 +85,7 @@ def merge_related_works_cmd(
         ),
     ],
     mysql_config: MySQLConfig,
-    batch_size: int = 1000,
+    merge_config: MergeRelatedWorksConfig | None = None,
     log_level: LogLevel = "INFO",
 ):
     """Merge related works from .jsonl.gz match files into the database.
@@ -109,23 +93,20 @@ def merge_related_works_cmd(
     Args:
         matches_path: Path to the directory containing .jsonl.gz match files.
         mysql_config: MySQL connection configuration.
-        batch_size: Number of records to process in a batch.
+        merge_config: Merge related works configuration.
         log_level: Logging level.
     """
     from dmpworks.dmsp.merge import merge_related_works
 
+    merge_config = MergeRelatedWorksConfig() if merge_config is None else merge_config
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
-    conn = pymysql.connect(
-        host=mysql_config.mysql_host,
-        port=mysql_config.mysql_tcp_port,
-        user=mysql_config.mysql_user,
-        password=mysql_config.mysql_pwd,
-        database=mysql_config.mysql_database,
-        cursorclass=pymysql.cursors.DictCursor,
+    merge_related_works(
+        matches_path,
+        mysql_config=mysql_config,
+        insert_batch_size=merge_config.insert_batch_size,
     )
-    merge_related_works(matches_path, conn, batch_size=batch_size)
 
 
 if __name__ == "__main__":

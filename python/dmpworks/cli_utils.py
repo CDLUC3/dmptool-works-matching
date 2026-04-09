@@ -38,6 +38,7 @@ from dmpworks.constants import (
     DUCKDB_THREADS,
     MAX_DOI_STATES,
     MAX_RELATION_DEGREES,
+    MERGE_RELATED_WORKS_INSERT_BATCH_SIZE,
     OPENALEX_WORKS_TRANSFORM_BATCH_SIZE,
     OPENALEX_WORKS_TRANSFORM_INCLUDE_XPAC,
     OPENALEX_WORKS_TRANSFORM_MAX_WORKERS,
@@ -882,6 +883,23 @@ class DMPWorksSearchConfig:
             help="Whether to apply the dmp_modification_window_days filter. Set to false to process all DMPs.",
         ),
     ] = True
+
+
+@dataclass
+class MergeRelatedWorksConfig:
+    """Cyclopts configuration for merging related works.
+
+    Attributes:
+        insert_batch_size: Number of rows per SQL INSERT batch.
+    """
+
+    insert_batch_size: Annotated[
+        int,
+        Parameter(
+            env_var="MERGE_RELATED_WORKS_INSERT_BATCH_SIZE",
+            help="Number of rows per SQL INSERT batch.",
+        ),
+    ] = MERGE_RELATED_WORKS_INSERT_BATCH_SIZE
 
 
 @dataclass

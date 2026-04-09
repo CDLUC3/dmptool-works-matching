@@ -37,6 +37,7 @@ from dmpworks.constants import (
     DUCKDB_THREADS,
     MAX_DOI_STATES,
     MAX_RELATION_DEGREES,
+    MERGE_RELATED_WORKS_INSERT_BATCH_SIZE,
     OPENALEX_WORKS_TRANSFORM_BATCH_SIZE,
     OPENALEX_WORKS_TRANSFORM_INCLUDE_XPAC,
     OPENALEX_WORKS_TRANSFORM_MAX_WORKERS,
@@ -310,6 +311,16 @@ class OpenSearchSyncConfig(BaseModel):
     staggered_start: bool = False
 
 
+class MergeRelatedWorksConfig(BaseModel):
+    """Configuration for the merge-related-works step.
+
+    Attributes:
+        insert_batch_size: Number of rows per SQL INSERT batch.
+    """
+
+    insert_batch_size: int = MERGE_RELATED_WORKS_INSERT_BATCH_SIZE
+
+
 class SQLMeshConfig(BaseModel):
     """Configuration for SQLMesh execution and DuckDB settings.
 
@@ -442,6 +453,7 @@ class LambdaConfig(BaseModel):
         dmp_works_search_config: DMP-works search settings.
         opensearch_client_config: OpenSearch client connection settings.
         opensearch_sync_config: OpenSearch sync settings.
+        merge_related_works_config: Merge related works settings.
         sqlmesh_config: SQLMesh execution and DuckDB settings.
     """
 
@@ -457,6 +469,7 @@ class LambdaConfig(BaseModel):
     dmp_works_search_config: DmpWorksSearchConfig = DmpWorksSearchConfig()
     opensearch_client_config: OpenSearchClientConfig
     opensearch_sync_config: OpenSearchSyncConfig = OpenSearchSyncConfig()
+    merge_related_works_config: MergeRelatedWorksConfig = MergeRelatedWorksConfig()
     sqlmesh_config: SQLMeshConfig = SQLMeshConfig()
 
     def to_env_dict(self) -> dict[str, str | None]:
@@ -483,6 +496,7 @@ class LambdaConfig(BaseModel):
         dws = self.dmp_works_search_config
         osc = self.opensearch_client_config
         oss = self.opensearch_sync_config
+        mrw = self.merge_related_works_config
         sm = self.sqlmesh_config
 
         return {
@@ -553,6 +567,8 @@ class LambdaConfig(BaseModel):
             "OPENSEARCH_SYNC_MEASURE_CHUNK_SIZE": s(oss.measure_chunk_size),
             "OPENSEARCH_SYNC_MAX_ERROR_SAMPLES": s(oss.max_error_samples),
             "OPENSEARCH_SYNC_STAGGERED_START": s(oss.staggered_start),
+            # Merge related works
+            "MERGE_RELATED_WORKS_INSERT_BATCH_SIZE": s(mrw.insert_batch_size),
             # SQLMesh / DuckDB
             "DUCKDB_THREADS": s(sm.duckdb_threads),
             "DUCKDB_MEMORY_LIMIT": sm.duckdb_memory_limit,

@@ -11,6 +11,7 @@ from dmpworks.cli_utils import (
     DMPSubsetAWS,
     DMPWorksSearchConfig,
     LogLevel,
+    MergeRelatedWorksConfig,
     OpenAlexWorksTransformConfig,
     OpenSearchClientConfig,
     OpenSearchSyncConfig,
@@ -553,6 +554,7 @@ def process_dmps_cmd(
     os_sync_config: OpenSearchSyncConfig | None = None,
     dmp_subset: DMPSubsetAWS = None,
     dmp_works_search_config: DMPWorksSearchConfig | None = None,
+    merge_config: MergeRelatedWorksConfig | None = None,
     start_job: Annotated[
         Literal[*PROCESS_DMPS_JOBS],
         Parameter(
@@ -573,6 +575,7 @@ def process_dmps_cmd(
         os_sync_config: The OpenSearch sync config.
         dmp_subset: Configuration for creating a subset of DMPs.
         dmp_works_search_config: DMP works search settings.
+        merge_config: Merge related works configuration.
         start_job: The first job to run in the sequence.
     """
     from dmpworks.batch_submit.jobs import run_job_pipeline, submit_factory_job
@@ -586,10 +589,13 @@ def process_dmps_cmd(
         os_sync_config = OpenSearchSyncConfig()
     if dmp_works_search_config is None:
         dmp_works_search_config = DMPWorksSearchConfig()
+    if merge_config is None:
+        merge_config = MergeRelatedWorksConfig()
 
     os_kwargs = config_to_kwargs(os_client_config, os_sync_config)
     subset_kwargs = config_to_kwargs(dmp_subset) if dmp_subset else {}
     search_kwargs = config_to_kwargs(dmp_works_search_config)
+    merge_kwargs = config_to_kwargs(merge_config)
 
     task_definitions = {
         "sync-dmps": partial(
@@ -632,6 +638,7 @@ def process_dmps_cmd(
             env=env,
             bucket_name=bucket_name,
             search_run_id=run_id_dmps,
+            **merge_kwargs,
         ),
     }
 

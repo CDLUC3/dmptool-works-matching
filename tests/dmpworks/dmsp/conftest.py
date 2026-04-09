@@ -97,8 +97,7 @@ BEGIN
   CREATE TEMPORARY TABLE stagingRelatedWorks
   (
     `id`                 INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `planId`             INT UNSIGNED NULL,
-    `dmpDoi`             VARCHAR(255) NULL,
+    `planId`             INT UNSIGNED NOT NULL,
     `workDoi`            VARCHAR(255) NOT NULL,
     `hash`               BINARY(16)   NOT NULL,
     `sourceType`         VARCHAR(32)  NOT NULL,
@@ -112,9 +111,8 @@ BEGIN
     `funderMatches`      JSON         NOT NULL,
     `awardMatches`       JSON         NOT NULL,
 
-    INDEX (`planId`, `dmpDoi`, `workDoi`),
-    CONSTRAINT unique_hash UNIQUE (`planId`, `dmpDoi`, `workDoi`),
-    CONSTRAINT one_of_plan_id_dmp_doi_not_null CHECK (planId IS NOT NULL OR dmpDoi IS NOT NULL)
+    INDEX (`planId`, `workDoi`),
+    CONSTRAINT unique_plan_work UNIQUE (`planId`, `workDoi`)
   ) ENGINE = InnoDB
     DEFAULT CHARSET = utf8mb4
     COLLATE = utf8mb4_0900_ai_ci;

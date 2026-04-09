@@ -73,6 +73,9 @@ opensearch_client_config:
   pool_maxsize: 20
   timeout: 300
 
+merge_related_works_config:
+  insert_batch_size: 1000
+
 opensearch_sync_config:
   max_processes: 8
   chunk_size: 1000
