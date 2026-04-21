@@ -182,6 +182,10 @@
           "award_id": {
             "type": "keyword",
             "normalizer": "lowercase"
+          },
+          "funder_project_number": {
+            "type": "keyword",
+            "normalizer": "lowercase"
           }
         }
       },
