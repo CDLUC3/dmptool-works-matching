@@ -3,6 +3,7 @@ import pathlib
 
 from dmpworks.cli import cli
 from dmpworks.cli_utils import MySQLConfig, OpenSearchClientConfig, OpenSearchSyncConfig
+from dmpworks.opensearch.query_builder import QueryFeatures
 from opensearchpy import OpenSearch
 import pytest
 
@@ -167,7 +168,32 @@ class TestOpenSearchCLI:
             batch_size=100,
             max_results=100,
             ks=None,
+            inject_published_outputs_file=None,
+            true_positive_published_outputs_file=None,
+            features=QueryFeatures(),
         )
+
+    def test_opensearch_rank_metrics_disable_features(self, mock_rank_metrics, tmp_path: pathlib.Path):
+        gt_file = tmp_path / "ground_truth.csv"
+        gt_file.touch()
+        out_file = tmp_path / "metrics.json"
+
+        cli(
+            [
+                "opensearch",
+                "rank-metrics",
+                str(gt_file),
+                "dmps-index",
+                "works-index",
+                str(out_file),
+                "--disable-features",
+                "authors",
+                "institutions",
+            ]
+        )
+
+        passed_features = mock_rank_metrics.call_args.kwargs["features"]
+        assert passed_features == QueryFeatures(authors=False, institutions=False)
 
     @pytest.fixture
     def mock_create_featureset(self, mocker):

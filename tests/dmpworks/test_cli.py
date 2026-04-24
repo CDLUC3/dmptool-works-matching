@@ -21,7 +21,7 @@ class TestCLIEnvFile:
 
         cli.meta(["--env-file", str(env_file)] + subcommand_tokens)
 
-        mock_load_dotenv.assert_called_once_with(dotenv_path=env_file, override=True)
+        mock_load_dotenv.assert_called_once_with(dotenv_path=env_file, override=False)
 
     def test_dmpworks_env_var_loads_dotenv(self, mocker, monkeypatch, subcommand_tokens, tmp_path):
         mock_load_dotenv = mocker.patch("dmpworks.cli.load_dotenv")
@@ -32,7 +32,7 @@ class TestCLIEnvFile:
 
         cli.meta(subcommand_tokens)
 
-        mock_load_dotenv.assert_called_once_with(dotenv_path=env_file, override=True)
+        mock_load_dotenv.assert_called_once_with(dotenv_path=env_file, override=False)
 
     def test_missing_env_file_skips_load(self, mocker, subcommand_tokens, tmp_path):
         mock_load_dotenv = mocker.patch("dmpworks.cli.load_dotenv")

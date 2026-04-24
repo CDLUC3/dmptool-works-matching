@@ -93,30 +93,37 @@ funding AS (
     temp.plan_id,
     JSON_ARRAYAGG(
       JSON_OBJECT(
-        'plan_funding_id', temp.plan_funding_id,
+        'project_funding_id', temp.project_funding_id,
         'funder_name', temp.funder_name,
         'funder_id', temp.funder_id,
         'funder_opportunity_id', temp.funder_opportunity_id,
         'grant_id', temp.grant_id,
+        'funder_project_number', temp.funder_project_number,
         'status', temp.status,
         'created', temp.created
       )
     ) AS funding
   FROM (
-    SELECT
+    SELECT DISTINCT
       pl.id AS plan_id,
-      plf.id AS plan_funding_id,
+      prf.id AS project_funding_id,
       af.name AS funder_name,
       prf.affiliationId AS funder_id,
       prf.funderOpportunityNumber AS funder_opportunity_id,
       prf.grantId AS grant_id,
+      prf.funderProjectNumber AS funder_project_number,
       prf.status,
-      plf.created
+      prf.created
     FROM unique_plans pl
-    INNER JOIN planFundings plf ON plf.planId = pl.id
-    INNER JOIN projectFundings prf ON prf.id = plf.projectFundingId
+    INNER JOIN projectFundings prf ON prf.projectId = pl.projectId
     LEFT JOIN affiliations af ON af.uri = prf.affiliationId
-    WHERE COALESCE(af.name, prf.affiliationId, prf.funderOpportunityNumber, prf.grantId) IS NOT NULL
+    WHERE COALESCE(
+      af.name,
+      prf.affiliationId,
+      prf.funderOpportunityNumber,
+      prf.grantId,
+      prf.funderProjectNumber
+    ) IS NOT NULL
   ) AS temp
   GROUP BY temp.plan_id
 ),
@@ -154,6 +161,8 @@ published_outputs_modified AS (
 )
 
 SELECT
+  pl.projectId AS project_id,
+  pl.id AS plan_id,
   pl.dmpId AS doi,
   pl.created,
   pl.registered,

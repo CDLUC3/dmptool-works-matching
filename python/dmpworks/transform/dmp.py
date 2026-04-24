@@ -230,6 +230,7 @@ def parse_funding(objects: list[dict]) -> list[dict]:
         status = obj.get("status")
         funding_opportunity_id = replace_with_null(obj.get("funder_opportunity_id"), AWARD_IDS_EXCLUDE)
         award_id = replace_with_null(obj.get("grant_id"), AWARD_IDS_EXCLUDE)
+        funder_project_number = replace_with_null(obj.get("funder_project_number"), AWARD_IDS_EXCLUDE)
         funder = {
             "funder": {
                 "name": funder_name,
@@ -238,10 +239,11 @@ def parse_funding(objects: list[dict]) -> list[dict]:
             "status": status,
             "funding_opportunity_id": funding_opportunity_id,
             "award_id": award_id,
+            "funder_project_number": funder_project_number,
         }
 
-        if any([funder_name, funder_ror, funding_opportunity_id, award_id]):
-            key = (funder_name, funder_ror, status, funding_opportunity_id, award_id)
+        if any([funder_name, funder_ror, funding_opportunity_id, award_id, funder_project_number]):
+            key = (funder_name, funder_ror, status, funding_opportunity_id, award_id, funder_project_number)
             if key not in seen:
                 seen.add(key)
                 funding.append(funder)

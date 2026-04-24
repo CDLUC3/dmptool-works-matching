@@ -7,6 +7,8 @@ from cyclopts import App, Parameter, validators
 from dmpworks.cli_utils import LogLevel, MergeRelatedWorksConfig, MySQLConfig
 from dmpworks.opensearch.utils import OpenSearchClientConfig
 
+log = logging.getLogger(__name__)
+
 app = App(name="dmsp", help="Utilities for the DMSP database.")
 related_works_app = App(name="related-works", help="DMSP related works utilities.")
 app.command(related_works_app)
@@ -65,6 +67,13 @@ def load_ground_truth_related_works(
 
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
+
+    log.info(
+        f"MySQL: host={mysql_config.mysql_host}, port={mysql_config.mysql_tcp_port}, user={mysql_config.mysql_user}, database={mysql_config.mysql_database}"
+    )
+    log.info(
+        f"OpenSearch: host={opensearch_config.host}, port={opensearch_config.port}, use_ssl={opensearch_config.use_ssl}, verify_certs={opensearch_config.verify_certs}, auth_type={opensearch_config.auth_type}, username={opensearch_config.username}, aws_region={opensearch_config.aws_region}, aws_service={opensearch_config.aws_service}"
+    )
 
     conn = make_connection(mysql_config)
     os_client = make_opensearch_client(opensearch_config)

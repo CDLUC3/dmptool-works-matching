@@ -42,7 +42,7 @@ def meta(
         env_file: Path to a .env file to load before executing the command.
     """
     if env_file.exists():
-        load_dotenv(dotenv_path=env_file, override=True)
+        load_dotenv(dotenv_path=env_file, override=False)
     cli(tokens)
 
 

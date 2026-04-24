@@ -163,7 +163,16 @@ LogLevel = Annotated[
     Parameter(help="Python log level"),
 ]
 Date = Annotated[pendulum.Date | None, Parameter(converter=parse_date)]
-QueryBuilder = Literal["build_dmp_works_search_baseline_query", "build_dmp_works_search_candidate_query"]
+QueryBuilder = Literal["build_dmp_works_search_baseline_query"]
+QueryFeature = Literal[
+    "funded_dois",
+    "authors",
+    "institutions",
+    "funders",
+    "awards",
+    "content",
+    "relations",
+]
 
 
 @dataclass

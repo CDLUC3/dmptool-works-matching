@@ -13,6 +13,7 @@ from dmpworks.cli_utils import (
     OpenSearchClientConfig,
     OpenSearchSyncConfig,
     QueryBuilder,
+    QueryFeature,
 )
 from dmpworks.opensearch.cli_roles import app as roles_app
 
@@ -319,6 +320,27 @@ def rank_metrics_cmd(
     include_named_queries_score: bool = True,
     inner_hits_size: int = 50,
     ks: Annotated[list[int] | None, Parameter(consume_multiple=True)] = None,
+    inject_published_outputs_file: Annotated[
+        pathlib.Path | None,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=True,
+            )
+        ),
+    ] = None,
+    true_positive_published_outputs_file: Annotated[
+        pathlib.Path | None,
+        Parameter(
+            validator=validators.Path(
+                dir_okay=False,
+                file_okay=True,
+                exists=False,
+            )
+        ),
+    ] = None,
+    disable_features: Annotated[list[QueryFeature] | None, Parameter(consume_multiple=True)] = None,
     log_level: LogLevel = "INFO",
 ):
     """Compute ranking metrics for baseline or re-ranked search results.
@@ -338,8 +360,12 @@ def rank_metrics_cmd(
         include_named_queries_score: Whether to include named query scores in the search response.
         inner_hits_size: Maximum number of inner hits returned for each matched work.
         ks: The top K breakpoints to compute for each metric.
+        inject_published_outputs_file: Path to a CSV (dmp_doi,work_doi columns) defining the published_outputs used during search. When set, this file is the full anchor spec: DMPs listed get injected anchors, DMPs not listed get an empty anchor set. Used to drive the DMP relations feature from a controlled anchor set during benchmarking.
+        true_positive_published_outputs_file: When set, write a CSV of dmp_doi,work_doi pairs for returned works that are also in the ground truth. The output can be fed back in via inject_published_outputs_file on a subsequent run.
+        disable_features: Features to disable in the baseline query for ablation studies. All features are enabled by default. Valid values: funded_dois, authors, institutions, funders, awards, content, relations.
         log_level: Python log level (e.g., INFO).
     """
+    from dmpworks.opensearch.query_builder import QueryFeatures
     from dmpworks.opensearch.rank_metrics import related_works_calculate_metrics
 
     if client_config is None:
@@ -348,6 +374,8 @@ def rank_metrics_cmd(
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
     logging.getLogger("opensearch").setLevel(logging.WARNING)
+
+    features = QueryFeatures(**dict.fromkeys(disable_features, False)) if disable_features else QueryFeatures()
 
     related_works_calculate_metrics(
         ground_truth_file,
@@ -364,6 +392,9 @@ def rank_metrics_cmd(
         batch_size=batch_size,
         max_results=max_results,
         ks=ks,
+        inject_published_outputs_file=inject_published_outputs_file,
+        true_positive_published_outputs_file=true_positive_published_outputs_file,
+        features=features,
     )
 
 

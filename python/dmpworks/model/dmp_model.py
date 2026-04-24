@@ -139,12 +139,14 @@ class FundingItem(BaseModel):
         funding_opportunity_id: The funding opportunity ID.
         status: The status of the funding.
         award_id: The award ID.
+        funder_project_number: The funder's internal project number.
     """
 
     funder: Funder | None
     funding_opportunity_id: str | None
     status: str | None
     award_id: str | None
+    funder_project_number: str | None
 
 
 class ExternalData(BaseModel):

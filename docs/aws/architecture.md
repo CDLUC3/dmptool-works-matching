@@ -54,6 +54,65 @@ flowchart LR
 
 ## Runtime resource flow
 
+Three workflows share S3, OpenSearch, and the DMP Tool database:
+
+```mermaid
+flowchart TB
+    %% Triggers
+    T1([Mon-Fri 08:00]):::trigger
+    T2([2nd Mon 09:00]):::trigger
+    T3([Mon-Fri 20:00]):::trigger
+
+    VC[Version checker]
+
+    subgraph INGEST ["① Dataset Ingest — per new release"]
+        direction LR
+        DL[Download] --> SB[Subset<br/>optional] --> TF[Transform]
+    end
+
+    subgraph WORKS ["② Process Works — monthly"]
+        direction LR
+        RDY{5 datasets<br/>ready?} --> SM[SQLMesh<br/>build index] --> SW[Sync works<br/>to OpenSearch]
+    end
+
+    subgraph DMPS ["③ Process DMPs — daily, or after ②"]
+        direction LR
+        SD[Sync DMPs] --> ED["Enrich<br/>NSF · NIH"] --> DWS[Works search] --> MRW[Merge<br/>related works]
+    end
+
+    %% Shared stores
+    SRC[("Upstream<br/>datasets")]:::store
+    S3[("S3 Parquet")]:::store
+    OS[("OpenSearch<br/>works + dmps")]:::store
+    DB[("DMP Tool<br/>MySQL")]:::store
+
+    %% Trigger edges
+    T1 --> VC
+    T2 --> RDY
+    T3 --> SD
+
+    %% Data flow
+    SRC -->|check version| VC
+    VC -->|start per new release| DL
+    SRC --> DL
+    TF --> S3
+    S3 --> SM
+    SW --> OS
+    DB --> SD
+    SD --> OS
+    OS --> DWS
+    MRW --> DB
+
+    %% Cross-workflow handoffs
+    TF -. checkpoint .-> RDY
+    SW -. async trigger .-> SD
+
+    classDef trigger fill:#fef3c7,stroke:#b45309;
+    classDef store fill:#fff,stroke:#333;
+```
+
+The same pipeline mapped to AWS resources:
+
 ```mermaid
 flowchart TD
     subgraph triggers ["EventBridge"]

@@ -1,12 +1,38 @@
 from collections.abc import Callable
 import copy
+from dataclasses import dataclass
+import logging
 
 import pendulum
 
 from dmpworks.model.common import Institution
-from dmpworks.model.dmp_model import Award, DMPModel
+from dmpworks.model.dmp_model import Award, DMPModel, FundingItem
+
+log = logging.getLogger(__name__)
 
 MIN_START_DATE = pendulum.date(1990, 1, 1)
+
+
+@dataclass(frozen=True)
+class QueryFeatures:
+    """Toggles for features emitted by the baseline query. All on by default.
+
+    Disabling a feature causes its clause to be omitted from the query. Used
+    for ablation studies run via the rank-metrics CLI; production search runs
+    with defaults.
+    """
+
+    funded_dois: bool = True
+    authors: bool = True
+    institutions: bool = True
+    funders: bool = True
+    awards: bool = True
+    content: bool = True
+    relations: bool = True
+
+    def disabled_names(self) -> list[str]:
+        """Return the names of disabled features, sorted."""
+        return sorted(f for f, v in self.__dict__.items() if not v)
 
 
 def get_query_builder(name: str) -> Callable[[DMPModel, int, int, int], dict]:
@@ -23,7 +49,6 @@ def get_query_builder(name: str) -> Callable[[DMPModel, int, int, int], dict]:
     """
     query_builders = {
         "build_dmp_works_search_baseline_query": build_dmp_works_search_baseline_query,
-        "build_dmp_works_search_candidate_query": build_dmp_works_search_candidate_query,
     }
     if name not in query_builders:
         raise ValueError(f"Unknown query builder name: {name}")
@@ -133,7 +158,12 @@ def make_content(dmp: DMPModel) -> str | None:
 
 
 def build_dmp_works_search_baseline_query(
-    dmp: DMPModel, max_results: int, project_end_buffer_years: int, inner_hits_size: int
+    dmp: DMPModel,
+    max_results: int,
+    project_end_buffer_years: int,
+    inner_hits_size: int,
+    *,
+    features: QueryFeatures | None = None,
 ) -> dict:
     """Baseline DMP works search query using manually tuned weights.
 
@@ -142,15 +172,20 @@ def build_dmp_works_search_baseline_query(
         max_results: The maximum number of results to return.
         project_end_buffer_years: The number of years to buffer the project end date.
         inner_hits_size: The size of inner hits to return for nested fields.
+        features: Per-feature toggles. Disabled features omit their clause from the query.
+            Defaults to all features on.
 
     Returns:
-        dict: The OpenSearch query.
+        dict: The OpenSearch query. When every must-clause feature is disabled or produces
+        no clauses, OpenSearch returns zero hits for this DMP (an empty ``bool.should`` with
+        ``minimum_should_match: 1`` matches nothing).
     """
+    features = features if features is not None else QueryFeatures()
     must = []
     should = []
 
     # Funded DOIs
-    if dmp.funded_dois:
+    if features.funded_dois and dmp.funded_dois:
         must.append(
             {
                 "constant_score": {
@@ -164,58 +199,69 @@ def build_dmp_works_search_baseline_query(
         )
 
     # Authors
-    authors = build_entity_query(
-        "authors",
-        "authors.orcid",
-        "authors.full",
-        dmp.authors,
-        lambda author: author.orcid,
-        lambda author: author.surname,
-        inner_hits_size=inner_hits_size,
-        name_slop=None,
-    )
-    if authors is not None:
-        must.append(authors)
+    if features.authors:
+        authors = build_entity_query(
+            "authors",
+            "authors.orcid",
+            "authors.full",
+            dmp.authors,
+            lambda author: author.orcid,
+            lambda author: author.surname,
+            inner_hits_size=inner_hits_size,
+            name_slop=None,
+        )
+        if authors is not None:
+            must.append(authors)
 
     # Institutions
-    institutions = build_entity_query(
-        "institutions",
-        "institutions.ror",
-        "institutions.name",
-        dmp.institutions,
-        lambda inst: inst.ror,
-        lambda inst: inst.name,
-        inner_hits_size=inner_hits_size,
-        name_slop=3,
-    )
-    if institutions is not None:
-        should.append(institutions)
+    if features.institutions:
+        institutions = build_entity_query(
+            "institutions",
+            "institutions.ror",
+            "institutions.name",
+            dmp.institutions,
+            lambda inst: inst.ror,
+            lambda inst: inst.name,
+            inner_hits_size=inner_hits_size,
+            name_slop=3,
+        )
+        if institutions is not None:
+            should.append(institutions)
 
     # Funders
-    funders = build_entity_query(
-        "funders",
-        "funders.ror",
-        "funders.name",
-        dmp.funding,
-        lambda fund: fund.funder.ror,
-        lambda fund: fund.funder.name,
-        inner_hits_size=inner_hits_size,
-        name_slop=3,
-    )
-    if funders is not None:
-        should.append(funders)
+    if features.funders:
+        funders = build_entity_query(
+            "funders",
+            "funders.ror",
+            "funders.name",
+            dmp.funding,
+            lambda fund: fund.funder.ror,
+            lambda fund: fund.funder.name,
+            inner_hits_size=inner_hits_size,
+            name_slop=3,
+        )
+        if funders is not None:
+            should.append(funders)
 
-    # Awards
-    awards = build_awards_query(
-        "awards",
-        dmp.external_data.awards,
-        inner_hits_size=inner_hits_size,
-    )
-    if awards is not None:
-        must.append(awards)
+    # Awards (fall back to raw funding identifiers when no parsed awards available)
+    if features.awards:
+        if dmp.external_data.awards:
+            awards = build_awards_query(
+                "awards",
+                dmp.external_data.awards,
+                inner_hits_size=inner_hits_size,
+            )
+        else:
+            awards = build_raw_awards_query(
+                "awards",
+                dmp.funding,
+                inner_hits_size=inner_hits_size,
+            )
+        if awards is not None:
+            must.append(awards)
 
     # Title and abstract
-    content = make_content(dmp)
+    content = make_content(dmp) if features.content else None
     if content:
         should.append(
             {
@@ -229,41 +275,48 @@ def build_dmp_works_search_baseline_query(
         )
 
     # Relations
-    # Intra work DOIs are the same core work, so they get a high rank
+    # Intra work DOIs are the same core work, so they get a high rank.
     # These are appended to must because if one of these matches it is almost
     # certainly a match.
-    published_outputs = dmp.published_outputs if dmp.published_outputs is not None else []
-    intra_work_dois = build_relations_query(
-        "relations.intra_work_dois",
-        "relations.intra_work_dois.doi",
-        [work.doi for work in published_outputs],
-        boost=10.0,
-    )
-    if intra_work_dois is not None:
-        must.append(intra_work_dois)
+    if features.relations:
+        published_outputs = dmp.published_outputs if dmp.published_outputs is not None else []
+        intra_work_dois = build_relations_query(
+            "relations.intra_work_dois",
+            "relations.intra_work_dois.doi",
+            [work.doi for work in published_outputs],
+            boost=10.0,
+        )
+        if intra_work_dois is not None:
+            must.append(intra_work_dois)
 
-    # Inter work DOIs with relation types that can be used for linking works
-    # published as a part of the same project. E.g. a supplement rather than
-    # a citation.
-    possible_shared_project_dois = build_relations_query(
-        "relations.possible_shared_project_dois",
-        "relations.possible_shared_project_dois.doi",
-        [work.doi for work in published_outputs],
-        boost=5.0,
-    )
-    if possible_shared_project_dois is not None:
-        must.append(possible_shared_project_dois)
+        # Inter work DOIs with relation types that can be used for linking works
+        # published as a part of the same project. E.g. a supplement rather than
+        # a citation.
+        possible_shared_project_dois = build_relations_query(
+            "relations.possible_shared_project_dois",
+            "relations.possible_shared_project_dois.doi",
+            [work.doi for work in published_outputs],
+            boost=5.0,
+        )
+        if possible_shared_project_dois is not None:
+            must.append(possible_shared_project_dois)
 
-    # Dataset citations, these are any kind of citation of a dataset, but still
-    # could be useful information, so have ranked lower than the above two.
-    dataset_citation_dois = build_relations_query(
-        "relations.dataset_citation_dois",
-        "relations.dataset_citation_dois.doi",
-        [work.doi for work in published_outputs],
-        boost=2.5,
-    )
-    if dataset_citation_dois is not None:
-        must.append(dataset_citation_dois)
+        # Dataset citations, these are any kind of citation of a dataset, but still
+        # could be useful information, so have ranked lower than the above two.
+        dataset_citation_dois = build_relations_query(
+            "relations.dataset_citation_dois",
+            "relations.dataset_citation_dois.doi",
+            [work.doi for work in published_outputs],
+            boost=2.5,
+        )
+        if dataset_citation_dois is not None:
+            must.append(dataset_citation_dois)
+
+    if not must:
+        log.warning(
+            f"No must-clause features produced a clause for DMP {dmp.doi}. "
+            f"Disabled features: {features.disabled_names()}. DMP will return zero results."
+        )
 
     # Final query and filter based on date range
     # also remove DMPs from search results (OUTPUT_MANAGEMENT_PLAN)
@@ -306,185 +359,6 @@ def build_dmp_works_search_baseline_query(
                         }
                     }
                 ],
-                "should": should,
-                "filter": filters,
-            },
-        },
-    }
-
-    if content:
-        query["highlight"] = {
-            "pre_tags": ["<mark>"],
-            "post_tags": ["</mark>"],
-            "order": "score",
-            "require_field_match": True,
-            "fields": {
-                "title": {
-                    "type": "fvh",
-                    "number_of_fragments": 0,
-                    "fragment_size": 0,
-                    "no_match_size": 500,
-                },
-                "abstract_text": {
-                    "type": "fvh",
-                    "fragment_size": 160,
-                    "number_of_fragments": 2,
-                    "no_match_size": 160,
-                },
-            },
-            "highlight_query": {
-                "more_like_this": {
-                    "fields": ["title", "abstract_text"],
-                    "like": content,
-                    "min_term_freq": 1,
-                }
-            },
-        }
-
-    # print(json.dumps(query))
-
-    return query
-
-
-def build_dmp_works_search_candidate_query(
-    dmp: DMPModel, max_results: int, project_end_buffer_years: int, inner_hits_size: int
-) -> dict:
-    """Build a candidate query for DMP works search.
-
-    Args:
-        dmp: The DMP model.
-        max_results: The maximum number of results to return.
-        project_end_buffer_years: The number of years to buffer the project end date.
-        inner_hits_size: The size of inner hits to return for nested fields.
-
-    Returns:
-        dict: The OpenSearch query.
-    """
-    should = []
-
-    #
-    # should.append(
-    #     {
-    #         "multi_match": {
-    #             "type": "most_fields",
-    #             "query": f"{dmp.title} {dmp.abstract}",
-    #             "fields": ["title.shingles^1", "abstract.shingles^1"],
-    #             "operator": "or",
-    #             # "fuzziness": "AUTO",
-    #         }
-    #     }
-    # )
-
-    # Funded DOIs
-    if dmp.funded_dois:
-        should.append(
-            {
-                "constant_score": {
-                    "_name": "funded_dois",
-                    "boost": 15,
-                    "filter": {
-                        "ids": {"values": dmp.funded_dois},
-                    },
-                }
-            }
-        )
-
-    # Authors
-    authors = build_entity_query(
-        "authors",
-        "authors.orcid",
-        "authors.full",
-        dmp.authors,
-        lambda author: author.orcid,
-        lambda author: author.surname,
-        inner_hits_size=inner_hits_size,
-        name_slop=None,
-    )
-    if authors is not None:
-        should.append(authors)
-
-    # Institutions
-    institutions = build_entity_query(
-        "institutions",
-        "institutions.ror",
-        "institutions.name",
-        dmp.institutions,
-        lambda inst: inst.ror,
-        lambda inst: inst.name,
-        inner_hits_size=inner_hits_size,
-        name_slop=3,
-    )
-    if institutions is not None:
-        should.append(institutions)
-
-    # Funders
-    funders = build_entity_query(
-        "funders",
-        "funders.ror",
-        "funders.name",
-        dmp.funding,
-        lambda fund: fund.funder.ror,
-        lambda fund: fund.funder.name,
-        inner_hits_size=inner_hits_size,
-        name_slop=3,
-    )
-    if funders is not None:
-        should.append(funders)
-
-    # Awards
-    awards = build_awards_query(
-        "awards",
-        dmp.external_data.awards,
-        inner_hits_size=inner_hits_size,
-    )
-    if awards is not None:
-        should.append(awards)
-
-    # Title and abstract
-    content = make_content(dmp)
-    if content:
-        should.append(
-            {
-                "more_like_this": {
-                    "_name": "content",
-                    "fields": ["title", "abstract_text"],
-                    "like": content,
-                    "min_term_freq": 1,
-                }
-            }
-        )
-
-    # Final query and filter based on date range
-    # also remove DMPs from search results (OUTPUT_MANAGEMENT_PLAN)
-    filters = [
-        {
-            "bool": {
-                "must_not": {
-                    "term": {
-                        "work_type": "OUTPUT_MANAGEMENT_PLAN",
-                    }
-                }
-            },
-        }
-    ]
-    if dmp.project_start is not None and dmp.project_start >= pendulum.date(1990, 1, 1):
-        gte = dmp.project_start.format("YYYY-MM-DD")
-        lte = dmp.project_end.add(years=project_end_buffer_years).format("YYYY-MM-DD")
-        filters.append(
-            {
-                "range": {
-                    "publication_date": {
-                        "gte": gte,
-                        "lte": lte,
-                    },
-                }
-            }
-        )
-
-    query = {
-        "size": max_results,
-        "query": {
-            "bool": {
                 "should": should,
                 "filter": filters,
             },
@@ -572,6 +446,70 @@ def build_awards_query(
                     "bool": {
                         "minimum_should_match": 1,
                         "should": award_queries,
+                    }
+                },
+                "inner_hits": {
+                    "name": path,
+                    "size": inner_hits_size,
+                },
+            },
+        }
+
+    return None
+
+
+def build_raw_awards_query(
+    path: str,
+    funding: list[FundingItem],
+    inner_hits_size: int = 50,
+) -> dict | None:
+    """Build a nested OpenSearch query matching raw funding identifiers.
+
+    Used as a fallback when no parsed awards are available (e.g. for funders
+    that are not yet supported by an AwardID parser). Matches the raw values
+    of funding_opportunity_id, award_id, and funder_project_number directly
+    against the works index `awards.award_id` field.
+
+    Args:
+        path: Nested document path for awards.
+        funding: List of FundingItem objects containing raw identifiers.
+        inner_hits_size: Maximum number of matching nested documents to return.
+
+    Returns:
+        Nested query dict if any funding item has raw identifiers, otherwise None.
+    """
+    funder_queries = []
+    for fund in funding:
+        raw_ids = {raw for raw in (fund.funding_opportunity_id, fund.award_id, fund.funder_project_number) if raw}
+        if not raw_ids:
+            continue
+        queries = [
+            {
+                "constant_score": {
+                    "_name": f"awards.award_id.{raw_id}",
+                    "filter": {"term": {"awards.award_id": raw_id}},
+                    "boost": 10,
+                }
+            }
+            for raw_id in raw_ids
+        ]
+        funder_queries.append(
+            {
+                "dis_max": {
+                    "tie_breaker": 0,
+                    "queries": queries,
+                }
+            }
+        )
+
+    if len(funder_queries) > 0:
+        return {
+            "nested": {
+                "path": path,
+                "query": {
+                    "bool": {
+                        "minimum_should_match": 1,
+                        "should": funder_queries,
                     }
                 },
                 "inner_hits": {
@@ -732,12 +670,26 @@ def build_ltr_features(dmp: DMPModel):
     """
     published_outputs = dmp.published_outputs if dmp.published_outputs is not None else []
 
+    # Awards: use parsed external awards when available, otherwise fall back to
+    # raw funding identifiers so unsupported funders still contribute features.
+    if dmp.external_data.awards:
+        dmp_award_count = len(dmp.external_data.awards)
+        award_groups = build_sltr_awards_query(dmp.external_data.awards)
+    else:
+        funding_with_raw = [
+            fund
+            for fund in dmp.funding
+            if any([fund.funding_opportunity_id, fund.award_id, fund.funder_project_number])
+        ]
+        dmp_award_count = len(funding_with_raw)
+        award_groups = build_sltr_raw_awards_query(funding_with_raw)
+
     return {
         "content": [make_content(dmp)],
         "funded_dois": dmp.funded_dois,
         # Awards
-        "dmp_award_count": len(dmp.external_data.awards),
-        "award_groups": build_sltr_awards_query(dmp.external_data.awards),
+        "dmp_award_count": dmp_award_count,
+        "award_groups": award_groups,
         # Authors
         "dmp_author_count": len(dmp.authors),
         "author_orcids": list(
@@ -837,6 +789,37 @@ def build_sltr_awards_query(awards: list[Award]) -> list[dict]:
             }
         }
         queries.append(query)
+    return queries
+
+
+def build_sltr_raw_awards_query(funding: list[FundingItem]) -> list[dict]:
+    """Build SLTR query components for raw funding identifiers.
+
+    Fallback variant of build_sltr_awards_query used when no parsed awards are
+    available. Each funder contributes one nested terms query against
+    awards.award_id with its non-null raw identifiers.
+
+    Args:
+        funding: A list of FundingItem objects.
+
+    Returns:
+        list[dict]: A list of query components.
+    """
+    queries = []
+    for fund in funding:
+        raw_ids = [raw for raw in (fund.funding_opportunity_id, fund.award_id, fund.funder_project_number) if raw]
+        if not raw_ids:
+            continue
+        queries.append(
+            {
+                "constant_score": {
+                    "boost": 1,
+                    "filter": {"nested": {"path": "awards", "query": {"terms": {"awards.award_id": raw_ids}}}},
+                }
+            }
+        )
+    if not queries:
+        return [{"match_none": {}}]
     return queries
 
 

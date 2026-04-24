@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import logging
 import os
 from typing import TYPE_CHECKING, Literal
@@ -708,6 +708,50 @@ def get_latest_process_dmps_run(*, release_date: str) -> ProcessDMPsRunRecord | 
         The most recent ProcessDMPsRunRecord, or None if no records exist.
     """
     return get_latest(ProcessDMPsRunRecord, release_date)
+
+
+def get_latest_process_works_run_recent(*, lookback_days: int = 90) -> ProcessWorksRunRecord | None:
+    """Return the most recent ProcessWorksRunRecord within a lookback window.
+
+    Scans the process-works-runs table filtered to release_dates within the last
+    ``lookback_days`` and returns the row with the greatest (release_date, run_id).
+    Used by the scheduled process-dmps guard to detect in-flight process-works runs
+    without scanning the whole table.
+
+    Args:
+        lookback_days: Days of history to consider. Defaults to 90 — process-works
+            runs monthly, so this window reliably captures the most recent run.
+
+    Returns:
+        The most recent ProcessWorksRunRecord within the window, or None if none exist.
+    """
+    start_date = (datetime.now(UTC) - timedelta(days=lookback_days)).date().isoformat()
+    runs = scan_all_process_works_runs(start_date=start_date)
+    if not runs:
+        return None
+    return max(runs, key=lambda r: (r.release_date, r.run_id))
+
+
+def get_latest_process_dmps_run_recent(*, lookback_days: int = 30) -> ProcessDMPsRunRecord | None:
+    """Return the most recent ProcessDMPsRunRecord within a lookback window.
+
+    Scans the process-dmps-runs table filtered to release_dates within the last
+    ``lookback_days`` and returns the row with the greatest (release_date, run_id).
+    Used by the scheduled process-dmps guard to detect in-flight process-dmps runs
+    without scanning the whole table.
+
+    Args:
+        lookback_days: Days of history to consider. Defaults to 30 — process-dmps
+            runs daily, so anything older cannot legitimately still be in flight.
+
+    Returns:
+        The most recent ProcessDMPsRunRecord within the window, or None if none exist.
+    """
+    start_date = (datetime.now(UTC) - timedelta(days=lookback_days)).date().isoformat()
+    runs = scan_all_process_dmps_runs(start_date=start_date)
+    if not runs:
+        return None
+    return max(runs, key=lambda r: (r.release_date, r.run_id))
 
 
 def set_process_dmps_run_status(
