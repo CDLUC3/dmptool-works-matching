@@ -2,12 +2,12 @@ import logging
 import pathlib
 from typing import Annotated
 
-log = logging.getLogger(__name__)
-
 from cyclopts import App, Parameter, validators
 
 from dmpworks.cli_utils import LogLevel, MergeRelatedWorksConfig, MySQLConfig
 from dmpworks.opensearch.utils import OpenSearchClientConfig
+
+log = logging.getLogger(__name__)
 
 app = App(name="dmsp", help="Utilities for the DMSP database.")
 related_works_app = App(name="related-works", help="DMSP related works utilities.")
