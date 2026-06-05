@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'AWS CloudWatch Alarm for Lambda Dead Letter Queue. Posts messages to Slack'
+
+Parameters:
+  SlackWorkspaceId:
+    Type: 'String'
+
+  SlackChannelId:
+    Type: 'String'
+
+  AlarmTopics:
+    Type: 'List<String>'
+
+Resources:
+  ChatbotRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'chatbot.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-NotificationsOnly"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'cloudwatch:DescribeAlarms'
+                  - 'cloudwatch:GetMetricData'
+                Resource: "*"
+
+  SlackChannelConfiguration:
+    Type: 'AWS::Chatbot::SlackChannelConfiguration'
+    Properties:
+      ConfigurationName: !Sub "${AWS::StackName}-DLQ-slack-notifier"
+      SlackWorkspaceId: !Ref SlackWorkspaceId
+      SlackChannelId: !Ref SlackChannelId
+      SnsTopicArns: !Ref AlarmTopics
+      IamRoleArn: !GetAtt ChatbotRole.Arn
+
+Outputs:
+  SlackChannelConfigurationId:
+    Value: !Ref SlackChannelConfiguration
+
+  SlackChannelConfigurationArn:
+    Value: !GetAtt SlackChannelConfiguration.Arn

@@ -1,0 +1,38 @@
+template:
+  path: 'codebuild/dmpworks.yaml'
+  type: 'file'
+
+parameters:
+  Env: !stack_attr sceptre_user_data.env
+
+  CodeStarConnectionArn: !stack_output dev/codestar.yaml::CodestarConnectionARN
+
+  BatchEcrRepositoryArn: !stack_output stg/ecr.yaml::BatchRepositoryARN
+  BatchEcrRepositoryUri: !stack_output stg/ecr.yaml::BatchRepositoryURI
+  BatchEcrRepositoryName: !stack_output stg/ecr.yaml::BatchRepositoryName
+
+  LambdaEcrRepositoryArn: !stack_output stg/ecr.yaml::LambdaRepositoryARN
+  LambdaEcrRepositoryUri: !stack_output stg/ecr.yaml::LambdaRepositoryURI
+  LambdaEcrRepositoryName: !stack_output stg/ecr.yaml::LambdaRepositoryName
+
+  S3ArtifactBucketArn: !stack_output stg/s3.yaml::S3PrivateBucketARN
+  S3ArtifactBucketId: !stack_output stg/s3.yaml::S3PrivateBucketID
+
+  LambdaEcrImageUriSsmParameterName: !stack_attr sceptre_user_data.ssm_path
+
+  ImageTag: 'dmpworks-latest'
+
+  LogRetentionDays: '30'
+
+  CodeBuildEnvironmentType: 'LINUX_CONTAINER'
+  CodeBuildEnvironmentComputeType: 'BUILD_GENERAL1_MEDIUM'
+  CodeBuildEnvironmentImage: 'aws/codebuild/amazonlinux2-x86_64-standard:5.0'
+  CodeBuildTimeout: '30'
+
+dependencies:
+  - stg/ecr.yaml
+  - stg/s3.yaml
+
+capabilities:
+  - CAPABILITY_IAM
+  - CAPABILITY_NAMED_IAM
