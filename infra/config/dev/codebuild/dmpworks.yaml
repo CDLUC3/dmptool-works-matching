@@ -3,7 +3,7 @@ template:
   type: 'file'
 
 parameters:
-  Env: !stack_attr sceptre_user_data.env
+  Env: !stack_attr vars.env
 
   CodeStarConnectionArn: !stack_output dev/codestar.yaml::CodestarConnectionARN
 
@@ -15,8 +15,8 @@ parameters:
   LambdaEcrRepositoryUri: !stack_output dev/ecr.yaml::LambdaRepositoryURI
   LambdaEcrRepositoryName: !stack_output dev/ecr.yaml::LambdaRepositoryName
 
-  S3ArtifactBucketArn: !stack_output dev/s3.yaml::S3PrivateBucketARN
-  S3ArtifactBucketId: !stack_output dev/s3.yaml::S3PrivateBucketID
+  S3ArtifactBucketArn: !stack_output dev/s3.yaml::S3BucketARN
+  S3ArtifactBucketId: !stack_output dev/s3.yaml::S3BucketID
 
   LambdaEcrImageUriSsmParameterName: !stack_attr sceptre_user_data.ssm_path
 

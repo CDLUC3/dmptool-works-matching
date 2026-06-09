@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: 'AWS CloudWatch Alarm for Lambda Dead Letter Queue. Posts messages to Slack'
+Description: 'AWS Chatbot Slack notifications for CodePipeline'
 
 Parameters:
   SlackWorkspaceId:
@@ -9,10 +9,12 @@ Parameters:
   SlackChannelId:
     Type: 'String'
 
-  AlarmTopics:
-    Type: 'List<String>'
-
 Resources:
+  PipelineNotificationTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: !Sub '${AWS::StackName}-notifications'
+
   ChatbotRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -24,7 +26,7 @@ Resources:
               Service: 'chatbot.amazonaws.com'
             Action: 'sts:AssumeRole'
       Policies:
-        - PolicyName: !Sub "${AWS::StackName}-NotificationsOnly"
+        - PolicyName: !Sub '${AWS::StackName}-NotificationsOnly'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -32,20 +34,21 @@ Resources:
                 Action:
                   - 'cloudwatch:DescribeAlarms'
                   - 'cloudwatch:GetMetricData'
-                Resource: "*"
+                Resource: '*'
 
   SlackChannelConfiguration:
     Type: 'AWS::Chatbot::SlackChannelConfiguration'
     Properties:
-      ConfigurationName: !Sub "${AWS::StackName}-DLQ-slack-notifier"
+      ConfigurationName: !Sub '${AWS::StackName}-pipeline-notifier'
       SlackWorkspaceId: !Ref SlackWorkspaceId
       SlackChannelId: !Ref SlackChannelId
-      SnsTopicArns: !Ref AlarmTopics
+      SnsTopicArns:
+        - !Ref PipelineNotificationTopic
       IamRoleArn: !GetAtt ChatbotRole.Arn
 
 Outputs:
-  SlackChannelConfigurationId:
-    Value: !Ref SlackChannelConfiguration
-
   SlackChannelConfigurationArn:
     Value: !GetAtt SlackChannelConfiguration.Arn
+
+  PipelineNotificationTopicArn:
+    Value: !Ref PipelineNotificationTopic

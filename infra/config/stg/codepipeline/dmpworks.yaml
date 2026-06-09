@@ -3,13 +3,13 @@ template:
   type: 'file'
 
 parameters:
-  CodeStarConnectionArn: !stack_output dev/codestar.yaml::CodestarConnectionARN
+  CodeStarConnectionArn: !stack_output stg/codestar.yaml::CodestarConnectionARN
 
-  S3ArtifactBucketId: !stack_output stg/s3.yaml::S3PrivateBucketID
+  S3ArtifactBucketId: !stack_output stg/s3.yaml::S3BucketID
 
   CodeBuildProjectName: !stack_output stg/codebuild/dmpworks.yaml::CodeBuildProjectId
 
-  ChatbotConfigArn: !stack_output_external {{ var.chatbot_stack_output }}
+  ChatbotConfigArn: !stack_output_external dmp-tool-stg-chatbot::SlackChannelConfigurationArn
 
   Env: !stack_attr sceptre_user_data.env
 
@@ -17,14 +17,10 @@ parameters:
 
   RepositoryName: 'CDLUC3/dmptool-works-matching'
 
-  BranchToMonitor: 'development'
+  BranchToMonitor: 'stage'
 
   SourceOutputArtifactFormat: 'CODEBUILD_CLONE_REF'
 
 dependencies:
   - stg/s3.yaml
   - stg/codebuild/dmpworks.yaml
-
-capabilities:
-  - CAPABILITY_IAM
-  - CAPABILITY_NAMED_IAM
