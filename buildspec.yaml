@@ -3,8 +3,6 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - export AWS_VERSION=$(aws --version)
-      - echo "AWS CLI: $AWS_VERSION"
       - echo "Logging into Amazon ECR"
       - export ECR_REGISTRY=$(echo "$BATCH_ECR_REPOSITORY_URI" | cut -d/ -f1)
       - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
