@@ -17,7 +17,7 @@ parameters:
 
   RepositoryName: 'CDLUC3/dmptool-works-matching'
 
-  BranchToMonitor: 'development'
+  BranchToMonitor: 'main'
 
   SourceOutputArtifactFormat: 'CODEBUILD_CLONE_REF'
 
