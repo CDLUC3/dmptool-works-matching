@@ -5,7 +5,7 @@ template:
 parameters:
   Env: !stack_attr vars.env
 
-  CodeStarConnectionArn: !stack_output stg/codestar.yaml::CodestarConnectionARN
+  CodeStarConnectionArn: !stack_output_external dmp-tool-dev-codestar::CodestarConnectionARN
 
   BatchEcrRepositoryArn: !stack_output stg/ecr.yaml::BatchRepositoryARN
   BatchEcrRepositoryUri: !stack_output stg/ecr.yaml::BatchRepositoryURI

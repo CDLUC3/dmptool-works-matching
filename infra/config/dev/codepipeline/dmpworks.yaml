@@ -3,7 +3,7 @@ template:
   type: 'file'
 
 parameters:
-  CodeStarConnectionArn: !stack_output dev/codestar.yaml::CodestarConnectionARN
+  CodeStarConnectionArn: !stack_output_external dmp-tool-dev-codestar::CodestarConnectionARN
 
   S3ArtifactBucketId: !stack_output dev/s3.yaml::S3BucketID
 
