@@ -165,7 +165,7 @@ Resources:
                     "ssm:PutParameter"
                   ],
                   "Resource": [
-                    "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${LambdaEcrImageUriSsmParameterName}/LambdaEcrImageUri"
+                    "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${LambdaEcrImageUriSsmParameterName}/LambdaEcrImageUri"
                   ]
                 },
                 {
