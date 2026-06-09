@@ -8,7 +8,7 @@ phases:
       - echo "Logging into Amazon ECR"
       - export ECR_REGISTRY=$(echo "$BATCH_ECR_REPOSITORY_URI" | cut -d/ -f1)
       - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-      - export IMAGE_TAG=${IMAGE_TAG:=latest}
+      - export IMAGE_TAG="${IMAGE_TAG:=latest}"
       - export COMMIT_TAG=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-7)
       - if [ -z "$COMMIT_TAG" ] || [ "$COMMIT_TAG" = "null" ]; then COMMIT_TAG="manual"; fi
       - echo "IMAGE_TAG=$IMAGE_TAG"
