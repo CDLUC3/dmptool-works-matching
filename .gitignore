@@ -59,6 +59,7 @@ Thumbs.db
 *.pem
 infra/vars-dev.yaml
 infra/vars-stg.yaml
+infra/config/*/vars-*.yaml
 infra/lambda-config.yaml
 infra/lambda-config-dev.yaml
 infra/lambda-config-stg.yaml
