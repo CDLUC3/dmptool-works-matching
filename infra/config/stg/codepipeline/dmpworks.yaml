@@ -3,7 +3,7 @@ template:
   type: 'file'
 
 parameters:
-  CodeStarConnectionArn: !stack_output stg/codestar.yaml::CodestarConnectionARN
+  CodeStarConnectionArn: !stack_output_external dmp-tool-stg-codestar::CodestarConnectionARN
 
   S3ArtifactBucketId: !stack_output stg/s3.yaml::S3BucketID
 
@@ -11,7 +11,7 @@ parameters:
 
   ChatbotConfigArn: !stack_output_external dmp-tool-stg-chatbot::SlackChannelConfigurationArn
 
-  Env: !stack_attr sceptre_user_data.env
+  Env: "{{ var.env }}"
 
   AppName: "{{ var.project_code }}"
 
