@@ -1,0 +1,238 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'CodeBuild for the DMP Works container images'
+
+Parameters:
+  Env:
+    Type: 'String'
+    Default: 'dev'
+
+  CodeStarConnectionArn:
+    Type: 'String'
+
+  BatchEcrRepositoryArn:
+    Type: 'String'
+
+  BatchEcrRepositoryUri:
+    Type: 'String'
+
+  BatchEcrRepositoryName:
+    Type: 'String'
+
+  LambdaEcrRepositoryArn:
+    Type: 'String'
+
+  LambdaEcrRepositoryUri:
+    Type: 'String'
+
+  LambdaEcrRepositoryName:
+    Type: 'String'
+
+  S3ArtifactBucketArn:
+    Type: 'String'
+
+  S3ArtifactBucketId:
+    Type: 'String'
+
+  LambdaEcrImageUriSsmParameterName:
+    Type: 'String'
+
+  ImageTag:
+    Type: 'String'
+    Default: 'dmpworks-latest'
+
+  LogRetentionDays:
+    Type: 'Number'
+    Default: 30
+
+  CodeBuildEnvironmentType:
+    Type: 'String'
+    Default: 'LINUX_CONTAINER'
+
+  CodeBuildEnvironmentComputeType:
+    Type: 'String'
+    Default: 'BUILD_GENERAL1_MEDIUM'
+
+  CodeBuildEnvironmentImage:
+    Type: 'String'
+    Default: 'aws/codebuild/amazonlinux2-x86_64-standard:5.0'
+
+  CodeBuildTimeout:
+    Type: 'Number'
+    Default: 30
+
+Resources:
+  LogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: !Ref LogRetentionDays
+
+  CodeBuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-Role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'codebuild.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser'
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}-build-policy'
+          PolicyDocument: !Sub |
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents",
+                    "logs:AssociateKmsKey"
+                  ],
+                  "Resource": [
+                    "${LogGroup.Arn}",
+                    "${LogGroup.Arn}:*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "codebuild:CreateReportGroup",
+                    "codebuild:CreateReport",
+                    "codebuild:UpdateReport",
+                    "codebuild:BatchPutTestCases",
+                    "codebuild:BatchPutCodeCoverages"
+                  ],
+                  "Resource": [
+                    "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:PutObject",
+                    "s3:GetObject",
+                    "s3:GetObjectVersion",
+                    "s3:GetBucketAcl",
+                    "s3:GetBucketLocation",
+                    "s3:GetBucketVersioning"
+                  ],
+                  "Resource": [
+                    "${S3ArtifactBucketArn}",
+                    "${S3ArtifactBucketArn}/*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:*",
+                    "ec2:CreateNetworkInterface",
+                    "ec2:DescribeNetworkInterfaces",
+                    "ec2:DeleteNetworkInterface",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeDhcpOptions",
+                    "ec2:DescribeVpcs",
+                    "ec2:CreateNetworkInterfacePermission"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["ecr:*"],
+                  "Resource": [
+                    "${BatchEcrRepositoryArn}",
+                    "${LambdaEcrRepositoryArn}"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["ecr:GetAuthorizationToken"],
+                  "Resource": ["*"]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ssm:PutParameter"
+                  ],
+                  "Resource": [
+                    "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${LambdaEcrImageUriSsmParameterName}/LambdaEcrImageUri"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": ["codestar-connections:UseConnection"],
+                  "Resource": "${CodeStarConnectionArn}"
+                }
+              ]
+            }
+
+  CodeBuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub '${AWS::StackName}-Project'
+      QueuedTimeoutInMinutes: 5
+      Artifacts:
+        Type: 'CODEPIPELINE'
+        OverrideArtifactName: true
+      ConcurrentBuildLimit: 1
+      Cache:
+        Type: 'S3'
+        Location: !Sub '${S3ArtifactBucketId}/dmpworks/build-cache'
+      Environment:
+        ComputeType: !Ref CodeBuildEnvironmentComputeType
+        Image: !Ref CodeBuildEnvironmentImage
+        ImagePullCredentialsType: 'CODEBUILD'
+        PrivilegedMode: true
+        Type: !Ref CodeBuildEnvironmentType
+        EnvironmentVariables:
+          - Name: 'ENV'
+            Value: !Ref Env
+          - Name: 'AWS_REGION'
+            Value: !Sub '${AWS::Region}'
+          - Name: 'BATCH_ECR_REPOSITORY_URI'
+            Value: !Ref BatchEcrRepositoryUri
+          - Name: 'BATCH_ECR_REPOSITORY_NAME'
+            Value: !Ref BatchEcrRepositoryName
+          - Name: 'LAMBDA_ECR_REPOSITORY_URI'
+            Value: !Ref LambdaEcrRepositoryUri
+          - Name: 'LAMBDA_ECR_REPOSITORY_NAME'
+            Value: !Ref LambdaEcrRepositoryName
+          - Name: 'LAMBDA_ECR_IMAGE_URI_SSM_PARAMETER'
+            Value: !Sub '${LambdaEcrImageUriSsmParameterName}/LambdaEcrImageUri'
+          - Name: 'IMAGE_TAG'
+            Value: !Ref ImageTag
+      LogsConfig:
+        CloudWatchLogs:
+          GroupName: !Ref LogGroup
+          Status: 'ENABLED'
+      ServiceRole: !Ref CodeBuildRole
+      Source:
+        Type: 'CODEPIPELINE'
+        BuildSpec: 'buildspec.yaml'
+      TimeoutInMinutes: !Ref CodeBuildTimeout
+
+Outputs:
+  LogGroupArn:
+    Value: !GetAtt LogGroup.Arn
+
+  LogGroupName:
+    Value: !Ref LogGroup
+
+  CodeBuildRoleArn:
+    Value: !GetAtt CodeBuildRole.Arn
+
+  CodeBuildProjectId:
+    Value: !Ref CodeBuildProject
+
+  CodeBuildProjectArn:
+    Value: !GetAtt CodeBuildProject.Arn

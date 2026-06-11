@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'CodePipeline for the DMP Works container images'
+
+Parameters:
+  CodeStarConnectionArn:
+    Type: 'String'
+
+  S3ArtifactBucketId:
+    Type: 'String'
+
+  CodeBuildProjectName:
+    Type: 'String'
+
+  ChatbotConfigArn:
+    Type: 'String'
+
+  RepositoryName:
+    Type: 'String'
+
+  BranchToMonitor:
+    Type: 'String'
+    Default: 'main'
+
+  SourceOutputArtifactFormat:
+    Type: 'String'
+    Default: 'CODEBUILD_CLONE_REF'
+
+  Env:
+    Type: 'String'
+    Default: 'dev'
+
+  AppName:
+    Type: 'String'
+
+  NightlyScheduleExpression:
+    Type: 'String'
+    Default: 'cron(0 8 * * ? *)'
+
+Resources:
+  CodePipelineRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Ref AWS::StackName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'codepipeline.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}-pipeline-policy'
+          PolicyDocument: !Sub |
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": ["codestar-connections:UseConnection"],
+                  "Resource": "${CodeStarConnectionArn}"
+                }
+              ]
+            }
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+        - 'arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess'
+        - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+
+  CodePipeline:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      Name: !Sub '${AppName}-${Env}'
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: 'S3'
+        Location: !Ref S3ArtifactBucketId
+      Stages:
+        - Name: 'Source'
+          Actions:
+            - Name: 'Source'
+              RunOrder: 1
+              ActionTypeId:
+                Category: 'Source'
+                Owner: 'AWS'
+                Provider: 'CodeStarSourceConnection'
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnectionArn
+                FullRepositoryId: !Ref RepositoryName
+                BranchName: !Ref BranchToMonitor
+                OutputArtifactFormat: !Ref SourceOutputArtifactFormat
+              OutputArtifacts:
+                - Name: 'SourceArtifact'
+
+        - Name: 'Build'
+          Actions:
+            - Name: 'DmpWorksImageBuild'
+              RunOrder: 1
+              InputArtifacts:
+                - Name: 'SourceArtifact'
+              ActionTypeId:
+                Category: 'Build'
+                Owner: 'AWS'
+                Provider: 'CodeBuild'
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref CodeBuildProjectName
+
+  PipelineNotificationRule:
+    Type: 'AWS::CodeStarNotifications::NotificationRule'
+    Properties:
+      Name: !Sub 'dmpworks-${Env}-pipeline-notifications'
+      Resource: !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}'
+      DetailType: 'FULL'
+      EventTypeIds:
+        - 'codepipeline-pipeline-pipeline-execution-started'
+        - 'codepipeline-pipeline-pipeline-execution-failed'
+        - 'codepipeline-pipeline-pipeline-execution-succeeded'
+        - 'codepipeline-pipeline-manual-approval-needed'
+      Targets:
+        - TargetAddress: !Ref ChatbotConfigArn
+          TargetType: 'AWSChatbotSlack'
+
+  NightlyBuildRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'events.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'DmpWorksTriggerPipelinePolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'codepipeline:StartPipelineExecution'
+                Resource: !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}'
+
+  NightlyBuildRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: 'Triggers the dmpworks image build pipeline nightly'
+      ScheduleExpression: !Ref NightlyScheduleExpression
+      State: 'ENABLED'
+      Targets:
+        - Arn: !Sub 'arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}'
+          Id: 'DmpWorksNightlyBuildTarget'
+          RoleArn: !GetAtt NightlyBuildRole.Arn
+
+Outputs:
+  CodePipelineRoleArn:
+    Value: !GetAtt CodePipelineRole.Arn
+
+  CodePipelineId:
+    Value: !Ref CodePipeline
+
+  CodePipelineVersion:
+    Value: !GetAtt CodePipeline.Version
