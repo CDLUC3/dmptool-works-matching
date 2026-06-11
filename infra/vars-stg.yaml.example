@@ -7,6 +7,9 @@ env: stg
 # AWS Region
 region: us-west-2
 
+# The name of the application. Used when naming the CodePipeline resources
+project_code: myApplication
+
 # Root SSM path prefix for this deployment.
 # All SSM parameters this project reads live under this prefix, e.g.:
 #   {ssm_prefix}/{env}/CloudFormationBucket
