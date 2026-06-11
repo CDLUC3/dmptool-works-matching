@@ -71,7 +71,7 @@ company-specific values out of the repository.
 Copy the example for your target environment and fill in all values:
 
 ```bash
-cp infra/vars-dev.yaml.example infra/vars-dev.yaml
+cp infra/vars-dev.yaml.example infra/config/[env]/vars-dev.yaml
 # Edit infra/vars-dev.yaml — set region, ssm_prefix, tags, and fill in the
 # stack-name, output-key, and aws-profile for each stack output reference.
 # infra/vars-dev.yaml is gitignored.
@@ -90,6 +90,7 @@ Stack output references follow the Sceptre `!stack_output_external` format:
 | `security_group_stack_output` | batch-platform | Security group ID for Batch compute environments          |
 | `opensearch_stack_output`     | batch-jobs     | OpenSearch domain ARN (grants container IAM access)       |
 | `rds_secret_stack_output`     | batch-jobs     | Secrets Manager ARN for RDS credentials                   |
+| `project_code`                | code-pipeline  | Used along with the ENV variable to name the pipeline     |
 
 ## 4. Deploy
 
@@ -114,6 +115,12 @@ To push images individually without deploying:
 ```bash
 make push-lambda-dev   # build + push Lambda image (dmpworks-lambda:latest) + update SSM digest URI
 make push-batch-dev    # build + push Batch job image (dmpworks-batch:latest)
+```
+
+To deploy the CodeBuild and CodePipeline stacks without deploying the rest of the infrastructure (from within the infra directory):
+
+```bash
+sceptre --var-file "config/[env]/vars-[env].yaml" launch [env]/codepipeline.yaml
 ```
 
 ## 5. OpenSearch Role Setup

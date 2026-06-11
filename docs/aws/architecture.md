@@ -13,6 +13,7 @@ back to this project.
   - [Dataset Ingest](#dataset-ingest)
   - [Process Works](#process-works)
   - [Process DMPs](#process-dmps)
+- [CI/CD](#ci/cd)
 
 ## Cross-project stack dependencies
 
@@ -29,6 +30,8 @@ flowchart LR
         CLUSTER["ecs/cluster"]
         APOLLO["ecs/apollo"]
         PROXY["ecs/opensearch-proxy"]
+        CODESTAR["codestar-connections/github"]
+        CHATBOT["chatbot/slack-channel"]
     end
 
     subgraph works ["dmptool-works-matching"]
@@ -50,6 +53,9 @@ flowchart LR
 
     S3 --> BJOBS
     S3 --> SCHED
+    
+    CI-CD --> CODESTAR
+    CI-CD --> CHATBOT
 ```
 
 ## Runtime resource flow
@@ -306,3 +312,10 @@ flowchart TD
 ```
 
 Steps: sync-dmps, enrich-dmps, dmp-works-search, merge-related-works.
+
+### CI/CD
+You can optionally deploy the CodeBuild and CodePipeline resources. The pipeline builds both the base image used by the AWS batch EC2 instance and the Lambda functions. It runs under two distinct circumstances:
+1. It monitors the GitHub repository (a specific branch, but this can be changed to watch for tags or PRs instead).
+2. Nightly 
+
+You will need to update the repository and branch information in the Sceptre config files prior to launching Sceptre.
