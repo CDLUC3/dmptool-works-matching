@@ -1,0 +1,38 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging into Amazon ECR"
+      - export ECR_REGISTRY=$(echo "$BATCH_ECR_REPOSITORY_URI" | cut -d/ -f1)
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+      - export IMAGE_TAG="${IMAGE_TAG:=latest}"
+      - export COMMIT_TAG=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-7)
+      - if [ -z "$COMMIT_TAG" ] || [ "$COMMIT_TAG" = "null" ]; then COMMIT_TAG="manual"; fi
+      - echo "IMAGE_TAG=$IMAGE_TAG"
+      - echo "COMMIT_TAG=$COMMIT_TAG"
+      - echo "BATCH_ECR_REPOSITORY_URI=$BATCH_ECR_REPOSITORY_URI"
+      - echo "LAMBDA_ECR_REPOSITORY_URI=$LAMBDA_ECR_REPOSITORY_URI"
+  build:
+    commands:
+      - echo "Running build for ${ENV:-dev} - started on $(date)"
+      - echo "Building dmpworks builder image"
+      - docker build --platform linux/amd64 --provenance=false -t dmpworks-builder:latest -f Dockerfile.builder .
+      - echo "Building dmpworks batch image"
+      - docker build --platform linux/amd64 --provenance=false -t "$BATCH_ECR_REPOSITORY_URI:$IMAGE_TAG" -t "$BATCH_ECR_REPOSITORY_URI:$COMMIT_TAG" -f Dockerfile.batch .
+      - echo "Building dmpworks lambda image"
+      - docker build --platform linux/amd64 --provenance=false -t "$LAMBDA_ECR_REPOSITORY_URI:$IMAGE_TAG" -t "$LAMBDA_ECR_REPOSITORY_URI:$COMMIT_TAG" -f Dockerfile.lambda .
+  post_build:
+    commands:
+      - set -e
+      - echo "Build completed on $(date)"
+      - echo "Pushing dmpworks batch image tags"
+      - docker push "$BATCH_ECR_REPOSITORY_URI:$IMAGE_TAG"
+      - docker push "$BATCH_ECR_REPOSITORY_URI:$COMMIT_TAG"
+      - echo "Pushing dmpworks lambda image tags"
+      - docker push "$LAMBDA_ECR_REPOSITORY_URI:$IMAGE_TAG"
+      - docker push "$LAMBDA_ECR_REPOSITORY_URI:$COMMIT_TAG"
+      - export LAMBDA_IMAGE_DIGEST=$(aws ecr describe-images --region "$AWS_REGION" --repository-name "$LAMBDA_ECR_REPOSITORY_NAME" --image-ids imageTag="$IMAGE_TAG" --query 'imageDetails[0].imageDigest' --output text)
+      - export LAMBDA_IMAGE_URI_WITH_DIGEST="$LAMBDA_ECR_REPOSITORY_URI@$LAMBDA_IMAGE_DIGEST"
+      - echo "Updating Lambda image SSM parameter $LAMBDA_ECR_IMAGE_URI_SSM_PARAMETER"
+      - aws ssm put-parameter --name "$LAMBDA_ECR_IMAGE_URI_SSM_PARAMETER" --value "$LAMBDA_IMAGE_URI_WITH_DIGEST" --type String --overwrite
