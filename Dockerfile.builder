@@ -2,7 +2,7 @@
 # Compile Rust extension and build dmpworks wheel
 # -----------------------------------------------------
 
-FROM amazonlinux:2023
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023
 
 # Build arguments
 ARG RUST_TARGET_CPU="x86-64-v3"
