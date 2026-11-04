@@ -14,7 +14,8 @@ ENV PYTHON_VERSION=${PYTHON_VERSION}
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install system dependencies
-RUN dnf -y install \
+RUN dnf clean all && dnf -y update && \
+    dnf -y install \
     wget \
     git \
     python${PYTHON_VERSION} \

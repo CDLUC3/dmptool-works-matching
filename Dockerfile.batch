@@ -23,7 +23,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 RUN mkdir -p ${TMPDIR}
 
 # Install system dependencies
-RUN dnf -y install \
+RUN dnf clean all && dnf -y update && \
+    dnf -y install \
     aws-cli \
     tar \
     zip \

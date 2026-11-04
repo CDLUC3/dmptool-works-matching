@@ -1,6 +1,7 @@
 # dmptool-works-matching change log
 
 ## 2026-11-04
+- Update Dockerfiles to run dnf clean and update
 - Fix some issues with Makefile format
 - Upgraded all Python dependencies
 - Upgraded all Rust dependenices
