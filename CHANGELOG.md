@@ -3,6 +3,7 @@
 ## 2026-11-04
 - Fix some issues with Makefile format
 - Upgraded all Python dependencies
+- Upgraded all Rust dependenices
 
 ## 2026-10-01
 - Update Codebuild and CodePipelines to use shared UC3 codestar connections
