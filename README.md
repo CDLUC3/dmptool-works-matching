@@ -15,6 +15,19 @@ DMP Tool Python package that matches DMPs to their published outputs.
 * DataCite Public Data File: <https://datafiles.datacite.org/>
 * ROR: <https://zenodo.org/records/15132361>
 
+## Dependency management
+
+### Python dependencies
+The uv virtual environment: initial install: `brew install uv`, updating: `brew upgrade uv`. If you have issues with uv, you can uninstall and reinstall it.
+
+Upgrade all python dependencies: `uv sync --upgrade`
+Upgrade a single python dependency: `uv sync --upgrade-package <package-name>`
+
+### Rust dependencies
+The rust toolchain uses Cargo to manage dependencies. To install Rust and Cargo see https://doc.rust-lang.org/cargo/getting-started/installation.html
+
+Upgrade all Rust dependencies: `cargo update`
+
 ## Documentation
 
 See the below pages for in depth documentation.

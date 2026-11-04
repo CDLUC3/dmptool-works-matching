@@ -5,6 +5,8 @@ a separate Sceptre project (`dmptool-infrastructure`) via `!stack_output_externa
 references. The dependency is one-way — dmptool-infrastructure has no references
 back to this project.
 
+To run Sceptre commands, you must specify a variable file. For example: `sceptre --var-file "vars-dev.yaml" launch dev/codepipeline/dmpWorks.yaml`
+
 - [Cross-project stack dependencies](#cross-project-stack-dependencies)
 - [Runtime resource flow](#runtime-resource-flow)
 - [External dependencies](#external-dependencies)
