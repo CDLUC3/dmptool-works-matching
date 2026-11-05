@@ -1,6 +1,7 @@
 # dmptool-works-matching change log
 
 ## 2026-11-04
+- Fix issue where we were referencing the `latest` tag when we should be using `dmpworks-latest`
 - Update Dockerfiles to run dnf clean and update
 - Fix some issues with Makefile format
 - Upgraded all Python dependencies

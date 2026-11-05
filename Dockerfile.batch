@@ -6,7 +6,7 @@
 ARG PYTHON_VERSION="3.12"
 ARG S5CMD_VERSION="2.3.0"
 
-FROM dmpworks-builder:latest AS builder
+FROM dmpworks-builder:dmpworks-latest AS builder
 
 FROM amazonlinux:2023
 ARG PYTHON_VERSION

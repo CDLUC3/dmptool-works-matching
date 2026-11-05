@@ -17,7 +17,7 @@ phases:
     commands:
       - echo "Running build for ${ENV:-dev} - started on $(date)"
       - echo "Building dmpworks builder image"
-      - docker build --platform linux/amd64 --provenance=false -t dmpworks-builder:latest -f Dockerfile.builder .
+      - docker build --platform linux/amd64 --provenance=false -t dmpworks-builder:dmpworks-latest -f Dockerfile.builder .
       - echo "Building dmpworks batch image"
       - docker build --platform linux/amd64 --provenance=false -t "$BATCH_ECR_REPOSITORY_URI:$IMAGE_TAG" -t "$BATCH_ECR_REPOSITORY_URI:$COMMIT_TAG" -f Dockerfile.batch .
       - echo "Building dmpworks lambda image"

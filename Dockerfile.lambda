@@ -5,7 +5,7 @@
 # Build arguments
 ARG PYTHON_VERSION="3.12"
 
-FROM dmpworks-builder:latest AS builder
+FROM dmpworks-builder:dmpworks-latest AS builder
 
 FROM public.ecr.aws/lambda/python:${PYTHON_VERSION}
 ARG PYTHON_VERSION

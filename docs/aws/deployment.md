@@ -113,8 +113,8 @@ make diff-stg
 To push images individually without deploying:
 
 ```bash
-make push-lambda-dev   # build + push Lambda image (dmpworks-lambda:latest) + update SSM digest URI
-make push-batch-dev    # build + push Batch job image (dmpworks-batch:latest)
+make push-lambda-dev   # build + push Lambda image (dmpworks-lambda:dmpworks-latest) + update SSM digest URI
+make push-batch-dev    # build + push Batch job image (dmpworks-batch:dmpworks-latest)
 ```
 
 To deploy the CodeBuild and CodePipeline stacks without deploying the rest of the infrastructure (from within the infra directory):
