@@ -28,6 +28,15 @@ The rust toolchain uses Cargo to manage dependencies. To install Rust and Cargo 
 
 Upgrade all Rust dependencies: `cargo update`
 
+### Deploying after dependency updates
+After updating dependencies, you will need to rebuild the Docker images and push them to ECR. Use the following commands to rebuild, push the image and update the SSM parameter that contains the latest Image tags. Then publish updates to CloudFormation
+```
+make deploy-[env]
+
+cd infra && sceptre --var-file vars-[env].yaml launch [env]
+```
+
+
 ## Documentation
 
 See the below pages for in depth documentation.

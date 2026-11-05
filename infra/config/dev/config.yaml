@@ -11,7 +11,7 @@ sceptre_user_data:
   ssm_path: "{{ var.ssm_prefix }}/dev"
   ecr_batch:
     name: dmpworks-dev-batch
-    tag: latest
+    tag: dmpworks-latest
   ecr_lambda:
     name: dmpworks-dev-lambda
-    tag: latest
+    tag: dmpworks-latest
